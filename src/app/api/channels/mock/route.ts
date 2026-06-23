@@ -17,8 +17,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      response: result.message
+      response: result.message,
+      cacheHit: result.cacheHit,
+      preFilterHit: result.preFilterHit,
+      geminiCalled: result.geminiCalled
     });
+
   } catch (error) {
     console.error('Mock channel error:', error);
     return NextResponse.json(

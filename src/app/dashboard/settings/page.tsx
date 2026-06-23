@@ -31,22 +31,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Gemini API Settings</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">API Key Mode</label>
-              <select className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-black focus:border-black sm:text-sm rounded-md">
-                <option value="shared_pool">Shared Pool (Free Tier)</option>
-                <option value="byo_key">Bring Your Own Key</option>
-              </select>
-              <p className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200">
-                This uses your own Google account and is subject to Google's free-tier terms, including that Google may use your prompts to improve their models.
-              </p>
-            </div>
-          </div>
-        </div>
         
         <div className="flex justify-end">
           <button className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors">
@@ -57,3 +41,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

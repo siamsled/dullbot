@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link href="/dashboard/inventory" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Inventory</Link>
           <Link href="/dashboard/orders" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Orders</Link>
           <Link href="/dashboard/settings" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Settings</Link>
+          <Link href="/dashboard/sandbox" className="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 hover:text-indigo-900 rounded-md font-medium">💬 Test Sandbox</Link>
           <Link href="/dashboard/usage" className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Usage</Link>
         </nav>
       </aside>
@@ -24,3 +25,4 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
