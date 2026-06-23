@@ -1,13 +1,22 @@
+import { supabaseAdmin } from './supabase-admin';
+
 /**
  * Service to interact with the Meta Graph API for sending messages
  * to Messenger, Instagram, and WhatsApp.
  */
 
-export async function sendMetaMessage(recipientId: string, text: string) {
-  const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+export async function sendMetaMessage(recipientId: string, text: string, shopSlug: string) {
+  // Fetch the shop's specific page access token
+  const { data: shop } = await supabaseAdmin
+    .from('shops')
+    .select('meta_page_access_token')
+    .eq('slug', shopSlug)
+    .single();
+
+  const pageAccessToken = shop?.meta_page_access_token;
   
   if (!pageAccessToken) {
-    console.error("META_PAGE_ACCESS_TOKEN is not configured.");
+    console.error(`META_PAGE_ACCESS_TOKEN is not configured for shop: ${shopSlug}`);
     return { success: false, error: "Missing Page Access Token" };
   }
 
