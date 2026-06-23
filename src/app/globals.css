@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colors */
+  --color-ink: #17191c;
+  --color-pure-white: #ffffff;
+  --color-fog: #f7f7f8;
+  --color-ash: #4c4c4c;
+  --color-graphite: #777b86;
+  --color-dove: #a3a6af;
+  --color-slate: #8b8c8d;
+  --color-obsidian: #000000;
+  --color-rust: #5d2a1a;
+  --color-apricot-wash: #fbe1d1;
+  --color-sky-wash: #d3e3fc;
+
+  /* Typography — Fonts mapped to CSS variables */
+  --font-signifier: var(--font-newsreader), 'Newsreader', 'Times New Roman', Georgia, serif;
+  --font-sohne: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Spacing */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+  --spacing-124: 124px;
+  --spacing-128: 128px;
+  --spacing-160: 160px;
+
+  /* Border Radius */
+  --radius-sm: 0.01px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-2xl-2: 20px;
+  --radius-3xl: 24px;
+
+  /* Named Radii */
+  --radius-tags: 9999px;
+  --radius-cards: 24px;
+  --radius-images: 12px;
+  --radius-inputs: 16px;
+  --radius-avatars: 9999px;
+  --radius-buttons: 9999px;
+
+  /* Shadows */
+  --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+
+  /* Surfaces */
+  --surface-canvas: #ffffff;
+  --surface-fog: #f7f7f8;
+  --surface-card: #ffffff;
+  --surface-warm-tint: #fbe1d1;
+  --surface-cool-tint: #d3e3fc;
+  --surface-ink: #17191c;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --color-ink: var(--color-ink);
+  --color-pure-white: var(--color-pure-white);
+  --color-fog: var(--color-fog);
+  --color-ash: var(--color-ash);
+  --color-graphite: var(--color-graphite);
+  --color-dove: var(--color-dove);
+  --color-slate: var(--color-slate);
+  --color-obsidian: var(--color-obsidian);
+  --color-rust: var(--color-rust);
+  --color-apricot-wash: var(--color-apricot-wash);
+  --color-sky-wash: var(--color-sky-wash);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-serif: var(--font-signifier);
+  --font-sans: var(--font-sohne);
+
+  --radius-cards: var(--radius-cards);
+  --radius-images: var(--radius-images);
+  --radius-inputs: var(--radius-inputs);
+  --radius-avatars: var(--radius-avatars);
+  --radius-buttons: var(--radius-buttons);
+
+  --shadow-subtle: var(--shadow-subtle);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--surface-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sohne);
 }
+
