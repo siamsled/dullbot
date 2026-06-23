@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DullBot — Boringly Efficient AI Assistant</title>
+    <meta name="description" content="Meet DullBot, the world's most boringly efficient AI assistant. No emojis, no chatty banter, no hallucinated poems. Just raw, flawless productivity.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Premium Glassmorphism Navigation -->
+    <header class="navbar" id="main-header">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🤖</span>
+                <span class="logo-text">dull<span>bot</span></span>
+            </div>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#demo">Console</a>
+                <a href="#stats">Metrics</a>
+            </nav>
+            <div class="nav-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Boringly Operational</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section" id="hero">
+            <div class="hero-bg-glow"></div>
+            <div class="hero-container">
+                <div class="hero-tag">Intentionally Unexciting</div>
+                <h1 class="hero-title">The World's Most <br><span class="gradient-text">Boringly Efficient</span> AI</h1>
+                <p class="hero-subtitle">
+                    DullBot doesn't write poetry, use emojis, or pretend to have feelings. It just executes code, parses data, and does the boring work flawlessly.
+                </p>
+                <div class="hero-cta-group">
+                    <a href="#demo" class="btn btn-primary">Try DullBot Console</a>
+                    <a href="#features" class="btn btn-secondary">Why Dull is Better</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Terminal Demo Section -->
+        <section class="demo-section" id="demo">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Experience Absolute Monotony</h2>
+                    <p>Interact with DullBot's zero-banter command interface below.</p>
+                </div>
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <div class="terminal-buttons">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <div class="terminal-title">dullbot-session --ssh</div>
+                    </div>
+                    <div class="terminal-body" id="terminal-screen">
+                        <div class="terminal-line"><span class="t-prompt">$</span> dullbot --status</div>
+                        <div class="terminal-line t-response">dullbot v1.0.0: ready. personality_level = 0.0 (minimum). enthusiasm = NaN.</div>
+                        <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+                    </div>
+                    <div class="terminal-controls">
+                        <button class="terminal-btn" onclick="runDullTask('joke')">Request Joke</button>
+                        <button class="terminal-btn" onclick="runDullTask('poem')">Request Poem</button>
+                        <button class="terminal-btn" onclick="runDullTask('optimize')">Optimize Code</button>
+                        <button class="terminal-btn" onclick="clearTerminal()">Clear Console</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section" id="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Engineered for Zero Distractions</h2>
+                    <p>Designed specifically to eliminate the colorful fluff of modern conversational AI.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🚫</div>
+                        <h3>No Conversational Filler</h3>
+                        <p>Zero instances of "Sure, I can help you with that!" or "Here is the code you requested:". Only the output.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Deterministic Logic</h3>
+                        <p>DullBot does not hallucinate. If it doesn't know, it prints a standard, unhelpful error code. Exactly like a real computer.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💤</div>
+                        <h3>Anti-Hype Protocol</h3>
+                        <p>No exclamation marks, bold text headers, or encouraging remarks. It works in complete, stoic silence.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section" id="stats">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Emoji-Free Output</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0.0</div>
+                        <div class="stat-label">Personality Metric</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">1.2ms</div>
+                        <div class="stat-label">Average Response Time</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2026 DullBot Inc. Intentionally boring, relentlessly productive.</p>
+        </div>
+    </footer>
+
+    <!-- Javascript -->
+    <script src="app.js"></script>
+</body>
+</html>
