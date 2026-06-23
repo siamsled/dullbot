@@ -3,6 +3,8 @@ import { processIncomingMessage } from '@/lib/chat-pipeline';
 import { sendMetaMessage } from '@/lib/meta-api';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+
 // GET handler for Webhook Verification (Meta requires this during setup)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

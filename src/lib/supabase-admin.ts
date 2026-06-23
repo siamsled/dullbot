@@ -9,4 +9,9 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.warn('Warning: Supabase credentials missing in environment.');
 }
 
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Next.js evaluates this at build time. We provide dummy values to prevent build crashes
+// if the environment variables aren't injected during the Vercel build phase.
+export const supabaseAdmin = createClient(
+  supabaseUrl || 'https://dummy.supabase.co', 
+  supabaseServiceKey || 'dummy'
+);
