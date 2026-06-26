@@ -1,12 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
 import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
 
 export default function SettingsClient({ shop }: { shop: any }) {
   // variants for staggered animation
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -16,7 +16,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
     }
   };
   
-  const item = {
+  const item: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
