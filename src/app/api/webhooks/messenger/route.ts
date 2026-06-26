@@ -104,7 +104,7 @@ export async function POST(request: Request) {
                 Please generate your reply directly without formatting it as 'bot: ...'.`;
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                  const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
                   const result = await model.generateContent(prompt);
                   const aiResponseText = result.response.text().trim();
 
