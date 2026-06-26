@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog } from 'lucide-react';
+import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover } from './actions';
 
 export default function InboxClient({ shop, initialConversations }: { shop: any, initialConversations: any[] }) {
