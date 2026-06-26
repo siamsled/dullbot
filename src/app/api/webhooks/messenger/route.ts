@@ -103,38 +103,44 @@ export async function POST(request: Request) {
                 Here is the recent chat history:\n${chatHistory}\n
                 Please generate your reply directly without formatting it as 'bot: ...'.`;
 
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                const result = await model.generateContent(prompt);
-                const aiResponseText = result.response.text().trim();
+                try {
+                  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                  const result = await model.generateContent(prompt);
+                  const aiResponseText = result.response.text().trim();
 
-                if (aiResponseText) {
-                  // Send to Meta Graph API
-                  if (shop.meta_page_access_token) {
-                    const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                        recipient: { id: senderId },
-                        message: { text: aiResponseText }
-                      })
-                    });
-                    
-                    if (!fbRes.ok) {
-                      const fbErr = await fbRes.json();
-                      console.error("Facebook API Error:", fbErr);
+                  if (aiResponseText) {
+                    // Send to Meta Graph API
+                    if (shop.meta_page_access_token) {
+                      const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          recipient: { id: senderId },
+                          message: { text: aiResponseText }
+                        })
+                      });
+                      
+                      if (!fbRes.ok) {
+                        const fbErr = await fbRes.json();
+                        console.error("Facebook API Error:", fbErr);
+                      }
                     }
-                  }
 
-                  // Insert AI message into database
-                  await supabaseAdmin
-                    .from('messages')
-                    .insert({
-                      conversation_id: conversation.id,
-                      sender: 'bot',
-                      content: aiResponseText
-                    });
+                    // Insert AI message into database
+                    await supabaseAdmin
+                      .from('messages')
+                      .insert({
+                        conversation_id: conversation.id,
+                        sender: 'bot',
+                        content: aiResponseText
+                      });
+                  }
+                } catch (aiError) {
+                  console.error("AI Generation or Sending Error:", aiError);
+                  // We intentionally swallow this error so we still return 200 OK to Facebook
+                  // otherwise Facebook will infinitely retry sending the same message!
                 }
               }
 
