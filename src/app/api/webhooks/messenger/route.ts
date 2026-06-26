@@ -139,8 +139,14 @@ export async function POST(request: Request) {
                   }
                 } catch (aiError) {
                   console.error("AI Generation or Sending Error:", aiError);
-                  // We intentionally swallow this error so we still return 200 OK to Facebook
-                  // otherwise Facebook will infinitely retry sending the same message!
+                  // Insert the error directly into the chat so we can see what's wrong without Vercel logs!
+                  await supabaseAdmin
+                    .from('messages')
+                    .insert({
+                      conversation_id: conversation.id,
+                      sender: 'bot',
+                      content: `[SYSTEM ERROR] Failed to reply: ${aiError instanceof Error ? aiError.message : String(aiError)}`
+                    });
                 }
               }
 
