@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +13,6 @@ export async function GET(request: Request) {
 
   if (mode && token) {
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('WEBHOOK_VERIFIED');
       return new NextResponse(challenge, { status: 200 });
     } else {
       return new NextResponse('Forbidden', { status: 403 });
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
         // Find the shop associated with this page
         const { data: shop } = await supabaseAdmin
           .from('shops')
-          .select('id, name')
+          .select('id, name, meta_page_access_token')
           .eq('meta_page_id', pageId)
           .single();
 
@@ -40,7 +41,6 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // Loop through messaging events
         if (entry.messaging) {
           for (const webhookEvent of entry.messaging) {
             const senderId = webhookEvent.sender?.id;
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
             if (webhookEvent.message && webhookEvent.message.text && senderId) {
               const messageText = webhookEvent.message.text;
 
-              // 1. Find or create conversation (using senderId as customer_phone for Messenger)
+              // 1. Find or create conversation
               let { data: conversation } = await supabaseAdmin
                 .from('conversations')
                 .select('*')
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
                   .from('conversations')
                   .insert({
                     shop_id: shop.id,
-                    customer_phone: senderId, // Storing Meta PSID here
+                    customer_phone: senderId,
                     channel: 'messenger',
                     status: 'bot_active'
                   })
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
               if (!conversation) continue;
 
-              // 2. Insert message
+              // 2. Insert incoming message
               await supabaseAdmin
                 .from('messages')
                 .insert({
@@ -81,7 +81,64 @@ export async function POST(request: Request) {
                   content: messageText
                 });
 
-              // 3. Update conversation last activity
+              // 3. If bot is active, trigger AI
+              if (conversation.status === 'bot_active') {
+                // Fetch last 5 messages for context
+                const { data: history } = await supabaseAdmin
+                  .from('messages')
+                  .select('sender, content')
+                  .eq('conversation_id', conversation.id)
+                  .order('created_at', { ascending: true })
+                  .limit(10);
+                
+                let chatHistory = '';
+                if (history) {
+                  history.forEach(msg => {
+                    chatHistory += `${msg.sender}: ${msg.content}\n`;
+                  });
+                }
+
+                const prompt = `You are a helpful customer service AI for a shop named "${shop.name}". 
+                A customer just sent a message. Respond politely and concisely. 
+                Here is the recent chat history:\n${chatHistory}\n
+                Please generate your reply directly without formatting it as 'bot: ...'.`;
+
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const result = await model.generateContent(prompt);
+                const aiResponseText = result.response.text().trim();
+
+                if (aiResponseText) {
+                  // Send to Meta Graph API
+                  if (shop.meta_page_access_token) {
+                    const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        recipient: { id: senderId },
+                        message: { text: aiResponseText }
+                      })
+                    });
+                    
+                    if (!fbRes.ok) {
+                      const fbErr = await fbRes.json();
+                      console.error("Facebook API Error:", fbErr);
+                    }
+                  }
+
+                  // Insert AI message into database
+                  await supabaseAdmin
+                    .from('messages')
+                    .insert({
+                      conversation_id: conversation.id,
+                      sender: 'bot',
+                      content: aiResponseText
+                    });
+                }
+              }
+
+              // Update last_message_at
               await supabaseAdmin
                 .from('conversations')
                 .update({ last_message_at: new Date().toISOString() })
