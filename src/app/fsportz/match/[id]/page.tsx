@@ -70,9 +70,6 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
   const selectedStreamIdx = searchParams.source ? parseInt(searchParams.source, 10) : 0;
   const currentStream = allowedStreams[selectedStreamIdx] || allowedStreams[0];
 
-  const matchStatus = searchParams.status;
-  const matchDate = searchParams.date;
-  const isUpcoming = matchStatus === 'pre' && matchDate;
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
