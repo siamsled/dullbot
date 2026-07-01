@@ -62,10 +62,10 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
         </div>
       </header>
 
-      <div className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="flex-1 max-w-5xl mx-auto w-full p-4 lg:p-6 flex flex-col gap-8">
         
-        {/* Player Section */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        {/* Player & Info Section */}
+        <div className="flex flex-col gap-4">
           {currentStream ? (
             <HlsPlayer src={currentStream.url} />
           ) : (
@@ -83,14 +83,14 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
           </div>
         </div>
 
-        {/* Sources List */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit max-h-[600px] overflow-y-auto custom-scrollbar">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">
+        {/* Sources List (Moved below player) */}
+        <div>
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
             Available Broadcasts
           </h3>
           
-          <div className="space-y-3">
-            {allowedStreams.length === 0 && <p className="text-slate-500 text-sm px-2">No HD broadcasts available.</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allowedStreams.length === 0 && <p className="text-slate-500 text-sm">No HD broadcasts available.</p>}
             
             {allowedStreams.map((stream: any, idx: number) => {
               const isSelected = selectedStreamIdx === idx;
@@ -101,7 +101,7 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
                   className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                     isSelected 
                       ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                      : 'bg-slate-800/40 border-transparent hover:bg-slate-800 hover:border-slate-700 text-slate-200'
+                      : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3">
