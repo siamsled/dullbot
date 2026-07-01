@@ -1,10 +1,11 @@
 import React from 'react';
 import { getMeta, getStreams } from '@/lib/fsportz';
 import HlsPlayer from '@/components/fsportz/HlsPlayer';
+import MatchCountdown from '@/components/fsportz/MatchCountdown';
 import Link from 'next/link';
 import { ArrowLeft, MonitorPlay } from 'lucide-react';
 
-export default async function MatchPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ source?: string }> }) {
+export default async function MatchPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ source?: string, status?: string, date?: string }> }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
   
@@ -46,6 +47,10 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
   const selectedStreamIdx = searchParams.source ? parseInt(searchParams.source, 10) : 0;
   const currentStream = allowedStreams[selectedStreamIdx] || allowedStreams[0];
 
+  const matchStatus = searchParams.status;
+  const matchDate = searchParams.date;
+  const isUpcoming = matchStatus === 'pre' && matchDate;
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
       {/* Header */}
@@ -66,7 +71,9 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
         
         {/* Player & Info Section */}
         <div className="flex flex-col gap-4">
-          {currentStream ? (
+          {isUpcoming ? (
+            <MatchCountdown targetDate={matchDate} stream={currentStream} />
+          ) : currentStream ? (
             <HlsPlayer src={currentStream.url} />
           ) : (
             <div className="w-full aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800 shadow-2xl">

@@ -96,7 +96,7 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
 
   if (isClickable) {
     return (
-      <Link href={`/fsportz/match/${encodeURIComponent(match.stremioId!)}`}>
+      <Link href={`/fsportz/match/${encodeURIComponent(match.stremioId!)}?date=${encodeURIComponent(match.date)}&status=${match.status}`}>
         {cardContent}
       </Link>
     );

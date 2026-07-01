@@ -63,6 +63,7 @@ export default function HlsPlayer({ src }: { src: string }) {
       <video
         ref={videoRef}
         controls
+        autoPlay
         className="w-full h-full live-video-player"
         playsInline
         crossOrigin="anonymous"
