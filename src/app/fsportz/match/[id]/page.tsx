@@ -78,8 +78,14 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
           )}
 
           <div className="pt-2">
-            <h1 className="text-2xl font-black">{meta.name}</h1>
-            <p className="text-slate-400 text-sm mt-1">{meta.description}</p>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-black">{meta.name}</h1>
+              <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1 rounded-md border border-red-500/20">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <span className="text-red-400 text-xs font-bold tracking-widest uppercase">Live</span>
+              </div>
+            </div>
+            <p className="text-slate-400 text-sm mt-2">{meta.description}</p>
           </div>
         </div>
 

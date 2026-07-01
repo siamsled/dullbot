@@ -60,11 +60,8 @@ export default function HlsPlayer({ src }: { src: string }) {
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 group">
       
-      {/* Broadcast "LIVE" Overlay */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-md pointer-events-none transition-opacity">
-        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-        <span className="text-white text-xs font-bold tracking-widest uppercase">Live</span>
-      </div>
+      {/* Broadcaster Logo Obfuscation (Top Right Blur) */}
+      <div className="absolute top-0 right-0 w-[20%] h-[15%] bg-black/20 backdrop-blur-2xl rounded-bl-3xl z-10 pointer-events-none" />
 
       <video
         ref={videoRef}
