@@ -23,7 +23,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?error=TokenExchangeFailed`);
   }
 
-  const userAccessToken = tokenData.access_token;
+  const shortLivedUserToken = tokenData.access_token;
+
+  // 1.5 Exchange short-lived token for long-lived token
+  const longLivedRes = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedUserToken}`);
+  const longLivedData = await longLivedRes.json();
+  
+  if (!longLivedData.access_token) {
+    console.error("Long-lived token exchange failed:", longLivedData);
+    // Fallback to short-lived if exchange fails for some reason
+  }
+  
+  const userAccessToken = longLivedData.access_token || shortLivedUserToken;
 
   // 2. Fetch User's Pages (we'll just grab the first one for the MVP)
   const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${userAccessToken}`);

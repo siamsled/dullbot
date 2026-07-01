@@ -131,7 +131,7 @@ export async function POST(request: Request) {
                       
                       if (!fbRes.ok) {
                         const fbErr = await fbRes.json();
-                        console.error("Facebook API Error:", fbErr);
+                        throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
                       }
                     }
 
