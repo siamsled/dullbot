@@ -4,7 +4,10 @@ import HlsPlayer from '@/components/fsportz/HlsPlayer';
 import Link from 'next/link';
 import { ArrowLeft, MonitorPlay } from 'lucide-react';
 
-export default async function MatchPage({ params, searchParams }: { params: { id: string }, searchParams: { source?: string } }) {
+export default async function MatchPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ source?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  
   const matchId = decodeURIComponent(params.id);
   const [meta, streams] = await Promise.all([
     getMeta(matchId),
