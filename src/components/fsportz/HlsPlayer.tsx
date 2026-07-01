@@ -62,10 +62,10 @@ export default function HlsPlayer({ src }: { src: string }) {
       
       {/* Broadcaster Logo Obfuscation (Ultra-soft, extended left) */}
       <div 
-        className="absolute top-0 right-0 w-[40%] h-[20%] backdrop-blur-xl z-10 pointer-events-none" 
+        className="absolute top-0 right-0 w-[50%] h-[30%] backdrop-blur-3xl z-10 pointer-events-none" 
         style={{
-          maskImage: 'radial-gradient(ellipse at top right, black 20%, transparent 70%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at top right, black 20%, transparent 70%)'
+          maskImage: 'radial-gradient(ellipse at top right, black 50%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at top right, black 50%, transparent 100%)'
         }}
       />
 
