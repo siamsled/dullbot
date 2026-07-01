@@ -58,14 +58,31 @@ export default function HlsPlayer({ src }: { src: string }) {
   }, [src]);
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 group">
+      
+      {/* Broadcast "LIVE" Overlay */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-md pointer-events-none transition-opacity">
+        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+        <span className="text-white text-xs font-bold tracking-widest uppercase">Live</span>
+      </div>
+
       <video
         ref={videoRef}
         controls
-        className="w-full h-full"
+        className="w-full h-full live-video-player"
         playsInline
         crossOrigin="anonymous"
       />
+      
+      {/* CSS to hide native timeline controls for a broadcast feel */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Webkit / Chrome / Safari */
+        .live-video-player::-webkit-media-controls-timeline,
+        .live-video-player::-webkit-media-controls-current-time-display,
+        .live-video-player::-webkit-media-controls-time-remaining-display {
+          display: none !important;
+        }
+      `}} />
     </div>
   );
 }

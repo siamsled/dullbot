@@ -25,77 +25,82 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
     );
   }
 
-  // Filter web-ready streams (or just use all since Hls.js can handle most)
-  // But Stremio hints 'notWebReady' for some
-  const webStreams = streams.filter(s => !s.behaviorHints?.notWebReady);
+  // Show all streams instead of filtering by notWebReady
+  const allStreams = streams;
   const selectedStreamIdx = searchParams.source ? parseInt(searchParams.source, 10) : 0;
-  const currentStream = webStreams[selectedStreamIdx] || webStreams[0] || streams[0];
+  const currentStream = allStreams[selectedStreamIdx] || allStreams[0] || streams[0];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50">
+    <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 p-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <header className="bg-slate-900 border-b border-slate-800 p-4 shrink-0">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/fsportz" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
-            <span>Back to Matches</span>
+            <span className="font-medium">Back to Matches</span>
           </Link>
-          <div className="font-bold">{meta.name}</div>
+          <div className="font-bold flex items-center gap-2">
+             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+             {meta.name}
+          </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* Player Section (Takes up 2 cols on large screens) */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Player Section */}
+        <div className="lg:col-span-3 flex flex-col gap-4">
           {currentStream ? (
             <HlsPlayer src={currentStream.url} />
           ) : (
-            <div className="w-full aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800">
+            <div className="w-full aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800 shadow-2xl">
               <div className="text-slate-500 text-center">
                 <MonitorPlay className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No playable streams found for this match right now.</p>
-                <p className="text-sm mt-1">Please try again closer to kickoff.</p>
+                <p>No streams available yet.</p>
               </div>
             </div>
           )}
 
-          <div>
-            <h1 className="text-3xl font-extrabold">{meta.name}</h1>
-            <p className="text-slate-400 mt-2">{meta.description}</p>
+          <div className="pt-2">
+            <h1 className="text-2xl font-black">{meta.name}</h1>
+            <p className="text-slate-400 text-sm mt-1">{meta.description}</p>
           </div>
         </div>
 
-        {/* Sidebar / Sources List */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-            Available Sources
+        {/* Sources List */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit max-h-[600px] overflow-y-auto custom-scrollbar">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">
+            Available Sources ({allStreams.length})
           </h3>
           
-          <div className="space-y-3">
-            {webStreams.length === 0 && <p className="text-slate-500 text-sm">No web-ready sources yet.</p>}
+          <div className="space-y-2">
+            {allStreams.length === 0 && <p className="text-slate-500 text-sm px-2">Waiting for streams...</p>}
             
-            {webStreams.map((stream, idx) => (
+            {allStreams.map((stream, idx) => (
               <Link 
                 key={idx} 
                 href={`/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}`}
-                className={`block p-4 rounded-xl border transition-all ${
+                className={`block p-3 rounded-xl border transition-all ${
                   selectedStreamIdx === idx 
                     ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
-                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
+                    : 'bg-slate-800/30 border-transparent hover:bg-slate-800 hover:border-slate-700 text-slate-300'
                 }`}
               >
-                <div className="font-semibold">{stream.name || `Source ${idx + 1}`}</div>
+                <div className="font-bold text-sm">{stream.name || `Source ${idx + 1}`}</div>
                 {stream.title && (
-                  <div className="text-xs mt-1 opacity-70 line-clamp-1">{stream.title}</div>
+                  <div className="text-xs mt-1 opacity-60 line-clamp-1">{stream.title}</div>
                 )}
               </Link>
             ))}
           </div>
         </div>
-
       </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      `}} />
     </main>
   );
 }
