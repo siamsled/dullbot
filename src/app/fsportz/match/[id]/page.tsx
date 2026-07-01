@@ -25,15 +25,21 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
     );
   }
 
-  // Filter for specific English (TSN 4) and Spanish (TELEMUNDO) broadcasts
+  // Filter for specific English (TSN 4) and Spanish (TELEMUNDO) broadcasts, and ensure they are HD or FHD
   const allowedStreams = streams.filter(s => {
     const name = s.name?.toUpperCase() || '';
-    return name.includes('TELEMUNDO') || name.includes('TSN 4');
+    const title = s.title || '';
+    const isTargetLanguage = name.includes('TELEMUNDO') || name.includes('TSN 4');
+    const isHighQuality = title.includes('1080') || title.includes('720');
+    return isTargetLanguage && isHighQuality;
   }).map(s => {
     const name = s.name?.toUpperCase() || '';
+    const is1080 = s.title?.includes('1080');
     return {
       ...s,
-      displayName: name.includes('TELEMUNDO') ? 'Spanish' : 'English'
+      displayName: name.includes('TELEMUNDO') ? 'Spanish' : 'English',
+      quality: is1080 ? '1080p' : '720p',
+      qualityLabel: is1080 ? 'FHD' : 'HD'
     };
   });
 
@@ -79,29 +85,43 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
 
         {/* Sources List */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit max-h-[600px] overflow-y-auto custom-scrollbar">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">
-            Available Sources
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">
+            Available Broadcasts
           </h3>
           
-          <div className="space-y-2">
-            {allowedStreams.length === 0 && <p className="text-slate-500 text-sm px-2">Waiting for streams...</p>}
+          <div className="space-y-3">
+            {allowedStreams.length === 0 && <p className="text-slate-500 text-sm px-2">No HD broadcasts available.</p>}
             
-            {allowedStreams.map((stream, idx) => (
-              <Link 
-                key={idx} 
-                href={`/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}`}
-                className={`block p-3 rounded-xl border transition-all ${
-                  selectedStreamIdx === idx 
-                    ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
-                    : 'bg-slate-800/30 border-transparent hover:bg-slate-800 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="font-bold text-sm">{(stream as any).displayName}</div>
-                {stream.title && (
-                  <div className="text-xs mt-1 opacity-60 line-clamp-1">{stream.title}</div>
-                )}
-              </Link>
-            ))}
+            {allowedStreams.map((stream: any, idx: number) => {
+              const isSelected = selectedStreamIdx === idx;
+              return (
+                <Link 
+                  key={idx} 
+                  href={`/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}`}
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                    isSelected 
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      : 'bg-slate-800/40 border-transparent hover:bg-slate-800 hover:border-slate-700 text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                      isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
+                    }`}>
+                      {stream.displayName.charAt(0)}
+                    </div>
+                    <span className="font-bold tracking-wide">{stream.displayName}</span>
+                  </div>
+                  <div className={`text-xs font-black px-2 py-1 rounded-md ${
+                    stream.qualityLabel === 'FHD' 
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' 
+                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
+                  }`}>
+                    {stream.qualityLabel}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
