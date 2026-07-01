@@ -83,7 +83,7 @@ export default async function MatchPage({ params, searchParams }: { params: { id
                     : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
                 }`}
               >
-                <div className="font-semibold">{stream.name || \`Source \${idx + 1}\`}</div>
+                <div className="font-semibold">{stream.name || `Source ${idx + 1}`}</div>
                 {stream.title && (
                   <div className="text-xs mt-1 opacity-70 line-clamp-1">{stream.title}</div>
                 )}
