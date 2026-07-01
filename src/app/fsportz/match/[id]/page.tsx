@@ -25,10 +25,20 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
     );
   }
 
-  // Show all streams instead of filtering by notWebReady
-  const allStreams = streams;
+  // Filter for specific English (TSN 4) and Spanish (TELEMUNDO) broadcasts
+  const allowedStreams = streams.filter(s => {
+    const name = s.name?.toUpperCase() || '';
+    return name.includes('TELEMUNDO') || name.includes('TSN 4');
+  }).map(s => {
+    const name = s.name?.toUpperCase() || '';
+    return {
+      ...s,
+      displayName: name.includes('TELEMUNDO') ? 'Spanish' : 'English'
+    };
+  });
+
   const selectedStreamIdx = searchParams.source ? parseInt(searchParams.source, 10) : 0;
-  const currentStream = allStreams[selectedStreamIdx] || allStreams[0] || streams[0];
+  const currentStream = allowedStreams[selectedStreamIdx] || allowedStreams[0];
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
@@ -70,13 +80,13 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
         {/* Sources List */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit max-h-[600px] overflow-y-auto custom-scrollbar">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">
-            Available Sources ({allStreams.length})
+            Available Sources
           </h3>
           
           <div className="space-y-2">
-            {allStreams.length === 0 && <p className="text-slate-500 text-sm px-2">Waiting for streams...</p>}
+            {allowedStreams.length === 0 && <p className="text-slate-500 text-sm px-2">Waiting for streams...</p>}
             
-            {allStreams.map((stream, idx) => (
+            {allowedStreams.map((stream, idx) => (
               <Link 
                 key={idx} 
                 href={`/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}`}
@@ -86,7 +96,7 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
                     : 'bg-slate-800/30 border-transparent hover:bg-slate-800 hover:border-slate-700 text-slate-300'
                 }`}
               >
-                <div className="font-bold text-sm">{stream.name || `Source ${idx + 1}`}</div>
+                <div className="font-bold text-sm">{(stream as any).displayName}</div>
                 {stream.title && (
                   <div className="text-xs mt-1 opacity-60 line-clamp-1">{stream.title}</div>
                 )}
