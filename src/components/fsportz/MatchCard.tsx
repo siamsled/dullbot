@@ -2,47 +2,64 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MatchMeta } from '@/lib/fsportz';
+import { FusedMatch } from '@/lib/fsportz';
 import Link from 'next/link';
 import { Play } from 'lucide-react';
 
-export default function MatchCard({ match }: { match: MatchMeta }) {
-  const isLive = match.releaseInfo === 'LIVE' || match.description?.includes('LIVE NOW');
+export default function MatchCard({ match }: { match: FusedMatch }) {
+  const isLive = match.status === 'in';
+  const isFinished = match.status === 'post';
 
-  return (
-    <Link href={`/fsportz/match/${encodeURIComponent(match.id)}`}>
-      <motion.div 
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="group relative flex-shrink-0 w-72 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700/50 shadow-xl cursor-pointer"
-      >
-        <div className="relative aspect-video">
-          <img 
-            src={match.background || match.poster} 
-            alt={match.name} 
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-          
-          {/* Play Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="bg-emerald-500/80 p-3 rounded-full backdrop-blur-sm">
-              <Play fill="currentColor" className="w-6 h-6 text-white" />
-            </div>
-          </div>
-          
-          {isLive && (
-            <div className="absolute top-3 left-3 bg-red-500/90 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-md animate-pulse">
-              LIVE
-            </div>
-          )}
+  const cardContent = (
+    <motion.div 
+      whileHover={{ scale: match.stremioId ? 1.05 : 1 }}
+      whileTap={{ scale: match.stremioId ? 0.98 : 1 }}
+      className={`group relative flex-shrink-0 w-80 rounded-2xl overflow-hidden bg-slate-800 border shadow-xl flex flex-col justify-between ${
+        match.stremioId ? 'border-emerald-500/50 cursor-pointer' : 'border-slate-700/50'
+      }`}
+    >
+      <div className="p-4 bg-slate-900 border-b border-slate-700 flex justify-between items-center text-xs font-bold">
+        <span className="text-slate-400">{match.league}</span>
+        {isLive ? (
+          <span className="text-red-400 flex items-center gap-1 animate-pulse">
+            <span className="w-2 h-2 bg-red-500 rounded-full"></span> LIVE
+          </span>
+        ) : (
+          <span className="text-slate-500">{match.statusDetail}</span>
+        )}
+      </div>
+
+      <div className="flex-1 p-6 flex justify-between items-center gap-4">
+        <div className="flex flex-col items-center flex-1">
+          <img src={match.team1.logo} alt={match.team1.name} className="w-12 h-12 object-contain" />
+          <span className="mt-2 text-sm font-semibold text-center line-clamp-1">{match.team1.name}</span>
         </div>
-        <div className="p-4">
-          <h3 className="font-bold text-slate-100 line-clamp-1">{match.name}</h3>
-          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{match.description?.split('\n')[0]}</p>
+
+        <div className="text-2xl font-black tabular-nums tracking-wider text-white">
+          {isLive || isFinished ? `${match.team1.score} - ${match.team2.score}` : 'vs'}
         </div>
-      </motion.div>
-    </Link>
+
+        <div className="flex flex-col items-center flex-1">
+          <img src={match.team2.logo} alt={match.team2.name} className="w-12 h-12 object-contain" />
+          <span className="mt-2 text-sm font-semibold text-center line-clamp-1">{match.team2.name}</span>
+        </div>
+      </div>
+
+      {match.stremioId && (
+        <div className="bg-emerald-500/20 text-emerald-400 p-3 text-center text-sm font-bold flex items-center justify-center gap-2 border-t border-emerald-500/30 group-hover:bg-emerald-500/30 transition-colors">
+          <Play className="w-4 h-4" /> Watch Stream
+        </div>
+      )}
+    </motion.div>
   );
+
+  if (match.stremioId) {
+    return (
+      <Link href={`/fsportz/match/${encodeURIComponent(match.stremioId)}`}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
 }

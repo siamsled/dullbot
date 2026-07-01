@@ -1,16 +1,15 @@
 import React from 'react';
-import { getCatalog } from '@/lib/fsportz';
+import { getFusedMatches } from '@/lib/fsportz';
 import MatchCard from '@/components/fsportz/MatchCard';
 
-export const revalidate = 60; // Revalidate every minute
+export const revalidate = 30; // Fast revalidation for live scores
 
 export default async function FSportzHome() {
-  // Fetch multiple catalogs in parallel
-  const [liveMatches, todayMatches, footballMatches] = await Promise.all([
-    getCatalog('sports_live'),
-    getCatalog('sports_today'),
-    getCatalog('sports_football')
-  ]);
+  const matches = await getFusedMatches();
+
+  const liveMatches = matches.filter(m => m.status === 'in');
+  const upcomingMatches = matches.filter(m => m.status === 'pre');
+  const completedMatches = matches.filter(m => m.status === 'post');
 
   return (
     <main className="min-h-screen bg-slate-900 text-slate-50 selection:bg-emerald-500/30">
@@ -25,6 +24,9 @@ export default async function FSportzHome() {
               FSportz <span className="text-emerald-400">Live</span>
             </span>
           </div>
+          <div className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Powered by Real-Time Data
+          </div>
         </div>
       </header>
 
@@ -37,37 +39,37 @@ export default async function FSportzHome() {
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
               <h2 className="text-2xl font-bold">Live Now</h2>
             </div>
-            <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {liveMatches.map(match => (
-                <div key={match.id} className="snap-start">
-                  <MatchCard match={match} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Today Section */}
-        {todayMatches.length > 0 && (
-          <section>
-            <h2 className="text-2xl font-bold mb-6">Matches Today</h2>
-            <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
-              {todayMatches.map(match => (
-                <div key={match.id} className="snap-start">
-                  <MatchCard match={match} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Football Section */}
-        {footballMatches.length > 0 && (
-          <section>
-            <h2 className="text-2xl font-bold mb-6">Football / Soccer</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {footballMatches.map(match => (
                 <MatchCard key={match.id} match={match} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Upcoming Section */}
+        {upcomingMatches.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-6 text-slate-200">Upcoming Matches</h2>
+            <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
+              {upcomingMatches.map(match => (
+                <div key={match.id} className="snap-start">
+                  <MatchCard match={match} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Completed Section */}
+        {completedMatches.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-6 text-slate-200">Completed</h2>
+            <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
+              {completedMatches.map(match => (
+                <div key={match.id} className="snap-start">
+                  <MatchCard match={match} />
+                </div>
               ))}
             </div>
           </section>
