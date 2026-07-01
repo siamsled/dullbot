@@ -1,5 +1,7 @@
 const BASE_URL = 'https://sports.highfly.dev/eyJpbmNsdWRlU3BvcnRzIjpbImZvb3RiYWxsIl19';
 const ESPN_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+const ESPN_STANDINGS_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings';
+const ESPN_ALL_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20261231&limit=200';
 
 export interface MatchMeta {
   id: string;
@@ -31,6 +33,79 @@ export interface FusedMatch {
   league: string;
   team1: { name: string; logo: string; score: string };
   team2: { name: string; logo: string; score: string };
+}
+
+export interface StandingEntry {
+  rank: number;
+  team: { name: string; logo: string; abbreviation: string; };
+  gp: number; w: number; d: number; l: number;
+  gf: number; ga: number; gd: string; pts: number;
+  advanced: boolean;
+}
+
+export interface Group {
+  name: string;
+  entries: StandingEntry[];
+}
+
+export async function getGroupStandings(): Promise<Group[]> {
+  try {
+    const res = await fetch(ESPN_STANDINGS_URL, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.children || []).map((group: any): Group => ({
+      name: group.name,
+      entries: (group.standings?.entries || []).map((entry: any): StandingEntry => {
+        const stat = (name: string) => entry.stats?.find((s: any) => s.name === name)?.value ?? 0;
+        const statStr = (name: string) => entry.stats?.find((s: any) => s.name === name)?.displayValue ?? '0';
+        return {
+          rank: stat('rank'),
+          team: {
+            name: entry.team?.displayName || 'Unknown',
+            logo: entry.team?.logos?.[0]?.href || '',
+            abbreviation: entry.team?.abbreviation || '',
+          },
+          gp: stat('gamesPlayed'),
+          w: stat('wins'),
+          d: stat('ties'),
+          l: stat('losses'),
+          gf: stat('pointsFor'),
+          ga: stat('pointsAgainst'),
+          gd: statStr('pointDifferential'),
+          pts: stat('points'),
+          advanced: stat('advanced') === 1,
+        };
+      }).sort((a: StandingEntry, b: StandingEntry) => a.rank - b.rank),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getAllFixtures(): Promise<FusedMatch[]> {
+  try {
+    const res = await fetch(ESPN_ALL_URL, { next: { revalidate: 60 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const events = data.events || [];
+    return events.map((e: any): FusedMatch => {
+      const comp = e.competitions?.[0];
+      const t1 = comp?.competitors?.[0];
+      const t2 = comp?.competitors?.[1];
+      return {
+        id: `espn_${e.id}`,
+        stremioId: null,
+        status: e.status.type.state,
+        statusDetail: e.status.type.shortDetail,
+        date: e.date,
+        league: e.season?.slug || 'fifa-world-cup',
+        team1: { name: t1?.team?.name || 'TBD', logo: t1?.team?.logo || '', score: t1?.score || '-' },
+        team2: { name: t2?.team?.name || 'TBD', logo: t2?.team?.logo || '', score: t2?.score || '-' },
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 // Internal function to get raw Stremio catalogs
