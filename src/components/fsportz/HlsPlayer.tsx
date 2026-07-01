@@ -60,14 +60,8 @@ export default function HlsPlayer({ src }: { src: string }) {
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 group">
       
-      {/* Broadcaster Logo Obfuscation (Soft Top Right Blur) */}
-      <div 
-        className="absolute top-0 right-0 w-[25%] h-[20%] backdrop-blur-md z-10 pointer-events-none" 
-        style={{
-          maskImage: 'radial-gradient(ellipse at top right, black 30%, transparent 70%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at top right, black 30%, transparent 70%)'
-        }}
-      />
+      {/* Broadcaster Logo Obfuscation (Sharp edge, extended left) */}
+      <div className="absolute top-0 right-0 w-[35%] h-[15%] backdrop-blur-xl bg-black/10 z-10 pointer-events-none rounded-bl-2xl shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" />
 
       <video
         ref={videoRef}
