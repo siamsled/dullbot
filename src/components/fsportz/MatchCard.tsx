@@ -42,7 +42,9 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
   const isFinished = match.status === 'post';
   const isUpcoming = match.status === 'pre';
   
-  const isClickable = match.stremioId && (isLive || isUpcoming);
+  const isClickable = isUpcoming || (isLive && match.stremioId);
+  const linkId = match.stremioId || match.id;
+  const matchName = `${match.team1.name} vs ${match.team2.name}`;
 
   const cardContent = (
     <motion.div 
@@ -96,7 +98,7 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
 
   if (isClickable) {
     return (
-      <Link href={`/fsportz/match/${encodeURIComponent(match.stremioId!)}?date=${encodeURIComponent(match.date)}&status=${match.status}`}>
+      <Link href={`/fsportz/match/${encodeURIComponent(linkId)}?date=${encodeURIComponent(match.date)}&status=${match.status}&name=${encodeURIComponent(matchName)}`}>
         {cardContent}
       </Link>
     );

@@ -5,22 +5,45 @@ import MatchCountdown from '@/components/fsportz/MatchCountdown';
 import Link from 'next/link';
 import { ArrowLeft, MonitorPlay } from 'lucide-react';
 
-export default async function MatchPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ source?: string, status?: string, date?: string }> }) {
+export default async function MatchPage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ source?: string, status?: string, date?: string, name?: string }> }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
   
   const matchId = decodeURIComponent(params.id);
-  const [meta, streams] = await Promise.all([
+  let [meta, streams] = await Promise.all([
     getMeta(matchId),
     getStreams(matchId)
   ]);
 
+  const matchStatus = searchParams.status;
+  const matchDate = searchParams.date;
+  const matchName = searchParams.name;
+  const isUpcoming = matchStatus === 'pre' && matchDate;
+
+  // Synthesize meta for upcoming matches that haven't been added to Stremio yet
+  if (!meta && isUpcoming && matchName) {
+    meta = {
+      id: matchId,
+      type: 'sport',
+      name: matchName,
+      poster: '',
+      posterShape: 'landscape',
+      background: '',
+      genres: [],
+      description: 'Live broadcast will be available when the match starts.',
+      releaseInfo: ''
+    };
+  }
+
   if (!meta) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Match not found</h1>
-          <Link href="/fsportz" className="text-emerald-400 hover:underline">Return Home</Link>
+          <h2 className="text-2xl font-bold mb-2">Match Not Found</h2>
+          <p className="text-slate-400">The requested match data could not be loaded.</p>
+          <Link href="/fsportz" className="mt-4 inline-block text-emerald-400 hover:underline">
+            Return to Homepage
+          </Link>
         </div>
       </div>
     );
