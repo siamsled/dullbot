@@ -3,59 +3,89 @@
 import React, { useState, useEffect } from 'react';
 import HlsPlayer from './HlsPlayer';
 import StreamWaiting from './StreamWaiting';
-import { Clock } from 'lucide-react';
 
-const PRE_ROLL_SECONDS = 6 * 60; // Start stream 6 minutes before kickoff
+const PRE_ROLL_SECONDS = 6 * 60;
 
 export default function MatchCountdown({ targetDate, stream, matchName }: { targetDate: string, stream?: any, matchName?: string }) {
-  const [timeLeft, setTimeLeft] = useState('');
+  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0, str: '' });
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const target = new Date(targetDate).getTime();
-    
     const update = () => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const diff = target - now;
-
-      // Start stream 6 minutes early
       if (diff <= PRE_ROLL_SECONDS * 1000) {
         setIsReady(true);
         return;
       }
-      
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const s = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      if (d > 0) setTimeLeft(`${d}d ${h}h ${m}m`);
-      else setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const str = d > 0
+        ? `${d}d ${String(h).padStart(2,'0')}h`
+        : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      setTimeLeft({ d, h, m, s, str });
     };
-    
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  if (isReady && stream) {
-    return <HlsPlayer src={stream.url} />;
-  }
+  if (isReady && stream) return <HlsPlayer src={stream.url} />;
+  if (isReady && !stream) return <StreamWaiting matchName={matchName || 'this match'} />;
 
-  if (isReady && !stream) {
-    return <StreamWaiting matchName={matchName || 'this match'} />;
-  }
+  const parts = timeLeft.str.includes(':')
+    ? timeLeft.str.split(':')
+    : null;
 
   return (
-    <div className="w-full aspect-video bg-slate-900 rounded-xl flex flex-col items-center justify-center border border-slate-800 shadow-2xl relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.06)_0%,transparent_70%)]"></div>
-      <div className="relative z-10 flex flex-col items-center">
-        <Clock className="w-16 h-16 text-emerald-500 mb-6 opacity-80" />
-        <h2 className="text-xl font-bold text-slate-400 mb-2 uppercase tracking-widest">Match Starts In</h2>
-        <div className="text-6xl md:text-8xl font-black text-white tabular-nums tracking-tighter drop-shadow-lg">
-          {timeLeft || '00:00:00'}
+    <div className="w-full aspect-video rounded-2xl flex flex-col items-center justify-center relative overflow-hidden"
+      style={{ background: 'linear-gradient(160deg, #0b1a0e 0%, #0f2313 50%, #071209 100%)' }}>
+      
+      {/* Stadium green glow */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 80%, rgba(34,197,94,0.08) 0%, transparent 70%)' }} />
+      
+      {/* Pitch lines decoration */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 opacity-10 pointer-events-none"
+        style={{ background: 'repeating-linear-gradient(180deg, transparent, transparent 20px, rgba(34,197,94,0.5) 20px, rgba(34,197,94,0.5) 21px)' }} />
+
+      <div className="relative z-10 flex flex-col items-center text-center">
+        <div className="text-xs font-bold uppercase tracking-[0.25em] mb-8" style={{ color: '#4ade80' }}>
+          Kickoff In
         </div>
-        <p className="text-slate-600 text-xs mt-6 font-semibold tracking-widest uppercase">Stream opens 6 min before kickoff</p>
+
+        {parts ? (
+          /* HH:MM:SS display */
+          <div className="flex items-center gap-3 md:gap-5">
+            {parts.map((part, i) => (
+              <React.Fragment key={i}>
+                <div className="flex flex-col items-center">
+                  <div className="text-5xl md:text-8xl font-black tabular-nums text-white leading-none"
+                    style={{ textShadow: '0 0 40px rgba(34,197,94,0.3)', letterSpacing: '-0.03em' }}>
+                    {part}
+                  </div>
+                  <div className="text-[10px] font-semibold uppercase tracking-widest mt-2" style={{ color: '#4b6e53' }}>
+                    {i === 0 ? 'HRS' : i === 1 ? 'MIN' : 'SEC'}
+                  </div>
+                </div>
+                {i < parts.length - 1 && (
+                  <div className="text-4xl md:text-6xl font-black mb-4" style={{ color: '#22c55e' }}>:</div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          <div className="text-5xl md:text-8xl font-black text-white" style={{ letterSpacing: '-0.03em' }}>
+            {timeLeft.str || '00:00:00'}
+          </div>
+        )}
+
+        <p className="text-xs font-semibold mt-8" style={{ color: '#2d4a33' }}>
+          Stream opens 6 min before kickoff
+        </p>
       </div>
     </div>
   );
