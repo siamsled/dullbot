@@ -24,7 +24,7 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
     <div className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-3 rounded-xl transition-all ${
       isLive 
         ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10' 
-        : isPre && streamId 
+        : isPre 
           ? 'bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800 hover:border-emerald-500/30 cursor-pointer' 
           : 'bg-slate-800/20 border border-slate-800/50'
     }`}>
@@ -71,7 +71,7 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
   );
 
   const linkId = streamId || match.id;
-  if ((isLive || isPre) && streamId) {
+  if (isLive || isPre) {
     return (
       <Link href={`/fsportz/match/${encodeURIComponent(linkId)}?date=${encodeURIComponent(match.date)}&status=${match.status}&name=${encodeURIComponent(match.team1.name + ' vs ' + match.team2.name)}`}>
         {inner}

@@ -42,7 +42,7 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
   const isFinished = match.status === 'post';
   const isUpcoming = match.status === 'pre';
   
-  const isClickable = isUpcoming || (isLive && match.stremioId);
+  const isClickable = isUpcoming || isLive;
   const linkId = match.stremioId || match.id;
   const matchName = `${match.team1.name} vs ${match.team2.name}`;
 
