@@ -144,18 +144,32 @@ export async function getFusedMatches(): Promise<FusedMatch[]> {
       const t1 = comp?.competitors?.[0];
       const t2 = comp?.competitors?.[1];
 
-      // Fuzzy matching algorithm (simple string includes)
+      // Fuzzy matching algorithm using name and aliases
+      const aliases: Record<string, string[]> = {
+        'united states': ['usa'],
+        'england': ['uk', 'great britain', 'britain'],
+        'bosnia-herzegovina': ['bosnia', 'bih']
+      };
+
       const t1Name = t1?.team?.name?.toLowerCase() || "";
       const t2Name = t2?.team?.name?.toLowerCase() || "";
+      const t1Abbr = t1?.team?.abbreviation?.toLowerCase() || "";
+      const t2Abbr = t2?.team?.abbreviation?.toLowerCase() || "";
       
       let matchedStremioId = null;
       for (const meta of stremioMetas) {
         const metaName = meta.name.toLowerCase();
-        // Check if Stremio match name contains both team names (or at least their first words)
+        
         const t1Key = t1Name.split(' ')[0];
         const t2Key = t2Name.split(' ')[0];
         
-        if (metaName.includes(t1Key) && metaName.includes(t2Key)) {
+        const t1AliasMatch = aliases[t1Name]?.some(a => metaName.includes(a));
+        const t2AliasMatch = aliases[t2Name]?.some(a => metaName.includes(a));
+
+        const t1Match = metaName.includes(t1Key) || (t1Abbr && metaName.includes(t1Abbr)) || t1AliasMatch;
+        const t2Match = metaName.includes(t2Key) || (t2Abbr && metaName.includes(t2Abbr)) || t2AliasMatch;
+
+        if (t1Match && t2Match) {
           matchedStremioId = meta.id;
           break;
         }
