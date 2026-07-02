@@ -50,7 +50,7 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
     <motion.div 
       whileHover={{ scale: isClickable ? 1.05 : 1 }}
       whileTap={{ scale: isClickable ? 0.98 : 1 }}
-      className={`group relative flex-shrink-0 w-80 rounded-2xl overflow-hidden bg-slate-800 border shadow-xl flex flex-col justify-between ${
+      className={`group relative flex-shrink-0 w-[85vw] sm:w-80 rounded-2xl overflow-hidden bg-slate-800 border shadow-xl flex flex-col justify-between ${
         isClickable ? 'border-emerald-500/50 cursor-pointer' : 'border-slate-700/50 opacity-80'
       }`}
     >

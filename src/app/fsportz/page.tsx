@@ -29,9 +29,9 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
           : 'bg-slate-800/20 border border-slate-800/50'
     }`}>
       {/* Team 1 */}
-      <div className="flex items-center gap-2 justify-end">
-        <span className={`text-sm font-bold truncate ${isPost ? 'text-slate-300' : 'text-white'}`}>{match.team1.name}</span>
-        {match.team1.logo && <img src={match.team1.logo} alt={match.team1.name} className="w-6 h-6 object-contain flex-shrink-0" />}
+      <div className="flex items-center gap-1.5 md:gap-2 justify-end min-w-0">
+        <span className={`text-xs md:text-sm font-bold truncate ${isPost ? 'text-slate-300' : 'text-white'}`}>{match.team1.name}</span>
+        {match.team1.logo && <img src={match.team1.logo} alt={match.team1.name} className="w-4 h-4 md:w-6 md:h-6 object-contain flex-shrink-0" />}
       </div>
 
       {/* Score / Time */}
@@ -57,14 +57,14 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
       </div>
 
       {/* Team 2 */}
-      <div className="flex items-center gap-2">
-        {match.team2.logo && <img src={match.team2.logo} alt={match.team2.name} className="w-6 h-6 object-contain flex-shrink-0" />}
-        <span className={`text-sm font-bold truncate ${isPost ? 'text-slate-300' : 'text-white'}`}>{match.team2.name}</span>
+      <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+        {match.team2.logo && <img src={match.team2.logo} alt={match.team2.name} className="w-4 h-4 md:w-6 md:h-6 object-contain flex-shrink-0" />}
+        <span className={`text-xs md:text-sm font-bold truncate ${isPost ? 'text-slate-300' : 'text-white'}`}>{match.team2.name}</span>
         {isLive && streamId && (
-          <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex-shrink-0">WATCH</span>
+          <span className="ml-auto bg-red-500 text-white text-[9px] md:text-[10px] font-black px-1.5 md:px-2 py-0.5 rounded-md flex-shrink-0">WATCH</span>
         )}
         {isPre && streamId && (
-          <span className="ml-auto bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-md border border-emerald-500/20 flex-shrink-0">SET</span>
+          <span className="ml-auto bg-emerald-500/20 text-emerald-400 text-[9px] md:text-[10px] font-black px-1.5 md:px-2 py-0.5 rounded-md border border-emerald-500/20 flex-shrink-0">SET</span>
         )}
       </div>
     </div>
@@ -83,31 +83,33 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
 
 function GroupTable({ group }: { group: Group }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-      <div className="bg-slate-800/60 px-4 py-3 flex items-center justify-between">
-        <h3 className="font-black text-sm tracking-widest uppercase text-slate-200">{group.name}</h3>
-        <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">W D L GF GA GD PTS</span>
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden text-sm md:text-base">
+      <div className="bg-slate-800/60 px-3 md:px-4 py-3 flex items-center justify-between">
+        <h3 className="font-black text-xs md:text-sm tracking-widest uppercase text-slate-200">{group.name}</h3>
+        <span className="text-[9px] md:text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+          W<span className="hidden sm:inline"> D L GF GA</span> GD PTS
+        </span>
       </div>
       <div className="divide-y divide-slate-800/50">
         {group.entries.map((entry, i) => (
-          <div key={entry.team.name} className={`flex items-center gap-3 px-4 py-2.5 ${entry.advanced ? 'bg-emerald-500/5' : ''}`}>
-            <span className={`w-5 text-center font-black text-sm ${i < 2 ? 'text-emerald-400' : 'text-slate-500'}`}>{i + 1}</span>
+          <div key={entry.team.name} className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 ${entry.advanced ? 'bg-emerald-500/5' : ''}`}>
+            <span className={`w-4 md:w-5 text-center font-black text-xs md:text-sm ${i < 2 ? 'text-emerald-400' : 'text-slate-500'}`}>{i + 1}</span>
             {entry.team.logo 
-              ? <img src={entry.team.logo} alt={entry.team.name} className="w-5 h-5 object-contain" />
-              : <div className="w-5 h-5 rounded bg-slate-700" />
+              ? <img src={entry.team.logo} alt={entry.team.name} className="w-4 h-4 md:w-5 md:h-5 object-contain" />
+              : <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-slate-700" />
             }
-            <span className="flex-1 text-sm font-semibold text-slate-200 truncate">{entry.team.name}</span>
+            <span className="flex-1 text-xs md:text-sm font-semibold text-slate-200 truncate">{entry.team.name}</span>
             {entry.advanced && (
-              <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 mr-1">ADV</span>
+              <span className="text-[8px] md:text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-1 md:px-1.5 py-0.5 rounded border border-emerald-500/20 mr-1 hidden sm:inline-block">ADV</span>
             )}
-            <div className="grid grid-cols-7 gap-2 text-xs font-mono text-right">
-              <span className="text-slate-400">{entry.w}</span>
-              <span className="text-slate-400">{entry.d}</span>
-              <span className="text-slate-400">{entry.l}</span>
-              <span className="text-slate-500">{entry.gf}</span>
-              <span className="text-slate-500">{entry.ga}</span>
-              <span className={`${Number(entry.gd) > 0 ? 'text-emerald-400' : Number(entry.gd) < 0 ? 'text-red-400' : 'text-slate-400'}`}>{entry.gd}</span>
-              <span className="font-black text-white">{entry.pts}</span>
+            <div className="flex gap-2 md:grid md:grid-cols-7 md:gap-2 text-[10px] md:text-xs font-mono text-right items-center">
+              <span className="text-slate-400 w-3 text-center">{entry.w}</span>
+              <span className="text-slate-400 w-3 text-center hidden sm:inline-block">{entry.d}</span>
+              <span className="text-slate-400 w-3 text-center hidden sm:inline-block">{entry.l}</span>
+              <span className="text-slate-500 w-4 text-center hidden sm:inline-block">{entry.gf}</span>
+              <span className="text-slate-500 w-4 text-center hidden sm:inline-block">{entry.ga}</span>
+              <span className={`w-5 text-center ${Number(entry.gd) > 0 ? 'text-emerald-400' : Number(entry.gd) < 0 ? 'text-red-400' : 'text-slate-400'}`}>{entry.gd}</span>
+              <span className="font-black text-white w-4 text-center">{entry.pts}</span>
             </div>
           </div>
         ))}
