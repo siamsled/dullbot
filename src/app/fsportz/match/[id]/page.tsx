@@ -21,8 +21,8 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
   const matchName = searchParams.name;
   const isUpcoming = matchStatus === 'pre' && matchDate;
 
-  // Synthesize meta for upcoming matches that haven't been added to Stremio yet
-  if (!meta && isUpcoming && matchName) {
+  // Synthesize meta for matches that haven't been added to Stremio yet
+  if (!meta && (isUpcoming || matchStatus === 'in') && matchName) {
     meta = {
       id: matchId,
       type: 'sport',
