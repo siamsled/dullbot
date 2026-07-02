@@ -2,6 +2,7 @@ import React from 'react';
 import { getMeta, getStreams } from '@/lib/fsportz';
 import HlsPlayer from '@/components/fsportz/HlsPlayer';
 import MatchCountdown from '@/components/fsportz/MatchCountdown';
+import StreamWaiting from '@/components/fsportz/StreamWaiting';
 import Link from 'next/link';
 import { ArrowLeft, MonitorPlay } from 'lucide-react';
 
@@ -92,25 +93,27 @@ export default async function MatchPage(props: { params: Promise<{ id: string }>
         {/* Player & Info Section */}
         <div className="flex flex-col gap-4">
           {isUpcoming ? (
-            <MatchCountdown targetDate={matchDate} stream={currentStream} />
+            <MatchCountdown targetDate={matchDate} stream={currentStream} matchName={meta.name} />
           ) : currentStream ? (
             <HlsPlayer src={currentStream.url} />
           ) : (
-            <div className="w-full aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800 shadow-2xl">
-              <div className="text-slate-500 text-center">
-                <MonitorPlay className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No streams available yet.</p>
-              </div>
-            </div>
+            <StreamWaiting matchName={meta.name} />
           )}
 
           <div className="pt-2">
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-black">{meta.name}</h1>
-              <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1 rounded-md border border-red-500/20">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                <span className="text-red-400 text-xs font-bold tracking-widest uppercase">Live</span>
-              </div>
+              {matchStatus === 'in' && (
+                <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1 rounded-md border border-red-500/20">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                  <span className="text-red-400 text-xs font-bold tracking-widest uppercase">Live</span>
+                </div>
+              )}
+              {isUpcoming && (
+                <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-md border border-slate-700">
+                  <span className="text-slate-400 text-xs font-bold tracking-widest uppercase">Upcoming</span>
+                </div>
+              )}
             </div>
             <p className="text-slate-400 text-sm mt-2">{meta.description}</p>
           </div>
