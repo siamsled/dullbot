@@ -200,38 +200,28 @@ export default async function FSportzHome() {
         }
         .fs-poster-btn:hover { transform: scale(1.05); box-shadow: 0 14px 40px rgba(255,255,255,0.25); }
         
-        /* DYNAMIC LEFT-ALIGNED LAYOUT WITH PLAYERS */
+        /* SYMMETRICAL PLAYER CUTOUTS (CENTERED TEXT) */
         .fs-poster-with-players {
-          flex-direction: row; text-align: left; align-items: center; justify-content: space-between;
+          /* Keep text centered but ensure z-index keeps it above players */
         }
-        .fs-poster-with-players .fs-poster-title { align-items: flex-start; }
-        .fs-poster-with-players .fs-poster-date { justify-content: flex-start; }
-        .fs-poster-with-players .fs-poster-cta { justify-content: flex-start; }
         
         .fs-poster-players {
-          position: absolute; right: 0; bottom: -60px; height: 120%; width: 55%;
-          display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; z-index: 10;
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          pointer-events: none; z-index: 1; overflow: hidden;
         }
         .fs-poster-player {
-          position: absolute; bottom: 0; max-height: 100%; max-width: 400px;
+          position: absolute; bottom: -20px; max-height: 120%; max-width: 40vw;
           object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
+          opacity: 0.9;
         }
-        .fs-poster-player-1 { right: 20%; z-index: 2; transform: scale(1.05); }
-        .fs-poster-player-2 { right: -5%; z-index: 1; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7)) brightness(0.6); }
+        /* Team 1 on the left, Team 2 on the right */
+        .fs-poster-player-1 { left: -5%; z-index: 2; transform: scale(1.05); }
+        .fs-poster-player-2 { right: -5%; z-index: 1; transform: scaleX(-1); filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7)) brightness(0.8); }
 
         @media (max-width: 900px) {
-          .fs-poster-with-players { flex-direction: column; text-align: center; }
-          .fs-poster-with-players .fs-poster-title { align-items: center; }
-          .fs-poster-with-players .fs-poster-date { justify-content: center; }
-          .fs-poster-with-players .fs-poster-cta { justify-content: center; }
-          
-          .fs-poster-players {
-            position: relative; right: auto; bottom: auto; width: 100%; height: 320px;
-            justify-content: center; margin-top: 40px; margin-bottom: -60px;
-          }
-          .fs-poster-player { max-width: 280px; }
-          .fs-poster-player-1 { right: auto; left: 50%; transform: translateX(-65%) scale(1.05); }
-          .fs-poster-player-2 { right: auto; left: 50%; transform: translateX(-20%); }
+          .fs-poster-player { max-width: 50vw; opacity: 0.5; }
+          .fs-poster-player-1 { left: -10%; }
+          .fs-poster-player-2 { right: -10%; }
         }
 
         /* ===== SECTIONS ===== */

@@ -82,36 +82,10 @@ export async function getGroupStandings(): Promise<Group[]> {
   }
 }
 
-// Mapping of major team names to their star player / captain FotMob ID for transparent cutouts
-const CAPTAINS: Record<string, string> = {
-  'Argentina': '82188',      // Messi
-  'Portugal': '22849',       // Ronaldo
-  'France': '688647',        // Mbappe
-  'Brazil': '878831',        // Vinicius Jr
-  'England': '191541',       // Kane
-  'USA': '541334',           // Pulisic
-  'United States': '541334', 
-  'Germany': '93447',        // Gundogan
-  'Spain': '610815',         // Rodri
-  'Egypt': '177508',         // Salah
-  'Australia': '757883',     // Souttar
-  'Switzerland': '189441',   // Xhaka
-  'Canada': '791054',        // Davies
-  'Qatar': '410886',         // Afif
-  'Mexico': '786278',        // Alvarez
-  'Japan': '551711',         // Minamino
-  'Morocco': '574516',       // Hakimi
-  'Croatia': '43725',        // Modric
-  'Netherlands': '536647',   // Van Dijk
-  'Senegal': '232148',       // Mane
-  'Belgium': '173998',       // De Bruyne
-  'South Korea': '197305',   // Son
-  'Uruguay': '314605',       // Valverde
-  'Colombia': '173873',      // James
-};
+import CAPTAINS from '../data/captains.json';
 
 function getCaptainImage(teamName: string): string | null {
-  const id = CAPTAINS[teamName];
+  const id = CAPTAINS[teamName as keyof typeof CAPTAINS];
   if (id) {
     return `https://images.fotmob.com/image_resources/playerimages/${id}.png`;
   }
