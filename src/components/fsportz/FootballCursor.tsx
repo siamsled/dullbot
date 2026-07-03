@@ -79,7 +79,7 @@ export default function FootballCursor() {
         top: 0, left: 0,
         pointerEvents: 'none', // Critical so clicks pass through!
         zIndex: 99999,
-        fontSize: '32px',
+        fontSize: '26px',
         lineHeight: 1,
         filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
         transition: 'scale 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s',
