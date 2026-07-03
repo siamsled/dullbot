@@ -79,8 +79,7 @@ export default async function FSportzHome() {
           position: sticky; top: 0; z-index: 100;
           height: 60px;
           backdrop-filter: blur(24px) saturate(180%);
-          background: rgba(6,14,7,0.82);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          background: rgba(6,14,7,0.4);
           display: flex; align-items: center;
         }
         .fs-header-inner {
