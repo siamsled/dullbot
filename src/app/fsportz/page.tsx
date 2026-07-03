@@ -130,32 +130,35 @@ export default async function FSportzHome() {
         /* ===== HERO POSTER ===== */
         .fs-hero {
           position: relative; overflow: hidden;
-          min-height: 540px; 
+          min-height: 560px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           padding: 80px 20px 60px;
           text-align: center;
         }
         .fs-poster-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 0;
-          background: linear-gradient(180deg, #111, #060e07);
+          background: linear-gradient(135deg, #7a1d1d, #c96500, #111 80%);
         }
         .fs-poster-bg-img {
           position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; 
-          opacity: 0.5; filter: brightness(0.6) saturate(1.2); mix-blend-mode: overlay;
+          opacity: 0.3; filter: brightness(0.6) saturate(1.2); mix-blend-mode: overlay;
         }
         .fs-poster-glow {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          background: radial-gradient(circle at 50% -20%, rgba(220, 40, 40, 0.35), transparent 70%);
+          background: radial-gradient(circle at 70% 30%, rgba(255, 120, 0, 0.4), transparent 60%);
           mix-blend-mode: screen;
         }
         .fs-poster-logo-bg {
           position: absolute; top: 50%; transform: translateY(-50%); width: 50vw; max-width: 500px; height: 50vw; max-height: 500px;
-          opacity: 0.08; object-fit: contain; filter: blur(4px) grayscale(0.5); z-index: 1; pointer-events: none;
+          opacity: 0.05; object-fit: contain; filter: blur(4px) grayscale(0.5); z-index: 1; pointer-events: none;
         }
         .fs-poster-logo-bg-l { left: -10vw; }
         .fs-poster-logo-bg-r { right: -10vw; }
         
-        .fs-poster-content { position: relative; z-index: 2; width: 100%; max-width: 1000px; margin: 0 auto; }
+        .fs-poster-content { 
+          position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
         
         .fs-poster-eyebrow {
           display: inline-flex; align-items: center; gap: 8px;
@@ -169,12 +172,12 @@ export default async function FSportzHome() {
           line-height: 0.85; margin-bottom: 24px; position: relative; z-index: 3;
         }
         .fs-poster-t1, .fs-poster-t2 {
-          font-size: clamp(48px, 11vw, 130px); font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase;
+          font-size: clamp(48px, 9vw, 110px); font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase;
           color: #fff; text-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
         .fs-poster-vs {
-          font-size: clamp(24px, 4vw, 40px); font-weight: 900; color: rgba(255,255,255,0.3);
-          margin: -10px 0; text-transform: uppercase; z-index: 4;
+          font-size: clamp(20px, 3vw, 32px); font-weight: 900; color: rgba(255,255,255,0.4);
+          margin: 0px 0; text-transform: uppercase; z-index: 4;
         }
         
         .fs-poster-date {
@@ -188,7 +191,7 @@ export default async function FSportzHome() {
           font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9);
         }
         
-        .fs-poster-cta { display: flex; justify-content: center; }
+        .fs-poster-cta { display: flex; justify-content: center; position: relative; z-index: 15; }
         .fs-poster-btn {
           display: inline-flex; align-items: center; gap: 10px;
           background: #ffffff; color: #000000; padding: 16px 36px; border-radius: 99px;
@@ -196,6 +199,40 @@ export default async function FSportzHome() {
           text-decoration: none; box-shadow: 0 10px 30px rgba(255,255,255,0.15);
         }
         .fs-poster-btn:hover { transform: scale(1.05); box-shadow: 0 14px 40px rgba(255,255,255,0.25); }
+        
+        /* DYNAMIC LEFT-ALIGNED LAYOUT WITH PLAYERS */
+        .fs-poster-with-players {
+          flex-direction: row; text-align: left; align-items: center; justify-content: space-between;
+        }
+        .fs-poster-with-players .fs-poster-title { align-items: flex-start; }
+        .fs-poster-with-players .fs-poster-date { justify-content: flex-start; }
+        .fs-poster-with-players .fs-poster-cta { justify-content: flex-start; }
+        
+        .fs-poster-players {
+          position: absolute; right: 0; bottom: -60px; height: 120%; width: 55%;
+          display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; z-index: 10;
+        }
+        .fs-poster-player {
+          position: absolute; bottom: 0; max-height: 100%; max-width: 400px;
+          object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
+        }
+        .fs-poster-player-1 { right: 20%; z-index: 2; transform: scale(1.05); }
+        .fs-poster-player-2 { right: -5%; z-index: 1; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7)) brightness(0.6); }
+
+        @media (max-width: 900px) {
+          .fs-poster-with-players { flex-direction: column; text-align: center; }
+          .fs-poster-with-players .fs-poster-title { align-items: center; }
+          .fs-poster-with-players .fs-poster-date { justify-content: center; }
+          .fs-poster-with-players .fs-poster-cta { justify-content: center; }
+          
+          .fs-poster-players {
+            position: relative; right: auto; bottom: auto; width: 100%; height: 320px;
+            justify-content: center; margin-top: 40px; margin-bottom: -60px;
+          }
+          .fs-poster-player { max-width: 280px; }
+          .fs-poster-player-1 { right: auto; left: 50%; transform: translateX(-65%) scale(1.05); }
+          .fs-poster-player-2 { right: auto; left: 50%; transform: translateX(-20%); }
+        }
 
         /* ===== SECTIONS ===== */
         .fs-main { max-width: 1280px; margin: 0 auto; padding: 0 20px 80px; }
@@ -443,34 +480,48 @@ export default async function FSportzHome() {
           {upcomingMatches.length > 0 ? (() => {
             const nextMatch = upcomingMatches[0];
             const href = `/fsportz/match/${encodeURIComponent(nextMatch.stremioId || nextMatch.id)}?date=${encodeURIComponent(nextMatch.date)}&status=${nextMatch.status}&name=${encodeURIComponent(nextMatch.team1.name + ' vs ' + nextMatch.team2.name)}`;
+            const hasCaptains = Boolean(nextMatch.team1.captainImg || nextMatch.team2.captainImg);
             
             return (
               <>
                 {nextMatch.team1.logo && <img src={nextMatch.team1.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-l" />}
                 {nextMatch.team2.logo && <img src={nextMatch.team2.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-r" />}
 
-                <div className="fs-poster-content">
-                  <div className="fs-poster-eyebrow">
-                    <span className="fs-poster-dot" /> 2026 FIFA WORLD CUP
+                <div className={`fs-poster-content ${hasCaptains ? 'fs-poster-with-players' : ''}`}>
+                  <div className="fs-poster-info">
+                    <div className="fs-poster-eyebrow">
+                      <span className="fs-poster-dot" /> 2026 FIFA WORLD CUP
+                    </div>
+
+                    <div className="fs-poster-title">
+                      <span className="fs-poster-t1">{nextMatch.team1.name}</span>
+                      <span className="fs-poster-vs">vs</span>
+                      <span className="fs-poster-t2">{nextMatch.team2.name}</span>
+                    </div>
+
+                    <div className="fs-poster-date">
+                      <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
+                      <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
+                    </div>
+
+                    <div className="fs-poster-cta">
+                      <Link href={href} className="fs-poster-btn">
+                        <span className="fs-poster-btn-icon">⚽</span>
+                        Watch Match
+                      </Link>
+                    </div>
                   </div>
 
-                  <div className="fs-poster-title">
-                    <span className="fs-poster-t1">{nextMatch.team1.name}</span>
-                    <span className="fs-poster-vs">vs</span>
-                    <span className="fs-poster-t2">{nextMatch.team2.name}</span>
-                  </div>
-
-                  <div className="fs-poster-date">
-                    <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
-                    <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
-                  </div>
-
-                  <div className="fs-poster-cta">
-                    <Link href={href} className="fs-poster-btn">
-                      <span className="fs-poster-btn-icon">⚽</span>
-                      Watch Match
-                    </Link>
-                  </div>
+                  {hasCaptains && (
+                    <div className="fs-poster-players">
+                      {nextMatch.team2.captainImg && (
+                        <img src={nextMatch.team2.captainImg} alt={nextMatch.team2.name} className="fs-poster-player fs-poster-player-2" />
+                      )}
+                      {nextMatch.team1.captainImg && (
+                        <img src={nextMatch.team1.captainImg} alt={nextMatch.team1.name} className="fs-poster-player fs-poster-player-1" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             );

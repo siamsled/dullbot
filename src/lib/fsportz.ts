@@ -82,6 +82,42 @@ export async function getGroupStandings(): Promise<Group[]> {
   }
 }
 
+// Mapping of major team names to their star player / captain FotMob ID for transparent cutouts
+const CAPTAINS: Record<string, string> = {
+  'Argentina': '82188',      // Messi
+  'Portugal': '22849',       // Ronaldo
+  'France': '688647',        // Mbappe
+  'Brazil': '878831',        // Vinicius Jr
+  'England': '191541',       // Kane
+  'USA': '541334',           // Pulisic
+  'United States': '541334', 
+  'Germany': '93447',        // Gundogan
+  'Spain': '610815',         // Rodri
+  'Egypt': '177508',         // Salah
+  'Australia': '757883',     // Souttar
+  'Switzerland': '189441',   // Xhaka
+  'Canada': '791054',        // Davies
+  'Qatar': '410886',         // Afif
+  'Mexico': '786278',        // Alvarez
+  'Japan': '551711',         // Minamino
+  'Morocco': '574516',       // Hakimi
+  'Croatia': '43725',        // Modric
+  'Netherlands': '536647',   // Van Dijk
+  'Senegal': '232148',       // Mane
+  'Belgium': '173998',       // De Bruyne
+  'South Korea': '197305',   // Son
+  'Uruguay': '314605',       // Valverde
+  'Colombia': '173873',      // James
+};
+
+function getCaptainImage(teamName: string): string | null {
+  const id = CAPTAINS[teamName];
+  if (id) {
+    return `https://images.fotmob.com/image_resources/playerimages/${id}.png`;
+  }
+  return null;
+}
+
 export async function getAllFixtures(): Promise<FusedMatch[]> {
   try {
     const res = await fetch(ESPN_ALL_URL, { next: { revalidate: 60 } });
@@ -92,15 +128,29 @@ export async function getAllFixtures(): Promise<FusedMatch[]> {
       const comp = e.competitions?.[0];
       const t1 = comp?.competitors?.[0];
       const t2 = comp?.competitors?.[1];
+      
+      const team1Name = t1?.team?.displayName || 'TBD';
+      const team2Name = t2?.team?.displayName || 'TBD';
+      
       return {
         id: `espn_${e.id}`,
         stremioId: null,
         status: e.status.type.state,
         statusDetail: e.status.type.shortDetail,
         date: e.date,
-        league: e.season?.slug || 'fifa-world-cup',
-        team1: { name: t1?.team?.name || 'TBD', logo: t1?.team?.logo || '', score: t1?.score || '-' },
-        team2: { name: t2?.team?.name || 'TBD', logo: t2?.team?.logo || '', score: t2?.score || '-' },
+        league: 'FIFA World Cup',
+        team1: { 
+          name: team1Name, 
+          logo: t1?.team?.logo || '', 
+          score: t1?.score || '',
+          captainImg: getCaptainImage(team1Name)
+        },
+        team2: { 
+          name: team2Name, 
+          logo: t2?.team?.logo || '', 
+          score: t2?.score || '',
+          captainImg: getCaptainImage(team2Name)
+        },
       };
     });
   } catch {
