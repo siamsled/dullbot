@@ -246,7 +246,6 @@ export default async function MatchPage(props: {
               )}
               {isUpcoming && <span className="mp-pre-badge">Upcoming</span>}
             </div>
-            <p className="mp-desc">{meta.description}</p>
 
             <div>
               <p className="mp-sources-label">Available Broadcasts</p>
