@@ -471,7 +471,7 @@ export default async function FSportzHome() {
         <header className="fs-header">
           <div className="fs-header-inner">
             <div className="fs-logo">
-              <span className="fs-logo-name" style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'lowercase' }}>
+              <span className="fs-logo-name" style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '24px', fontWeight: 900, letterSpacing: '-0.02em', textTransform: 'lowercase' }}>
                 ikball.<span>lol</span>
               </span>
             </div>
