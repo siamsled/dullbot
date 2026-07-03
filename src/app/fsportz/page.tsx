@@ -60,7 +60,7 @@ export default async function FSportzHome() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { scroll-behavior: smooth; background: #060e07; }
 
@@ -69,7 +69,7 @@ export default async function FSportzHome() {
           min-height: 100vh;
           background: #060e07;
           color: #fff;
-          font-family: 'Inter', system-ui, sans-serif;
+          font-family: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
           -webkit-font-smoothing: antialiased;
         }
 
