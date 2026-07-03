@@ -280,9 +280,17 @@ export default async function FSportzHome() {
           display: flex; gap: 14px;
           overflow-x: auto; 
           padding-top: 16px; margin-top: -16px;
-          padding-bottom: 28px;
-          scroll-snap-type: x mandatory;
+          padding-bottom: 36px;
           scrollbar-width: none;
+          
+          width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+          padding-left: max(20px, calc((100vw - 1240px) / 2));
+          padding-right: max(20px, calc((100vw - 1240px) / 2));
         }
         .fs-carousel::-webkit-scrollbar { display: none; }
         .fs-carousel > * { scroll-snap-align: start; }
