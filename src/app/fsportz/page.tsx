@@ -62,7 +62,7 @@ export default async function FSportzHome() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        html, body { scroll-behavior: smooth; background: #060e07; }
 
         /* ===== PAGE ===== */
         .fs-page {
@@ -129,7 +129,7 @@ export default async function FSportzHome() {
 
         /* ===== HERO POSTER ===== */
         .fs-hero {
-          position: relative; overflow: visible;
+          position: relative; overflow: hidden;
           min-height: 560px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           padding: 30px 20px 110px;

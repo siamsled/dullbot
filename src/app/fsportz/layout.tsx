@@ -13,7 +13,7 @@ export default function FSportzLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#060e07] text-white font-sans">
       <FootballCursor />
       {children}
     </div>
