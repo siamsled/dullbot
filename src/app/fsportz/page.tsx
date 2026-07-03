@@ -452,7 +452,7 @@ export default async function FSportzHome() {
           font-size: 7px; font-weight: 900; letter-spacing: 0.1em;
           padding: 2px 5px; border-radius: 99px;
           background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
-          border: 1px solid rgba(255,255,255,0.15); display: none; margin-left: auto;
+          border: 1px solid rgba(255,255,255,0.15); display: none;
         }
         @media (min-width: 360px) { .gt-adv-badge { display: inline; } }
         .gt-stats {
