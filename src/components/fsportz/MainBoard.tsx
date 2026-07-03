@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import FixtureRow from '@/components/fsportz/FixtureRow';
 import GroupTable from '@/components/fsportz/GroupTable';
 import LocalTime from '@/components/fsportz/LocalTime';
@@ -17,6 +17,28 @@ export default function MainBoard({
   groups: Group[];
 }) {
   const [activeTab, setActiveTab] = useState<'fixtures' | 'standings'>('fixtures');
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fixturesBtnRef = useRef<HTMLButtonElement>(null);
+  const standingsBtnRef = useRef<HTMLButtonElement>(null);
+  const [sliderStyle, setSliderStyle] = useState({ left: 6, width: 0 });
+
+  useEffect(() => {
+    const updateSlider = () => {
+      const activeBtn = activeTab === 'fixtures' ? fixturesBtnRef.current : standingsBtnRef.current;
+      const container = containerRef.current;
+      if (activeBtn && container) {
+        setSliderStyle({
+          left: activeBtn.offsetLeft,
+          width: activeBtn.offsetWidth,
+        });
+      }
+    };
+    
+    updateSlider();
+    window.addEventListener('resize', updateSlider);
+    return () => window.removeEventListener('resize', updateSlider);
+  }, [activeTab]);
 
   return (
     <div className="fs-main-board">
@@ -48,25 +70,23 @@ export default function MainBoard({
         .fs-toggle-btn.active { color: #000; }
         
         .fs-toggle-slider {
-          position: absolute; top: 6px; bottom: 6px; width: calc(50% - 6px);
+          position: absolute; top: 6px; bottom: 6px;
           background: linear-gradient(145deg, #ffffff, #d1d1d1);
           border-radius: 99px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 -2px 5px rgba(0,0,0,0.1), inset 0 2px 4px #fff;
-          transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+          transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
           z-index: 1;
         }
-        .fs-3d-toggle.fixtures .fs-toggle-slider { transform: translateX(0); width: 146px; }
-        .fs-3d-toggle.standings .fs-toggle-slider { transform: translateX(146px); width: 168px; }
         
-        /* Mobile widths adjustment for the slider to accurately fit text */
         @media (max-width: 640px) {
            .fs-toggle-btn { padding: 10px 20px; font-size: 12px; }
-           .fs-3d-toggle.fixtures .fs-toggle-slider { width: 110px; }
-           .fs-3d-toggle.standings .fs-toggle-slider { transform: translateX(110px); width: 130px; }
         }
-
+        /* ===== BOARDS ===== */
         .fs-board-content {
-          animation: fadeIn 0.4s ease-out;
+          background: #0d130f;
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 20px;
+          padding: 24px;
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -75,15 +95,17 @@ export default function MainBoard({
       `}</style>
 
       <div className="fs-toggle-wrapper">
-        <div className={`fs-3d-toggle ${activeTab}`}>
-          <div className="fs-toggle-slider" />
+        <div className="fs-3d-toggle" ref={containerRef}>
+          <div className="fs-toggle-slider" style={{ left: sliderStyle.left, width: sliderStyle.width }} />
           <button 
+            ref={fixturesBtnRef}
             className={`fs-toggle-btn ${activeTab === 'fixtures' ? 'active' : ''}`}
             onClick={() => setActiveTab('fixtures')}
           >
             All Fixtures
           </button>
           <button 
+            ref={standingsBtnRef}
             className={`fs-toggle-btn ${activeTab === 'standings' ? 'active' : ''}`}
             onClick={() => setActiveTab('standings')}
           >

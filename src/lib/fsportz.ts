@@ -31,8 +31,8 @@ export interface FusedMatch {
   statusDetail: string; // e.g. "FT", "75'", "15:00"
   date: string;
   league: string;
-  team1: { name: string; logo: string; score: string };
-  team2: { name: string; logo: string; score: string };
+  team1: { name: string; logo: string; score: string; captainImg?: string | null };
+  team2: { name: string; logo: string; score: string; captainImg?: string | null };
 }
 
 export interface StandingEntry {

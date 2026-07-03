@@ -353,11 +353,15 @@ export default async function FSportzHome() {
           text-transform: uppercase; color: rgba(255,255,255,0.6);
         }
         .gt-cols {
-          font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+          display: flex; gap: 8px;
+          font-size: 9px; font-weight: 700;
           color: rgba(255,255,255,0.2);
         }
+        .gt-cols span, .gt-stats span {
+          width: 20px; text-align: center;
+        }
         .gt-hide-sm { display: none; }
-        @media (min-width: 400px) { .gt-hide-sm { display: inline; } }
+        @media (min-width: 400px) { .gt-hide-sm { display: inline-block; } }
         .gt-rows { display: flex; flex-direction: column; }
         .gt-row {
           display: flex; align-items: center; gap: 8px;
@@ -383,11 +387,11 @@ export default async function FSportzHome() {
           font-size: 7px; font-weight: 900; letter-spacing: 0.1em;
           padding: 2px 5px; border-radius: 99px;
           background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
-          border: 1px solid rgba(255,255,255,0.15); display: none;
+          border: 1px solid rgba(255,255,255,0.15); display: none; margin-left: auto;
         }
         @media (min-width: 360px) { .gt-adv-badge { display: inline; } }
         .gt-stats {
-          display: flex; gap: 10px;
+          display: flex; gap: 8px; justify-content: flex-end;
           font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums;
           color: rgba(255,255,255,0.4);
         }

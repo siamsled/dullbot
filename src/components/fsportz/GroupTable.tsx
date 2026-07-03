@@ -6,7 +6,15 @@ export default function GroupTable({ group }: { group: Group }) {
     <div className="gt-wrap">
       <div className="gt-head">
         <span className="gt-name">{group.name}</span>
-        <span className="gt-cols">W<span className="gt-hide-sm"> D L GF GA</span> GD PTS</span>
+        <div className="gt-cols">
+          <span>W</span>
+          <span className="gt-hide-sm">D</span>
+          <span className="gt-hide-sm">L</span>
+          <span className="gt-hide-sm">GF</span>
+          <span className="gt-hide-sm">GA</span>
+          <span>GD</span>
+          <span>PTS</span>
+        </div>
       </div>
       <div className="gt-rows">
         {group.entries.map((entry, i) => (
