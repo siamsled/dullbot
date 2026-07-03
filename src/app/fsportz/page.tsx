@@ -204,83 +204,71 @@ export default async function FSportzHome() {
         }
         @media (min-width: 640px) { .fs-wc-pill { display: flex; } }
 
-        /* ===== HERO ===== */
+        /* ===== HERO POSTER ===== */
         .fs-hero {
           position: relative; overflow: hidden;
-          padding: 64px 20px 80px;
+          min-height: 540px; 
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          padding: 80px 20px 60px;
+          text-align: center;
         }
-        /* Animated mesh gradient bg */
-        .fs-hero-bg {
-          position: absolute; inset: 0; pointer-events: none;
-          background:
-            radial-gradient(ellipse 70% 60% at 15% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 70% at 85% 20%, rgba(16,185,129,0.05) 0%, transparent 60%),
-            radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255,255,255,0.04) 0%, transparent 60%);
-          animation: heroMesh 10s ease-in-out infinite alternate;
+        .fs-poster-bg {
+          position: absolute; inset: 0; pointer-events: none; z-index: 0;
+          background: linear-gradient(180deg, #111, #060e07);
         }
-        @keyframes heroMesh {
-          0%   { transform: scale(1) translateY(0); }
-          100% { transform: scale(1.06) translateY(-20px); }
+        .fs-poster-glow {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          background: radial-gradient(circle at 50% -20%, rgba(220, 40, 40, 0.35), transparent 70%);
+          mix-blend-mode: screen;
         }
-        /* Grid lines */
-        .fs-hero-grid {
-          position: absolute; inset: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-          background-size: 48px 48px;
-          mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 100%);
+        .fs-poster-logo-bg {
+          position: absolute; top: 50%; transform: translateY(-50%); width: 50vw; max-width: 500px; height: 50vw; max-height: 500px;
+          opacity: 0.08; object-fit: contain; filter: blur(4px) grayscale(0.5); z-index: 1; pointer-events: none;
         }
-        /* Decorative big "26" */
-        .fs-hero-26 {
-          position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
-          font-size: clamp(160px, 22vw, 320px); font-weight: 900;
-          line-height: 1; letter-spacing: -0.06em;
-          color: transparent;
-          -webkit-text-stroke: 1px rgba(255,255,255,0.08);
-          pointer-events: none; user-select: none;
-          animation: heroNum 10s ease-in-out infinite alternate;
-        }
-        @keyframes heroNum {
-          0% { opacity: 0.6; transform: translateY(-50%) translateX(0); }
-          100% { opacity: 1; transform: translateY(-52%) translateX(-10px); }
-        }
-        .fs-hero-content {
-          position: relative; z-index: 2; max-width: 1280px; margin: 0 auto;
-          display: flex; flex-direction: column; gap: 40px;
-        }
-        @media (min-width: 1024px) {
-          .fs-hero-content { flex-direction: row; align-items: center; justify-content: space-between; }
-        }
-        .fs-hero-left { flex: 1; max-width: 500px; }
-        .fs-hero-right { display: flex; flex-direction: column; gap: 16px; align-items: flex-end; }
-        @media (min-width: 1024px) {
-          .fs-hero-right { flex-direction: row; }
-        }
-        .fs-hero-eyebrow {
+        .fs-poster-logo-bg-l { left: -10vw; }
+        .fs-poster-logo-bg-r { right: -10vw; }
+        
+        .fs-poster-content { position: relative; z-index: 2; width: 100%; max-width: 1000px; margin: 0 auto; }
+        
+        .fs-poster-eyebrow {
           display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 14px; border-radius: 99px; margin-bottom: 24px;
-          font-size: 10px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.18);
-          color: rgba(255,255,255,0.8);
+          font-size: 11px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase;
+          color: rgba(255,255,255,0.7); margin-bottom: 24px;
         }
-        .fs-hero-eyebrow-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 8px #ffffff; }
-        .fs-hero-h1 {
-          font-size: clamp(40px, 7vw, 80px);
-          font-weight: 900; letter-spacing: -0.04em; line-height: 1;
-          color: #fff;
-          text-shadow: 0 2px 40px rgba(0,0,0,0.5);
+        .fs-poster-dot { width: 6px; height: 6px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 10px #fff; }
+        
+        .fs-poster-title {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          line-height: 0.85; margin-bottom: 24px; position: relative; z-index: 3;
         }
-        .fs-hero-h1 span {
-          background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 50%, #d4d4d4 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
+        .fs-poster-t1, .fs-poster-t2 {
+          font-size: clamp(48px, 11vw, 130px); font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase;
+          color: #fff; text-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
-        .fs-hero-sub {
-          margin-top: 16px; font-size: 15px; color: rgba(255,255,255,0.3);
-          max-width: 420px; line-height: 1.6;
+        .fs-poster-vs {
+          font-size: clamp(24px, 4vw, 40px); font-weight: 900; color: rgba(255,255,255,0.3);
+          margin: -10px 0; text-transform: uppercase; z-index: 4;
         }
+        
+        .fs-poster-date {
+          display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 40px;
+        }
+        .fs-poster-date-badge {
+          background: #fff; color: #000; padding: 4px 10px; border-radius: 4px;
+          font-size: 13px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .fs-poster-date-time {
+          font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9);
+        }
+        
+        .fs-poster-cta { display: flex; justify-content: center; }
+        .fs-poster-btn {
+          display: inline-flex; align-items: center; gap: 10px;
+          background: #ffffff; color: #000000; padding: 16px 36px; border-radius: 99px;
+          font-size: 16px; font-weight: 800; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+          text-decoration: none; box-shadow: 0 10px 30px rgba(255,255,255,0.15);
+        }
+        .fs-poster-btn:hover { transform: scale(1.05); box-shadow: 0 14px 40px rgba(255,255,255,0.25); }
 
         /* ===== SECTIONS ===== */
         .fs-main { max-width: 1280px; margin: 0 auto; padding: 0 20px 80px; }
@@ -510,33 +498,51 @@ export default async function FSportzHome() {
           </div>
         </header>
 
-        {/* Hero */}
+        {/* Hero Poster */}
         <section className="fs-hero">
-          <div className="fs-hero-bg" />
-          <div className="fs-hero-grid" />
-          <div className="fs-hero-26">26</div>
-          <div className="fs-hero-content">
-            <div className="fs-hero-left">
-              <div className="fs-hero-eyebrow">
-                <span className="fs-hero-eyebrow-dot" />
-                Round of 32 — 2026 FIFA World Cup
-              </div>
-              <h1 className="fs-hero-h1">
-                Your FIFA <span>HQ</span>
-              </h1>
-              <p className="fs-hero-sub">
-                Live scores, full standings, fixtures & streams — everything to follow the 2026 World Cup.
-              </p>
-            </div>
-            
-            {upcomingMatches.length > 0 && (
-              <div className="fs-hero-right">
-                {upcomingMatches.slice(0, 2).map(m => (
-                  <MatchCard key={m.id} match={m} />
-                ))}
-              </div>
-            )}
+          <div className="fs-poster-bg">
+            <div className="fs-poster-glow" />
           </div>
+
+          {upcomingMatches.length > 0 ? (() => {
+            const nextMatch = upcomingMatches[0];
+            const href = `/fsportz/match/${encodeURIComponent(nextMatch.stremioId || nextMatch.id)}?date=${encodeURIComponent(nextMatch.date)}&status=${nextMatch.status}&name=${encodeURIComponent(nextMatch.team1.name + ' vs ' + nextMatch.team2.name)}`;
+            
+            return (
+              <>
+                {nextMatch.team1.logo && <img src={nextMatch.team1.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-l" />}
+                {nextMatch.team2.logo && <img src={nextMatch.team2.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-r" />}
+
+                <div className="fs-poster-content">
+                  <div className="fs-poster-eyebrow">
+                    <span className="fs-poster-dot" /> 2026 FIFA WORLD CUP
+                  </div>
+
+                  <div className="fs-poster-title">
+                    <span className="fs-poster-t1">{nextMatch.team1.name}</span>
+                    <span className="fs-poster-vs">vs</span>
+                    <span className="fs-poster-t2">{nextMatch.team2.name}</span>
+                  </div>
+
+                  <div className="fs-poster-date">
+                    <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
+                    <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
+                  </div>
+
+                  <div className="fs-poster-cta">
+                    <Link href={href} className="fs-poster-btn">
+                      <span className="fs-poster-btn-icon">⚽</span>
+                      Watch Match
+                    </Link>
+                  </div>
+                </div>
+              </>
+            );
+          })() : (
+            <div className="fs-poster-content">
+              <h1 className="fs-poster-t1" style={{ fontSize: 'clamp(30px, 8vw, 80px)' }}>NO UPCOMING MATCHES</h1>
+            </div>
+          )}
         </section>
 
         <div className="fs-main">
