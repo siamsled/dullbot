@@ -30,10 +30,10 @@ export default async function FSportzHome() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
 
-  const nextMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+  const heroMatch = liveMatches.length > 0 ? liveMatches[0] : (upcomingMatches.length > 0 ? upcomingMatches[0] : null);
   let heroMeta = null;
-  if (nextMatch && nextMatch.stremioId) {
-    heroMeta = await getMeta(nextMatch.stremioId);
+  if (heroMatch && heroMatch.stremioId) {
+    heroMeta = await getMeta(heroMatch.stremioId);
   }
 
   const stremioMap = new Map<string, string>();
@@ -229,6 +229,22 @@ export default async function FSportzHome() {
           text-decoration: none; box-shadow: 0 10px 30px rgba(255,255,255,0.15);
         }
         .fs-poster-btn:hover { transform: scale(1.05); box-shadow: 0 14px 40px rgba(255,255,255,0.25); }
+        
+        .fs-poster-live-indicator {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          font-family: 'Anton', Impact, sans-serif;
+          font-size: 22px; font-weight: 400; color: #ef4444;
+          letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        .fs-poster-live-dot {
+          width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+          box-shadow: 0 0 10px #ef4444;
+          animation: livePulse 1.5s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+          0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px #ef4444; }
+          50% { transform: scale(1.3); opacity: 0.4; box-shadow: 0 0 0px #ef4444; }
+        }
         
         /* SYMMETRICAL PLAYER CUTOUTS (CENTERED TEXT) */
         .fs-poster-with-players {
@@ -498,10 +514,12 @@ export default async function FSportzHome() {
             <div className="fs-poster-glow" />
           </div>
 
-          {upcomingMatches.length > 0 ? (() => {
-            const nextMatch = upcomingMatches[0];
+          {heroMatch ? (() => {
+            const nextMatch = heroMatch;
             const href = `/fsportz/match/${encodeURIComponent(nextMatch.stremioId || nextMatch.id)}?date=${encodeURIComponent(nextMatch.date)}&status=${nextMatch.status}&name=${encodeURIComponent(nextMatch.team1.name + ' vs ' + nextMatch.team2.name)}`;
             const hasCaptains = Boolean(nextMatch.team1.captainImg || nextMatch.team2.captainImg);
+            // Simulated live state for visual review
+            const isLive = true; // For simulation. Dynamic check: nextMatch.status === 'in'
             
             return (
               <>
@@ -520,20 +538,31 @@ export default async function FSportzHome() {
                 )}
 
                 <div className={`fs-poster-content ${hasCaptains ? 'fs-poster-with-players' : ''}`}>
-                  <div className="fs-poster-info">
-                    <div className="fs-poster-eyebrow">
-                      <span className="fs-poster-dot" /> 2026 FIFA WORLD CUP
-                    </div>
+                  <div className="fs-poster-content-inner" style={{ transform: 'translateY(-20px)' }}>
+                    <div className="fs-poster-info">
+                      <div className="fs-poster-eyebrow">
+                        <span className="fs-poster-dot" /> 2026 FIFA WORLD CUP
+                      </div>
 
-                    <div className="fs-poster-title">
-                      <span className="fs-poster-t1">{nextMatch.team1.name}</span>
-                      <span className="fs-poster-vs">vs</span>
-                      <span className="fs-poster-t2">{nextMatch.team2.name}</span>
-                    </div>
+                      <div className="fs-poster-title">
+                        <span className="fs-poster-t1">{nextMatch.team1.name}</span>
+                        <span className="fs-poster-vs">vs</span>
+                        <span className="fs-poster-t2">{nextMatch.team2.name}</span>
+                      </div>
 
-                    <div className="fs-poster-date">
-                      <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
-                      <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
+                      <div className="fs-poster-date" style={{ display: 'flex', justifyContent: 'center' }}>
+                        {isLive ? (
+                          <div className="fs-poster-live-indicator">
+                            <span className="fs-poster-live-dot" />
+                            <span>LIVE</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
+                            <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
