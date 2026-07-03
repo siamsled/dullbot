@@ -171,50 +171,43 @@ export default async function MatchPage(props: {
         .mp-sources-label {
           font-size: 9px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase;
           color: rgba(255,255,255,0.2); padding-bottom: 2px;
-          border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px;
+          border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 8px;
         }
         .mp-sources-empty { font-size: 13px; color: rgba(255,255,255,0.2); }
-        .mp-sources-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .mp-sources-list { display: flex; gap: 8px; }
         .mp-source-btn {
-          display: flex; align-items: center; gap: 10px;
-          padding: 10px 16px; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          padding: 8px 12px; border-radius: 8px;
           text-decoration: none; transition: all 0.2s;
-          cursor: pointer;
+          cursor: pointer; flex: 1; white-space: nowrap;
         }
         .mp-source-btn-active {
-          background: rgba(34,197,94,0.08);
+          background: rgba(34,197,94,0.1);
           border: 1px solid rgba(34,197,94,0.3);
-          box-shadow: 0 0 20px rgba(34,197,94,0.06);
+          box-shadow: 0 0 15px rgba(34,197,94,0.08);
         }
         .mp-source-btn-inactive {
           background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.08);
         }
         .mp-source-btn-inactive:hover {
           background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.12);
-          transform: translateY(-1px);
+          border-color: rgba(255,255,255,0.15);
         }
-        .mp-source-icon {
-          width: 36px; height: 36px; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          font-weight: 900; font-size: 14px;
-        }
-        .mp-source-icon-active { background: rgba(34,197,94,0.12); color: #22c55e; }
-        .mp-source-icon-inactive { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
-        .mp-source-info { display: flex; flex-direction: column; gap: 3px; }
+        .mp-source-icon { display: none; }
+        .mp-source-info { display: flex; flex-direction: row; align-items: center; gap: 6px; }
         .mp-source-name {
           font-size: 13px; font-weight: 700;
         }
         .mp-source-name-active { color: #22c55e; }
-        .mp-source-name-inactive { color: rgba(255,255,255,0.5); }
+        .mp-source-name-inactive { color: rgba(255,255,255,0.6); }
         .mp-quality-tag {
           font-size: 9px; font-weight: 900; letter-spacing: 0.1em;
-          padding: 2px 7px; border-radius: 99px;
-          display: inline-block; width: fit-content;
+          padding: 2px 6px; border-radius: 4px;
+          display: inline-block;
         }
-        .mp-quality-fhd { background: rgba(251,191,36,0.08); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
-        .mp-quality-hd { background: rgba(96,165,250,0.08); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+        .mp-quality-fhd { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+        .mp-quality-hd { background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
       `}</style>
       <main className="mp-page">
         <header className="mp-header">
