@@ -1,6 +1,7 @@
 import React from 'react';
 import { getFusedMatches, getGroupStandings, getAllFixtures, FusedMatch, Group } from '@/lib/fsportz';
 import MatchCard from '@/components/fsportz/MatchCard';
+import LocalTime from '@/components/fsportz/LocalTime';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -42,7 +43,7 @@ function FixtureRow({ match, streamId }: { match: FusedMatch; streamId: string |
             <span className={isPost ? 'fr-score-muted' : ''}>{match.team2.score}</span>
           </div>
         ) : (
-          <span className="fr-time">{formatTime(match.date)}</span>
+          <span className="fr-time"><LocalTime dateStr={match.date} format="time" /></span>
         )}
         {isLive && <div className="fr-live-label">LIVE</div>}
         {isPost && <div className="fr-post-label">{match.statusDetail}</div>}
@@ -558,7 +559,9 @@ export default async function FSportzHome() {
                 return (
                   <div key={dk} className="fg-group">
                     <div className="fg-date-row">
-                      <span className={`fg-date-pill ${hasLive ? 'fg-date-pill-live' : 'fg-date-pill-upcoming'}`}>{dk}</span>
+                      <span className={`fg-date-pill ${hasLive ? 'fg-date-pill-live' : 'fg-date-pill-upcoming'}`}>
+                        <LocalTime dateStr={matches[0].date} format="date" />
+                      </span>
                       <div className="fg-line" />
                     </div>
                     <div className="fg-rows">
@@ -577,7 +580,9 @@ export default async function FSportzHome() {
                   {[...pastDates].reverse().map(dk => (
                     <div key={dk} className="fg-group" style={{ opacity: 0.5 }}>
                       <div className="fg-date-row">
-                        <span className="fg-date-pill fg-date-pill-past">{dk}</span>
+                        <span className="fg-date-pill fg-date-pill-past">
+                          <LocalTime dateStr={fixturesByDate[dk][0].date} format="date" />
+                        </span>
                         <div className="fg-line" />
                       </div>
                       <div className="fg-rows">
