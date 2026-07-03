@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
+import { RefreshCw } from 'lucide-react';
 
 export default function HlsPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -60,6 +61,14 @@ export default function HlsPlayer({ src }: { src: string }) {
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 group">
       
+      <button 
+        onClick={() => window.location.reload()}
+        className="absolute top-4 right-4 z-10 p-2 bg-black/40 hover:bg-black/80 backdrop-blur-md text-white/60 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 focus:opacity-100 border border-white/10"
+        title="Reload Stream"
+      >
+        <RefreshCw size={18} />
+      </button>
+
       <video
         ref={videoRef}
         controls
