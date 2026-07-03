@@ -282,6 +282,7 @@ export default async function FSportzHome() {
           padding-top: 16px; margin-top: -16px;
           padding-bottom: 36px;
           scrollbar-width: none;
+          scroll-behavior: auto !important;
           
           width: 100vw;
           position: relative;

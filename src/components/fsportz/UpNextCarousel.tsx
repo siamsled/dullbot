@@ -19,11 +19,13 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
     const handleMouseLeave = () => { isPaused = false; };
     const handleTouchStart = () => { isPaused = true; };
     const handleTouchEnd = () => { isPaused = false; };
+    const handleTouchCancel = () => { isPaused = false; };
 
     el.addEventListener('mouseenter', handleMouseEnter);
     el.addEventListener('mouseleave', handleMouseLeave);
     el.addEventListener('touchstart', handleTouchStart);
     el.addEventListener('touchend', handleTouchEnd);
+    el.addEventListener('touchcancel', handleTouchCancel);
 
     const tick = () => {
       if (!isPaused) {
@@ -46,6 +48,7 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
       el.removeEventListener('mouseleave', handleMouseLeave);
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchCancel);
     };
   }, [matches]);
 
