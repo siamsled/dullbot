@@ -107,7 +107,10 @@ export default async function FSportzHome() {
   ]);
 
   const liveMatches = fusedMatches.filter(m => m.status === 'in');
-  const upcomingMatches = allFixturesArray.filter(m => m.status === 'pre').slice(0, 5);
+  const upcomingMatches = allFixturesArray
+    .filter(m => m.status === 'pre')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 5);
 
   const stremioMap = new Map<string, string>();
   fusedMatches.forEach(m => {
