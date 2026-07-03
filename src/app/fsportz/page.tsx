@@ -1,6 +1,7 @@
 import React from 'react';
 import { getFusedMatches, getGroupStandings, getAllFixtures, getMeta, FusedMatch, Group } from '@/lib/fsportz';
 import MatchCard from '@/components/fsportz/MatchCard';
+import UpNextCarousel from '@/components/fsportz/UpNextCarousel';
 import LocalTime from '@/components/fsportz/LocalTime';
 import MainBoard from '@/components/fsportz/MainBoard';
 import Link from 'next/link';
@@ -278,8 +279,8 @@ export default async function FSportzHome() {
         .fs-carousel {
           display: flex; gap: 14px;
           overflow-x: auto; 
-          padding-top: 12px; margin-top: -12px;
-          padding-bottom: 16px;
+          padding-top: 16px; margin-top: -16px;
+          padding-bottom: 28px;
           scroll-snap-type: x mandatory;
           scrollbar-width: none;
         }
@@ -573,9 +574,7 @@ export default async function FSportzHome() {
                 <span className="fs-section-title">Up Next</span>
                 <div className="fs-section-line" />
               </div>
-              <div className="fs-carousel">
-                {upcomingMatches.map(m => <MatchCard key={m.id} match={m} />)}
-              </div>
+              <UpNextCarousel matches={upcomingMatches} />
             </section>
           )}
 
