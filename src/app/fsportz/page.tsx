@@ -212,26 +212,26 @@ export default async function FSportzHome() {
         }
         .fs-poster-player {
           position: absolute; bottom: 0;
-          height: 115%;
-          width: auto;
+          height: 95%;
+          max-width: 28vw;
           object-fit: contain;
           filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9));
           opacity: 0.95;
         }
         /* Team 1 on the left, Team 2 on the right */
         .fs-poster-player-1 {
-          left: 2%;
+          left: 0%;
           transform-origin: bottom left;
         }
         .fs-poster-player-2 {
-          right: 2%;
+          right: 0%;
           transform: scaleX(-1);
           transform-origin: bottom right;
           filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)) brightness(0.75);
         }
 
         @media (max-width: 900px) {
-          .fs-poster-player { height: 75%; opacity: 0.4; }
+          .fs-poster-player { height: 75%; max-width: 35vw; opacity: 0.4; }
           .fs-poster-player-1 { left: -5%; }
           .fs-poster-player-2 { right: -5%; }
         }
