@@ -22,7 +22,9 @@ export default function FootballCursor() {
         // Add a slight spin based on horizontal movement
         const scale = isClickingRef.current ? 0.6 : 1;
         
-        cursorRef.current.style.transform = `translate3d(${positionRef.current.x}px, ${positionRef.current.y}px, 0) translate(-50%, -50%) scale(${scale}) rotate(${rotationRef.current}deg)`;
+        cursorRef.current.style.transform = `translate3d(${positionRef.current.x}px, ${positionRef.current.y}px, 0) translate(-50%, -50%)`;
+        cursorRef.current.style.scale = scale.toString();
+        cursorRef.current.style.rotate = `${rotationRef.current}deg`;
       }
       animationFrameId = requestAnimationFrame(updateCursor);
     };
@@ -80,8 +82,8 @@ export default function FootballCursor() {
         fontSize: '32px',
         lineHeight: 1,
         filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
-        transition: 'transform 0.1s ease-out, opacity 0.2s',
-        willChange: 'transform',
+        transition: 'scale 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s',
+        willChange: 'transform, scale, rotate',
         opacity: 0, // start hidden until mouse enters
       }}
     >
