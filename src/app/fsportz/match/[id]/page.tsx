@@ -1,5 +1,5 @@
 import React from 'react';
-import { getMeta, getStreams } from '@/lib/fsportz';
+import { getMeta, getStreams, getFusedMatches, getAllFixtures, FusedMatch } from '@/lib/fsportz';
 import HlsPlayer from '@/components/fsportz/HlsPlayer';
 import MatchCountdown from '@/components/fsportz/MatchCountdown';
 import StreamWaiting from '@/components/fsportz/StreamWaiting';
@@ -14,7 +14,15 @@ export default async function MatchPage(props: {
   const searchParams = await props.searchParams;
 
   const matchId = decodeURIComponent(params.id);
-  let [meta, streams] = await Promise.all([getMeta(matchId), getStreams(matchId)]);
+  let [meta, streams, fusedMatches, allFixturesMap] = await Promise.all([getMeta(matchId), getStreams(matchId), getFusedMatches(), getAllFixtures()]);
+
+  let fused: FusedMatch | undefined = fusedMatches.find(m => m.stremioId === matchId || m.id === matchId);
+  if (!fused) {
+    for (const dateMatches of Object.values(allFixturesMap)) {
+      const found = dateMatches.find(m => m.stremioId === matchId || m.id === matchId);
+      if (found) { fused = found; break; }
+    }
+  }
 
   const matchStatus = searchParams.status;
   const matchDate = searchParams.date;
@@ -105,22 +113,33 @@ export default async function MatchPage(props: {
         .mp-header-inner {
           max-width: 1100px; width: 100%; margin: 0 auto;
           padding: 0 20px;
-          display: flex; align-items: center; justify-content: space-between;
+          display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
         }
         .mp-back {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 13px; font-weight: 600;
-          color: rgba(255,255,255,0.35);
-          text-decoration: none;
-          transition: color 0.2s;
-          border: none; background: none; cursor: pointer;
+          justify-self: start;
+          display: inline-flex; align-items: center; gap: 8px;
+          color: rgba(255,255,255,0.4); text-decoration: none;
+          font-size: 14px; font-weight: 600; transition: color 0.2s;
         }
-        .mp-back:hover { color: rgba(255,255,255,0.8); }
-        .mp-back svg { width: 16px; height: 16px; }
+        .mp-back:hover { color: #fff; }
+        .mp-match-header-teams {
+          justify-self: center; display: flex; align-items: center; gap: 12px;
+        }
+        .mp-team {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .mp-team-name {
+          font-size: clamp(16px, 3vw, 22px); font-weight: 800; color: #fff;
+        }
+        .mp-team-logo {
+          width: 24px; height: 24px; object-fit: contain;
+        }
+        .mp-team-vs {
+          font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.2); margin: 0 4px;
+        }
         .mp-match-title {
-          display: flex; align-items: center; gap: 10px;
           font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8);
-          max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .mp-live-dot {
           width: 7px; height: 7px; border-radius: 50%; background: #ef4444;
@@ -134,6 +153,8 @@ export default async function MatchPage(props: {
           padding: 24px 20px 60px;
           display: flex; flex-direction: column; gap: 20px;
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .mp-player-wrap {
           border-radius: 20px; overflow: hidden;
           box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
@@ -211,13 +232,32 @@ export default async function MatchPage(props: {
         <header className="mp-header">
           <div className="mp-header-inner">
             <Link href="/fsportz" className="mp-back">
-              <ArrowLeft />
-              Back to Matches
+              <ArrowLeft size={18} />
+              <span className="hidden sm:inline">Home</span>
             </Link>
-            <div className="mp-match-title">
-              {matchStatus === 'in' && <span className="mp-live-dot" />}
-              {meta.name}
+            
+            <div className="mp-match-header-teams">
+              {fused ? (
+                <>
+                  <div className="mp-team">
+                    <span className="mp-team-name">{fused.team1.name}</span>
+                    {fused.team1.logo && <img src={fused.team1.logo} alt="" className="mp-team-logo" />}
+                  </div>
+                  <div className="mp-team-vs">VS</div>
+                  <div className="mp-team">
+                    {fused.team2.logo && <img src={fused.team2.logo} alt="" className="mp-team-logo" />}
+                    <span className="mp-team-name">{fused.team2.name}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="mp-match-title">
+                  {matchStatus === 'in' && <span className="mp-live-dot" />}
+                  {meta.name}
+                </div>
+              )}
             </div>
+            
+            <div className="justify-self-end"></div>
           </div>
         </header>
 
@@ -234,9 +274,9 @@ export default async function MatchPage(props: {
           </>
 
           {/* Info + Sources */}
-          <div className="mp-info-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="mp-info-card flex flex-row items-center justify-between gap-3 md:gap-4">
             {/* Left: Badge & Label */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 shrink-0">
               {matchStatus === 'in' && (
                 <span className="mp-live-badge">
                   <span className="mp-live-dot" style={{ width: 6, height: 6 }} />LIVE
@@ -247,17 +287,17 @@ export default async function MatchPage(props: {
             </div>
 
             {/* Right: Sources */}
-            <div className="flex-1 flex md:justify-end">
+            <div className="flex-1 flex justify-end overflow-x-auto no-scrollbar">
               {allowedStreams.length === 0 ? (
                 <p className="mp-sources-empty">No HD broadcasts available.</p>
               ) : (
-                <div className="mp-sources-list w-full md:w-auto">
+                <div className="mp-sources-list flex w-max">
                   {allowedStreams.map((s: any, idx: number) => {
                     const active = selectedStreamIdx === idx;
                     const href = `/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}&status=${matchStatus}&date=${encodeURIComponent(matchDate || '')}&name=${encodeURIComponent(meta.name)}`;
                     return (
                       <Link key={idx} href={href}
-                        className={`mp-source-btn flex-1 md:flex-none ${active ? 'mp-source-btn-active' : 'mp-source-btn-inactive'}`}>
+                        className={`mp-source-btn flex-none ${active ? 'mp-source-btn-active' : 'mp-source-btn-inactive'}`}>
                         <span className={`mp-source-name ${active ? 'mp-source-name-active' : 'mp-source-name-inactive'}`}>
                             {s.displayName}
                           </span>
