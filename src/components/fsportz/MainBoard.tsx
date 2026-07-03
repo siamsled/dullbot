@@ -43,6 +43,7 @@ export default function MainBoard({
           border: none; cursor: pointer;
           transition: color 0.3s;
           border-radius: 99px;
+          white-space: nowrap;
         }
         .fs-toggle-btn.active { color: #000; }
         
@@ -58,7 +59,7 @@ export default function MainBoard({
         .fs-3d-toggle.standings .fs-toggle-slider { transform: translateX(146px); width: 168px; }
         
         /* Mobile widths adjustment for the slider to accurately fit text */
-        @media (max-width: 400px) {
+        @media (max-width: 640px) {
            .fs-toggle-btn { padding: 10px 20px; font-size: 12px; }
            .fs-3d-toggle.fixtures .fs-toggle-slider { width: 110px; }
            .fs-3d-toggle.standings .fs-toggle-slider { transform: translateX(110px); width: 130px; }
