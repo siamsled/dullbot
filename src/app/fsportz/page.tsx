@@ -208,21 +208,32 @@ export default async function FSportzHome() {
         
         .fs-poster-players {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          pointer-events: none; z-index: 1;
+          pointer-events: none; z-index: 1; overflow: hidden;
         }
         .fs-poster-player {
-          position: absolute; bottom: -20px; max-height: 120%; max-width: 40vw;
-          object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
-          opacity: 0.9;
+          position: absolute; bottom: 0;
+          height: 115%;
+          width: auto;
+          object-fit: contain;
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9));
+          opacity: 0.95;
         }
         /* Team 1 on the left, Team 2 on the right */
-        .fs-poster-player-1 { left: -5%; z-index: 2; transform: scale(1.05); }
-        .fs-poster-player-2 { right: -5%; z-index: 1; transform: scaleX(-1); filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7)) brightness(0.8); }
+        .fs-poster-player-1 {
+          left: 2%;
+          transform-origin: bottom left;
+        }
+        .fs-poster-player-2 {
+          right: 2%;
+          transform: scaleX(-1);
+          transform-origin: bottom right;
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)) brightness(0.75);
+        }
 
         @media (max-width: 900px) {
-          .fs-poster-player { max-width: 50vw; opacity: 0.5; }
-          .fs-poster-player-1 { left: -10%; }
-          .fs-poster-player-2 { right: -10%; }
+          .fs-poster-player { height: 75%; opacity: 0.4; }
+          .fs-poster-player-1 { left: -5%; }
+          .fs-poster-player-2 { right: -5%; }
         }
 
         /* ===== SECTIONS ===== */
