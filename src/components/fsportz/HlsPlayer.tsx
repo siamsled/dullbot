@@ -85,11 +85,11 @@ export default function HlsPlayer({ src }: { src: string }) {
   return (
     <div className="w-full flex flex-col bg-[#0a0a0a]">
       {/* Header bar above player */}
-      <div className="flex items-center justify-end px-4 py-2.5 border-b border-white/5">
+      <div className="flex items-center justify-end px-6 py-2.5 border-b border-white/5">
         <button 
           onClick={handleReload}
           disabled={isReloading}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all duration-200 border ${isReloading ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/10 text-white/80 hover:text-white shadow-[0_0_10px_rgba(255,255,255,0.02)]'}`}
+          className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition-all duration-200 border ${isReloading ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/10 text-white/80 hover:text-white shadow-[0_0_10px_rgba(255,255,255,0.02)]'}`}
           title="Reload Stream"
         >
           <RefreshCw size={14} className={isReloading ? 'animate-spin' : ''} />
