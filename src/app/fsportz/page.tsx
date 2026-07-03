@@ -137,15 +137,15 @@ export default async function FSportzHome() {
         }
         .fs-poster-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 0;
-          background: linear-gradient(135deg, #7a1d1d, #c96500, #111 80%);
+          background: linear-gradient(180deg, #111, #060e07);
         }
         .fs-poster-bg-img {
           position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; 
-          opacity: 0.3; filter: brightness(0.6) saturate(1.2); mix-blend-mode: overlay;
+          opacity: 0.5; filter: brightness(0.6) saturate(1.2); mix-blend-mode: overlay;
         }
         .fs-poster-glow {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          background: radial-gradient(circle at 70% 30%, rgba(255, 120, 0, 0.4), transparent 60%);
+          background: radial-gradient(circle at 50% -20%, rgba(220, 40, 40, 0.35), transparent 70%);
           mix-blend-mode: screen;
         }
         .fs-poster-logo-bg {
@@ -207,7 +207,7 @@ export default async function FSportzHome() {
         
         .fs-poster-players {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          pointer-events: none; z-index: 1; overflow: hidden;
+          pointer-events: none; z-index: 1;
         }
         .fs-poster-player {
           position: absolute; bottom: -20px; max-height: 120%; max-width: 40vw;
@@ -477,6 +477,17 @@ export default async function FSportzHome() {
                 {nextMatch.team1.logo && <img src={nextMatch.team1.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-l" />}
                 {nextMatch.team2.logo && <img src={nextMatch.team2.logo} alt="" className="fs-poster-logo-bg fs-poster-logo-bg-r" />}
 
+                {hasCaptains && (
+                  <div className="fs-poster-players">
+                    {nextMatch.team2.captainImg && (
+                      <img src={nextMatch.team2.captainImg} alt={nextMatch.team2.name} className="fs-poster-player fs-poster-player-2" />
+                    )}
+                    {nextMatch.team1.captainImg && (
+                      <img src={nextMatch.team1.captainImg} alt={nextMatch.team1.name} className="fs-poster-player fs-poster-player-1" />
+                    )}
+                  </div>
+                )}
+
                 <div className={`fs-poster-content ${hasCaptains ? 'fs-poster-with-players' : ''}`}>
                   <div className="fs-poster-info">
                     <div className="fs-poster-eyebrow">
@@ -501,17 +512,6 @@ export default async function FSportzHome() {
                       </Link>
                     </div>
                   </div>
-
-                  {hasCaptains && (
-                    <div className="fs-poster-players">
-                      {nextMatch.team2.captainImg && (
-                        <img src={nextMatch.team2.captainImg} alt={nextMatch.team2.name} className="fs-poster-player fs-poster-player-2" />
-                      )}
-                      {nextMatch.team1.captainImg && (
-                        <img src={nextMatch.team1.captainImg} alt={nextMatch.team1.name} className="fs-poster-player fs-poster-player-1" />
-                      )}
-                    </div>
-                  )}
                 </div>
               </>
             );
