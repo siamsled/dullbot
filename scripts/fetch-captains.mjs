@@ -85,8 +85,12 @@ async function getTheSportsDbCutout(playerName) {
   try {
     const res = await fetch(url);
     const data = await res.json();
-    if (data.player && data.player.length > 0 && data.player[0].strCutout) {
-      return data.player[0].strCutout;
+    if (data.player && data.player.length > 0) {
+      // Find the first player that actually plays Soccer to avoid collisions (e.g. Mathew Ryan -> Ryan Mathews (NFL))
+      const soccerPlayer = data.player.find(p => p.strSport === 'Soccer');
+      if (soccerPlayer && soccerPlayer.strCutout) {
+        return soccerPlayer.strCutout;
+      }
     }
   } catch (err) {
     console.error(`TheSportsDB Error for ${playerName}:`, err.message);
