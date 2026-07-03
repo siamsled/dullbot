@@ -71,10 +71,15 @@ export default function HlsPlayer({ src }: { src: string }) {
 
   const handleReload = () => {
     setIsReloading(true);
-    // Keep volume state across reload
-    const wasMuted = videoRef.current?.muted ?? true;
-    initPlayer();
-    if (videoRef.current) videoRef.current.muted = wasMuted;
+    const video = videoRef.current;
+    if (video) {
+      // Call play() synchronously during the user click event to unlock browser autoplay restrictions
+      video.play().catch(() => {});
+      
+      const wasMuted = video.muted;
+      initPlayer();
+      video.muted = wasMuted;
+    }
   };
 
   return (

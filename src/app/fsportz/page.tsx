@@ -355,7 +355,7 @@ export default async function FSportzHome() {
         .fr-post {
           background: rgba(255,255,255,0.015);
           border: 1px solid rgba(255,255,255,0.03);
-          opacity: 0.55;
+          opacity: 0.85;
         }
         .fr-live-bar {
           position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
@@ -378,7 +378,7 @@ export default async function FSportzHome() {
           font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .fr-muted { color: rgba(255,255,255,0.3); }
+        .fr-muted { color: rgba(255,255,255,0.6); }
         .fr-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .fr-score {
           display: flex; align-items: center; gap: 5px;
@@ -386,7 +386,7 @@ export default async function FSportzHome() {
           font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
         }
         .fr-score-sep { color: rgba(255,255,255,0.2); font-size: 12px; }
-        .fr-score-muted { color: rgba(255,255,255,0.4); }
+        .fr-score-muted { color: rgba(255,255,255,0.7); }
         .fr-time {
           font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7);
         }
@@ -578,7 +578,7 @@ export default async function FSportzHome() {
                     <div className="fg-completed-line" />
                   </div>
                   {[...pastDates].reverse().map(dk => (
-                    <div key={dk} className="fg-group" style={{ opacity: 0.5 }}>
+                    <div key={dk} className="fg-group">
                       <div className="fg-date-row">
                         <span className="fg-date-pill fg-date-pill-past">
                           <LocalTime dateStr={fixturesByDate[dk][0].date} format="date" />
