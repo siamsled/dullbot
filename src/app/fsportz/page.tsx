@@ -118,15 +118,26 @@ export default async function FSportzHome() {
           50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
         }
         .fs-live-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; }
-        .fs-wc-pill {
-          display: none;
-          padding: 5px 12px; border-radius: 99px;
-          font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: rgba(255,255,255,0.7);
+        .fs-menu-btn {
+          background: none; border: none; cursor: pointer;
+          display: flex; flex-direction: column; gap: 4px;
+          padding: 8px 6px; border-radius: 8px;
+          transition: background 0.2s;
+          text-decoration: none;
         }
-        @media (min-width: 640px) { .fs-wc-pill { display: flex; } }
+        .fs-menu-btn:hover {
+          background: rgba(255,255,255,0.06);
+        }
+        .fs-menu-bar {
+          width: 18px; height: 1.5px; background: #fff;
+          border-radius: 99px; transition: all 0.2s ease-in-out;
+        }
+        .fs-menu-bar:last-child {
+          width: 12px; align-self: flex-end;
+        }
+        .fs-menu-btn:hover .fs-menu-bar:last-child {
+          width: 18px;
+        }
 
         /* ===== HERO POSTER ===== */
         .fs-hero {
@@ -492,7 +503,10 @@ export default async function FSportzHome() {
                   {liveMatches.length} Live
                 </div>
               )}
-              <div className="fs-wc-pill">FIFA World Cup 2026</div>
+              <Link href="/dashboard" className="fs-menu-btn" aria-label="Main Menu">
+                <span className="fs-menu-bar" />
+                <span className="fs-menu-bar" />
+              </Link>
             </div>
           </div>
         </header>
