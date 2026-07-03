@@ -162,8 +162,8 @@ export default async function FSportzHome() {
           position: absolute; top: 50%; transform: translateY(-50%); width: 50vw; max-width: 500px; height: 50vw; max-height: 500px;
           opacity: 0.05; object-fit: contain; filter: blur(4px) grayscale(0.5); z-index: 1; pointer-events: none;
         }
-        .fs-poster-logo-bg-l { left: -10vw; }
-        .fs-poster-logo-bg-r { right: -10vw; }
+        .fs-poster-logo-bg-l { left: -2vw; }
+        .fs-poster-logo-bg-r { right: -2vw; }
         
         .fs-poster-content { 
           position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto;
@@ -201,7 +201,14 @@ export default async function FSportzHome() {
           font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9);
         }
         
-        .fs-poster-cta { display: flex; justify-content: center; position: relative; z-index: 15; }
+        .fs-poster-cta {
+          display: flex; justify-content: center;
+          position: absolute;
+          bottom: 35px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 15;
+        }
         .fs-poster-btn {
           display: inline-flex; align-items: center; gap: 10px;
           background: #ffffff; color: #000000; padding: 16px 36px; border-radius: 99px;
@@ -523,14 +530,14 @@ export default async function FSportzHome() {
                       <span className="fs-poster-date-badge">{formatDateKey(nextMatch.date).split(',')[0]}</span>
                       <span className="fs-poster-date-time"><LocalTime dateStr={nextMatch.date} format="time" /></span>
                     </div>
-
-                    <div className="fs-poster-cta">
-                      <Link href={href} className="fs-poster-btn">
-                        <span className="fs-poster-btn-icon">⚽</span>
-                        Watch Match
-                      </Link>
-                    </div>
                   </div>
+                </div>
+
+                <div className="fs-poster-cta">
+                  <Link href={href} className="fs-poster-btn">
+                    <span className="fs-poster-btn-icon">⚽</span>
+                    Watch Match
+                  </Link>
                 </div>
               </>
             );
