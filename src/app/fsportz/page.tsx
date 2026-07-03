@@ -518,8 +518,8 @@ export default async function FSportzHome() {
             const nextMatch = heroMatch;
             const href = `/fsportz/match/${encodeURIComponent(nextMatch.stremioId || nextMatch.id)}?date=${encodeURIComponent(nextMatch.date)}&status=${nextMatch.status}&name=${encodeURIComponent(nextMatch.team1.name + ' vs ' + nextMatch.team2.name)}`;
             const hasCaptains = Boolean(nextMatch.team1.captainImg || nextMatch.team2.captainImg);
-            // Simulated live state for visual review
-            const isLive = true; // For simulation. Dynamic check: nextMatch.status === 'in'
+            // Dynamic check: nextMatch.status === 'in'
+            const isLive = nextMatch.status === 'in';
             
             return (
               <>
