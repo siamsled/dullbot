@@ -78,35 +78,44 @@ export default function HlsPlayer({ src }: { src: string }) {
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
-      
-      <button 
-        onClick={handleReload}
-        disabled={isReloading}
-        className={`absolute top-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 backdrop-blur-md text-white/90 hover:text-white rounded-lg transition-all duration-200 border border-white/20 ${isReloading ? 'opacity-50 cursor-not-allowed' : 'opacity-100 shadow-[0_0_15px_rgba(255,255,255,0.1)]'}`}
-        title="Reload Stream"
-      >
-        <RefreshCw size={20} className={isReloading ? 'animate-spin' : ''} />
-      </button>
+    <div className="w-full flex flex-col bg-black/40">
+      {/* Header bar above player */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Live Stream</span>
+        </div>
+        <button 
+          onClick={handleReload}
+          disabled={isReloading}
+          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all duration-200 border ${isReloading ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/10 text-white/80 hover:text-white shadow-[0_0_10px_rgba(255,255,255,0.05)]'}`}
+          title="Reload Stream"
+        >
+          <RefreshCw size={12} className={isReloading ? 'animate-spin' : ''} />
+          {isReloading ? 'Reloading...' : 'Reload Stream'}
+        </button>
+      </div>
 
-      <video
-        ref={videoRef}
-        controls
-        autoPlay
-        className="w-full h-full live-video-player"
-        playsInline
-        crossOrigin="anonymous"
-      />
-      
-      {/* CSS to hide native timeline controls for a broadcast feel */}
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Webkit / Chrome / Safari */
-        .live-video-player::-webkit-media-controls-timeline,
-        .live-video-player::-webkit-media-controls-current-time-display,
-        .live-video-player::-webkit-media-controls-time-remaining-display {
-          display: none !important;
-        }
-      `}} />
+      <div className="relative w-full aspect-video bg-black">
+        <video
+          ref={videoRef}
+          controls
+          autoPlay
+          className="w-full h-full live-video-player"
+          playsInline
+          crossOrigin="anonymous"
+        />
+        
+        {/* CSS to hide native timeline controls for a broadcast feel */}
+        <style dangerouslySetInnerHTML={{__html: `
+          /* Webkit / Chrome / Safari */
+          .live-video-player::-webkit-media-controls-timeline,
+          .live-video-player::-webkit-media-controls-current-time-display,
+          .live-video-player::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+          }
+        `}} />
+      </div>
     </div>
   );
 }
