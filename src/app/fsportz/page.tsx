@@ -129,11 +129,12 @@ export default async function FSportzHome() {
 
         /* ===== HERO POSTER ===== */
         .fs-hero {
-          position: relative; overflow: hidden;
+          position: relative; overflow: visible;
           min-height: 560px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           padding: 80px 20px 60px;
           text-align: center;
+          clip-path: inset(0);
         }
         .fs-poster-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 0;
