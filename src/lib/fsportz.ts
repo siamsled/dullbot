@@ -200,13 +200,34 @@ export async function getFusedMatches(): Promise<FusedMatch[]> {
   }
 }
 
-// Fetch streams for a specific Stremio match ID
-export async function getStreams(stremioId: string): Promise<Stream[]> {
+// Fetch streams for a specific Stremio match ID, with linear broadcast fallback
+export async function getStreams(stremioId: string, tryFallback = true): Promise<Stream[]> {
   try {
     const res = await fetch(`${BASE_URL}/stream/sport/${encodeURIComponent(stremioId)}.json`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.streams || [];
+    if (res.ok) {
+      const data = await res.json();
+      if (data.streams && data.streams.length > 0) return data.streams;
+    }
+
+    // SMART FALLBACK: If Stremio hasn't linked streams to this match yet, borrow them from a recent match.
+    // Because FIFA is broadcast on continuous linear channels (TSN4 / Telemundo), previous match streams will show the current match.
+    if (!tryFallback) return [];
+
+    const catalogs = await getRawStremioCatalogs();
+    // Try the 3 most recent matches
+    const recentMetas = catalogs.filter(m => m.id !== stremioId).slice(0, 3);
+
+    for (const meta of recentMetas) {
+      const fallbackRes = await fetch(`${BASE_URL}/stream/sport/${encodeURIComponent(meta.id)}.json`, { cache: 'no-store' });
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.streams && fallbackData.streams.length > 0) {
+          return fallbackData.streams;
+        }
+      }
+    }
+
+    return [];
   } catch (error) {
     return [];
   }
