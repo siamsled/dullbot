@@ -242,7 +242,18 @@ export default async function FSportzHome() {
           0% { opacity: 0.6; transform: translateY(-50%) translateX(0); }
           100% { opacity: 1; transform: translateY(-52%) translateX(-10px); }
         }
-        .fs-hero-content { position: relative; z-index: 2; max-width: 1280px; margin: 0 auto; }
+        .fs-hero-content {
+          position: relative; z-index: 2; max-width: 1280px; margin: 0 auto;
+          display: flex; flex-direction: column; gap: 40px;
+        }
+        @media (min-width: 1024px) {
+          .fs-hero-content { flex-direction: row; align-items: center; justify-content: space-between; }
+        }
+        .fs-hero-left { flex: 1; max-width: 500px; }
+        .fs-hero-right { display: flex; flex-direction: column; gap: 16px; align-items: flex-end; }
+        @media (min-width: 1024px) {
+          .fs-hero-right { flex-direction: row; }
+        }
         .fs-hero-eyebrow {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 6px 14px; border-radius: 99px; margin-bottom: 24px;
@@ -502,16 +513,26 @@ export default async function FSportzHome() {
           <div className="fs-hero-grid" />
           <div className="fs-hero-26">26</div>
           <div className="fs-hero-content">
-            <div className="fs-hero-eyebrow">
-              <span className="fs-hero-eyebrow-dot" />
-              Round of 32 — 2026 FIFA World Cup
+            <div className="fs-hero-left">
+              <div className="fs-hero-eyebrow">
+                <span className="fs-hero-eyebrow-dot" />
+                Round of 32 — 2026 FIFA World Cup
+              </div>
+              <h1 className="fs-hero-h1">
+                Your FIFA <span>HQ</span>
+              </h1>
+              <p className="fs-hero-sub">
+                Live scores, full standings, fixtures & streams — everything to follow the 2026 World Cup.
+              </p>
             </div>
-            <h1 className="fs-hero-h1">
-              Your FIFA <span>HQ</span>
-            </h1>
-            <p className="fs-hero-sub">
-              Live scores, full standings, fixtures & streams — everything to follow the 2026 World Cup.
-            </p>
+            
+            {upcomingMatches.length > 0 && (
+              <div className="fs-hero-right">
+                {upcomingMatches.slice(0, 2).map(m => (
+                  <MatchCard key={m.id} match={m} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
