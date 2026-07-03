@@ -10,6 +10,7 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
   
   const [posX, setPosX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const scrollSpeed = 0.20; // Calm, slow auto-scroll speed (pixels per frame)
 
   const dragStart = useRef(0);
@@ -22,7 +23,7 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
     if (totalMatches === 0) return;
 
     const tick = () => {
-      if (!isDragging) {
+      if (!isDragging && !isPaused) {
         setPosX(prev => {
           let next = prev - scrollSpeed;
           
@@ -43,7 +44,7 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     };
-  }, [isDragging, totalMatches]);
+  }, [isDragging, isPaused, totalMatches]);
 
   // Touch handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -105,7 +106,8 @@ export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleTouchEnd}
-      onMouseLeave={handleTouchEnd}
+      onMouseLeave={() => { handleTouchEnd(); setIsPaused(false); }}
+      onMouseEnter={() => setIsPaused(true)}
     >
       <div 
         ref={trackRef}
