@@ -78,20 +78,16 @@ export default function HlsPlayer({ src }: { src: string }) {
   };
 
   return (
-    <div className="w-full flex flex-col bg-black/40">
+    <div className="w-full flex flex-col bg-[#0a0a0a]">
       {/* Header bar above player */}
-      <div className="flex items-center justify-between px-5 md:px-6 py-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Live Stream</span>
-        </div>
+      <div className="flex items-center justify-end px-4 py-2.5 border-b border-white/5">
         <button 
           onClick={handleReload}
           disabled={isReloading}
-          className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all duration-200 border ${isReloading ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/10 text-white/80 hover:text-white shadow-[0_0_10px_rgba(255,255,255,0.05)]'}`}
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all duration-200 border ${isReloading ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/10 text-white/80 hover:text-white shadow-[0_0_10px_rgba(255,255,255,0.02)]'}`}
           title="Reload Stream"
         >
-          <RefreshCw size={12} className={isReloading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={isReloading ? 'animate-spin' : ''} />
           {isReloading ? 'Reloading...' : 'Reload Stream'}
         </button>
       </div>
