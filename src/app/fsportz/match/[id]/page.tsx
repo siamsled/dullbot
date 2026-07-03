@@ -14,14 +14,11 @@ export default async function MatchPage(props: {
   const searchParams = await props.searchParams;
 
   const matchId = decodeURIComponent(params.id);
-  let [meta, streams, fusedMatches, allFixturesMap] = await Promise.all([getMeta(matchId), getStreams(matchId), getFusedMatches(), getAllFixtures()]);
+  let [meta, streams, fusedMatches, allFixturesArray] = await Promise.all([getMeta(matchId), getStreams(matchId), getFusedMatches(), getAllFixtures()]);
 
   let fused: FusedMatch | undefined = fusedMatches.find(m => m.stremioId === matchId || m.id === matchId);
   if (!fused) {
-    for (const dateMatches of Object.values(allFixturesMap)) {
-      const found = dateMatches.find(m => m.stremioId === matchId || m.id === matchId);
-      if (found) { fused = found; break; }
-    }
+    fused = allFixturesArray.find(m => m.stremioId === matchId || m.id === matchId);
   }
 
   const matchStatus = searchParams.status;
