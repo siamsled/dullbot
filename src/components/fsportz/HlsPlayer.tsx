@@ -73,13 +73,25 @@ export default function HlsPlayer({ src }: { src: string }) {
     setIsReloading(true);
     const video = videoRef.current;
     if (video) {
-      // Call play() synchronously during the user click event to unlock browser autoplay restrictions
       video.play().catch(() => {});
       
-      const wasMuted = video.muted;
-      initPlayer();
-      video.muted = wasMuted;
+      if (hlsRef.current) {
+        // Soft reload: recover errors and kickstart loading without destroying the buffer
+        hlsRef.current.recoverMediaError();
+        hlsRef.current.startLoad();
+        
+        // Jump to the live edge to instantly clear lag without a black screen
+        if (hlsRef.current.liveSyncPosition) {
+          video.currentTime = hlsRef.current.liveSyncPosition;
+        }
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native fallback (Safari)
+        const current = video.currentTime;
+        video.src = src;
+        video.currentTime = current;
+      }
     }
+    setTimeout(() => setIsReloading(false), 800);
   };
 
   return (
