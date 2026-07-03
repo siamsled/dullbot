@@ -142,8 +142,7 @@ export default async function MatchPage(props: {
           border-radius: 20px; overflow: hidden;
           background: rgba(255,255,255,0.025);
           border: 1px solid rgba(255,255,255,0.06);
-          padding: 20px 24px;
-          display: flex; flex-direction: column; gap: 16px;
+          padding: 16px 20px;
         }
         .mp-info-top {
           display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
@@ -170,8 +169,7 @@ export default async function MatchPage(props: {
         }
         .mp-sources-label {
           font-size: 9px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase;
-          color: rgba(255,255,255,0.2); padding-bottom: 2px;
-          border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 8px;
+          color: rgba(255,255,255,0.2);
         }
         .mp-sources-empty { font-size: 13px; color: rgba(255,255,255,0.2); }
         .mp-sources-list { display: flex; gap: 8px; }
@@ -236,39 +234,36 @@ export default async function MatchPage(props: {
           </>
 
           {/* Info + Sources */}
-          <div className="mp-info-card">
-            <div className="mp-info-top">
+          <div className="mp-info-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Left: Badge & Label */}
+            <div className="flex items-center gap-4">
               {matchStatus === 'in' && (
                 <span className="mp-live-badge">
                   <span className="mp-live-dot" style={{ width: 6, height: 6 }} />LIVE
                 </span>
               )}
               {isUpcoming && <span className="mp-pre-badge">Upcoming</span>}
+              <p className="mp-sources-label hidden md:block">Available Broadcasts</p>
             </div>
 
-            <div>
-              <p className="mp-sources-label">Available Broadcasts</p>
+            {/* Right: Sources */}
+            <div className="flex-1 flex md:justify-end">
               {allowedStreams.length === 0 ? (
                 <p className="mp-sources-empty">No HD broadcasts available.</p>
               ) : (
-                <div className="mp-sources-list">
+                <div className="mp-sources-list w-full md:w-auto">
                   {allowedStreams.map((s: any, idx: number) => {
                     const active = selectedStreamIdx === idx;
                     const href = `/fsportz/match/${encodeURIComponent(matchId)}?source=${idx}&status=${matchStatus}&date=${encodeURIComponent(matchDate || '')}&name=${encodeURIComponent(meta.name)}`;
                     return (
                       <Link key={idx} href={href}
-                        className={`mp-source-btn ${active ? 'mp-source-btn-active' : 'mp-source-btn-inactive'}`}>
-                        <div className={`mp-source-icon ${active ? 'mp-source-icon-active' : 'mp-source-icon-inactive'}`}>
-                          {s.displayName.charAt(0)}
-                        </div>
-                        <div className="mp-source-info">
-                          <span className={`mp-source-name ${active ? 'mp-source-name-active' : 'mp-source-name-inactive'}`}>
+                        className={`mp-source-btn flex-1 md:flex-none ${active ? 'mp-source-btn-active' : 'mp-source-btn-inactive'}`}>
+                        <span className={`mp-source-name ${active ? 'mp-source-name-active' : 'mp-source-name-inactive'}`}>
                             {s.displayName}
                           </span>
                           <span className={`mp-quality-tag ${s.qualityLabel === 'FHD' ? 'mp-quality-fhd' : 'mp-quality-hd'}`}>
                             {s.qualityLabel}
                           </span>
-                        </div>
                       </Link>
                     );
                   })}
