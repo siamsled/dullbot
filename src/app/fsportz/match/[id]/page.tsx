@@ -224,16 +224,16 @@ export default async function MatchPage(props: {
         </header>
 
         <div className="mp-body">
-          {/* Player */}
-          <div className="mp-player-wrap">
-            {isUpcoming ? (
-              <MatchCountdown targetDate={matchDate!} stream={currentStream} matchName={meta.name} />
-            ) : currentStream ? (
+          {/* Player Area */}
+          <>
+            {currentStream ? (
               <HlsPlayer src={currentStream.url} />
+            ) : isUpcoming ? (
+              <div className="mp-player-wrap"><MatchCountdown targetDate={matchDate!} stream={currentStream} matchName={meta.name} /></div>
             ) : (
-              <StreamWaiting matchName={meta.name} />
+              <div className="mp-player-wrap"><StreamWaiting matchName={meta.name} /></div>
             )}
-          </div>
+          </>
 
           {/* Info + Sources */}
           <div className="mp-info-card">
