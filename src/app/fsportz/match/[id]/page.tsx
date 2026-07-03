@@ -81,7 +81,7 @@ export default async function MatchPage(props: {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         .mp-page {
           min-height: 100vh;
@@ -126,13 +126,17 @@ export default async function MatchPage(props: {
           display: flex; align-items: center; gap: 8px;
         }
         .mp-team-name {
-          font-size: clamp(16px, 3vw, 22px); font-weight: 800; color: #fff;
+          font-family: 'Anton', Impact, sans-serif;
+          font-size: clamp(16px, 3vw, 22px); font-weight: 400; color: #fff;
+          text-transform: uppercase;
         }
         .mp-team-logo {
           width: 24px; height: 24px; object-fit: contain;
         }
         .mp-team-vs {
-          font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.2); margin: 0 4px;
+          font-family: 'Anton', Impact, sans-serif;
+          font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.2); margin: 0 4px;
+          text-transform: uppercase;
         }
         .mp-match-title {
           font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8);

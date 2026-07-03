@@ -60,7 +60,7 @@ export default async function FSportzHome() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { scroll-behavior: smooth; background: #060e07; }
 
@@ -182,11 +182,13 @@ export default async function FSportzHome() {
           line-height: 0.85; margin-bottom: 24px; position: relative; z-index: 3;
         }
         .fs-poster-t1, .fs-poster-t2 {
-          font-size: clamp(48px, 9vw, 110px); font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase;
+          font-family: 'Anton', Impact, sans-serif;
+          font-size: clamp(48px, 9vw, 110px); font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase;
           color: #fff; text-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
         .fs-poster-vs {
-          font-size: clamp(20px, 3vw, 32px); font-weight: 900; color: rgba(255,255,255,0.4);
+          font-family: 'Anton', Impact, sans-serif;
+          font-size: clamp(20px, 3vw, 32px); font-weight: 400; color: rgba(255,255,255,0.4);
           margin: 0px 0; text-transform: uppercase; z-index: 4;
         }
         
