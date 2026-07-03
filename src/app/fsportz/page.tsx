@@ -1,5 +1,5 @@
 import React from 'react';
-import { getFusedMatches, getGroupStandings, getAllFixtures, FusedMatch, Group } from '@/lib/fsportz';
+import { getFusedMatches, getGroupStandings, getAllFixtures, getMeta, FusedMatch, Group } from '@/lib/fsportz';
 import MatchCard from '@/components/fsportz/MatchCard';
 import LocalTime from '@/components/fsportz/LocalTime';
 import Link from 'next/link';
@@ -112,6 +112,12 @@ export default async function FSportzHome() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
 
+  const nextMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+  let heroMeta = null;
+  if (nextMatch && nextMatch.stremioId) {
+    heroMeta = await getMeta(nextMatch.stremioId);
+  }
+
   const stremioMap = new Map<string, string>();
   fusedMatches.forEach(m => {
     if (m.stremioId) {
@@ -215,6 +221,10 @@ export default async function FSportzHome() {
         .fs-poster-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 0;
           background: linear-gradient(180deg, #111, #060e07);
+        }
+        .fs-poster-bg-img {
+          position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; 
+          opacity: 0.5; filter: brightness(0.6) saturate(1.2); mix-blend-mode: overlay;
         }
         .fs-poster-glow {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -501,6 +511,9 @@ export default async function FSportzHome() {
         {/* Hero Poster */}
         <section className="fs-hero">
           <div className="fs-poster-bg">
+            {heroMeta?.background && (
+              <img src={heroMeta.background} alt="" className="fs-poster-bg-img" />
+            )}
             <div className="fs-poster-glow" />
           </div>
 
@@ -520,7 +533,6 @@ export default async function FSportzHome() {
 
                   <div className="fs-poster-title">
                     <span className="fs-poster-t1">{nextMatch.team1.name}</span>
-                    <span className="fs-poster-vs">vs</span>
                     <span className="fs-poster-t2">{nextMatch.team2.name}</span>
                   </div>
 
