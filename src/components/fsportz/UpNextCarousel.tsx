@@ -1,78 +1,72 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import MatchCard from './MatchCard';
 import { FusedMatch } from '@/lib/fsportz';
 
 export default function UpNextCarousel({ matches }: { matches: FusedMatch[] }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || matches.length === 0) return;
-
-    let animationFrameId: number;
-    const scrollSpeed = 0.35; // Pixels per frame (very slow and smooth)
-    let isPaused = false;
-
-    let scrollPos = el.scrollLeft;
-
-    const handleMouseEnter = () => { isPaused = true; };
-    const handleMouseLeave = () => { isPaused = false; };
-    const handleTouchStart = () => { isPaused = true; };
-    const handleTouchEnd = () => { isPaused = false; };
-    const handleTouchCancel = () => { isPaused = false; };
-    
-    const handleScroll = () => {
-      // Sync float tracker with physical position if changed by manual swipe/momentum
-      if (Math.abs(el.scrollLeft - scrollPos) > 1.5) {
-        scrollPos = el.scrollLeft;
-      }
-    };
-
-    el.addEventListener('mouseenter', handleMouseEnter);
-    el.addEventListener('mouseleave', handleMouseLeave);
-    el.addEventListener('touchstart', handleTouchStart);
-    el.addEventListener('touchend', handleTouchEnd);
-    el.addEventListener('touchcancel', handleTouchCancel);
-    el.addEventListener('scroll', handleScroll);
-
-    const tick = () => {
-      if (!isPaused) {
-        scrollPos += scrollSpeed;
-        
-        // Loop back seamlessly once we scroll past the first set of items
-        const halfWidth = el.scrollWidth / 2;
-        if (scrollPos >= halfWidth) {
-          scrollPos = scrollPos - halfWidth;
-        }
-        el.scrollLeft = Math.round(scrollPos);
-      }
-      animationFrameId = requestAnimationFrame(tick);
-    };
-
-    animationFrameId = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      el.removeEventListener('mouseenter', handleMouseEnter);
-      el.removeEventListener('mouseleave', handleMouseLeave);
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchend', handleTouchEnd);
-      el.removeEventListener('touchcancel', handleTouchCancel);
-      el.removeEventListener('scroll', handleScroll);
-    };
-  }, [matches]);
+  if (matches.length === 0) return null;
 
   return (
-    <div ref={ref} className="fs-carousel">
-      {matches.map(m => (
-        <MatchCard key={m.id} match={m} />
-      ))}
-      {/* Seamless loop duplication */}
-      {matches.map(m => (
-        <MatchCard key={`${m.id}-dup`} match={m} />
-      ))}
+    <div 
+      className="fs-carousel-viewport"
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+      onTouchCancel={() => setPaused(false)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div 
+        className="fs-carousel-track"
+        style={{ animationPlayState: paused ? 'paused' : 'running' }}
+      >
+        {matches.map(m => (
+          <MatchCard key={m.id} match={m} />
+        ))}
+        {/* Seamless loop duplication */}
+        {matches.map(m => (
+          <MatchCard key={`${m.id}-dup`} match={m} />
+        ))}
+      </div>
+
+      <style>{`
+        .fs-carousel-viewport {
+          overflow: hidden;
+          width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+          /* Mask edges for premium fade effect */
+          mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+        
+        .fs-carousel-track {
+          display: flex;
+          gap: 14px;
+          width: max-content;
+          padding-top: 16px;
+          padding-bottom: 36px;
+          /* hardware accelerated translate */
+          transform: translate3d(0, 0, 0);
+          animation: fsMarquee 25s linear infinite;
+          padding-left: max(20px, calc((100vw - 1240px) / 2));
+        }
+
+        @keyframes fsMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            /* Since we duplicated the list exactly, translating by half of the scrollWidth is perfectly seamless */
+            transform: translate3d(calc(-50% - 7px), 0, 0); /* half of gap is 7px */
+          }
+        }
+      `}</style>
     </div>
   );
 }
