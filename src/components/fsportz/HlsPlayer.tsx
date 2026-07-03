@@ -80,7 +80,7 @@ export default function HlsPlayer({ src }: { src: string }) {
   return (
     <div className="w-full flex flex-col bg-black/40">
       {/* Header bar above player */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+      <div className="flex items-center justify-between px-5 md:px-6 py-3 border-b border-white/5">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Live Stream</span>
