@@ -31,6 +31,7 @@ export interface FusedMatch {
   statusDetail: string; // e.g. "FT", "75'", "15:00"
   date: string;
   league: string;
+  posterUrl?: string;
   team1: { name: string; logo: string; score: string; captainImg?: string | null };
   team2: { name: string; logo: string; score: string; captainImg?: string | null };
 }
@@ -83,6 +84,7 @@ export async function getGroupStandings(): Promise<Group[]> {
 }
 
 import CAPTAINS from '../data/captains.json';
+import POSTERS from '../data/posters.json';
 
 function getCaptainImage(teamName: string): string | null {
   const captains = CAPTAINS as Record<string, string>;
@@ -100,39 +102,48 @@ function getCaptainImage(teamName: string): string | null {
 export async function getAllFixtures(): Promise<FusedMatch[]> {
   try {
     const res = await fetch(ESPN_ALL_URL, { next: { revalidate: 60 } });
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error('Failed to fetch ESPN data');
     const data = await res.json();
-    const events = data.events || [];
-    return events.map((e: any): FusedMatch => {
-      const comp = e.competitions?.[0];
-      const t1 = comp?.competitors?.[0];
-      const t2 = comp?.competitors?.[1];
+    
+    if (!data.events || data.events.length === 0) return [];
+
+    return data.events.map((event: any): FusedMatch => {
+      const comp = event.competitions[0];
+      const t1 = comp.competitors[0];
+      const t2 = comp.competitors[1];
       
-      const team1Name = t1?.team?.displayName || 'TBD';
-      const team2Name = t2?.team?.displayName || 'TBD';
+      const t1Name = t1.team.displayName;
+      const t2Name = t2.team.displayName;
       
+      const matchName = `${t1Name} vs ${t2Name}`;
+      const revMatchName = `${t2Name} vs ${t1Name}`;
+      const posters = POSTERS as Record<string, string>;
+      const posterUrl = posters[matchName] || posters[revMatchName] || undefined;
+
       return {
-        id: `espn_${e.id}`,
+        id: `espn_${event.id}`,
         stremioId: null,
-        status: e.status.type.state,
-        statusDetail: e.status.type.shortDetail,
-        date: e.date,
+        status: event.status.type.state,
+        statusDetail: event.status.type.shortDetail,
+        date: event.date,
         league: 'FIFA World Cup',
+        posterUrl,
         team1: { 
-          name: team1Name, 
-          logo: t1?.team?.logo || '', 
-          score: t1?.score || '',
-          captainImg: getCaptainImage(team1Name)
+          name: t1Name, 
+          logo: t1.team.logo, 
+          score: t1.score || '0',
+          captainImg: getCaptainImage(t1Name)
         },
         team2: { 
-          name: team2Name, 
-          logo: t2?.team?.logo || '', 
-          score: t2?.score || '',
-          captainImg: getCaptainImage(team2Name)
+          name: t2Name, 
+          logo: t2.team.logo, 
+          score: t2.score || '0',
+          captainImg: getCaptainImage(t2Name)
         },
       };
     });
-  } catch {
+  } catch (error) {
+    console.error('Error fetching fixtures:', error);
     return [];
   }
 }
