@@ -238,7 +238,6 @@ export default async function MatchPage(props: {
           {/* Info + Sources */}
           <div className="mp-info-card">
             <div className="mp-info-top">
-              <h1 className="mp-title">{meta.name}</h1>
               {matchStatus === 'in' && (
                 <span className="mp-live-badge">
                   <span className="mp-live-dot" style={{ width: 6, height: 6 }} />LIVE
