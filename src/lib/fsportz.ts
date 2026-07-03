@@ -85,11 +85,16 @@ export async function getGroupStandings(): Promise<Group[]> {
 import CAPTAINS from '../data/captains.json';
 
 function getCaptainImage(teamName: string): string | null {
-  const id = CAPTAINS[teamName as keyof typeof CAPTAINS];
-  if (id) {
-    return `https://images.fotmob.com/image_resources/playerimages/${id}.png`;
+  const captains = CAPTAINS as Record<string, string>;
+  const val = captains[teamName as keyof typeof captains];
+  if (!val) return null;
+  
+  // If it's a direct URL, use it (e.g. TheSportsDB cutouts)
+  if (val.startsWith('http')) {
+    return val;
   }
-  return null;
+  
+  return `https://images.fotmob.com/image_resources/playerimages/${val}.png`;
 }
 
 export async function getAllFixtures(): Promise<FusedMatch[]> {

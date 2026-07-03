@@ -212,8 +212,8 @@ export default async function FSportzHome() {
         }
         .fs-poster-player {
           position: absolute; bottom: 0;
-          height: 42%;
-          max-height: 250px;
+          height: 80%;
+          max-height: 480px;
           object-fit: contain;
           filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9));
           opacity: 0.95;

@@ -80,6 +80,20 @@ async function getFotMobId(playerName) {
   }
 }
 
+async function getTheSportsDbCutout(playerName) {
+  const url = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.player && data.player.length > 0 && data.player[0].strCutout) {
+      return data.player[0].strCutout;
+    }
+  } catch (err) {
+    console.error(`TheSportsDB Error for ${playerName}:`, err.message);
+  }
+  return null;
+}
+
 async function run() {
   console.log('Fetching upcoming matches from ESPN...');
   const teams = await fetchTeams();
@@ -89,7 +103,7 @@ async function run() {
   
   for (const team of teams) {
     if (captainsMap[team]) {
-      console.log(`Skipping ${team}, already have captain ID.`);
+      console.log(`Skipping ${team}, already have captain.`);
       continue;
     }
     
@@ -98,14 +112,21 @@ async function run() {
     
     if (captainName) {
       console.log(`  -> Found captain on Wiki: ${captainName}`);
-      const fotmobId = await getFotMobId(captainName);
       
-      if (fotmobId) {
-        console.log(`  -> Found FotMob ID: ${fotmobId}`);
-        captainsMap[team] = fotmobId;
+      const cutout = await getTheSportsDbCutout(captainName);
+      if (cutout) {
+        console.log(`  -> Found TheSportsDB cutout!`);
+        captainsMap[team] = cutout;
         newAdditions++;
       } else {
-        console.log(`  -> Could not find FotMob ID.`);
+        const fotmobId = await getFotMobId(captainName);
+        if (fotmobId) {
+          console.log(`  -> Found FotMob ID fallback: ${fotmobId}`);
+          captainsMap[team] = fotmobId;
+          newAdditions++;
+        } else {
+          console.log(`  -> Could not find image for captain.`);
+        }
       }
     } else {
       console.log(`  -> Could not find captain on Wiki.`);
