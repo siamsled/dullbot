@@ -5,6 +5,8 @@ export const metadata = {
   description: 'A new project.',
 };
 
+import FootballCursor from '@/components/fsportz/FootballCursor';
+
 export default function FSportzLayout({
   children,
 }: {
@@ -12,6 +14,7 @@ export default function FSportzLayout({
 }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+      <FootballCursor />
       {children}
     </div>
   );

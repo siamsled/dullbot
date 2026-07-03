@@ -533,6 +533,7 @@ export default async function FSportzHome() {
 
                   <div className="fs-poster-title">
                     <span className="fs-poster-t1">{nextMatch.team1.name}</span>
+                    <span className="fs-poster-vs">vs</span>
                     <span className="fs-poster-t2">{nextMatch.team2.name}</span>
                   </div>
 
