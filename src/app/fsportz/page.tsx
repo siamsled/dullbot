@@ -471,8 +471,9 @@ export default async function FSportzHome() {
         <header className="fs-header">
           <div className="fs-header-inner">
             <div className="fs-logo">
-              <div className="fs-logo-mark">F</div>
-              <span className="fs-logo-name">FSportz <span>Live</span></span>
+              <span className="fs-logo-name" style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'lowercase' }}>
+                ikball.<span>lol</span>
+              </span>
             </div>
             <div className="fs-header-right">
               {liveMatches.length > 0 && (
