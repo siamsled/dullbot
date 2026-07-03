@@ -111,7 +111,7 @@ export default function MatchCountdown({
         .fscd-mesh {
           position: absolute; inset: 0;
           background:
-            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(34,197,94,0.06) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(255,255,255,0.06) 0%, transparent 60%),
             radial-gradient(ellipse 40% 60% at 80% 70%, rgba(16,185,129,0.04) 0%, transparent 60%);
           animation: meshFloat 8s ease-in-out infinite alternate;
         }
@@ -122,8 +122,8 @@ export default function MatchCountdown({
         .fscd-pitch-lines {
           position: absolute; inset: 0;
           background-image:
-            repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(34,197,94,0.025) 80px, rgba(34,197,94,0.025) 81px),
-            repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(34,197,94,0.025) 80px, rgba(34,197,94,0.025) 81px);
+            repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.025) 80px, rgba(255,255,255,0.025) 81px),
+            repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(255,255,255,0.025) 80px, rgba(255,255,255,0.025) 81px);
         }
         .fscd-vignette {
           position: absolute; inset: 0;
@@ -133,7 +133,7 @@ export default function MatchCountdown({
         .fscd-particle {
           position: absolute;
           border-radius: 50%;
-          background: #22c55e;
+          background: #ffffff;
           bottom: -10px;
           animation: particleRise linear infinite;
         }
@@ -150,11 +150,11 @@ export default function MatchCountdown({
         .fscd-eyebrow {
           display: flex; align-items: center; gap: 8px;
           font-size: 11px; font-weight: 700; letter-spacing: 0.25em;
-          text-transform: uppercase; color: rgba(34,197,94,0.7);
+          text-transform: uppercase; color: rgba(255,255,255,0.7);
         }
         .fscd-dot {
-          width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
-          box-shadow: 0 0 10px #22c55e;
+          width: 6px; height: 6px; border-radius: 50%; background: #ffffff;
+          box-shadow: 0 0 10px #ffffff;
           animation: dotPulse 2s ease-in-out infinite;
         }
         @keyframes dotPulse {
@@ -170,17 +170,17 @@ export default function MatchCountdown({
         .fscd-digit-wrap {
           position: relative;
           background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(34,197,94,0.15);
+          border: 1px solid rgba(255,255,255,0.15);
           border-radius: 16px;
           padding: clamp(8px,2vw,18px) clamp(12px,3vw,28px);
           backdrop-filter: blur(20px);
-          box-shadow: 0 0 40px rgba(34,197,94,0.04), inset 0 1px 0 rgba(255,255,255,0.07);
+          box-shadow: 0 0 40px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07);
           overflow: hidden;
         }
         .fscd-digit-wrap::before {
           content: '';
           position: absolute; inset: 0;
-          background: linear-gradient(180deg, rgba(34,197,94,0.04) 0%, transparent 50%);
+          background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%);
           pointer-events: none;
         }
         .fscd-digit {
@@ -190,7 +190,7 @@ export default function MatchCountdown({
           letter-spacing: -0.04em;
           font-variant-numeric: tabular-nums;
           line-height: 1;
-          text-shadow: 0 0 60px rgba(34,197,94,0.3), 0 2px 4px rgba(0,0,0,0.5);
+          text-shadow: 0 0 60px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.5);
           animation: digitFlip 0.25s cubic-bezier(0.4,0,0.2,1);
         }
         @keyframes digitFlip {
@@ -200,11 +200,11 @@ export default function MatchCountdown({
         .fscd-label {
           font-size: clamp(8px, 1.2vw, 11px);
           font-weight: 600; letter-spacing: 0.2em;
-          text-transform: uppercase; color: rgba(34,197,94,0.4);
+          text-transform: uppercase; color: rgba(255,255,255,0.4);
         }
         .fscd-colon {
           font-size: clamp(28px, 6vw, 72px);
-          font-weight: 900; color: rgba(34,197,94,0.3);
+          font-weight: 900; color: rgba(255,255,255,0.3);
           margin-top: -20px; line-height: 1;
           animation: colonBlink 1s step-end infinite;
         }

@@ -166,15 +166,15 @@ export default async function FSportzHome() {
         }
         .fs-logo-mark {
           width: 34px; height: 34px; border-radius: 10px;
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
           display: flex; align-items: center; justify-content: center;
           font-weight: 900; font-size: 15px; color: #060e07;
-          box-shadow: 0 4px 14px rgba(34,197,94,0.4);
+          box-shadow: 0 4px 14px rgba(255,255,255,0.4);
         }
         .fs-logo-name {
           font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: #fff;
         }
-        .fs-logo-name span { color: #22c55e; }
+        .fs-logo-name span { color: #ffffff; }
         .fs-header-right { display: flex; align-items: center; gap: 10px; }
         .fs-live-pill {
           display: flex; align-items: center; gap: 6px;
@@ -195,9 +195,9 @@ export default async function FSportzHome() {
           display: none;
           padding: 5px 12px; border-radius: 99px;
           font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-          background: rgba(34,197,94,0.07);
-          border: 1px solid rgba(34,197,94,0.15);
-          color: rgba(34,197,94,0.7);
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: rgba(255,255,255,0.7);
         }
         @media (min-width: 640px) { .fs-wc-pill { display: flex; } }
 
@@ -210,9 +210,9 @@ export default async function FSportzHome() {
         .fs-hero-bg {
           position: absolute; inset: 0; pointer-events: none;
           background:
-            radial-gradient(ellipse 70% 60% at 15% 50%, rgba(34,197,94,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse 70% 60% at 15% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
             radial-gradient(ellipse 50% 70% at 85% 20%, rgba(16,185,129,0.05) 0%, transparent 60%),
-            radial-gradient(ellipse 80% 50% at 50% 100%, rgba(34,197,94,0.04) 0%, transparent 60%);
+            radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255,255,255,0.04) 0%, transparent 60%);
           animation: heroMesh 10s ease-in-out infinite alternate;
         }
         @keyframes heroMesh {
@@ -223,8 +223,8 @@ export default async function FSportzHome() {
         .fs-hero-grid {
           position: absolute; inset: 0; pointer-events: none;
           background-image:
-            linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
           background-size: 48px 48px;
           mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 100%);
         }
@@ -234,7 +234,7 @@ export default async function FSportzHome() {
           font-size: clamp(160px, 22vw, 320px); font-weight: 900;
           line-height: 1; letter-spacing: -0.06em;
           color: transparent;
-          -webkit-text-stroke: 1px rgba(34,197,94,0.08);
+          -webkit-text-stroke: 1px rgba(255,255,255,0.08);
           pointer-events: none; user-select: none;
           animation: heroNum 10s ease-in-out infinite alternate;
         }
@@ -247,11 +247,11 @@ export default async function FSportzHome() {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 6px 14px; border-radius: 99px; margin-bottom: 24px;
           font-size: 10px; font-weight: 800; letter-spacing: 0.25em; text-transform: uppercase;
-          background: rgba(34,197,94,0.07);
-          border: 1px solid rgba(34,197,94,0.18);
-          color: rgba(34,197,94,0.8);
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.18);
+          color: rgba(255,255,255,0.8);
         }
-        .fs-hero-eyebrow-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .fs-hero-eyebrow-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 8px #ffffff; }
         .fs-hero-h1 {
           font-size: clamp(40px, 7vw, 80px);
           font-weight: 900; letter-spacing: -0.04em; line-height: 1;
@@ -259,7 +259,7 @@ export default async function FSportzHome() {
           text-shadow: 0 2px 40px rgba(0,0,0,0.5);
         }
         .fs-hero-h1 span {
-          background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 50%, #d4d4d4 100%);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
           background-clip: text;
         }
@@ -319,9 +319,9 @@ export default async function FSportzHome() {
           color: rgba(239,68,68,0.8);
         }
         .fg-date-pill-upcoming {
-          background: rgba(34,197,94,0.06);
-          border: 1px solid rgba(34,197,94,0.15);
-          color: rgba(34,197,94,0.6);
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: rgba(255,255,255,0.6);
         }
         .fg-date-pill-past {
           background: rgba(255,255,255,0.03);
@@ -351,7 +351,7 @@ export default async function FSportzHome() {
           background: rgba(255,255,255,0.02);
           border: 1px solid rgba(255,255,255,0.05);
         }
-        .fr-pre:hover { background: rgba(34,197,94,0.04); border-color: rgba(34,197,94,0.12); }
+        .fr-pre:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); }
         .fr-post {
           background: rgba(255,255,255,0.015);
           border: 1px solid rgba(255,255,255,0.03);
@@ -388,7 +388,7 @@ export default async function FSportzHome() {
         .fr-score-sep { color: rgba(255,255,255,0.2); font-size: 12px; }
         .fr-score-muted { color: rgba(255,255,255,0.4); }
         .fr-time {
-          font-size: 12px; font-weight: 700; color: rgba(34,197,94,0.7);
+          font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7);
         }
         .fr-live-label {
           font-size: 8px; font-weight: 900; letter-spacing: 0.2em;
@@ -414,7 +414,7 @@ export default async function FSportzHome() {
         .gt-head {
           display: flex; align-items: center; justify-content: space-between;
           padding: 10px 14px;
-          background: rgba(34,197,94,0.04);
+          background: rgba(255,255,255,0.04);
           border-bottom: 1px solid rgba(255,255,255,0.04);
         }
         .gt-name {
@@ -435,9 +435,9 @@ export default async function FSportzHome() {
           transition: background 0.15s;
         }
         .gt-row:last-child { border-bottom: none; }
-        .gt-adv { background: rgba(34,197,94,0.03); }
+        .gt-adv { background: rgba(255,255,255,0.03); }
         .gt-rank { width: 16px; text-align: center; font-size: 11px; font-weight: 800; }
-        .gt-rank-q { color: #22c55e; }
+        .gt-rank-q { color: #ffffff; }
         .gt-rank-dim { color: rgba(255,255,255,0.2); }
         .gt-logo {
           width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
@@ -451,8 +451,8 @@ export default async function FSportzHome() {
         .gt-adv-badge {
           font-size: 7px; font-weight: 900; letter-spacing: 0.1em;
           padding: 2px 5px; border-radius: 99px;
-          background: rgba(34,197,94,0.08); color: rgba(34,197,94,0.6);
-          border: 1px solid rgba(34,197,94,0.15); display: none;
+          background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
+          border: 1px solid rgba(255,255,255,0.15); display: none;
         }
         @media (min-width: 360px) { .gt-adv-badge { display: inline; } }
         .gt-stats {
@@ -461,7 +461,7 @@ export default async function FSportzHome() {
           color: rgba(255,255,255,0.4);
         }
         .gt-dim { color: rgba(255,255,255,0.2); }
-        .gt-pos { color: #22c55e; }
+        .gt-pos { color: #ffffff; }
         .gt-neg { color: #ef4444; }
         .gt-pts { font-weight: 900; color: #fff; }
 

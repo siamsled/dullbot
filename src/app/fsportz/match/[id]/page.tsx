@@ -43,10 +43,10 @@ export default async function MatchPage(props: {
           .mp-notfound a {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 10px 22px; border-radius: 99px; font-size: 13px; font-weight: 700;
-            background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25);
-            color: #22c55e; text-decoration: none; transition: all 0.2s;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25);
+            color: #ffffff; text-decoration: none; transition: all 0.2s;
           }
-          .mp-notfound a:hover { background: rgba(34,197,94,0.15); transform: translateY(-1px); }
+          .mp-notfound a:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
         `}</style>
         <div className="mp-notfound">
           <div className="mp-notfound-inner">
@@ -91,7 +91,7 @@ export default async function MatchPage(props: {
           content: '';
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
           background:
-            radial-gradient(ellipse 60% 40% at 30% 20%, rgba(34,197,94,0.04) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 30% 20%, rgba(255,255,255,0.04) 0%, transparent 60%),
             radial-gradient(ellipse 40% 50% at 80% 80%, rgba(16,185,129,0.03) 0%, transparent 60%);
         }
         .mp-header {
@@ -162,8 +162,8 @@ export default async function MatchPage(props: {
         .mp-pre-badge {
           display: inline-flex; padding: 4px 12px; border-radius: 99px;
           font-size: 10px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase;
-          background: rgba(34,197,94,0.07); color: rgba(34,197,94,0.7);
-          border: 1px solid rgba(34,197,94,0.18);
+          background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7);
+          border: 1px solid rgba(255,255,255,0.18);
         }
         .mp-desc {
           font-size: 13px; color: rgba(255,255,255,0.3); line-height: 1.6;
@@ -182,9 +182,9 @@ export default async function MatchPage(props: {
           cursor: pointer; flex: 1; white-space: nowrap;
         }
         .mp-source-btn-active {
-          background: rgba(34,197,94,0.1);
-          border: 1px solid rgba(34,197,94,0.3);
-          box-shadow: 0 0 15px rgba(34,197,94,0.08);
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.3);
+          box-shadow: 0 0 15px rgba(255,255,255,0.08);
         }
         .mp-source-btn-inactive {
           background: rgba(255,255,255,0.03);
@@ -199,15 +199,15 @@ export default async function MatchPage(props: {
         .mp-source-name {
           font-size: 13px; font-weight: 700;
         }
-        .mp-source-name-active { color: #22c55e; }
+        .mp-source-name-active { color: #ffffff; }
         .mp-source-name-inactive { color: rgba(255,255,255,0.6); }
         .mp-quality-tag {
           font-size: 9px; font-weight: 900; letter-spacing: 0.1em;
           padding: 2px 6px; border-radius: 4px;
           display: inline-block;
         }
-        .mp-quality-fhd { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
-        .mp-quality-hd { background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
+        .mp-quality-fhd { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+        .mp-quality-hd { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.15); }
       `}</style>
       <main className="mp-page">
         <header className="mp-header">

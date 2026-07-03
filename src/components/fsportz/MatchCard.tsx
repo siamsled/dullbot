@@ -129,11 +129,11 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
         }
         .mc-upcoming {
           background: linear-gradient(160deg, #0c1a0f 0%, #081308 100%);
-          border: 1px solid rgba(34,197,94,0.18);
+          border: 1px solid rgba(255,255,255,0.18);
           box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
         .mc-upcoming:hover {
-          box-shadow: 0 0 0 1px rgba(34,197,94,0.3), 0 24px 60px rgba(34,197,94,0.08), 0 40px 80px rgba(0,0,0,0.4);
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.3), 0 24px 60px rgba(255,255,255,0.08), 0 40px 80px rgba(0,0,0,0.4);
         }
         .mc-past {
           background: linear-gradient(160deg, #0a120b 0%, #070d08 100%);
@@ -173,7 +173,7 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
           display: flex; align-items: center; gap: 5px;
         }
         .mc-badge-live { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-        .mc-badge-pre { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .mc-badge-pre { background: rgba(255,255,255,0.1); color: #ffffff; border: 1px solid rgba(255,255,255,0.2); }
         .mc-badge-post { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08); }
         .mc-badge-dot {
           width: 5px; height: 5px; border-radius: 50%; background: #ef4444;
@@ -239,9 +239,9 @@ export default function MatchCard({ match }: { match: FusedMatch }) {
           color: #ef4444;
         }
         .mc-cta-pre {
-          background: rgba(34,197,94,0.07);
-          border: 1px solid rgba(34,197,94,0.2);
-          color: rgba(34,197,94,0.8);
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: rgba(255,255,255,0.8);
         }
         .mc-cta-icon { font-size: 10px; }
       `}</style>
