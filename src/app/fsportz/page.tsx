@@ -2,6 +2,7 @@ import React from 'react';
 import { getFusedMatches, getGroupStandings, getAllFixtures, getMeta, FusedMatch, Group } from '@/lib/fsportz';
 import MatchCard from '@/components/fsportz/MatchCard';
 import LocalTime from '@/components/fsportz/LocalTime';
+import MainBoard from '@/components/fsportz/MainBoard';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -305,7 +306,9 @@ export default async function FSportzHome() {
         /* ===== CAROUSEL ===== */
         .fs-carousel {
           display: flex; gap: 14px;
-          overflow-x: auto; padding-bottom: 16px;
+          overflow-x: auto; 
+          padding-top: 12px; margin-top: -12px;
+          padding-bottom: 16px;
           scroll-snap-type: x mandatory;
           scrollbar-width: none;
         }
@@ -586,66 +589,13 @@ export default async function FSportzHome() {
             </section>
           )}
 
-          {/* Fixtures + Standings */}
-          <div className="fs-grid">
-
-            {/* Fixtures */}
-            <section className="fs-section">
-              <div className="fs-section-head">
-                <span className="fs-section-title">All Fixtures</span>
-                <div className="fs-section-line" />
-              </div>
-
-              {upcomingDates.map(dk => {
-                const matches = fixturesByDate[dk];
-                const hasLive = matches.some(m => m.status === 'in');
-                return (
-                  <div key={dk} className="fg-group">
-                    <div className="fg-date-row">
-                      <span className={`fg-date-pill ${hasLive ? 'fg-date-pill-live' : 'fg-date-pill-upcoming'}`}>
-                        <LocalTime dateStr={matches[0].date} format="date" />
-                      </span>
-                      <div className="fg-line" />
-                    </div>
-                    <div className="fg-rows">
-                      {matches.map(m => <FixtureRow key={m.id} match={m} streamId={m.stremioId} />)}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {pastDates.length > 0 && (
-                <>
-                  <div className="fg-completed-head">
-                    <span className="fg-completed-label">Completed</span>
-                    <div className="fg-completed-line" />
-                  </div>
-                  {[...pastDates].reverse().map(dk => (
-                    <div key={dk} className="fg-group">
-                      <div className="fg-date-row">
-                        <span className="fg-date-pill fg-date-pill-past">
-                          <LocalTime dateStr={fixturesByDate[dk][0].date} format="date" />
-                        </span>
-                        <div className="fg-line" />
-                      </div>
-                      <div className="fg-rows">
-                        {fixturesByDate[dk].map(m => <FixtureRow key={m.id} match={m} streamId={m.stremioId} />)}
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </section>
-
-            {/* Group Standings */}
-            <aside>
-              <div className="fs-section-head">
-                <span className="fs-section-title">Group Standings</span>
-                <div className="fs-section-line" />
-              </div>
-              {groups.map(g => <GroupTable key={g.name} group={g} />)}
-            </aside>
-          </div>
+          {/* Interactive Main Board with 3D Toggle */}
+          <MainBoard 
+            upcomingDates={upcomingDates} 
+            pastDates={pastDates} 
+            fixturesByDate={fixturesByDate} 
+            groups={groups} 
+          />
         </div>
       </main>
     </>
