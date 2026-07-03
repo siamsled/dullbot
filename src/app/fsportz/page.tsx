@@ -132,9 +132,18 @@ export default async function FSportzHome() {
           position: relative; overflow: visible;
           min-height: 560px; 
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 80px 20px 60px;
+          padding: 30px 20px 110px;
           text-align: center;
           clip-path: inset(0);
+        }
+        .fs-hero::after {
+          content: '';
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 200px;
+          background: linear-gradient(to bottom, transparent, #060e07);
+          z-index: 5;
+          pointer-events: none;
         }
         .fs-poster-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 0;
