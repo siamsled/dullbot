@@ -102,11 +102,30 @@ export default async function MatchPage(props: {
         }
         .mp-header {
           position: sticky; top: 0; z-index: 50;
-          height: 56px;
+          height: 60px;
           backdrop-filter: blur(24px) saturate(180%);
-          background: rgba(6,14,7,0.85);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          background: rgba(6,14,7,0.4);
           display: flex; align-items: center;
+        }
+        .fs-menu-btn {
+          background: none; border: none; cursor: pointer;
+          display: flex; flex-direction: column; gap: 4px;
+          padding: 8px 6px; border-radius: 8px;
+          transition: background 0.2s;
+          text-decoration: none;
+        }
+        .fs-menu-btn:hover {
+          background: rgba(255,255,255,0.06);
+        }
+        .fs-menu-bar {
+          width: 18px; height: 1.5px; background: #fff;
+          border-radius: 99px; transition: all 0.2s ease-in-out;
+        }
+        .fs-menu-bar:last-child {
+          width: 12px; align-self: flex-end;
+        }
+        .fs-menu-btn:hover .fs-menu-bar:last-child {
+          width: 18px;
         }
         .mp-header-inner {
           max-width: 1100px; width: 100%; margin: 0 auto;
@@ -259,7 +278,12 @@ export default async function MatchPage(props: {
               )}
             </div>
             
-            <div className="justify-self-end"></div>
+            <div className="justify-self-end">
+              <Link href="/dashboard" className="fs-menu-btn" aria-label="Main Menu">
+                <span className="fs-menu-bar" />
+                <span className="fs-menu-bar" />
+              </Link>
+            </div>
           </div>
         </header>
 
