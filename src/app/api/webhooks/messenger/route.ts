@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const webhookProfileCache = new Map<string, { first_name: string; last_name: string; gender?: string }>();
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -113,14 +114,44 @@ export async function POST(request: Request) {
                   .eq('trigger_pattern', '__ai_instructions__')
                   .maybeSingle();
 
+                // Get customer name and gender from cache or Meta API
+                let customerProfile: { first_name: string; last_name: string; gender?: string } = { first_name: 'Customer', last_name: '', gender: 'unknown' };
+                if (shop.meta_page_access_token) {
+                  if (webhookProfileCache.has(senderId)) {
+                    customerProfile = webhookProfileCache.get(senderId)!;
+                  } else {
+                    try {
+                      const res = await fetch(`https://graph.facebook.com/v19.0/${senderId}?fields=first_name,last_name,gender&access_token=${shop.meta_page_access_token}`);
+                      if (res.ok) {
+                        const data = await res.json();
+                        customerProfile = {
+                          first_name: data.first_name || 'Customer',
+                          last_name: data.last_name || '',
+                          gender: data.gender || 'unknown'
+                        };
+                        webhookProfileCache.set(senderId, customerProfile);
+                      }
+                    } catch (err) {
+                      console.error("Error fetching webhook user profile:", err);
+                    }
+                  }
+                }
+                const customerName = `${customerProfile.first_name} ${customerProfile.last_name}`.trim();
+                const customerGender = customerProfile.gender;
+
                 let prompt = `You are a friendly, polite, and helpful AI customer service assistant for a shop named "${shop.name}".
                 Your goal is to assist the customer with their order or query while matching their language and writing style (Banglish vs Bengali vs English) in a warm, respectful way.
+                
+                CUSTOMER DETAILS:
+                - Name: ${customerName}
+                - Gender: ${customerGender}
                 
                 CRITICAL RULES:
                 1. Match the language exactly: If they speak English, use English. If they speak Bengali script, use Bengali script.
                 2. BANGLISH SUPPORT: If the customer writes Bengali using English letters ("Banglish" e.g., "kire", "kam kor", "bujos nai"), reply in casual Banglish using English letters.
                 3. RESPECT & PROFESSIONALISM: Even if you are being casual or using Banglish, you must remain polite and helpful. Never insult, mock, or say dismissive things (like "ki jalaite asho"). If the customer complains, demands respect ("somman"), or gets angry, immediately apologize politely and de-escalate (e.g., "Sorry boss/bhai, bolen ki dorkar?").
-                4. NO BOT EXCUSES: Never claim you were "busy" or "away" (you are an instant assistant, so saying you were busy sounds fake/unprofessional). Keep responses concise, natural, and helpful.`;
+                4. GENDER GREETINGS: If the customer's gender is known ('male' or 'female') and they prefer a formal tone (or are speaking in English), you may greet them respectfully using gender-appropriate terms (e.g., 'Sir' for male, 'Ma'am'/'Madam' for female). If the conversation is casual, you can use general friendly terms like 'bhai' (brother) or 'apu' (sister) based on their gender.
+                5. NO BOT EXCUSES: Never claim you were "busy" or "away" (you are an instant assistant, so saying you were busy sounds fake/unprofessional). Keep responses concise, natural, and helpful.`;
 
                 if (customInstructions?.response_text) {
                   prompt += `\n\nCRITICAL WORKSPACE CUSTOM RULES & INFORMATION (Follow these rules strictly):\n${customInstructions.response_text}`;
