@@ -105,6 +105,14 @@ export async function POST(request: Request) {
                   });
                 }
 
+                // Fetch custom AI instructions
+                const { data: customInstructions } = await supabaseAdmin
+                  .from('quick_replies')
+                  .select('response_text')
+                  .eq('shop_id', shop.id)
+                  .eq('trigger_pattern', '__ai_instructions__')
+                  .maybeSingle();
+
                 let prompt = `You are a friendly, polite, and helpful AI customer service assistant for a shop named "${shop.name}".
                 Your goal is to assist the customer with their order or query while matching their language and writing style (Banglish vs Bengali vs English) in a warm, respectful way.
                 
@@ -112,9 +120,13 @@ export async function POST(request: Request) {
                 1. Match the language exactly: If they speak English, use English. If they speak Bengali script, use Bengali script.
                 2. BANGLISH SUPPORT: If the customer writes Bengali using English letters ("Banglish" e.g., "kire", "kam kor", "bujos nai"), reply in casual Banglish using English letters.
                 3. RESPECT & PROFESSIONALISM: Even if you are being casual or using Banglish, you must remain polite and helpful. Never insult, mock, or say dismissive things (like "ki jalaite asho"). If the customer complains, demands respect ("somman"), or gets angry, immediately apologize politely and de-escalate (e.g., "Sorry boss/bhai, bolen ki dorkar?").
-                4. NO BOT EXCUSES: Never claim you were "busy" or "away" (you are an instant assistant, so saying you were busy sounds fake/unprofessional). Keep responses concise, natural, and helpful.
+                4. NO BOT EXCUSES: Never claim you were "busy" or "away" (you are an instant assistant, so saying you were busy sounds fake/unprofessional). Keep responses concise, natural, and helpful.`;
+
+                if (customInstructions?.response_text) {
+                  prompt += `\n\nCRITICAL WORKSPACE CUSTOM RULES & INFORMATION (Follow these rules strictly):\n${customInstructions.response_text}`;
+                }
                 
-                Here is the recent chat history:\n${chatHistory}\n`;
+                prompt += `\n\nHere is the recent chat history:\n${chatHistory}\n`;
 
                 if (imageUrl) {
                   prompt += `\nNote: The customer has sent an image which is attached to this request. Analyze the image to answer their query if relevant.`;

@@ -1,13 +1,27 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
-import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
-import { useTransition } from 'react';
-import { disconnectFacebook } from './actions';
+import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight, Sparkles } from 'lucide-react';
+import { disconnectFacebook, saveSettings } from './actions';
 
-export default function SettingsClient({ shop }: { shop: any }) {
+export default function SettingsClient({ 
+  shop, 
+  initialAiInstructions 
+}: { 
+  shop: any; 
+  initialAiInstructions: string;
+}) {
   const [isPending, startTransition] = useTransition();
+  const [isSaving, startSaveTransition] = useTransition();
+  
+  const [agentEnabled, setAgentEnabled] = useState(shop?.agent_enabled ?? true);
+  const [confirmationTier, setConfirmationTier] = useState<'light' | 'otp_verified' | 'prepay_verified'>(
+    shop?.confirmation_tier ?? 'light'
+  );
+  const [bkashNumber, setBkashNumber] = useState(shop?.bkash_number ?? '');
+  const [aiInstructions, setAiInstructions] = useState(initialAiInstructions);
 
   const handleDisconnect = () => {
     if (confirm("Are you sure you want to disconnect Facebook?")) {
@@ -15,6 +29,22 @@ export default function SettingsClient({ shop }: { shop: any }) {
         await disconnectFacebook();
       });
     }
+  };
+
+  const handleSave = () => {
+    startSaveTransition(async () => {
+      const res = await saveSettings(shop.id, {
+        confirmationTier,
+        bkashNumber,
+        agentEnabled,
+        aiInstructions,
+      });
+      if (res.success) {
+        alert("Settings saved successfully!");
+      } else {
+        alert(`Failed to save settings: ${res.error}`);
+      }
+    });
   };
 
   // variants for staggered animation
@@ -105,12 +135,37 @@ export default function SettingsClient({ shop }: { shop: any }) {
           <p className="text-ash text-sm mb-8 flex-grow leading-relaxed">Let DullBot handle customer queries automatically in the background while you focus on fulfillment.</p>
           
           <div className="flex items-center justify-between mt-auto p-4 bg-fog rounded-inputs">
-            <span className="text-sm font-medium text-ink">Status: Active</span>
+            <span className="text-sm font-medium text-ink">Status: {agentEnabled ? 'Active' : 'Paused'}</span>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={agentEnabled}
+                onChange={e => setAgentEnabled(e.target.checked)} 
+              />
               <div className="w-11 h-6 bg-dove/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ink"></div>
             </label>
           </div>
+        </motion.div>
+
+        {/* Custom AI prompt configurations */}
+        <motion.div variants={item} className="md:col-span-3 bg-white rounded-cards shadow-subtle p-8 border border-transparent hover:border-dove/20 transition-colors relative overflow-hidden group">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 bg-fog rounded-lg text-graphite">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-medium text-ink">AI Custom Instructions & Vibe</h3>
+          </div>
+          <p className="text-sm text-ash mb-5 leading-relaxed">
+            Configure custom details about your shop (like product guidelines, delivery notes, or business hours) and customize the bot's tone/personality (e.g. "Be very polite and use formal Bengali", or "Be super casual, reply in Banglish").
+          </p>
+          <textarea
+            value={aiInstructions}
+            onChange={e => setAiInstructions(e.target.value)}
+            placeholder="e.g. Always greet customers with 'Assalamu Alaikum'. Deliveries inside Dhaka take 2-3 days (charge 80 BDT), outside Dhaka takes 5 days (charge 150 BDT). Use casual Banglish."
+            rows={4}
+            className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all placeholder:text-dove/70 resize-y"
+          />
         </motion.div>
 
         {/* Verification Settings */}
@@ -124,7 +179,11 @@ export default function SettingsClient({ shop }: { shop: any }) {
               <h3 className="text-lg font-medium text-ink">Confirmation Tier</h3>
             </div>
             <p className="text-sm text-ash mb-5 leading-relaxed">Choose how rigorous you want order confirmations to be before packing.</p>
-            <select className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all cursor-pointer">
+            <select 
+              value={confirmationTier}
+              onChange={e => setConfirmationTier(e.target.value as any)}
+              className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all cursor-pointer"
+            >
               <option value="light">Light (Address Only)</option>
               <option value="otp_verified">OTP Verified (SMS)</option>
               <option value="prepay_verified">Prepay Verified (bKash/Nagad)</option>
@@ -141,6 +200,8 @@ export default function SettingsClient({ shop }: { shop: any }) {
             <p className="text-sm text-ash mb-5 leading-relaxed">The bKash or Nagad number for collecting customer pre-payments.</p>
             <input 
               type="text" 
+              value={bkashNumber}
+              onChange={e => setBkashNumber(e.target.value)}
               placeholder="e.g. 01712345678" 
               className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all placeholder:text-dove/70" 
             />
@@ -156,8 +217,12 @@ export default function SettingsClient({ shop }: { shop: any }) {
         transition={{ delay: 0.6 }}
         className="mt-10 flex justify-end"
       >
-        <button className="flex items-center gap-2 px-8 py-3.5 rounded-buttons bg-ink text-pure-white text-sm font-medium hover:bg-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
-          Save Configuration
+        <button 
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-8 py-3.5 rounded-buttons bg-ink text-pure-white text-sm font-medium hover:bg-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-black/10 disabled:opacity-50"
+        >
+          {isSaving ? "Saving..." : "Save Configuration"}
           <ChevronRight className="w-4 h-4" />
         </button>
       </motion.div>
