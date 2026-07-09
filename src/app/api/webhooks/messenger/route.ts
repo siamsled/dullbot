@@ -143,7 +143,7 @@ export async function POST(request: Request) {
                 }
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use 1.5-flash or 2.0-flash which supports multimodality correctly (flash-lite doesn't support multimodal in all regions, or 1.5-flash is standard). Wait, let's keep model as gemini-1.5-flash which is widely supported for multimodal.
+                  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
                   const promptParts: any[] = [prompt];
                   if (imagePart) {
                     promptParts.push(imagePart);
