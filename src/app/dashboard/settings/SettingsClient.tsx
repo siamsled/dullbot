@@ -3,8 +3,20 @@
 import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
 import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight } from 'lucide-react';
+import { useTransition } from 'react';
+import { disconnectFacebook } from './actions';
 
 export default function SettingsClient({ shop }: { shop: any }) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleDisconnect = () => {
+    if (confirm("Are you sure you want to disconnect Facebook?")) {
+      startTransition(async () => {
+        await disconnectFacebook();
+      });
+    }
+  };
+
   // variants for staggered animation
   const container: Variants = {
     hidden: { opacity: 0 },
@@ -56,7 +68,13 @@ export default function SettingsClient({ shop }: { shop: any }) {
                       <p className="text-sm text-ash">{shop.meta_page_name}</p>
                     </div>
                   </div>
-                  <button className="text-sm text-rust hover:text-red-700 font-medium transition-colors">Disconnect</button>
+                  <button 
+                    onClick={handleDisconnect}
+                    disabled={isPending}
+                    className="text-sm text-rust hover:text-red-700 font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isPending ? "Disconnecting..." : "Disconnect"}
+                  </button>
                 </div>
               </div>
             ) : (
