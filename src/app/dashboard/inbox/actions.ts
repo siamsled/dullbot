@@ -135,33 +135,22 @@ export async function getConversations(shopId: string) {
     return [];
   }
 
-  // Get shop token
+  return conversations;
+}
+
+export async function resolveFacebookProfile(psid: string, shopId: string) {
   const { data: shop } = await supabaseAdmin
     .from('shops')
     .select('meta_page_access_token')
     .eq('id', shopId)
     .single();
 
-  const token = shop?.meta_page_access_token;
+  if (shop?.meta_page_access_token) {
+    const profile = await getFacebookProfile(psid, shop.meta_page_access_token);
+    return profile;
+  }
 
-  // Resolve Facebook profile names and pics
-  const resolved = await Promise.all(
-    conversations.map(async (c) => {
-      if (c.channel === 'messenger' && /^\d+$/.test(c.customer_phone) && token) {
-        const profile = await getFacebookProfile(c.customer_phone, token);
-        return {
-          ...c,
-          customer_name: profile.customer_name,
-          profile_pic_url: profile.profile_pic_url,
-        };
-      }
-      return {
-        ...c,
-        customer_name: c.customer_phone, // Fallback to raw phone/ID
-      };
-    })
-  );
-
-  return resolved;
+  return { customer_name: 'Facebook User' };
 }
+
 

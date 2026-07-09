@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover, getConversations } from './actions';
+import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile } from './actions';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -31,6 +31,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isTakeover, setIsTakeover] = useState(false);
+  const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConv = conversations.find(c => c.id === activeId);
@@ -40,6 +41,19 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       setIsTakeover(activeConv.status === 'human_takeover');
     }
   }, [activeConv]);
+
+  // Asynchronously resolve Facebook names/pics in the background on the client
+  useEffect(() => {
+    conversations.forEach(async (conv) => {
+      if (conv.channel === 'messenger' && /^\d+$/.test(conv.customer_phone) && !profiles[conv.customer_phone]) {
+        const profile = await resolveFacebookProfile(conv.customer_phone, shop.id);
+        setProfiles(prev => ({
+          ...prev,
+          [conv.customer_phone]: profile
+        }));
+      }
+    });
+  }, [conversations]);
 
   const loadData = async () => {
     if (activeId) {
@@ -52,7 +66,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
+    const interval = setInterval(loadData, 1000); // 1s polling for live inbox feel!
     return () => clearInterval(interval);
   }, [activeId]);
 
@@ -116,15 +130,15 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                 }`}
               >
                 <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
-                  {conv.profile_pic_url ? (
-                    <img src={conv.profile_pic_url} alt="" className="w-full h-full object-cover" />
+                  {profiles[conv.customer_phone]?.profile_pic_url ? (
+                    <img src={profiles[conv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    (conv.customer_name || conv.customer_phone).substring(0, 2)
+                    (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <p className="text-sm font-medium text-ink truncate">{conv.customer_name || conv.customer_phone}</p>
+                    <p className="text-sm font-medium text-ink truncate">{profiles[conv.customer_phone]?.customer_name || conv.customer_phone}</p>
                     <p className="text-xs text-ash">{formatMessageDate(conv.last_message_at)}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -153,14 +167,16 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
-                {activeConv?.profile_pic_url ? (
-                  <img src={activeConv.profile_pic_url} alt="" className="w-full h-full object-cover" />
+                {activeConv && profiles[activeConv.customer_phone]?.profile_pic_url ? (
+                  <img src={profiles[activeConv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  (activeConv?.customer_name || activeConv?.customer_phone || '').substring(0, 2)
+                  (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-ink">{activeConv?.customer_name || activeConv?.customer_phone}</h3>
+                <h3 className="text-sm font-medium text-ink">
+                  {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
+                </h3>
                 <p className="text-xs text-ash capitalize">via {activeConv?.channel}</p>
               </div>
             </div>
@@ -205,7 +221,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
                         {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
                         <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                          {isCustomer ? (activeConv?.customer_name || 'Customer') : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
+                          {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
                         </span>
                         <span className="text-[10px] text-ash">
                           {formatMessageDate(msg.created_at)}
