@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
-  const configId = process.env.FACEBOOK_LOGIN_CONFIG_ID;
+  const configId = process.env.FACEBOOK_LOGIN_CONFIG_ID || '2249651995857878';
   const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/facebook/callback`;
   const scopes = 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement';
   
