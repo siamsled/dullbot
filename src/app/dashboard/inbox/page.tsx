@@ -1,5 +1,6 @@
 import InboxClient from './InboxClient';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getConversations } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export default async function InboxPage() {
   // Get shop ID first
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, name')
+    .select('id, name, meta_page_access_token')
     .eq('slug', shopSlug)
     .single();
 
@@ -17,12 +18,8 @@ export default async function InboxPage() {
     return <div>Shop not found.</div>;
   }
 
-  // Get initial conversations
-  const { data: conversations } = await supabaseAdmin
-    .from('conversations')
-    .select('*')
-    .eq('shop_id', shop.id)
-    .order('last_message_at', { ascending: false });
+  // Get initial conversations (with names resolved)
+  const conversations = await getConversations(shop.id);
 
-  return <InboxClient shop={shop} initialConversations={conversations || []} />;
+  return <InboxClient shop={shop} initialConversations={conversations} />;
 }

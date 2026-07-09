@@ -94,3 +94,74 @@ export async function toggleTakeover(conversationId: string, isTakeover: boolean
     
   return !error;
 }
+
+const facebookProfileCache = new Map<string, { customer_name: string; profile_pic_url?: string }>();
+
+async function getFacebookProfile(psid: string, accessToken: string) {
+  if (facebookProfileCache.has(psid)) {
+    return facebookProfileCache.get(psid)!;
+  }
+  
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${psid}?fields=first_name,last_name,profile_pic&access_token=${accessToken}`);
+    if (res.ok) {
+      const data = await res.json();
+      const first = data.first_name || '';
+      const last = data.last_name || '';
+      const fullName = `${first} ${last}`.trim();
+      const profile = {
+        customer_name: fullName || 'Facebook User',
+        profile_pic_url: data.profile_pic || undefined,
+      };
+      facebookProfileCache.set(psid, profile);
+      return profile;
+    }
+  } catch (err) {
+    console.error("Error fetching FB profile:", err);
+  }
+  
+  return { customer_name: 'Facebook User' };
+}
+
+export async function getConversations(shopId: string) {
+  const { data: conversations, error } = await supabaseAdmin
+    .from('conversations')
+    .select('*')
+    .eq('shop_id', shopId)
+    .order('last_message_at', { ascending: false });
+
+  if (error || !conversations) {
+    console.error('Error fetching conversations:', error);
+    return [];
+  }
+
+  // Get shop token
+  const { data: shop } = await supabaseAdmin
+    .from('shops')
+    .select('meta_page_access_token')
+    .eq('id', shopId)
+    .single();
+
+  const token = shop?.meta_page_access_token;
+
+  // Resolve Facebook profile names and pics
+  const resolved = await Promise.all(
+    conversations.map(async (c) => {
+      if (c.channel === 'messenger' && /^\d+$/.test(c.customer_phone) && token) {
+        const profile = await getFacebookProfile(c.customer_phone, token);
+        return {
+          ...c,
+          customer_name: profile.customer_name,
+          profile_pic_url: profile.profile_pic_url,
+        };
+      }
+      return {
+        ...c,
+        customer_name: c.customer_phone, // Fallback to raw phone/ID
+      };
+    })
+  );
+
+  return resolved;
+}
+

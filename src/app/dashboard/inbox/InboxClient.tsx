@@ -2,7 +2,28 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover } from './actions';
+import { getMessages, sendMessage, toggleTakeover, getConversations } from './actions';
+
+function formatMessageDate(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  const diffTime = today.getTime() - msgDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else if (diffDays === 1) {
+    return 'Yesterday';
+  } else if (diffDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  } else {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+}
 
 export default function InboxClient({ shop, initialConversations }: { shop: any, initialConversations: any[] }) {
   const [conversations, setConversations] = useState(initialConversations);
@@ -20,15 +41,18 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
   }, [activeConv]);
 
-  const loadMessages = async () => {
-    if (!activeId) return;
-    const msgs = await getMessages(activeId);
-    setMessages(msgs);
+  const loadData = async () => {
+    if (activeId) {
+      const msgs = await getMessages(activeId);
+      setMessages(msgs);
+    }
+    const convs = await getConversations(shop.id);
+    setConversations(convs);
   };
 
   useEffect(() => {
-    loadMessages();
-    const interval = setInterval(loadMessages, 3000); // Simple polling for MVP
+    loadData();
+    const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
   }, [activeId]);
 
@@ -49,7 +73,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
     await sendMessage(activeId, text);
     // Reload to get real ID
-    loadMessages();
+    loadData();
   };
 
   const handleToggle = async () => {
@@ -91,13 +115,17 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                   activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium">
-                  {conv.customer_phone.substring(0, 2)}
+                <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
+                  {conv.profile_pic_url ? (
+                    <img src={conv.profile_pic_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (conv.customer_name || conv.customer_phone).substring(0, 2)
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <p className="text-sm font-medium text-ink truncate">{conv.customer_phone}</p>
-                    <p className="text-xs text-ash">{new Date(conv.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <p className="text-sm font-medium text-ink truncate">{conv.customer_name || conv.customer_phone}</p>
+                    <p className="text-xs text-ash">{formatMessageDate(conv.last_message_at)}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {conv.status === 'human_takeover' ? (
@@ -124,11 +152,15 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           {/* Chat Header */}
           <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium">
-                {activeConv?.customer_phone.substring(0, 2)}
+              <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
+                {activeConv?.profile_pic_url ? (
+                  <img src={activeConv.profile_pic_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  (activeConv?.customer_name || activeConv?.customer_phone || '').substring(0, 2)
+                )}
               </div>
               <div>
-                <h3 className="text-sm font-medium text-ink">{activeConv?.customer_phone}</h3>
+                <h3 className="text-sm font-medium text-ink">{activeConv?.customer_name || activeConv?.customer_phone}</h3>
                 <p className="text-xs text-ash capitalize">via {activeConv?.channel}</p>
               </div>
             </div>
@@ -173,10 +205,10 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
                         {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
                         <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                          {isCustomer ? 'Customer' : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
+                          {isCustomer ? (activeConv?.customer_name || 'Customer') : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
                         </span>
                         <span className="text-[10px] text-ash">
-                          {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {formatMessageDate(msg.created_at)}
                         </span>
                       </div>
                       <div className={`px-4 py-2.5 rounded-2xl text-sm ${
