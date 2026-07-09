@@ -218,7 +218,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                             ? 'bg-ink text-white rounded-tr-sm shadow-subtle'
                             : 'bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle'
                       }`}>
-                        {msg.content}
+                        {msg.content.startsWith('IMAGE:') ? (
+                          <a href={msg.content.substring(6)} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
+                            <img src={msg.content.substring(6)} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
+                          </a>
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                     </div>
                   </div>

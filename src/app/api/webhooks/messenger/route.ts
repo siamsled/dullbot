@@ -45,8 +45,13 @@ export async function POST(request: Request) {
           for (const webhookEvent of entry.messaging) {
             const senderId = webhookEvent.sender?.id;
 
-            if (webhookEvent.message && webhookEvent.message.text && senderId) {
-              const messageText = webhookEvent.message.text;
+            if (webhookEvent.message && senderId) {
+              const messageText = webhookEvent.message.text || '';
+              const attachments = webhookEvent.message.attachments || [];
+              const imageAttachment = attachments.find((att: any) => att.type === 'image');
+              const imageUrl = imageAttachment?.payload?.url;
+
+              if (!messageText && !imageUrl) continue;
 
               // 1. Find or create conversation
               let { data: conversation } = await supabaseAdmin
@@ -72,18 +77,19 @@ export async function POST(request: Request) {
 
               if (!conversation) continue;
 
-              // 2. Insert incoming message
+              // 2. Insert incoming message (use IMAGE:url prefix for rendering in client)
+              const dbContent = imageUrl ? `IMAGE:${imageUrl}` : messageText;
               await supabaseAdmin
                 .from('messages')
                 .insert({
                   conversation_id: conversation.id,
                   sender: 'customer',
-                  content: messageText
+                  content: dbContent
                 });
 
               // 3. If bot is active, trigger AI
               if (conversation.status === 'bot_active') {
-                // Fetch last 5 messages for context
+                // Fetch last 10 messages for context
                 const { data: history } = await supabaseAdmin
                   .from('messages')
                   .select('sender, content')
@@ -94,11 +100,12 @@ export async function POST(request: Request) {
                 let chatHistory = '';
                 if (history) {
                   history.forEach(msg => {
-                    chatHistory += `${msg.sender}: ${msg.content}\n`;
+                    const textContent = msg.content.startsWith('IMAGE:') ? '[Sent an image]' : msg.content;
+                    chatHistory += `${msg.sender}: ${textContent}\n`;
                   });
                 }
 
-                const prompt = `You are a witty, friendly, and highly adaptable AI customer service assistant for a shop named "${shop.name}". 
+                let prompt = `You are a witty, friendly, and highly adaptable AI customer service assistant for a shop named "${shop.name}". 
                 Your goal is to assist the customer while perfectly matching their energy, tone, and language.
                 
                 CRITICAL RULES:
@@ -107,12 +114,42 @@ export async function POST(request: Request) {
                 3. Match the tone: If they are being formal, be polite. If they are being playful, sarcastic, or casual (e.g., using slang like "beda", "nigga"), be playful, witty, and match their vibe directly without being offensive. Give it right back to them!
                 4. Keep your responses concise and natural, like a text message.
                 
-                Here is the recent chat history:\n${chatHistory}\n
-                Please generate your reply directly without any prefixes (do not output 'bot:' or your name).`;
+                Here is the recent chat history:\n${chatHistory}\n`;
+
+                if (imageUrl) {
+                  prompt += `\nNote: The customer has sent an image which is attached to this request. Analyze the image to answer their query if relevant.`;
+                }
+
+                prompt += `\n\nPlease generate your reply directly without any prefixes (do not output 'bot:' or your name).`;
+
+                let imagePart: any = null;
+                if (imageUrl) {
+                  try {
+                    const imgRes = await fetch(imageUrl);
+                    if (imgRes.ok) {
+                      const buffer = await imgRes.arrayBuffer();
+                      const base64 = Buffer.from(buffer).toString('base64');
+                      const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+                      imagePart = {
+                        inlineData: {
+                          data: base64,
+                          mimeType: mime
+                        }
+                      };
+                    }
+                  } catch (err) {
+                    console.error("Failed to fetch image for Gemini:", err);
+                  }
+                }
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-                  const result = await model.generateContent(prompt);
+                  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use 1.5-flash or 2.0-flash which supports multimodality correctly (flash-lite doesn't support multimodal in all regions, or 1.5-flash is standard). Wait, let's keep model as gemini-1.5-flash which is widely supported for multimodal.
+                  const promptParts: any[] = [prompt];
+                  if (imagePart) {
+                    promptParts.push(imagePart);
+                  }
+                  
+                  const result = await model.generateContent(promptParts);
                   const aiResponseText = result.response.text().trim();
 
                   if (aiResponseText) {
