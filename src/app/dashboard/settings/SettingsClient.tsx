@@ -17,11 +17,9 @@ export default function SettingsClient({
   const [isSaving, startSaveTransition] = useTransition();
   
   const [agentEnabled, setAgentEnabled] = useState(shop?.agent_enabled ?? true);
-  const [confirmationTier, setConfirmationTier] = useState<'light' | 'otp_verified' | 'prepay_verified'>(
     shop?.confirmation_tier ?? 'light'
   );
   const [bkashNumber, setBkashNumber] = useState(shop?.bkash_number ?? '');
-  const [aiInstructions, setAiInstructions] = useState(initialAiInstructions);
 
   const handleDisconnect = () => {
     if (confirm("Are you sure you want to disconnect Facebook?")) {
@@ -37,7 +35,6 @@ export default function SettingsClient({
         confirmationTier,
         bkashNumber,
         agentEnabled,
-        aiInstructions,
       });
       if (res.success) {
         alert("Settings saved successfully!");
@@ -148,25 +145,7 @@ export default function SettingsClient({
           </div>
         </motion.div>
 
-        {/* Custom AI prompt configurations */}
-        <motion.div variants={item} className="md:col-span-3 bg-white rounded-cards shadow-subtle p-8 border border-transparent hover:border-dove/20 transition-colors relative overflow-hidden group">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 bg-fog rounded-lg text-graphite">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-medium text-ink">AI Custom Instructions & Vibe</h3>
-          </div>
-          <p className="text-sm text-ash mb-5 leading-relaxed">
-            Configure custom details about your shop (like product guidelines, delivery notes, or business hours) and customize the bot's tone/personality (e.g. "Be very polite and use formal Bengali", or "Be super casual, reply in Banglish").
-          </p>
-          <textarea
-            value={aiInstructions}
-            onChange={e => setAiInstructions(e.target.value)}
-            placeholder="e.g. Always greet customers with 'Assalamu Alaikum'. Deliveries inside Dhaka take 2-3 days (charge 80 BDT), outside Dhaka takes 5 days (charge 150 BDT). Use casual Banglish."
-            rows={4}
-            className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all placeholder:text-dove/70 resize-y"
-          />
-        </motion.div>
+
 
         {/* Verification Settings */}
         <motion.div variants={item} className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">

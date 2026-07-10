@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import InventoryClient from './InventoryClient';
 
-export const dynamic = 'force-dynamic';
+
 
 export default async function InventoryPage() {
   const shopSlug = 'dull-store';

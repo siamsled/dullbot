@@ -1,13 +1,13 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import SettingsClient from './SettingsClient';
 
-export const dynamic = 'force-dynamic';
+
 
 export default async function SettingsPage() {
   const shopSlug = 'dull-store';
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, meta_page_name, confirmation_tier, bkash_number, agent_enabled, ai_instructions, credit_balance')
+    .select('id, meta_page_name, confirmation_tier, bkash_number, agent_enabled, credit_balance')
     .eq('slug', shopSlug)
     .single();
 
@@ -18,7 +18,6 @@ export default async function SettingsPage() {
   return (
     <SettingsClient 
       shop={shop} 
-      initialAiInstructions={shop.ai_instructions || ''} 
     />
   );
 }

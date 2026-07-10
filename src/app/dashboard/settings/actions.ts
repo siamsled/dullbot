@@ -27,7 +27,6 @@ export async function saveSettings(
     confirmationTier: 'light' | 'otp_verified' | 'prepay_verified';
     bkashNumber: string;
     agentEnabled: boolean;
-    aiInstructions: string;
   }
 ) {
   const { error: shopErr } = await supabaseAdmin
@@ -36,7 +35,6 @@ export async function saveSettings(
       confirmation_tier: payload.confirmationTier,
       bkash_number: payload.bkashNumber,
       agent_enabled: payload.agentEnabled,
-      ai_instructions: payload.aiInstructions.trim() || null,
     })
     .eq('id', shopId);
 

@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import Link from 'next/link';
 import { Zap, TrendingDown, Clock, AlertTriangle, CreditCard } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+
 
 function formatCredits(n: number) {
   return n.toFixed(4);

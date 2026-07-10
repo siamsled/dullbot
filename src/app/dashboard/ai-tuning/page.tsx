@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import AiTuningClient from './AiTuningClient';
 
-export const dynamic = 'force-dynamic';
+
 
 export default async function AiTuningPage() {
   const shopSlug = 'dull-store';

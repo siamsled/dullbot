@@ -2,7 +2,7 @@ import InboxClient from './InboxClient';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getConversations } from './actions';
 
-export const dynamic = 'force-dynamic';
+
 
 export default async function InboxPage() {
   const shopSlug = 'dull-store';

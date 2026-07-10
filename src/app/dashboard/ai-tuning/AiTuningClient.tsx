@@ -81,6 +81,7 @@ export default function AiTuningClient({ shop, examples: initialExamples }: Prop
   const [autoEscalate, setAutoEscalate] = useState(shop.auto_escalate_on_complaint);
   const [confidenceFallback, setConfidenceFallback] = useState(shop.confidence_fallback);
   const [discloseAi, setDiscloseAi] = useState(shop.disclose_ai_if_asked);
+  const [aiInstructions, setAiInstructions] = useState(shop.ai_instructions || '');
   const [examples, setExamples] = useState(initialExamples);
   const [newMsg, setNewMsg] = useState('');
   const [newReply, setNewReply] = useState('');
@@ -99,6 +100,7 @@ export default function AiTuningClient({ shop, examples: initialExamples }: Prop
         auto_escalate_on_complaint: autoEscalate,
         confidence_fallback: confidenceFallback,
         disclose_ai_if_asked: discloseAi,
+        ai_instructions: aiInstructions.trim() || null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -125,7 +127,7 @@ export default function AiTuningClient({ shop, examples: initialExamples }: Prop
     { name: shop.name, tone_formal_casual: tone1, tone_concise_detailed: tone2, tone_professional_warm: tone3,
       language_mix: language, emoji_frequency: emoji, max_discount_pct: maxDiscount,
       auto_escalate_on_complaint: autoEscalate, confidence_fallback: confidenceFallback,
-      disclose_ai_if_asked: discloseAi, ai_instructions: null },
+      disclose_ai_if_asked: discloseAi, ai_instructions: aiInstructions.trim() || null },
     [{ name: 'Example Product', price: 1000, currency: 'BDT' }],
     examples
   );
@@ -217,6 +219,26 @@ export default function AiTuningClient({ shop, examples: initialExamples }: Prop
               </label>
             </div>
           </div>
+        </div>
+
+        {/* Custom AI prompt configurations */}
+        <div className="bg-white rounded-cards shadow-subtle border border-transparent hover:border-dove/20 transition-colors p-8 relative overflow-hidden group">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 bg-fog rounded-lg text-graphite">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-medium text-ink">AI Custom Instructions & Vibe</h2>
+          </div>
+          <p className="text-sm text-ash mb-5 leading-relaxed">
+            Configure custom details about your shop (like product guidelines, delivery notes, or business hours) and customize the bot's tone/personality (e.g. "Be very polite and use formal Bengali", or "Be super casual, reply in Banglish").
+          </p>
+          <textarea
+            value={aiInstructions}
+            onChange={e => setAiInstructions(e.target.value)}
+            placeholder="e.g. Always greet customers with 'Assalamu Alaikum'. Deliveries inside Dhaka take 2-3 days (charge 80 BDT), outside Dhaka takes 5 days (charge 150 BDT). Use casual Banglish."
+            rows={4}
+            className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all placeholder:text-dove/70 resize-y"
+          />
         </div>
 
         {/* Card 3: Example Replies */}

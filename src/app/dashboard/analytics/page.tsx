@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import AnalyticsClient from './AnalyticsClient';
 
-export const dynamic = 'force-dynamic';
+
 
 // Map phone prefixes to carrier/region names
 function classifyCarrier(phone: string): string {
