@@ -18,7 +18,7 @@ export async function saveAiTuning(payload: {
 }) {
   const { error } = await supabaseAdmin
     .from('shops')
-    .update(payload)
+    .update({ ...payload, tuning_updated_at: new Date().toISOString() })
     .eq('slug', SHOP_SLUG);
 
   if (error) return { success: false, error: error.message };

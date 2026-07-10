@@ -54,17 +54,23 @@ async function getOrCreateConversation(shopId: string, customerPhone: string, ch
   return created;
 }
 
-async function getConversationHistory(conversationId: string) {
-  const { data: messages } = await supabaseAdmin
+async function getConversationHistory(conversationId: string, tuningUpdatedAt?: string | null) {
+  let query = supabaseAdmin
     .from('messages')
-    .select('sender, content')
+    .select('sender, content, created_at')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
-    .limit(12);
+    .order('created_at', { ascending: false });
+
+  if (tuningUpdatedAt) {
+    query = query.gt('created_at', tuningUpdatedAt);
+  }
+
+  const { data: messages } = await query.limit(12);
 
   if (!messages) return [];
 
   return messages
+    .reverse() // Re-order to be chronological
     .filter(m => m.sender === 'customer' || m.sender === 'bot')
     .map(m => ({
       role: m.sender === 'customer' ? 'user' as const : 'model' as const,
@@ -161,7 +167,7 @@ export async function processIncomingMessage(
   // Resolve shop with all tuning columns
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, credit_balance, agent_enabled, name, ai_instructions, tone_formal_casual, tone_concise_detailed, tone_professional_warm, language_mix, emoji_frequency, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, disclose_ai_if_asked')
+    .select('id, credit_balance, agent_enabled, name, ai_instructions, tone_formal_casual, tone_concise_detailed, tone_professional_warm, language_mix, emoji_frequency, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, disclose_ai_if_asked, tuning_updated_at')
     .eq('slug', shopSlug)
     .single();
 
@@ -263,8 +269,8 @@ export async function processIncomingMessage(
     exampleReplies ?? []
   );
 
-  // 6. Load conversation history from Supabase
-  const history = await getConversationHistory(conversation.id);
+  // 6. Load conversation history from Supabase, applying tuning timestamp gate
+  const history = await getConversationHistory(conversation.id, shop.tuning_updated_at);
 
   // 6. Call Gemini
   const response = await invokeGemini(systemPrompt, text, history);
