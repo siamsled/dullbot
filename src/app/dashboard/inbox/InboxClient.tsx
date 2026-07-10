@@ -275,9 +275,10 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
             ) : (
-              messages.map(msg => {
+              messages.map((msg, idx) => {
                 const isCustomer = msg.sender === 'customer';
                 const isHumanAgent = msg.sender === 'human_agent';
+                const isLastMsg = idx === messages.length - 1;
                 
                 return (
                   <div key={msg.id} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
@@ -307,6 +308,17 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                           msg.content
                         )}
                       </div>
+                      
+                      {/* Sent status check */}
+                      {!isCustomer && (
+                        <div className="text-[10px] text-ash/80 mt-1 mx-1 select-none font-medium">
+                          {msg.isOptimistic ? (
+                            <span className="italic text-ash/60">Sending...</span>
+                          ) : (
+                            isLastMsg && <span>Sent</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -320,7 +332,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
             <button
               type="button"
               onClick={scrollToBottom}
-              className="absolute bottom-24 right-6 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
               title="Scroll to latest messages"
             >
               <ArrowDown className="w-5 h-5" />
@@ -330,7 +342,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
             <button
               type="button"
               onClick={scrollToTop}
-              className="absolute bottom-24 right-6 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
               title="Scroll to beginning of conversation"
             >
               <ArrowUp className="w-5 h-5" />
