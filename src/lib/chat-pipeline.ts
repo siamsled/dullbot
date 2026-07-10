@@ -1,5 +1,6 @@
 import { invokeGemini } from './gemini';
 import { supabaseAdmin } from './supabase-admin';
+import { buildSystemPrompt } from './prompt-builder';
 
 // Gemini Flash Lite pricing (USD per million tokens) as of 2025
 const GEMINI_INPUT_COST_PER_M = 0.075;
@@ -156,10 +157,10 @@ export async function processIncomingMessage(
   text: string,
   channel: string = 'messenger'
 ) {
-  // Resolve shop
+  // Resolve shop with all tuning columns
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, credit_balance, agent_enabled')
+    .select('id, credit_balance, agent_enabled, name, ai_instructions, tone_formal_casual, tone_concise_detailed, tone_professional_warm, language_mix, emoji_frequency, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, disclose_ai_if_asked')
     .eq('slug', shopSlug)
     .single();
 
@@ -226,38 +227,29 @@ export async function processIncomingMessage(
     return { success: true, message: cached.response_text, cacheHit: true, preFilterHit: false, geminiCalled: false };
   }
 
-  // 4. Fetch shop system instructions and live inventory
-  const { data: shopDetails } = await supabaseAdmin
-    .from('shops')
-    .select('name, ai_instructions')
-    .eq('id', shop.id)
-    .single();
-
+  // 4. Fetch live inventory + example replies
   const { data: products } = await supabaseAdmin
     .from('products')
     .select('name, description, price, stock_quantity, currency')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
+    .eq('draft', false)
     .gt('stock_quantity', 0);
 
-  const productList = products && products.length > 0
-    ? products.map(p => `  * ${p.name}: ${p.price} ${p.currency ?? 'BDT'}${p.description ? ` — ${p.description}` : ''} (${p.stock_quantity} in stock)`).join('\n')
-    : '  * No products currently listed.';
+  const { data: exampleReplies } = await supabaseAdmin
+    .from('example_replies')
+    .select('customer_message, ideal_reply')
+    .eq('shop_id', shop.id)
+    .limit(10);
 
-  const systemPrompt = `You are DullBot, a deadpan, cynical, ruthlessly efficient AI sales assistant for ${shopDetails?.name ?? 'this shop'}.
-Your brand voice:
-- Never cheerful, never use exclamation marks.
-- Never say "Hi! How can I help you today" or use emojis.
-- Talk like a competent and slightly bored employee who just wants to get the job done and go home.
-- Keep responses short, direct, and factual.
-- Current products in shop inventory:
-${productList}
+  // 5. Build dynamic system prompt
+  const systemPrompt = buildSystemPrompt(
+    shop,
+    products ?? [],
+    exampleReplies ?? []
+  );
 
-If the customer wants to buy, collect their delivery details: Name, Phone Number, and Address.
-If they ask for other products, tell them we only carry what's listed.
-${shopDetails?.ai_instructions ? `\nAdditional shop instructions:\n${shopDetails.ai_instructions}` : ''}`;
-
-  // 5. Load conversation history from Supabase
+  // 6. Load conversation history from Supabase
   const history = await getConversationHistory(conversation.id);
 
   // 6. Call Gemini
