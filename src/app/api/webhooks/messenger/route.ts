@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { buildSystemPrompt } from '@/lib/prompt-builder';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
         // Find the shop associated with this page
         const { data: shop } = await supabaseAdmin
           .from('shops')
-          .select('id, name, meta_page_access_token')
+          .select('id, name, slug, meta_page_access_token, agent_enabled, credit_balance, ai_instructions, tone_formal_casual, tone_concise_detailed, tone_professional_warm, language_mix, emoji_frequency, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, disclose_ai_if_asked, tuning_updated_at')
           .eq('meta_page_id', pageId)
           .single();
 
@@ -120,6 +121,21 @@ export async function POST(request: Request) {
                   .eq('trigger_pattern', '__ai_instructions__')
                   .maybeSingle();
 
+                 // Fetch live inventory + example replies
+                const { data: products } = await supabaseAdmin
+                  .from('products')
+                  .select('name, description, price, stock_quantity, currency')
+                  .eq('shop_id', shop.id)
+                  .eq('is_active', true)
+                  .eq('draft', false)
+                  .gt('stock_quantity', 0);
+
+                const { data: exampleReplies } = await supabaseAdmin
+                  .from('example_replies')
+                  .select('customer_message, ideal_reply')
+                  .eq('shop_id', shop.id)
+                  .limit(10);
+
                 // Get customer name and gender from cache or Meta API
                 let customerProfile: { first_name: string; last_name: string; gender?: string } = { first_name: 'Customer', last_name: '', gender: 'unknown' };
                 if (shop.meta_page_access_token) {
@@ -145,24 +161,19 @@ export async function POST(request: Request) {
                 const customerName = `${customerProfile.first_name} ${customerProfile.last_name}`.trim();
                 const customerGender = customerProfile.gender;
 
-                let prompt = `You are a friendly, polite, and helpful AI customer service assistant for a shop named "${shop.name}".
-                Your goal is to assist the customer with their order or query while matching their language and writing style (Banglish vs Bengali vs English) in a warm, respectful way.
-                
-                CUSTOMER DETAILS:
-                - Name: ${customerName}
-                - Gender: ${customerGender}
-                
-                CRITICAL RULES:
-                1. Match the language exactly: If they speak English, use English. If they speak Bengali script, use Bengali script.
-                2. BANGLISH SUPPORT: If the customer writes Bengali using English letters ("Banglish" e.g., "kire", "kam kor", "bujos nai"), reply in casual Banglish using English letters.
-                3. RESPECT & PROFESSIONALISM: Even if you are being casual or using Banglish, you must remain polite and helpful. Never insult, mock, or say dismissive things (like "ki jalaite asho"). If the customer complains, demands respect ("somman"), or gets angry, immediately apologize politely and de-escalate (e.g., "Sorry boss/bhai, bolen ki dorkar?").
-                4. GENDER GREETINGS: If the customer's gender is known ('male' or 'female') and they prefer a formal tone (or are speaking in English), you may greet them respectfully using gender-appropriate terms (e.g., 'Sir' for male, 'Ma'am'/'Madam' for female). If the conversation is casual, you can use general friendly terms like 'bhai' (brother) or 'apu' (sister) based on their gender.
-                5. NO BOT EXCUSES: Never claim you were "busy" or "away" (you are an instant assistant, so saying you were busy sounds fake/unprofessional). Keep responses concise, natural, and helpful.`;
+                const shopWithInstructions = {
+                  ...shop,
+                  ai_instructions: customInstructions?.response_text || shop.ai_instructions
+                };
 
-                if (customInstructions?.response_text) {
-                  prompt += `\n\nCRITICAL WORKSPACE CUSTOM RULES & INFORMATION (Follow these rules strictly):\n${customInstructions.response_text}`;
-                }
-                
+                let systemPrompt = buildSystemPrompt(shopWithInstructions, products || [], exampleReplies || []);
+
+                // Customer context
+                systemPrompt += `\n\nCUSTOMER DETAILS:
+                - Name: ${customerName}
+                - Gender: ${customerGender}`;
+
+                let prompt = systemPrompt;
                 prompt += `\n\nHere is the recent chat history:\n${chatHistory}\n`;
 
                 if (imageUrl) {
