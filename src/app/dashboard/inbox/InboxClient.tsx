@@ -58,6 +58,11 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   const activeConv = conversations.find(c => c.id === activeId);
 
+  const isTakeoverRef = useRef(isTakeover);
+  useEffect(() => {
+    isTakeoverRef.current = isTakeover;
+  }, [isTakeover]);
+
   useEffect(() => {
     if (activeConv) {
       setIsTakeover(activeConv.status === 'human_takeover');
@@ -96,9 +101,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
     const convs = await getConversations(shop.id);
     setConversations(prev => {
-      const isIdentical = prev.length === convs.length && 
-        prev.every((c, i) => c.id === convs[i].id && c.last_message_at === convs[i].last_message_at && c.status === convs[i].status);
-      return isIdentical ? prev : convs;
+      const mappedConvs = convs.map(c => 
+        c.id === activeId ? { ...c, status: isTakeoverRef.current ? 'human_takeover' : 'bot_active' } : c
+      );
+      
+      const isIdentical = prev.length === mappedConvs.length && 
+        prev.every((c, i) => c.id === mappedConvs[i].id && c.last_message_at === mappedConvs[i].last_message_at && c.status === mappedConvs[i].status);
+      return isIdentical ? prev : mappedConvs;
     });
   };
 
@@ -333,7 +342,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
               <button
                 type="button"
                 onClick={scrollToTop}
-                className="p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center border border-dove/20"
+                className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
                 title="Scroll to beginning of conversation"
               >
                 <ArrowUp className="w-5 h-5" />
@@ -343,7 +352,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
               <button
                 type="button"
                 onClick={scrollToBottom}
-                className="p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center border border-dove/20"
+                className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
                 title="Scroll to latest messages"
               >
                 <ArrowDown className="w-5 h-5" />
