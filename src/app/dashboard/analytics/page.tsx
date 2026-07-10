@@ -33,16 +33,14 @@ export default async function AnalyticsPage() {
     { data: usageLogs },
     { data: conversations },
     { data: orders },
-    { data: messages },
   ] = await Promise.all([
     supabaseAdmin.from('usage_logs').select('created_at, billed_credits').eq('shop_id', shop.id).gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).order('created_at'),
     supabaseAdmin.from('conversations').select('id, customer_phone, status').eq('shop_id', shop.id),
     supabaseAdmin.from('orders').select('id, status').eq('shop_id', shop.id),
-    supabaseAdmin.from('messages').select('content, sender').eq('conversation_id', conversations?.[0]?.id ?? 'x').limit(0), // just for escalation — re-fetch below
   ]);
 
   // Fetch messages for escalation analysis (human_takeover conversations)
-  const humanConvIds = (conversations ?? []).filter(c => c.status === 'human_takeover').map(c => c.id);
+  const humanConvIds = (conversations ?? []).filter((c: any) => c.status === 'human_takeover').map((c: any) => c.id);
   const { data: humanMessages } = humanConvIds.length > 0
     ? await supabaseAdmin.from('messages').select('content, sender').in('conversation_id', humanConvIds.slice(0, 20)).eq('sender', 'customer').limit(50)
     : { data: [] };
