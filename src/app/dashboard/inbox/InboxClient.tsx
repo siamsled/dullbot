@@ -45,7 +45,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
 
     setShowScrollBottom(!isAtBottom);
-    setShowScrollTop(isAtBottom && scrollHeight > clientHeight + 100);
+    setShowScrollTop(!isAtBottom && scrollHeight > clientHeight + 100);
   };
 
   const scrollToBottom = () => {
@@ -328,6 +328,16 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           </div>
 
           {/* Floating scroll buttons */}
+          {showScrollTop && (
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="absolute bottom-36 left-1/2 -translate-x-1/2 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
+              title="Scroll to beginning of conversation"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </button>
+          )}
           {showScrollBottom && (
             <button
               type="button"
@@ -336,16 +346,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
               title="Scroll to latest messages"
             >
               <ArrowDown className="w-5 h-5" />
-            </button>
-          )}
-          {showScrollTop && (
-            <button
-              type="button"
-              onClick={scrollToTop}
-              className="absolute bottom-24 left-1/2 -translate-x-1/2 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
-              title="Scroll to beginning of conversation"
-            >
-              <ArrowUp className="w-5 h-5" />
             </button>
           )}
 
