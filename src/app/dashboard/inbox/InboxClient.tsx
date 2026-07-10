@@ -58,10 +58,18 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const loadData = async () => {
     if (activeId) {
       const msgs = await getMessages(activeId);
-      setMessages(msgs);
+      setMessages(prev => {
+        const isIdentical = prev.length === msgs.length && 
+          prev.every((m, i) => m.id === msgs[i].id && m.content === msgs[i].content && m.sender === msgs[i].sender);
+        return isIdentical ? prev : msgs;
+      });
     }
     const convs = await getConversations(shop.id);
-    setConversations(convs);
+    setConversations(prev => {
+      const isIdentical = prev.length === convs.length && 
+        prev.every((c, i) => c.id === convs[i].id && c.last_message_at === convs[i].last_message_at && c.status === convs[i].status);
+      return isIdentical ? prev : convs;
+    });
   };
 
   useEffect(() => {
@@ -70,9 +78,24 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     return () => clearInterval(interval);
   }, [activeId]);
 
+  const lastMsgCountRef = useRef(0);
+  const prevActiveIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Scroll to bottom immediately if active conversation changed
+    if (activeId !== prevActiveIdRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      prevActiveIdRef.current = activeId;
+      lastMsgCountRef.current = messages.length;
+      return;
+    }
+
+    // Scroll to bottom smoothly only if a new message was added
+    if (messages.length > lastMsgCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    lastMsgCountRef.current = messages.length;
+  }, [messages, activeId]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
