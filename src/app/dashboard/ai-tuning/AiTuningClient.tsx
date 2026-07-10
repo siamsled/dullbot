@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Sliders, Languages, Shield, MessageSquarePlus, Trash2, Loader2, ChevronDown, Eye } from 'lucide-react';
+import { Sliders, Languages, Shield, MessageSquarePlus, Trash2, Loader2, ChevronDown, Eye, Sparkles } from 'lucide-react';
 import { saveAiTuning, addExampleReply, deleteExampleReply } from './actions';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 

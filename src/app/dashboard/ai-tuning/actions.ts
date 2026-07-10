@@ -14,6 +14,7 @@ export async function saveAiTuning(payload: {
   auto_escalate_on_complaint: boolean;
   confidence_fallback: string;
   disclose_ai_if_asked: boolean;
+  ai_instructions: string | null;
 }) {
   const { error } = await supabaseAdmin
     .from('shops')
@@ -40,6 +41,7 @@ export async function addExampleReply(shopId: string, customerMessage: string, i
   return { success: true };
 }
 
+export async function deleteExampleReply(id: string) {
   const { data: example } = await supabaseAdmin.from('example_replies').select('shop_id').eq('id', id).single();
   if (example) {
     await supabaseAdmin.from('response_cache').delete().eq('shop_id', example.shop_id);

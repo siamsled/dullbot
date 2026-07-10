@@ -7,16 +7,15 @@ import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight, 
 import { disconnectFacebook, saveSettings } from './actions';
 
 export default function SettingsClient({ 
-  shop, 
-  initialAiInstructions 
+  shop
 }: { 
   shop: any; 
-  initialAiInstructions: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [isSaving, startSaveTransition] = useTransition();
   
   const [agentEnabled, setAgentEnabled] = useState(shop?.agent_enabled ?? true);
+  const [confirmationTier, setConfirmationTier] = useState<'light' | 'otp_verified' | 'prepay_verified'>(
     shop?.confirmation_tier ?? 'light'
   );
   const [bkashNumber, setBkashNumber] = useState(shop?.bkash_number ?? '');
