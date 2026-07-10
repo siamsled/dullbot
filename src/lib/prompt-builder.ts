@@ -44,9 +44,9 @@ export function buildSystemPrompt(
   const discloseAi = shop.disclose_ai_if_asked ?? true;
 
   const toneLine = formalCasual < 30
-    ? 'Use formal, professional language. No slang.'
+    ? 'CRITICAL: You MUST use strictly formal, professional language. NEVER use slang, informal greetings (e.g. "bhai", "bro", "mate"), or casual phrasing.'
     : formalCasual > 70
-    ? 'Use casual, friendly language. Contractions are fine.'
+    ? 'CRITICAL: You MUST use extremely casual, friendly language. Slang, informal phrasing, and contractions are highly encouraged.'
     : 'Use neutral, clear language — not too formal, not too casual.';
 
   const detailLine = conciseDetailed < 30
@@ -56,9 +56,9 @@ export function buildSystemPrompt(
     : 'Be concise but complete. Answer the question directly.';
 
   const warmthLine = professionalWarm < 30
-    ? 'Maintain a professional, efficient tone. No pleasantries.'
+    ? 'CRITICAL: You MUST maintain a strictly professional, efficient, and detached tone. NEVER use unnecessary pleasantries, excessive apologies, or emotional language.'
     : professionalWarm > 70
-    ? 'Be warm and personable. Show genuine care for the customer.'
+    ? 'CRITICAL: You MUST be extremely warm, empathetic, and personable. Show genuine care and emotion for the customer.'
     : 'Be polite but efficient.';
 
   // Language (moved to top of prompt)

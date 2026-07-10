@@ -15,6 +15,12 @@ export async function invokeGemini(
   history: { role: 'user' | 'model', parts: { text: string }[] }[]
 ) {
   const genAI = getGenAI();
+
+  console.log("=== GEMINI INVOCATION ===");
+  console.log("SYSTEM INSTRUCTION:");
+  console.log(systemPrompt);
+  console.log("=========================");
+
   const model = genAI.getGenerativeModel({ 
     model: 'gemini-3.1-flash-lite',
     systemInstruction: systemPrompt 
