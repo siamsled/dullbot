@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText } from 'lucide-react';
+import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText, ArrowDown, ArrowUp } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile } from './actions';
 
 function formatMessageDate(dateString: string) {
@@ -33,6 +33,28 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const [isTakeover, setIsTakeover] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+    setShowScrollBottom(!isAtBottom);
+    setShowScrollTop(isAtBottom && scrollHeight > clientHeight + 100);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToTop = () => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const activeConv = conversations.find(c => c.id === activeId);
 
@@ -87,6 +109,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
       prevActiveIdRef.current = activeId;
       lastMsgCountRef.current = messages.length;
+      setTimeout(handleScroll, 100);
       return;
     }
 
@@ -95,6 +118,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     lastMsgCountRef.current = messages.length;
+    setTimeout(handleScroll, 100);
   }, [messages, activeId]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -185,7 +209,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
       {/* Chat Window */}
       {activeId ? (
-        <div className="flex-1 flex flex-col bg-pure-white">
+        <div className="flex-1 flex flex-col bg-pure-white relative">
           {/* Chat Header */}
           <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
             <div className="flex items-center gap-3">
@@ -229,7 +253,11 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div 
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-6 space-y-6"
+          >
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
             ) : (
@@ -272,6 +300,28 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Floating scroll buttons */}
+          {showScrollBottom && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="absolute bottom-24 right-6 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
+              title="Scroll to latest messages"
+            >
+              <ArrowDown className="w-5 h-5" />
+            </button>
+          )}
+          {showScrollTop && (
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="absolute bottom-24 right-6 p-2.5 bg-ink text-white rounded-full shadow-lg hover:bg-black transition-all transform hover:scale-105 flex items-center justify-center z-10 border border-dove/20"
+              title="Scroll to beginning of conversation"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </button>
+          )}
 
           {/* Message Input */}
           <div className="p-4 bg-white border-t border-dove/20 shrink-0">
