@@ -1,6 +1,7 @@
 'use server';
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import crypto from 'crypto';
 
 export async function getMessages(conversationId: string) {
   const { data, error } = await supabaseAdmin
@@ -149,6 +150,37 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
   }
 
   return { customer_name: 'Facebook User' };
+}
+
+export async function flagCustomerAsFraud(conversationId: string, reason: string) {
+  const { data: conversation } = await supabaseAdmin
+    .from('conversations')
+    .select('customer_phone, shop_id')
+    .eq('id', conversationId)
+    .single();
+
+  if (!conversation) return { success: false, error: 'Conversation not found' };
+
+  const hashedPhone = crypto.createHash('sha256').update(conversation.customer_phone).digest('hex');
+
+  const { error } = await supabaseAdmin
+    .from('fraud_flags')
+    .insert({
+      shop_id: conversation.shop_id,
+      hashed_customer_id: hashedPhone,
+      reason
+    });
+
+  if (error) {
+    // Ignore duplicate inserts gracefully
+    if (error.code === '23505') return { success: true };
+    return { success: false, error: error.message };
+  }
+
+  // Auto-takeover
+  await toggleTakeover(conversationId, true);
+
+  return { success: true };
 }
 
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText, ArrowDown, ArrowUp } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile } from './actions';
+import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText, ArrowDown, ArrowUp, ShieldAlert } from 'lucide-react';
+import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -172,6 +172,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     await toggleTakeover(activeId, newStatus);
   };
 
+  const handleFlagFraud = async () => {
+    if (!activeId || !confirm("Are you sure you want to flag this customer as fraud? DullBot will stop responding to them.")) return;
+    await flagCustomerAsFraud(activeId, "Flagged from Inbox");
+    alert("Customer flagged as fraud.");
+    // Force reload to reflect takeover status
+    window.location.reload();
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] bg-white rounded-cards shadow-subtle border border-dove/20 flex overflow-hidden">
       {/* Conversations List */}
@@ -251,17 +259,28 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-ash mr-2">DullBot Status:</span>
-              <button 
-                onClick={handleToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleFlagFraud}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
+                title="Flag as Fraud (Blocks AI replies)"
               >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isTakeover ? 'translate-x-6' : 'translate-x-1'}`} />
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Block
               </button>
-              <span className={`text-xs font-medium ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
-                {!isTakeover ? 'Active' : 'Paused'}
-              </span>
+              <div className="w-px h-6 bg-dove/20"></div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-ash mr-2">DullBot Status:</span>
+                <button 
+                  onClick={handleToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isTakeover ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className={`text-xs font-medium ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
+                  {!isTakeover ? 'Active' : 'Paused'}
+                </span>
+              </div>
             </div>
           </div>
 

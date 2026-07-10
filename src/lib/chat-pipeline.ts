@@ -1,6 +1,7 @@
 import { invokeGemini } from './gemini';
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
+import crypto from 'crypto';
 
 // Gemini Flash Lite pricing (USD per million tokens) as of 2025
 const GEMINI_INPUT_COST_PER_M = 0.075;
@@ -170,6 +171,19 @@ export async function processIncomingMessage(
 
   // If bot is disabled, skip
   if (!shop.agent_enabled) {
+    return { success: false, message: null, cacheHit: false, preFilterHit: false, geminiCalled: false };
+  }
+
+  // Check fraud flag
+  const hashedPhone = crypto.createHash('sha256').update(customerPhone).digest('hex');
+  const { data: fraudFlag } = await supabaseAdmin
+    .from('fraud_flags')
+    .select('id')
+    .eq('shop_id', shop.id)
+    .eq('hashed_customer_id', hashedPhone)
+    .single();
+
+  if (fraudFlag) {
     return { success: false, message: null, cacheHit: false, preFilterHit: false, geminiCalled: false };
   }
 
