@@ -30,13 +30,13 @@ export async function saveSettings(
     aiInstructions: string;
   }
 ) {
-  // 1. Update shops table
   const { error: shopErr } = await supabaseAdmin
     .from('shops')
     .update({
       confirmation_tier: payload.confirmationTier,
       bkash_number: payload.bkashNumber,
       agent_enabled: payload.agentEnabled,
+      ai_instructions: payload.aiInstructions.trim() || null,
     })
     .eq('id', shopId);
 
@@ -45,34 +45,7 @@ export async function saveSettings(
     return { success: false, error: shopErr.message };
   }
 
-  // 2. Clean up old AI instructions
-  const { error: deleteErr } = await supabaseAdmin
-    .from('quick_replies')
-    .delete()
-    .eq('shop_id', shopId)
-    .eq('trigger_pattern', '__ai_instructions__');
-
-  if (deleteErr) {
-    console.error('Failed to clean up old AI instructions:', deleteErr);
-    return { success: false, error: deleteErr.message };
-  }
-
-  // 3. Insert new AI instructions if provided
-  if (payload.aiInstructions.trim()) {
-    const { error: insertErr } = await supabaseAdmin
-      .from('quick_replies')
-      .insert({
-        shop_id: shopId,
-        trigger_pattern: '__ai_instructions__',
-        response_text: payload.aiInstructions.trim(),
-      });
-
-    if (insertErr) {
-      console.error('Failed to save custom AI instructions:', insertErr);
-      return { success: false, error: insertErr.message };
-    }
-  }
-
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
+

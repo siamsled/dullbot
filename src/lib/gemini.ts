@@ -24,10 +24,13 @@ export async function invokeGemini(
   try {
     const chat = model.startChat({ history });
     const result = await chat.sendMessage(customerMessage);
-    
+    const usage = result.response.usageMetadata;
+
     return {
       success: true,
       text: result.response.text(),
+      inputTokens: usage?.promptTokenCount ?? 0,
+      outputTokens: usage?.candidatesTokenCount ?? 0,
     };
   } catch (error: any) {
     console.error("Gemini invocation failed:", error);
@@ -36,12 +39,16 @@ export async function invokeGemini(
         success: false,
         isRateLimit: true,
         text: "Give me a second, let me check that for you.",
+        inputTokens: 0,
+        outputTokens: 0,
       };
     }
     return {
       success: false,
       isRateLimit: false,
       text: "Something went wrong on my end. I'm taking a break.",
+      inputTokens: 0,
+      outputTokens: 0,
     };
   }
 }
