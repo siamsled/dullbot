@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,7 @@ const navItems = [
   { name: 'Orders', href: '/dashboard/orders', icon: Package },
   { name: 'Inventory', href: '/dashboard/inventory', icon: Box },
   { name: 'AI Tuning', href: '/dashboard/ai-tuning', icon: Sliders },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart },
   { name: 'Credits', href: '/dashboard/credits', icon: Zap },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Playground', href: '/dashboard/sandbox', icon: Sparkles },
