@@ -63,9 +63,9 @@ export function buildSystemPrompt(
 
   // Language
   const languageLine =
-    language === 'bn' ? 'Reply exclusively in Bengali (বাংলা).'
-    : language === 'bn_en_mix' ? 'Reply in casual Banglish (mixed Bengali and English, as commonly spoken).'
-    : 'Reply in English.';
+    language === 'bn' ? 'CRITICAL: You MUST reply exclusively in Bengali (বাংলা). Do NOT use English or Banglish.'
+    : language === 'bn_en_mix' ? 'CRITICAL: You MUST reply in casual Banglish (Bangla written with English alphabet).'
+    : 'CRITICAL: You MUST reply exclusively in English. Do NOT match the customer\'s language if they speak something else.';
 
   // Emoji
   const emojiLine =
