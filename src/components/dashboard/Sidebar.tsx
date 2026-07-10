@@ -2,19 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut } from 'lucide-react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { name: 'Live Inbox', href: '/dashboard/inbox', icon: MessageSquareText },
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Orders', href: '/dashboard/orders', icon: Package },
   { name: 'Inventory', href: '/dashboard/inventory', icon: Box },
+  { name: 'Credits', href: '/dashboard/credits', icon: Zap },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Playground', href: '/dashboard/sandbox', icon: Sparkles },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await supabaseBrowser.auth.signOut();
+    router.push('/login');
+  };
 
   return (
     <aside className="w-64 bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0">
@@ -51,12 +60,19 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-full bg-ink text-pure-white flex items-center justify-center text-xs font-bold shadow-subtle">
             DS
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-ink">Dull Store</span>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-sm font-medium text-ink truncate">Dull Store</span>
             <span className="text-xs text-ash flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
             </span>
           </div>
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            className="p-1.5 rounded-lg text-dove hover:text-rust hover:bg-apricot-wash transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>
