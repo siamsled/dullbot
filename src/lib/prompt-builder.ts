@@ -30,11 +30,7 @@ export function buildSystemPrompt(
 ): string {
   const shopName = shop.name ?? 'this shop';
 
-  // If the owner set a manual override, use it but still inject products
-  if (shop.ai_instructions) {
-    const productSection = buildProductSection(products);
-    return `${shop.ai_instructions}\n\n${productSection}`;
-  }
+
 
   // --- Tone directives ---
   const formalCasual = shop.tone_formal_casual ?? 50;
@@ -98,6 +94,11 @@ export function buildSystemPrompt(
     ? 'If a customer directly asks whether you are an AI or a bot, confirm honestly that you are.'
     : 'Do not volunteer information about being an AI. If directly asked, you may deflect by saying "I\'m here to help you with your order."';
 
+  // Custom Instructions
+  const customInstructionsSection = shop.ai_instructions 
+    ? `\nCUSTOM INSTRUCTIONS:\n${shop.ai_instructions}\n`
+    : '';
+
   // Product section
   const productSection = buildProductSection(products);
 
@@ -123,7 +124,7 @@ BUSINESS RULES:
 - ${fallbackLine}
 - ${disclosureLine}
 - If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
-
+${customInstructionsSection}
 ${productSection}${examplesSection}`;
 }
 
