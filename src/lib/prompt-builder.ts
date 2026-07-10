@@ -61,11 +61,11 @@ export function buildSystemPrompt(
     ? 'Be warm and personable. Show genuine care for the customer.'
     : 'Be polite but efficient.';
 
-  // Language
+  // Language (moved to top of prompt)
   const languageLine =
-    language === 'bn' ? 'CRITICAL: You MUST reply exclusively in Bengali (বাংলা). Do NOT use English or Banglish.'
-    : language === 'bn_en_mix' ? 'CRITICAL: You MUST reply in casual Banglish (Bangla written with English alphabet).'
-    : 'CRITICAL: You MUST reply exclusively in English. Do NOT match the customer\'s language if they speak something else.';
+    language === 'bn' ? 'CRITICAL: You MUST reply exclusively in Bengali script (বাংলা). NEVER use English letters.'
+    : language === 'bn_en_mix' ? 'CRITICAL: You MUST reply in casual Banglish (Bangla words written with English alphabet). NEVER use Bengali script.'
+    : 'CRITICAL: You MUST reply exclusively in English. NEVER use Bengali words.';
 
   // Emoji
   const emojiLine =
@@ -110,12 +110,12 @@ export function buildSystemPrompt(
     : '';
 
   return `You are an AI sales assistant for ${shopName}.
+${languageLine}
 
 TONE & STYLE:
 - ${toneLine}
 - ${detailLine}
 - ${warmthLine}
-- ${languageLine}
 - ${emojiLine}
 
 BUSINESS RULES:
