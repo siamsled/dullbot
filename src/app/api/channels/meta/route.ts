@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         // Find the shop that connected this page
         const { data: shop } = await supabaseAdmin
           .from('shops')
-          .select('slug')
+          .select('id, slug')
           .eq('meta_page_id', pageId)
           .single();
 
@@ -50,6 +50,12 @@ export async function POST(request: Request) {
         const shopSlug = shop.slug;
 
         for (const webhook_event of entry.messaging) {
+          // Ignore echo messages (messages sent by the page/bot itself)
+          if (webhook_event.message?.is_echo) {
+            console.log("Ignoring echo message");
+            continue;
+          }
+
           if (webhook_event.message && webhook_event.message.text) {
             const senderPsid = webhook_event.sender.id;
             const messageText = webhook_event.message.text;
@@ -61,7 +67,28 @@ export async function POST(request: Request) {
             
             // Send reply via Meta API, explicitly passing the shopSlug so we fetch the right page token
             if (result.success && result.message) {
-              await sendMetaMessage(senderPsid, result.message, shopSlug);
+              const sendResult = await sendMetaMessage(senderPsid, result.message, shopSlug);
+              if (!sendResult.success) {
+                console.error(`Failed to send message via Meta API: ${sendResult.error}`);
+                
+                // Fetch conversation ID to store the system error
+                const { data: conversation } = await supabaseAdmin
+                  .from('conversations')
+                  .select('id')
+                  .eq('shop_id', shop.id)
+                  .eq('customer_phone', senderPsid)
+                  .single();
+
+                if (conversation) {
+                  await supabaseAdmin
+                    .from('messages')
+                    .insert({
+                      conversation_id: conversation.id,
+                      sender: 'bot',
+                      content: `[SYSTEM ERROR] Failed to send via Meta API: ${sendResult.error}`
+                    });
+                }
+              }
             }
           }
         }

@@ -21,11 +21,10 @@ export async function sendMetaMessage(recipientId: string, text: string, shopSlu
   }
 
   try {
-    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${pageAccessToken}`,
       },
       body: JSON.stringify({
         recipient: {
@@ -33,8 +32,7 @@ export async function sendMetaMessage(recipientId: string, text: string, shopSlu
         },
         message: {
           text: text
-        },
-        messaging_type: "RESPONSE"
+        }
       })
     });
 

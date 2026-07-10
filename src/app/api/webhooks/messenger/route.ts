@@ -44,6 +44,12 @@ export async function POST(request: Request) {
 
         if (entry.messaging) {
           for (const webhookEvent of entry.messaging) {
+            // Ignore echo messages (messages sent by the page/bot itself)
+            if (webhookEvent.message?.is_echo) {
+              console.log("Ignoring echo message");
+              continue;
+            }
+
             const senderId = webhookEvent.sender?.id;
 
             if (webhookEvent.message && senderId) {
