@@ -81,9 +81,17 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     if (activeId) {
       const msgs = await getMessages(activeId);
       setMessages(prev => {
-        const isIdentical = prev.length === msgs.length && 
-          prev.every((m, i) => m.id === msgs[i].id && m.content === msgs[i].content && m.sender === msgs[i].sender);
-        return isIdentical ? prev : msgs;
+        // Keep any optimistic messages that aren't yet saved in the DB
+        const optimisticMsgs = prev.filter(m => m.isOptimistic);
+        const unsavedOptimistic = optimisticMsgs.filter(opt => 
+          !msgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
+        );
+
+        const merged = [...msgs, ...unsavedOptimistic];
+
+        const isIdentical = prev.length === merged.length && 
+          prev.every((m, i) => m.id === merged[i].id && m.content === merged[i].content && m.sender === merged[i].sender);
+        return isIdentical ? prev : merged;
       });
     }
     const convs = await getConversations(shop.id);
@@ -129,7 +137,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     setInput('');
     
     // Optimistic UI update
-    const newMsg = { id: Date.now(), sender: 'human_agent', content: text, created_at: new Date().toISOString() };
+    const newMsg = { 
+      id: `temp-${Date.now()}`, 
+      sender: 'human_agent', 
+      content: text, 
+      created_at: new Date().toISOString(),
+      isOptimistic: true
+    };
     setMessages(prev => [...prev, newMsg]);
 
     await sendMessage(activeId, text);

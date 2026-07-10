@@ -61,26 +61,24 @@ export async function sendMessage(conversationId: string, content: string) {
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', conversationId);
 
-  // 3. Send out to Facebook
-  try {
-    const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        recipient: { id: conversation.customer_phone },
-        message: { text: content }
-      })
-    });
-    
+  // 3. Send out to Facebook (Non-blocking)
+  fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      recipient: { id: conversation.customer_phone },
+      message: { text: content }
+    })
+  }).then(async (fbRes) => {
     if (!fbRes.ok) {
       const fbErr = await fbRes.json();
       console.error("Facebook API Error (Human Reply):", fbErr);
     }
-  } catch (fbError) {
+  }).catch((fbError) => {
     console.error("Failed to push human message to FB:", fbError);
-  }
+  });
   
   return data;
 }
