@@ -256,7 +256,7 @@ export async function processIncomingMessage(
   // 4. Fetch live inventory (products + variants) for AI context
   const { data: products } = await supabaseAdmin
     .from('products')
-    .select('name, description, price, stock_quantity, currency, sku')
+    .select('name, description, price, stock_quantity, currency, sku, image_url')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .eq('draft', false)
@@ -269,7 +269,7 @@ export async function processIncomingMessage(
   // Re-query with id field to attach variants
   const { data: productsWithId } = await supabaseAdmin
     .from('products')
-    .select('id, name, description, price, stock_quantity, currency, sku')
+    .select('id, name, description, price, stock_quantity, currency, sku, image_url')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .eq('draft', false)

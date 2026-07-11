@@ -14,13 +14,11 @@ async function testPipeline() {
   await supabase.from('conversations').update({ status: 'bot_active' }).eq('customer_phone', 'test-phone-123');
   await supabase.from('conversations').update({ status: 'bot_active' }).eq('customer_phone', 'test-phone-456');
 
-  console.log("Processing message 2...");
-  const result2 = await processIncomingMessage('dull-store', 'test-phone-456', 'vai dam koto?', 'mock');
-  console.log("Result 2:", result2);
-
-  console.log("Processing message 3...");
-  const result3 = await processIncomingMessage('dull-store', 'test-phone-123', 'ki obostha boss, maal ache naki?', 'mock');
-  console.log("Result 3:", result3);
+  console.log("Processing message: ki ki ache chobi din...");
+  const result = await processIncomingMessage('dull-store', 'test-phone-456', 'ki ki ache chobi din', 'mock');
+  console.log("\n--- AI RESPONSE ---");
+  console.log(result.message);
+  console.log("-------------------\n");
 }
 
 testPipeline();

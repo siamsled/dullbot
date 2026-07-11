@@ -144,7 +144,7 @@ export async function POST(request: Request) {
                  // Fetch live inventory + example replies
                 const { data: products } = await supabaseAdmin
                   .from('products')
-                  .select('name, description, price, stock_quantity, currency')
+                  .select('name, description, price, stock_quantity, currency, image_url')
                   .eq('shop_id', shop.id)
                   .eq('is_active', true)
                   .eq('draft', false)
@@ -270,22 +270,54 @@ export async function POST(request: Request) {
                       ticketReason = 'complaint';
                     }
 
+                    // Parse out Markdown images
+                    const markdownImageRegex = /!\[.*?\]\((.*?)\)/g;
+                    const imageUrls: string[] = [];
+                    let messengerText = aiResponseText;
+
+                    let match;
+                    while ((match = markdownImageRegex.exec(aiResponseText)) !== null) {
+                      if (match[1]) imageUrls.push(match[1]);
+                    }
+                    // Remove markdown tags for plain text Messenger
+                    messengerText = messengerText.replace(markdownImageRegex, '').trim();
+
                     // Send to Meta Graph API
                     if (shop.meta_page_access_token) {
-                      const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                          recipient: { id: senderId },
-                          message: { text: aiResponseText }
-                        })
-                      });
-                      
-                      if (!fbRes.ok) {
-                        const fbErr = await fbRes.json();
-                        throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
+                      if (messengerText) {
+                        const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            recipient: { id: senderId },
+                            message: { text: messengerText }
+                          })
+                        });
+                        
+                        if (!fbRes.ok) {
+                          const fbErr = await fbRes.json();
+                          throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
+                        }
+                      }
+
+                      // Send image attachments separately
+                      for (const url of imageUrls) {
+                        const fbImgRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            recipient: { id: senderId },
+                            message: {
+                              attachment: {
+                                type: "image",
+                                payload: { url: url, is_reusable: true }
+                              }
+                            }
+                          })
+                        });
+                        if (!fbImgRes.ok) {
+                          console.error("Failed to send image attachment to Messenger:", await fbImgRes.json());
+                        }
                       }
                     }
 

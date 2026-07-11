@@ -29,6 +29,7 @@ type ProductRow = {
   currency?: string | null;
   stock_quantity?: number | null;
   sku?: string | null;
+  image_url?: string | null;
   variants?: VariantRow[];
 };
 
@@ -108,6 +109,9 @@ export function buildSystemPrompt(
     ? `\nCUSTOM INSTRUCTIONS:\n${shop.ai_instructions}\n`
     : '';
 
+  // Image Instructions
+  const imageLine = 'If a customer asks for pictures of a product, or if you are recommending a specific product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line.';
+
   // Product section
   const productSection = buildProductSection(products);
 
@@ -132,6 +136,7 @@ BUSINESS RULES:
 - ${escalateLine}
 - ${fallbackLine}
 - ${disclosureLine}
+- ${imageLine}
 - If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
@@ -149,7 +154,7 @@ function buildProductSection(products: ProductRow[]): string {
 
     if (p.variants && p.variants.length > 0) {
       // Product with variants — emit each variant's stock and price
-      lines.push(`  • ${p.name}${p.description ? ` — ${p.description}` : ''}`);
+      lines.push(`  • ${p.name}${p.description ? ` — ${p.description}` : ''}${p.image_url ? ` (Image URL: ${p.image_url})` : ''}`);
       for (const v of p.variants) {
         const effectivePrice = v.price_override ?? p.price;
         const stockStr = v.stock > 0 ? `${v.stock} in stock` : 'OUT OF STOCK';
@@ -165,7 +170,8 @@ function buildProductSection(products: ProductRow[]): string {
         `  • ${p.name}: ${p.price} ${currency}` +
         (p.description ? ` — ${p.description}` : '') +
         (stockStr ? ` (${stockStr})` : '') +
-        (p.sku ? ` [SKU: ${p.sku}]` : '')
+        (p.sku ? ` [SKU: ${p.sku}]` : '') +
+        (p.image_url ? ` (Image URL: ${p.image_url})` : '')
       );
     }
   }
