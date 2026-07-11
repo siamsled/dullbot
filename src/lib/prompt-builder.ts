@@ -80,14 +80,14 @@ export function buildSystemPrompt(
 
   // Escalation
   const escalateLine = escalateOnComplaint
-    ? 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself.'
-    : 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help.';
+    ? 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself. You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.'
+    : 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
 
   // Confidence fallback
   const fallbackLine =
     confidenceFallback === 'guess' ? 'If unsure, give your best guess while acknowledging uncertainty.'
     : confidenceFallback === 'say_checking' ? 'If you are unsure about something, say "Let me check on that for you" and do not fabricate information.'
-    : 'If unsure, escalate to a senior colleague immediately rather than guessing.';
+    : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
 
   // AI disclosure
   const disclosureLine = discloseAi

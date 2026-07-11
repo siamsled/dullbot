@@ -36,6 +36,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed'>('all');
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -106,7 +107,12 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       );
       
       const isIdentical = prev.length === mappedConvs.length && 
-        prev.every((c, i) => c.id === mappedConvs[i].id && c.last_message_at === mappedConvs[i].last_message_at && c.status === mappedConvs[i].status);
+        prev.every((c, i) => 
+          c.id === mappedConvs[i].id && 
+          c.last_message_at === mappedConvs[i].last_message_at && 
+          c.status === mappedConvs[i].status &&
+          c.ticket_reason === mappedConvs[i].ticket_reason
+        );
       return isIdentical ? prev : mappedConvs;
     });
   };
@@ -194,12 +200,40 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
               className="w-full pl-9 pr-4 py-2 bg-fog rounded-inputs text-sm text-ink border-transparent focus:border-dove focus:ring-0 transition-colors"
             />
           </div>
+          {/* Filter Toggles */}
+          <div className="flex gap-1.5 mt-3">
+            {(['all', 'tickets', 'confirmed'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`flex-1 py-1.5 text-[11px] font-medium rounded-md border transition-all ${
+                  filter === f
+                    ? 'bg-ink text-white border-ink shadow-sm'
+                    : 'bg-white text-ash border-dove/20 hover:bg-dove/10 hover:text-ink'
+                }`}
+              >
+                {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : 'Orders'}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="p-8 text-center text-ash text-sm">No conversations yet.</div>
-          ) : (
-            conversations.map(conv => (
+          {(() => {
+            const filteredConversations = conversations.filter(conv => {
+              if (filter === 'tickets') {
+                return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure';
+              }
+              if (filter === 'confirmed') {
+                return conv.orders?.some((o: any) => o.status === 'confirmed');
+              }
+              return true;
+            });
+
+            if (filteredConversations.length === 0) {
+              return <div className="p-8 text-center text-ash text-sm">No conversations found.</div>;
+            }
+
+            return filteredConversations.map(conv => (
               <button
                 key={conv.id}
                 onClick={() => setActiveId(conv.id)}
@@ -219,7 +253,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                     <p className="text-sm font-medium text-ink truncate">{profiles[conv.customer_phone]?.customer_name || conv.customer_phone}</p>
                     <p className="text-xs text-ash">{formatMessageDate(conv.last_message_at)}</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {conv.status === 'human_takeover' ? (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-apricot-wash text-rust">
                         <UserCog className="w-3 h-3" /> Human
@@ -229,12 +263,27 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         <Bot className="w-3 h-3" /> Bot
                       </span>
                     )}
+                    {conv.ticket_reason === 'complaint' && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">
+                        <AlertTriangle className="w-2.5 h-2.5" /> Complaint
+                      </span>
+                    )}
+                    {conv.ticket_reason === 'unsure' && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+                        <ShieldAlert className="w-2.5 h-2.5" /> Unsure
+                      </span>
+                    )}
+                    {conv.orders?.some((o: any) => o.status === 'confirmed') && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">
+                        <ShieldCheck className="w-2.5 h-2.5" /> Order
+                      </span>
+                    )}
                     <p className="text-xs text-ash truncate">Active on {conv.channel}</p>
                   </div>
                 </div>
               </button>
-            ))
-          )}
+            ));
+          })()}
         </div>
       </div>
 

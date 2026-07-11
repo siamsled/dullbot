@@ -248,9 +248,20 @@ export async function POST(request: Request) {
                   }
                   
                   const result = await model.generateContent(promptParts);
-                  const aiResponseText = result.response.text().trim();
+                  let aiResponseText = result.response.text().trim();
 
                   if (aiResponseText) {
+                    let ticketReason: string | null = null;
+                    if (aiResponseText.includes('[ESCALATION: COMPLAINT]')) {
+                      ticketReason = 'complaint';
+                      aiResponseText = aiResponseText.replace('[ESCALATION: COMPLAINT]', '').trim();
+                    } else if (aiResponseText.includes('[ESCALATION: UNSURE]')) {
+                      ticketReason = 'unsure';
+                      aiResponseText = aiResponseText.replace('[ESCALATION: UNSURE]', '').trim();
+                    } else if (isEscalationResponse(aiResponseText)) {
+                      ticketReason = 'complaint';
+                    }
+
                     // Send to Meta Graph API
                     if (shop.meta_page_access_token) {
                       const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
@@ -280,10 +291,10 @@ export async function POST(request: Request) {
                       });
 
                     // Check if the bot response indicates escalation/takeover
-                    if (isEscalationResponse(aiResponseText)) {
+                    if (ticketReason) {
                       await supabaseAdmin
                         .from('conversations')
-                        .update({ status: 'human_takeover' })
+                        .update({ status: 'human_takeover', ticket_reason: ticketReason })
                         .eq('id', conversation.id);
                     }
                   }

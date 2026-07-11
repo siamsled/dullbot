@@ -86,9 +86,13 @@ export async function sendMessage(conversationId: string, content: string) {
 
 export async function toggleTakeover(conversationId: string, isTakeover: boolean) {
   const status = isTakeover ? 'human_takeover' : 'bot_active';
+  const updateData: any = { status };
+  if (!isTakeover) {
+    updateData.ticket_reason = null;
+  }
   const { error } = await supabaseAdmin
     .from('conversations')
-    .update({ status })
+    .update(updateData)
     .eq('id', conversationId);
     
   return !error;
@@ -125,7 +129,7 @@ async function getFacebookProfile(psid: string, accessToken: string) {
 export async function getConversations(shopId: string) {
   const { data: conversations, error } = await supabaseAdmin
     .from('conversations')
-    .select('*')
+    .select('*, orders(status)')
     .eq('shop_id', shopId)
     .order('last_message_at', { ascending: false });
 
