@@ -91,7 +91,8 @@ export default function CatalogueTable({
   const [scrapeUrl, setScrapeUrl] = useState(websiteUrl || '');
   const [scrapeLoading, setScrapeLoading] = useState(false);
   const [scrapeMsg, setScrapeMsg] = useState('');
-  const [showScrapeCard, setShowScrapeCard] = useState(false);
+  // scrapeUrl always starts from the websiteUrl prop if set
+
 
   const reorderIds = useMemo(() => new Set(reorderCandidates.map(r => r.id)), [reorderCandidates]);
 
@@ -171,10 +172,30 @@ export default function CatalogueTable({
     }
   };
 
+  const [scrapeStep, setScrapeStep] = useState<string>('');
+  const [scrapeSuccess, setScrapeSuccess] = useState(false);
+
   const handleScrape = async () => {
     if (!scrapeUrl) return;
     setScrapeLoading(true);
     setScrapeMsg('');
+    setScrapeSuccess(false);
+
+    // Show animated steps while waiting
+    const steps = [
+      'Visiting your website…',
+      'Finding product pages…',
+      'Reading product listings…',
+      'Extracting with AI…',
+      'Saving to your inventory…',
+    ];
+    let stepIdx = 0;
+    setScrapeStep(steps[0]);
+    const stepTimer = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+      setScrapeStep(steps[stepIdx]);
+    }, 5000);
+
     try {
       const res = await fetch('/api/scrape', {
         method: 'POST',
@@ -182,10 +203,23 @@ export default function CatalogueTable({
         body: JSON.stringify({ shopId, url: scrapeUrl }),
       });
       const data = await res.json();
-      setScrapeMsg(data.message || data.error || 'Done.');
-      if (res.ok) window.location.reload();
+      clearInterval(stepTimer);
+      setScrapeStep('');
+
+      if (res.ok && data.count > 0) {
+        setScrapeSuccess(true);
+        setScrapeMsg(data.message);
+        // Reload after short delay so user can read the message
+        setTimeout(() => window.location.reload(), 2000);
+      } else if (res.ok) {
+        setScrapeMsg(data.message || 'No products found. Try a direct product listing URL.');
+      } else {
+        setScrapeMsg(data.error || 'Import failed. Try again.');
+      }
     } catch {
-      setScrapeMsg('Failed to reach scraper.');
+      clearInterval(stepTimer);
+      setScrapeStep('');
+      setScrapeMsg('Could not reach the importer. Check your internet connection.');
     } finally {
       setScrapeLoading(false);
     }
@@ -251,45 +285,80 @@ export default function CatalogueTable({
         </div>
       )}
 
-      {/* ── Import from Website Card (Phase 3 preserved) ────────────── */}
-      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-graphite" />
-            <h2 className="text-base font-medium text-ink">Import from Website</h2>
-          </div>
+      {/* ── Import from Website Card ──────────────────────────────────── */}
+      <div className={`rounded-cards shadow-subtle border p-5 transition-colors ${
+        scrapeSuccess ? 'bg-green-50 border-green-200' : 'bg-white border-dove/10'
+      }`}>
+        <div className="flex items-center gap-2 mb-1">
+          <Globe className="w-4 h-4 text-graphite" />
+          <h2 className="text-base font-medium text-ink">Import from Website</h2>
+          {scrapeSuccess && (
+            <span className="ml-auto text-xs text-green-700 font-medium">Reloading…</span>
+          )}
+        </div>
+        <p className="text-xs text-ash mb-4">
+          Paste any page from your website — DullBot&apos;s AI will crawl up to 5 linked product pages,
+          extract every product it finds, and also learn your business name, shipping policy, and
+          contact info. <strong className="text-ink">Stock quantities are always set to 0</strong> — you
+          set them yourself after reviewing the import.
+        </p>
+
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={scrapeUrl}
+            onChange={e => setScrapeUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleScrape()}
+            placeholder="https://your-shop.com  or  https://your-shop.com/products"
+            disabled={scrapeLoading}
+            className="flex-1 bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove disabled:opacity-60"
+          />
           <button
-            onClick={() => setShowScrapeCard(v => !v)}
-            className="text-xs text-ash hover:text-ink transition-colors"
+            onClick={handleScrape}
+            disabled={scrapeLoading || !scrapeUrl.trim()}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-buttons bg-ink text-white text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 shrink-0"
           >
-            {showScrapeCard ? 'Hide' : 'Configure'}
+            {scrapeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+            {scrapeLoading ? 'Importing…' : 'Import'}
           </button>
         </div>
-        {showScrapeCard && (
-          <div className="mt-4 space-y-3">
-            <p className="text-sm text-ash">Paste your product page URL. DullBot will extract products as drafts for your review.</p>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={scrapeUrl}
-                onChange={e => setScrapeUrl(e.target.value)}
-                placeholder="https://your-shop.com/products"
-                className="flex-1 bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
-              />
-              <button
-                onClick={handleScrape}
-                disabled={scrapeLoading || !scrapeUrl}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-buttons bg-ink text-white text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 shrink-0"
-              >
-                {scrapeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Import'}
-              </button>
-            </div>
-            {scrapeMsg && (
-              <p className="text-sm text-ash flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-rust shrink-0" />
-                {scrapeMsg}
+
+        {/* Progress step */}
+        {scrapeLoading && scrapeStep && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-ash">
+            <span className="w-4 h-4 border-2 border-ink/20 border-t-ink rounded-full animate-spin shrink-0" />
+            {scrapeStep}
+          </div>
+        )}
+
+        {/* Result message */}
+        {scrapeMsg && !scrapeLoading && (
+          <div className={`mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm ${
+            scrapeSuccess
+              ? 'bg-green-100 text-green-800'
+              : 'bg-apricot-wash text-rust'
+          }`}>
+            {scrapeSuccess
+              ? <Check className="w-4 h-4 shrink-0 mt-0.5" />
+              : <AlertTriangle className="w-3.5 h-3.5 text-rust shrink-0 mt-0.5" />}
+            <span>{scrapeMsg}</span>
+          </div>
+        )}
+
+        {/* Tips */}
+        {!scrapeLoading && !scrapeMsg && (
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
+            {[
+              'Works with any public website — Shopify, WooCommerce, custom',
+              'Extracts names, prices, descriptions, and images',
+              'Imports as drafts — you review and approve each product',
+              'Business context (shipping, returns, contact) saved to AI settings',
+            ].map(tip => (
+              <p key={tip} className="text-xs text-dove flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-dove shrink-0" />
+                {tip}
               </p>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -464,7 +533,7 @@ export default function CatalogueTable({
                 Add Product
               </button>
               <button
-                onClick={() => setShowScrapeCard(true)}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-buttons border border-dove/30 text-sm text-ash hover:text-ink hover:border-ink/30 transition-colors"
               >
                 <Globe className="w-4 h-4" />
