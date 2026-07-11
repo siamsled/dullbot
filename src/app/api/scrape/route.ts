@@ -153,8 +153,8 @@ async function extractSpaData(rootHtml: string, baseUrl: string): Promise<{ url:
           const ct = res.headers.get('content-type') ?? '';
           if (ct.includes('json')) {
             const text = await res.text();
-            // Only add if it's not massive (cap at 20KB)
-            if (text.length > 50 && text.length < 20000) {
+            // Allow up to 3MB for JSON catalogs (Gemini 2.0 handles 1M tokens easily)
+            if (text.length > 50 && text.length < 3000000) {
               dataResults.push({ url: apiUrl, text });
             }
           }
@@ -193,11 +193,18 @@ async function extractWithGemini(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-  // Combine all page texts, capped at ~20k chars total to stay within token limits
+  // Combine all page texts, allowing up to 1.5M chars total for large SPA JSON payloads
   const combined = pageTexts
-    .map(p => `=== PAGE: ${p.url} ===\n${p.text.slice(0, 8000)}`)
+    .map(p => {
+      // If it's raw JSON from our SPA extractor, allow up to 500k chars
+      if (p.text.startsWith('[JSON DATA]')) {
+        return `=== PAGE: ${p.url} ===\n${p.text.slice(0, 500000)}`;
+      }
+      // Standard HTML pages capped at 15k
+      return `=== PAGE: ${p.url} ===\n${p.text.slice(0, 15000)}`;
+    })
     .join('\n\n')
-    .slice(0, 22000);
+    .slice(0, 1500000);
 
   const prompt = `You are extracting data from a business website to populate an inventory management system.
 
