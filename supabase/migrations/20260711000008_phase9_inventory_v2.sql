@@ -27,8 +27,9 @@ create table if not exists suppliers (
 );
 
 -- FK from products to suppliers (must be after suppliers table)
+alter table products drop constraint if exists fk_default_supplier;
 alter table products
-  add constraint if not exists fk_default_supplier
+  add constraint fk_default_supplier
     foreign key (default_supplier_id) references suppliers(id);
 
 -- ─── Product Variants ──────────────────────────────────────────────────────────
@@ -60,13 +61,15 @@ create table if not exists stock_movements (
 );
 
 -- FK from stock_movements to product_variants
+alter table stock_movements drop constraint if exists fk_variant;
 alter table stock_movements
-  add constraint if not exists fk_variant
+  add constraint fk_variant
     foreign key (variant_id) references product_variants(id) on delete set null;
 
 -- FK from stock_movements to suppliers
+alter table stock_movements drop constraint if exists fk_supplier;
 alter table stock_movements
-  add constraint if not exists fk_supplier
+  add constraint fk_supplier
     foreign key (supplier_id) references suppliers(id);
 
 -- ─── Indexes ───────────────────────────────────────────────────────────────────
