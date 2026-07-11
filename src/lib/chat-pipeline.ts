@@ -69,13 +69,19 @@ async function getConversationHistory(conversationId: string, tuningUpdatedAt?: 
 
   if (!messages) return [];
 
-  return messages
+  const formatted = messages
     .reverse() // Re-order to be chronological
     .filter(m => m.sender === 'customer' || m.sender === 'bot')
     .map(m => ({
       role: m.sender === 'customer' ? 'user' as const : 'model' as const,
       parts: [{ text: m.content }],
     }));
+
+  while (formatted.length > 0 && formatted[0].role === 'model') {
+    formatted.shift();
+  }
+
+  return formatted;
 }
 
 async function persistMessage(conversationId: string, sender: 'customer' | 'bot' | 'human_agent', content: string) {
