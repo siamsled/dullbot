@@ -1,0 +1,1 @@
+ALTER TABLE messages ADD COLUMN external_id TEXT UNIQUE;
