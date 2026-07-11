@@ -120,25 +120,26 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   }, [activeId]);
 
   const lastMsgCountRef = useRef(0);
-  const prevActiveIdRef = useRef<string | null>(null);
+  const isFirstLoadRef = useRef(true);
 
   useEffect(() => {
-    // Scroll to bottom immediately if active conversation changed
-    if (activeId !== prevActiveIdRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      prevActiveIdRef.current = activeId;
-      lastMsgCountRef.current = messages.length;
-      setTimeout(handleScroll, 100);
-      return;
-    }
+    isFirstLoadRef.current = true;
+    setMessages([]); // Clear old messages immediately on switch to prevent flicker
+  }, [activeId]);
 
-    // Scroll to bottom smoothly only if a new message was added
-    if (messages.length > lastMsgCountRef.current) {
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    if (isFirstLoadRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      isFirstLoadRef.current = false;
+    } else if (messages.length > lastMsgCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+    
     lastMsgCountRef.current = messages.length;
     setTimeout(handleScroll, 100);
-  }, [messages, activeId]);
+  }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
