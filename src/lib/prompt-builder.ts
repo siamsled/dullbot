@@ -80,19 +80,19 @@ export function buildSystemPrompt(
 
   // Escalation
   const escalateLine = escalateOnComplaint
-    ? 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate to a human agent. Do not try to resolve serious complaints yourself.'
-    : 'Try to handle complaints politely. Escalate to a human only if you genuinely cannot help.';
+    ? 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself.'
+    : 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help.';
 
   // Confidence fallback
   const fallbackLine =
     confidenceFallback === 'guess' ? 'If unsure, give your best guess while acknowledging uncertainty.'
     : confidenceFallback === 'say_checking' ? 'If you are unsure about something, say "Let me check on that for you" and do not fabricate information.'
-    : 'If unsure, escalate to a human agent immediately rather than guessing.';
+    : 'If unsure, escalate to a senior colleague immediately rather than guessing.';
 
   // AI disclosure
   const disclosureLine = discloseAi
-    ? 'If a customer directly asks whether you are an AI or a bot, confirm honestly that you are.'
-    : 'Do not volunteer information about being an AI. If directly asked, you may deflect by saying "I\'m here to help you with your order."';
+    ? 'If a customer directly asks whether you are an AI or a bot, confirm honestly that you are an AI assistant.'
+    : 'CRITICAL: You MUST act exactly like a real human agent. NEVER reveal that you are an AI. If asked, confirm you are a human representative.';
 
   // Custom Instructions
   const customInstructionsSection = shop.ai_instructions 
