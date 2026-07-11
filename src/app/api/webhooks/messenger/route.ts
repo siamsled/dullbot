@@ -58,8 +58,10 @@ export async function POST(request: Request) {
               const attachments = webhookEvent.message.attachments || [];
               const imageAttachment = attachments.find((att: any) => att.type === 'image');
               const imageUrl = imageAttachment?.payload?.url;
+              const audioAttachment = attachments.find((att: any) => att.type === 'audio');
+              const audioUrl = audioAttachment?.payload?.url;
 
-              if (!messageText && !imageUrl) continue;
+              if (!messageText && !imageUrl && !audioUrl) continue;
 
               // 1. Find or create conversation
               let { data: conversation } = await supabaseAdmin
@@ -85,8 +87,8 @@ export async function POST(request: Request) {
 
               if (!conversation) continue;
 
-              // 2. Insert incoming message (use IMAGE:url prefix for rendering in client)
-              const dbContent = imageUrl ? `IMAGE:${imageUrl}` : messageText;
+              // 2. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
+              const dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
               await supabaseAdmin
                 .from('messages')
                 .insert({
@@ -108,7 +110,11 @@ export async function POST(request: Request) {
                 let chatHistory = '';
                 if (history) {
                   history.forEach(msg => {
-                    const textContent = msg.content.startsWith('IMAGE:') ? '[Sent an image]' : msg.content;
+                    const textContent = msg.content.startsWith('IMAGE:') 
+                      ? '[Sent an image]' 
+                      : msg.content.startsWith('AUDIO:') 
+                        ? '[Sent a voice message]' 
+                        : msg.content;
                     chatHistory += `${msg.sender}: ${textContent}\n`;
                   });
                 }
@@ -179,6 +185,9 @@ export async function POST(request: Request) {
                 if (imageUrl) {
                   prompt += `\nNote: The customer has sent an image which is attached to this request. Analyze the image to answer their query if relevant.`;
                 }
+                if (audioUrl) {
+                  prompt += `\nNote: The customer has sent a voice message which is attached to this request. Listen to the audio to understand and answer their query.`;
+                }
 
                 prompt += `\n\nPlease generate your reply directly without any prefixes (do not output 'bot:' or your name).`;
 
@@ -202,11 +211,34 @@ export async function POST(request: Request) {
                   }
                 }
 
+                let audioPart: any = null;
+                if (audioUrl) {
+                  try {
+                    const audioRes = await fetch(audioUrl);
+                    if (audioRes.ok) {
+                      const buffer = await audioRes.arrayBuffer();
+                      const base64 = Buffer.from(buffer).toString('base64');
+                      const mime = audioRes.headers.get('content-type') || 'audio/mp4';
+                      audioPart = {
+                        inlineData: {
+                          data: base64,
+                          mimeType: mime
+                        }
+                      };
+                    }
+                  } catch (err) {
+                    console.error("Failed to fetch audio for Gemini:", err);
+                  }
+                }
+
                 try {
                   const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
                   const promptParts: any[] = [prompt];
                   if (imagePart) {
                     promptParts.push(imagePart);
+                  }
+                  if (audioPart) {
+                    promptParts.push(audioPart);
                   }
                   
                   const result = await model.generateContent(promptParts);

@@ -332,6 +332,10 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                           <a href={msg.content.substring(6)} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
                             <img src={msg.content.substring(6)} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
                           </a>
+                        ) : msg.content.startsWith('AUDIO:') ? (
+                          <div className="py-1">
+                            <audio src={msg.content.substring(6)} controls className="max-w-full" />
+                          </div>
                         ) : (
                           msg.content
                         )}
