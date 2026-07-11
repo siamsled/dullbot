@@ -86,11 +86,84 @@ async function fetchPage(url: string, timeoutMs = 12000): Promise<string | null>
     });
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') ?? '';
-    if (!ct.includes('html')) return null;
+    // Allow JS or JSON if we explicitly asked for it, otherwise HTML
+    if (!ct.includes('html') && !ct.includes('javascript') && !ct.includes('json')) return null;
     return await res.text();
   } catch {
     return null;
   }
+}
+
+/** 
+ * For SPAs (React/Vue/Vanilla JS), the HTML is empty. 
+ * This extracts JS script sources, fetches them, and looks for API or JSON endpoints.
+ */
+async function extractSpaData(rootHtml: string, baseUrl: string): Promise<{ url: string; text: string }[]> {
+  const base = new URL(baseUrl);
+  const dataResults: { url: string; text: string }[] = [];
+  
+  // 1. Find all <script src="...">
+  const scriptPattern = /<script[^>]+src=["']([^"']+\.js[^"']*)["']/gi;
+  const scriptUrls: string[] = [];
+  let m;
+  while ((m = scriptPattern.exec(rootHtml)) !== null) {
+    try {
+      const absolute = new URL(m[1], baseUrl).href;
+      if (new URL(absolute).hostname === base.hostname && !scriptUrls.includes(absolute)) {
+        scriptUrls.push(absolute);
+      }
+    } catch {}
+  }
+
+  // 2. Fetch top 3 scripts
+  const scripts = await Promise.all(
+    scriptUrls.slice(0, 3).map(url => fetchPage(url, 5000))
+  );
+
+  const combinedCode = rootHtml + '\n' + scripts.filter(Boolean).join('\n');
+
+  // 3. Find strings that look like API endpoints: /api/... or .../data.json
+  const apiPattern = /(?:["'`])((?:https?:\/\/[^"'`]*)?\/?(?:api|data)\/[a-zA-Z0-9_/?=&.-]+|\/[a-zA-Z0-9_/?=&.-]+\.json)(?:["'`])/gi;
+  const endpoints = new Set<string>();
+  
+  while ((m = apiPattern.exec(combinedCode)) !== null) {
+    // Clean up JS template literal variables e.g. /api/products?id=${id} -> /api/products?id=
+    let raw = m[1].replace(/\$\{[^}]+\}/g, '');
+    try {
+      const absolute = new URL(raw, baseUrl).href;
+      if (new URL(absolute).hostname === base.hostname) {
+        endpoints.add(absolute);
+      }
+    } catch {}
+  }
+
+  // 4. Fetch up to 3 endpoints
+  const apiUrls = Array.from(endpoints).slice(0, 3);
+  await Promise.all(
+    apiUrls.map(async (apiUrl) => {
+      try {
+        const res = await fetch(apiUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; DullBot/2.0)',
+            'Accept': 'application/json',
+          },
+          signal: AbortSignal.timeout(5000)
+        });
+        if (res.ok) {
+          const ct = res.headers.get('content-type') ?? '';
+          if (ct.includes('json')) {
+            const text = await res.text();
+            // Only add if it's not massive (cap at 20KB)
+            if (text.length > 50 && text.length < 20000) {
+              dataResults.push({ url: apiUrl, text });
+            }
+          }
+        }
+      } catch {}
+    })
+  );
+
+  return dataResults;
 }
 
 // ─── Gemini extraction ────────────────────────────────────────────────────────
@@ -225,6 +298,12 @@ export async function POST(request: Request) {
         }
       })
     );
+
+    // ── Step 2.5: Extract SPA Data endpoints (for JS-rendered sites) ───────
+    const spaData = await extractSpaData(rootHtml, url);
+    for (const data of spaData) {
+      pageResults.push({ url: data.url, text: `[JSON DATA]: ${data.text}` });
+    }
 
     // ── Step 3: Gemini extraction ──────────────────────────────────────────
     let extracted: ExtractedBusiness;
