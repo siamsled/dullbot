@@ -99,13 +99,19 @@ export async function POST(request: Request) {
 
               // 3. If bot is active, trigger AI
               if (conversation.status === 'bot_active') {
-                // Fetch last 10 messages for context
-                const { data: history } = await supabaseAdmin
+                // Fetch last 10 messages for context, gated by shop's tuning update timestamp
+                let historyQuery = supabaseAdmin
                   .from('messages')
-                  .select('sender, content')
+                  .select('sender, content, created_at')
                   .eq('conversation_id', conversation.id)
-                  .order('created_at', { ascending: true })
-                  .limit(10);
+                  .order('created_at', { ascending: false });
+
+                if (shop.tuning_updated_at) {
+                  historyQuery = historyQuery.gt('created_at', shop.tuning_updated_at);
+                }
+
+                const { data: rawHistory } = await historyQuery.limit(10);
+                const history = rawHistory ? [...rawHistory].reverse() : [];
                 
                 let chatHistory = '';
                 if (history) {
@@ -272,6 +278,14 @@ export async function POST(request: Request) {
                         sender: 'bot',
                         content: aiResponseText
                       });
+
+                    // Check if the bot response indicates escalation/takeover
+                    if (isEscalationResponse(aiResponseText)) {
+                      await supabaseAdmin
+                        .from('conversations')
+                        .update({ status: 'human_takeover' })
+                        .eq('id', conversation.id);
+                    }
                   }
                 } catch (aiError) {
                   console.error("AI Generation or Sending Error:", aiError);
@@ -303,4 +317,22 @@ export async function POST(request: Request) {
     console.error('Webhook error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
+}
+
+function isEscalationResponse(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('human representative') ||
+    lower.includes('human agent') ||
+    lower.includes('human support') ||
+    lower.includes('transferring you') ||
+    lower.includes('escalat') ||
+    lower.includes('manob protinidhir') ||
+    lower.includes('manob protinidhi') ||
+    lower.includes('hostantor') ||
+    lower.includes('sthanantor') ||
+    lower.includes('মানব প্রতিনিধি') ||
+    lower.includes('স্থানান্তর') ||
+    lower.includes('হস্তান্তর')
+  );
 }
