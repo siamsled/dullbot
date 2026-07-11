@@ -102,18 +102,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
     const convs = await getConversations(shop.id);
     setConversations(prev => {
-      const mappedConvs = convs.map(c => 
-        c.id === activeId ? { ...c, status: isTakeoverRef.current ? 'human_takeover' : 'bot_active' } : c
-      );
-      
-      const isIdentical = prev.length === mappedConvs.length && 
+      const isIdentical = prev.length === convs.length && 
         prev.every((c, i) => 
-          c.id === mappedConvs[i].id && 
-          c.last_message_at === mappedConvs[i].last_message_at && 
-          c.status === mappedConvs[i].status &&
-          c.ticket_reason === mappedConvs[i].ticket_reason
+          c.id === convs[i].id && 
+          c.last_message_at === convs[i].last_message_at && 
+          c.status === convs[i].status &&
+          c.ticket_reason === convs[i].ticket_reason
         );
-      return isIdentical ? prev : mappedConvs;
+      return isIdentical ? prev : convs;
     });
   };
 
