@@ -60,6 +60,7 @@ export async function POST(request: Request) {
               const imageUrl = imageAttachment?.payload?.url;
               const audioAttachment = attachments.find((att: any) => att.type === 'audio');
               const audioUrl = audioAttachment?.payload?.url;
+              const replyToMid = webhookEvent.message.reply_to?.mid;
 
               if (!messageText && !imageUrl && !audioUrl) continue;
 
@@ -96,7 +97,20 @@ export async function POST(request: Request) {
               if (!conversation) continue;
 
               // 2. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
-              const dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
+              let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
+              
+              if (replyToMid) {
+                const { data: repliedMsg } = await supabaseAdmin
+                  .from('messages')
+                  .select('content')
+                  .contains('fb_message_ids', [replyToMid])
+                  .single();
+                  
+                if (repliedMsg) {
+                  dbContent = `[Replying to bot's message: "${repliedMsg.content}"] ${dbContent}`;
+                }
+              }
+
               await supabaseAdmin
                 .from('messages')
                 .insert({
@@ -282,6 +296,8 @@ export async function POST(request: Request) {
                     // Remove markdown tags for plain text Messenger
                     messengerText = messengerText.replace(markdownImageRegex, '').trim();
 
+                    let capturedMids: string[] = [];
+
                     // Send to Meta Graph API
                     if (shop.meta_page_access_token) {
                       if (messengerText) {
@@ -297,6 +313,9 @@ export async function POST(request: Request) {
                         if (!fbRes.ok) {
                           const fbErr = await fbRes.json();
                           throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
+                        } else {
+                          const fbData = await fbRes.json();
+                          if (fbData.message_id) capturedMids.push(fbData.message_id);
                         }
                       }
 
@@ -317,6 +336,9 @@ export async function POST(request: Request) {
                         });
                         if (!fbImgRes.ok) {
                           console.error("Failed to send image attachment to Messenger:", await fbImgRes.json());
+                        } else {
+                          const fbImgData = await fbImgRes.json();
+                          if (fbImgData.message_id) capturedMids.push(fbImgData.message_id);
                         }
                       }
                     }
@@ -327,7 +349,8 @@ export async function POST(request: Request) {
                       .insert({
                         conversation_id: conversation.id,
                         sender: 'bot',
-                        content: aiResponseText
+                        content: aiResponseText,
+                        fb_message_ids: capturedMids.length > 0 ? capturedMids : null
                       });
 
                     // Check if the bot response indicates escalation/takeover
