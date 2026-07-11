@@ -83,6 +83,14 @@ export async function POST(request: Request) {
                   .select()
                   .single();
                 conversation = newConv;
+              } else if (conversation.status === 'closed') {
+                const { data: updatedConv } = await supabaseAdmin
+                  .from('conversations')
+                  .update({ status: 'bot_active' })
+                  .eq('id', conversation.id)
+                  .select()
+                  .single();
+                conversation = updatedConv || conversation;
               }
 
               if (!conversation) continue;
