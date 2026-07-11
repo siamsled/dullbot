@@ -16,9 +16,10 @@ export async function createPromptCache(systemPrompt: string): Promise<{ name: s
       model: 'models/gemini-1.5-flash-001',
       systemInstruction: systemPrompt,
       ttlSeconds,
+      contents: [{ role: 'user', parts: [{ text: 'Initialize context.' }] }]
     });
     return {
-      name: cache.name,
+      name: cache.name as string,
       expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
     };
   } catch (error) {
@@ -45,7 +46,7 @@ export async function invokeGemini(
   let model;
   if (promptCacheRef) {
     try {
-      model = genAI.getGenerativeModelFromCachedContent({ name: promptCacheRef });
+      model = genAI.getGenerativeModelFromCachedContent({ name: promptCacheRef } as any);
     } catch (e) {
       console.error("Failed to load cached content, falling back to full prompt:", e);
       model = genAI.getGenerativeModel({ 
