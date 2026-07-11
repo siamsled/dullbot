@@ -5,20 +5,22 @@ import { revalidatePath } from 'next/cache';
 const SHOP_SLUG = 'dull-store';
 
 export async function saveAiTuning(payload: {
-  tone_formal_casual: number;
-  tone_concise_detailed: number;
-  tone_professional_warm: number;
-  language_mix: string;
-  emoji_frequency: string;
+  persona_id: string;
+  persona_custom_name: string | null;
+  disclosure_mode: string;
   max_discount_pct: number;
   auto_escalate_on_complaint: boolean;
   confidence_fallback: string;
-  disclose_ai_if_asked: boolean;
   ai_instructions: string | null;
 }) {
   const { error } = await supabaseAdmin
     .from('shops')
-    .update({ ...payload, tuning_updated_at: new Date().toISOString() })
+    .update({ 
+      ...payload, 
+      tuning_updated_at: new Date().toISOString(),
+      persona_updated_at: new Date().toISOString(),
+      prompt_cache_ref: null 
+    })
     .eq('slug', SHOP_SLUG);
 
   if (error) return { success: false, error: error.message };

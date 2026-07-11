@@ -1,4 +1,4 @@
-import { invokeGemini } from './gemini';
+import { invokeGemini, createPromptCache } from './gemini';
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
 import crypto from 'crypto';
@@ -173,7 +173,7 @@ export async function processIncomingMessage(
   // Resolve shop with all tuning columns
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, credit_balance, agent_enabled, name, ai_instructions, tone_formal_casual, tone_concise_detailed, tone_professional_warm, language_mix, emoji_frequency, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, disclose_ai_if_asked, tuning_updated_at')
+    .select('id, credit_balance, agent_enabled, name, ai_instructions, persona_id, persona_custom_name, disclosure_mode, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, prompt_cache_ref, prompt_cache_expires_at, persona_updated_at, tuning_updated_at')
     .eq('slug', shopSlug)
     .single();
 
@@ -300,18 +300,48 @@ export async function processIncomingMessage(
     .eq('shop_id', shop.id)
     .limit(10);
 
+  let persona = null;
+  if (shop.persona_id) {
+    const { data: pData } = await supabaseAdmin
+      .from('agent_personas')
+      .select('*')
+      .eq('id', shop.persona_id)
+      .single();
+    if (pData) {
+      if (shop.persona_custom_name) pData.name = shop.persona_custom_name;
+      persona = pData;
+    }
+  }
+
   // 5. Build dynamic system prompt (with variant-level context)
   const systemPrompt = buildSystemPrompt(
     shop,
+    persona,
     productsForPrompt ?? [],
     exampleReplies ?? []
   );
 
-  // 6. Load conversation history from Supabase, applying tuning timestamp gate
-  const history = await getConversationHistory(conversation.id, shop.tuning_updated_at);
+  // 5.5 Check Gemini Prompt Cache
+  let promptCacheRef = shop.prompt_cache_ref;
+  if (!promptCacheRef || !shop.prompt_cache_expires_at || new Date(shop.prompt_cache_expires_at) <= new Date()) {
+    // Generate new cache
+    const cacheData = await createPromptCache(systemPrompt);
+    if (cacheData) {
+      promptCacheRef = cacheData.name;
+      await supabaseAdmin.from('shops').update({
+        prompt_cache_ref: cacheData.name,
+        prompt_cache_expires_at: cacheData.expiresAt,
+      }).eq('id', shop.id);
+    } else {
+      promptCacheRef = null;
+    }
+  }
 
-  // 6. Call Gemini
-  const response = await invokeGemini(systemPrompt, text, history);
+  // 6. Load conversation history from Supabase, applying tuning timestamp gate
+  const history = await getConversationHistory(conversation.id, shop.persona_updated_at || shop.tuning_updated_at);
+
+  // 7. Call Gemini
+  const response = await invokeGemini(systemPrompt, text, history, promptCacheRef);
 
   if (response.success && response.text) {
     const aiMessage = response.text.trim();

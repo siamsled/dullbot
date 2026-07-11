@@ -1,31 +1,64 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleAICacheManager } from '@google/generative-ai/server';
 
-// Initialize with the platform API key
-const getGenAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("Warning: GEMINI_API_KEY environment variable is not set.");
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.warn("Warning: GEMINI_API_KEY environment variable is not set.");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey || 'MOCK_KEY');
+const cacheManager = new GoogleAICacheManager(apiKey || 'MOCK_KEY');
+
+export async function createPromptCache(systemPrompt: string): Promise<{ name: string; expiresAt: string } | null> {
+  try {
+    const ttlSeconds = 3600; // 1 hour
+    const cache = await cacheManager.create({
+      model: 'models/gemini-1.5-flash-001',
+      systemInstruction: systemPrompt,
+      ttlSeconds,
+    });
+    return {
+      name: cache.name,
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+    };
+  } catch (error) {
+    console.error("Failed to create Gemini cache:", error);
+    return null;
   }
-  return new GoogleGenerativeAI(apiKey || 'MOCK_KEY');
-};
+}
 
 export async function invokeGemini(
   systemPrompt: string, 
   customerMessage: string, 
-  history: { role: 'user' | 'model', parts: { text: string }[] }[]
+  history: { role: 'user' | 'model', parts: { text: string }[] }[],
+  promptCacheRef?: string | null
 ) {
-  const genAI = getGenAI();
-
   console.log("=== GEMINI INVOCATION ===");
-  console.log("SYSTEM INSTRUCTION:");
-  console.log(systemPrompt);
+  if (promptCacheRef) {
+    console.log(`Using Cache: ${promptCacheRef}`);
+  } else {
+    console.log("SYSTEM INSTRUCTION:");
+    console.log(systemPrompt);
+  }
   console.log("=========================");
 
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-3.1-flash-lite',
-    systemInstruction: systemPrompt 
-  });
-
+  let model;
+  if (promptCacheRef) {
+    try {
+      model = genAI.getGenerativeModelFromCachedContent({ name: promptCacheRef });
+    } catch (e) {
+      console.error("Failed to load cached content, falling back to full prompt:", e);
+      model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: systemPrompt 
+      });
+    }
+  } else {
+    model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      systemInstruction: systemPrompt 
+    });
+  }
 
   try {
     const chat = model.startChat({ history });
@@ -58,4 +91,3 @@ export async function invokeGemini(
     };
   }
 }
-

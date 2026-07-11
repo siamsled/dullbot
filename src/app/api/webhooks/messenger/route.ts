@@ -287,35 +287,43 @@ export async function POST(request: Request) {
                     // Parse out Markdown images
                     const markdownImageRegex = /!\[.*?\]\((.*?)\)/g;
                     const imageUrls: string[] = [];
-                    let messengerText = aiResponseText;
-
-                    let match;
-                    while ((match = markdownImageRegex.exec(aiResponseText)) !== null) {
-                      if (match[1]) imageUrls.push(match[1]);
-                    }
-                    // Remove markdown tags for plain text Messenger
-                    messengerText = messengerText.replace(markdownImageRegex, '').trim();
+                    // Support Multi-Bubble Delivery
+                    const textBubbles = aiResponseText.split('|||').map(b => b.trim()).filter(Boolean);
 
                     let capturedMids: string[] = [];
 
                     // Send to Meta Graph API
                     if (shop.meta_page_access_token) {
-                      if (messengerText) {
-                        const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            recipient: { id: senderId },
-                            message: { text: messengerText }
-                          })
-                        });
-                        
-                        if (!fbRes.ok) {
-                          const fbErr = await fbRes.json();
-                          throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
-                        } else {
-                          const fbData = await fbRes.json();
-                          if (fbData.message_id) capturedMids.push(fbData.message_id);
+                      for (const bubble of textBubbles) {
+                        let messengerText = bubble;
+
+                        let match;
+                        while ((match = markdownImageRegex.exec(bubble)) !== null) {
+                          if (match[1]) imageUrls.push(match[1]);
+                        }
+                        // Remove markdown tags for plain text Messenger
+                        messengerText = messengerText.replace(markdownImageRegex, '').trim();
+
+                        if (messengerText) {
+                          const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              recipient: { id: senderId },
+                              message: { text: messengerText }
+                            })
+                          });
+                          
+                          if (!fbRes.ok) {
+                            const fbErr = await fbRes.json();
+                            throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
+                          } else {
+                            const fbData = await fbRes.json();
+                            if (fbData.message_id) capturedMids.push(fbData.message_id);
+                          }
+
+                          // Artificial delay for multi-bubble illusion of typing
+                          await new Promise(res => setTimeout(res, 1000));
                         }
                       }
 
