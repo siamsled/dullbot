@@ -300,10 +300,14 @@ export async function POST(request: Request) {
 
                     // Check if the bot response indicates escalation/takeover
                     if (ticketReason) {
-                      await supabaseAdmin
+                      const { error: updateErr } = await supabaseAdmin
                         .from('conversations')
                         .update({ status: 'human_takeover', ticket_reason: ticketReason })
                         .eq('id', conversation.id);
+                      
+                      if (updateErr) {
+                        throw new Error(`Failed to update conversation status: ${updateErr.message}`);
+                      }
                     }
                   }
                 } catch (aiError) {
