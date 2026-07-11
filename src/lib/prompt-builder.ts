@@ -15,12 +15,21 @@ type ShopTuningSettings = {
   ai_instructions?: string | null;           // optional advanced override
 };
 
+type VariantRow = {
+  name: string;          // e.g. "Red / Large"
+  sku?: string | null;
+  price_override?: number | null;
+  stock: number;
+};
+
 type ProductRow = {
   name: string;
   description?: string | null;
   price: number;
   currency?: string | null;
   stock_quantity?: number | null;
+  sku?: string | null;
+  variants?: VariantRow[];
 };
 
 export function buildSystemPrompt(
@@ -132,8 +141,34 @@ function buildProductSection(products: ProductRow[]): string {
   if (!products || products.length === 0) {
     return 'PRODUCTS: No products are currently listed in the catalogue.';
   }
-  const lines = products.map(p =>
-    `  • ${p.name}: ${p.price} ${p.currency ?? 'BDT'}${p.description ? ` — ${p.description}` : ''}${p.stock_quantity !== undefined ? ` (${p.stock_quantity} in stock)` : ''}`
-  );
-  return `CURRENT PRODUCTS:\n${lines.join('\n')}\n\nIf a customer asks about a product not in the above list, tell them honestly that you only carry what is listed.`;
+
+  const lines: string[] = [];
+
+  for (const p of products) {
+    const currency = p.currency ?? 'BDT';
+
+    if (p.variants && p.variants.length > 0) {
+      // Product with variants — emit each variant's stock and price
+      lines.push(`  • ${p.name}${p.description ? ` — ${p.description}` : ''}`);
+      for (const v of p.variants) {
+        const effectivePrice = v.price_override ?? p.price;
+        const stockStr = v.stock > 0 ? `${v.stock} in stock` : 'OUT OF STOCK';
+        lines.push(`      – ${v.name}: ${effectivePrice} ${currency} (${stockStr})${v.sku ? ` [SKU: ${v.sku}]` : ''}`);
+      }
+    } else {
+      // Simple product — single stock level
+      const stockStr = p.stock_quantity != null
+        ? (p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'OUT OF STOCK')
+        : '';
+
+      lines.push(
+        `  • ${p.name}: ${p.price} ${currency}` +
+        (p.description ? ` — ${p.description}` : '') +
+        (stockStr ? ` (${stockStr})` : '') +
+        (p.sku ? ` [SKU: ${p.sku}]` : '')
+      );
+    }
+  }
+
+  return `CURRENT PRODUCTS:\n${lines.join('\n')}\n\nIf a customer asks about a product not in the above list, tell them honestly that you only carry what is listed. When a customer asks about availability, be specific about variant stock levels.`;
 }

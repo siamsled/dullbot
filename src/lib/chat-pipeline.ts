@@ -253,14 +253,46 @@ export async function processIncomingMessage(
     return { success: true, message: cached.response_text, cacheHit: true, preFilterHit: false, geminiCalled: false };
   }
 
-  // 4. Fetch live inventory + example replies
+  // 4. Fetch live inventory (products + variants) for AI context
   const { data: products } = await supabaseAdmin
     .from('products')
-    .select('name, description, price, stock_quantity, currency')
+    .select('name, description, price, stock_quantity, currency, sku')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .eq('draft', false)
     .gt('stock_quantity', 0);
+
+  // Fetch variants for products that have them
+  const productIds = (products ?? []).map(p => (p as { id?: string }).id).filter(Boolean);
+  let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
+
+  // Re-query with id field to attach variants
+  const { data: productsWithId } = await supabaseAdmin
+    .from('products')
+    .select('id, name, description, price, stock_quantity, currency, sku')
+    .eq('shop_id', shop.id)
+    .eq('is_active', true)
+    .eq('draft', false)
+    .gt('stock_quantity', 0);
+
+  if (productsWithId && productsWithId.length > 0) {
+    const ids = productsWithId.map(p => p.id);
+    const { data: allVariants } = await supabaseAdmin
+      .from('product_variants')
+      .select('product_id, name, sku, price_override, stock')
+      .in('product_id', ids)
+      .gt('stock', 0);
+
+    for (const v of allVariants ?? []) {
+      if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
+      variantsByProduct[v.product_id].push(v);
+    }
+  }
+
+  const productsForPrompt = (productsWithId ?? []).map(p => ({
+    ...p,
+    variants: variantsByProduct[p.id] ?? [],
+  }));
 
   const { data: exampleReplies } = await supabaseAdmin
     .from('example_replies')
@@ -268,10 +300,10 @@ export async function processIncomingMessage(
     .eq('shop_id', shop.id)
     .limit(10);
 
-  // 5. Build dynamic system prompt
+  // 5. Build dynamic system prompt (with variant-level context)
   const systemPrompt = buildSystemPrompt(
     shop,
-    products ?? [],
+    productsForPrompt ?? [],
     exampleReplies ?? []
   );
 
