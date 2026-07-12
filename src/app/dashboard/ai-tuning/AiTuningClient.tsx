@@ -187,13 +187,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-fog">
 
       {/* ── Left Sidebar: Persona Picker ────────────────────────────────────── */}
-      <aside className="w-72 shrink-0 bg-white border-r border-dove/20 flex flex-col overflow-hidden">
+      <aside className="w-72 shrink-0 bg-white border-r border-dove/20 flex flex-col">
         <div className="px-5 pt-6 pb-4 border-b border-dove/20">
           <h1 className="text-2xl font-serif text-ink tracking-tight leading-tight">Persona Agents</h1>
           <p className="text-xs text-graphite mt-1">Choose the voice of your AI</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+        <div className="overflow-y-auto py-3 px-3 space-y-1">
           {personas.map(p => {
             const isActive = p.id === personaId;
             return (
