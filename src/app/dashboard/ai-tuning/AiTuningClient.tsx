@@ -321,23 +321,21 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         {selectedPersona.preview_dialogue.map((d, i) => (
                           <div key={i} className="flex flex-col gap-2 w-full px-4">
                             <div className="flex justify-start">
-                              <div className="flex flex-col max-w-[85%] items-start">
-                                <div className="flex items-center gap-1.5 mb-1 mx-1">
-                                  <span className="text-[10px] font-medium text-ash uppercase tracking-wider">Customer</span>
-                                </div>
-                                <div className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
-                                  {d.customer_message}
-                                </div>
+                              <div className="flex flex-col max-w-[65%] items-start gap-1">
+                                {d.customer_message.split('|||').map((msg, mi) => (
+                                  <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                    {msg}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                             <div className="flex justify-end">
-                              <div className="flex flex-col max-w-[85%] items-end">
-                                <div className="flex items-center gap-1.5 mb-1 mx-1">
-                                  <span className="text-[10px] font-medium text-ash uppercase tracking-wider">DullBot AI</span>
-                                </div>
-                                <div className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
-                                  {d.reply.split('|||')[0]}
-                                </div>
+                              <div className="flex flex-col max-w-[65%] items-end gap-1">
+                                {d.reply.split('|||').map((msg, mi) => (
+                                  <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                    {msg}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           </div>
@@ -351,16 +349,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       const isCustomer = msg.role === 'user';
                       return (
                         <div key={i} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                          <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
-                            <div className="flex items-center gap-1.5 mb-1 mx-1">
-                              <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                                {isCustomer ? 'Customer (You)' : 'DullBot AI'}
-                              </span>
-                            </div>
-                            {msg.bubbles.map((bubble, bi) => (
+                          <div className={`flex flex-col max-w-[65%] ${isCustomer ? 'items-start' : 'items-end'} gap-1`}>
+                            {msg.bubbles.flatMap(b => b.split('|||')).map((bubble, bi) => (
                               <div
                                 key={bi}
-                                className={`px-4 py-2.5 rounded-2xl text-sm mb-1.5 last:mb-0 text-left ${
+                                className={`px-4 py-2.5 rounded-2xl text-sm text-left ${
                                   isCustomer
                                     ? 'bg-fog text-ink rounded-tl-sm border border-dove/20'
                                     : bubble === '…'
@@ -644,23 +637,21 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       <div key={ex.id} className="relative group">
                         <div className="flex flex-col gap-2 w-full px-2">
                           <div className="flex justify-start">
-                            <div className="flex flex-col max-w-[85%] items-start">
-                              <div className="flex items-center gap-1.5 mb-1 mx-1">
-                                <span className="text-[10px] font-medium text-ash uppercase tracking-wider">Customer</span>
-                              </div>
-                              <div className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
-                                {ex.customer_message}
-                              </div>
+                            <div className="flex flex-col max-w-[65%] items-start gap-1">
+                              {ex.customer_message.split('|||').map((msg, mi) => (
+                                <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                  {msg}
+                                </div>
+                              ))}
                             </div>
                           </div>
                           <div className="flex justify-end">
-                            <div className="flex flex-col max-w-[85%] items-end">
-                              <div className="flex items-center gap-1.5 mb-1 mx-1">
-                                <span className="text-[10px] font-medium text-ash uppercase tracking-wider">DullBot AI</span>
-                              </div>
-                              <div className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
-                                {ex.ideal_reply}
-                              </div>
+                            <div className="flex flex-col max-w-[65%] items-end gap-1">
+                              {ex.ideal_reply.split('|||').map((msg, mi) => (
+                                <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                  {msg}
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
