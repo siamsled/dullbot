@@ -84,6 +84,8 @@ export function buildSystemPrompt(
 
   const multiBubbleLine = 'IMPORTANT: If your character/persona dictates sending short bursts instead of one long paragraph, use `|||` as a delimiter to split your message into separate bubbles. E.g. "Sure!|||Here it is." will send as two separate messages.';
   
+  const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) and avoid using it altogether. It sounds very unnatural and AI-like in professional or casual conversation.';
+
   const voiceMessageLine = 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
   // Product section
@@ -117,6 +119,7 @@ GUARDRAILS & RULES:
 - ${fallbackLine}
 - ${imageLine}
 - ${multiBubbleLine}
+- ${naturalLanguageLine}
 - ${voiceMessageLine}
 - If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
 ${customInstructionsSection}
