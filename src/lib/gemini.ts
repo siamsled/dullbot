@@ -74,6 +74,18 @@ export async function invokeGemini(
     };
   } catch (error: any) {
     console.error("Gemini invocation failed:", error);
+    
+    let cleanError = "An unknown error occurred.";
+    if (error?.message) {
+      if (error.message.includes('API key not valid')) {
+        cleanError = "Invalid Gemini API Key. Please update your .env file.";
+      } else if (error.message.toLowerCase().includes('quota')) {
+        cleanError = "Gemini API Quota Exceeded. Please check your plan and billing details.";
+      } else {
+        cleanError = error.message.split('[{')[0].trim() || "Gemini API error.";
+      }
+    }
+
     if (error?.status === 429 || error?.message?.includes('429')) {
       return {
         success: false,
@@ -81,7 +93,7 @@ export async function invokeGemini(
         text: "Give me a second, let me check that for you.",
         inputTokens: 0,
         outputTokens: 0,
-        error: error.message
+        error: cleanError
       };
     }
     return {
@@ -90,7 +102,7 @@ export async function invokeGemini(
       text: "Something went wrong on my end. I'm taking a break.",
       inputTokens: 0,
       outputTokens: 0,
-      error: error.message
+      error: cleanError
     };
   }
 }
