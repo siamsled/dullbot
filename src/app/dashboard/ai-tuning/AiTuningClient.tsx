@@ -4,6 +4,17 @@ import { useState, useTransition } from 'react';
 import { Shield, MessageSquarePlus, Trash2, Loader2, Sparkles, Check, ChevronDown } from 'lucide-react';
 import { saveAiTuning, addExampleReply, deleteExampleReply, testPersonaResponse } from './actions';
 
+const renderMessagePart = (text: string) => {
+  const parts = text.split(/(!\[.*?\]\(.*?\))/g);
+  return parts.map((part, idx) => {
+    const match = part.match(/!\[(.*?)\]\((.*?)\)/);
+    if (match) {
+       return <img key={idx} src={match[2]} alt={match[1]} className="mt-2 rounded-md max-w-full" />;
+    }
+    return <span key={idx}>{part}</span>;
+  });
+};
+
 type Shop = {
   id: string;
   name: string;
@@ -69,9 +80,9 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         ai_instructions: aiInstructions,
       });
       if (res.success) {
-        setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: res.text?.split('|||').join('\n\n') || '' } }));
+        setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: res.text || '' } }));
       } else {
-         setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: 'Error: Could not get response.' } }));
+         setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: `Error: ${res.error || 'Could not get response.'}` } }));
       }
     } catch (error) {
        setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: 'An unexpected error occurred.' } }));
@@ -179,9 +190,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         <div className="bg-white p-2.5 rounded-lg text-sm text-ink self-start max-w-[85%] shadow-sm border border-dove/10">
                           {dlg.customer_message}
                         </div>
-                        <div className="bg-ink p-2.5 rounded-lg text-sm text-white self-end ml-auto max-w-[85%] shadow-sm">
+                        <div className="flex flex-col space-y-1 items-end ml-auto max-w-[85%]">
                           {dlg.reply.split('|||').map((msg, i) => (
-                            <span key={i}>{msg}{i !== dlg.reply.split('|||').length - 1 && <br/>}</span>
+                            <div key={i} className="bg-ink p-2.5 rounded-lg text-sm text-white shadow-sm">
+                              {renderMessagePart(msg.trim())}
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -199,8 +212,12 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       <div className="bg-white p-2.5 rounded-lg text-ink self-start max-w-[85%] shadow-sm border border-dove/10">
                         {testResponses[p.id]?.msg}
                       </div>
-                      <div className="bg-ink p-2.5 rounded-lg text-white self-end ml-auto max-w-[85%] shadow-sm whitespace-pre-wrap">
-                        {testResponses[p.id]?.reply}
+                      <div className="flex flex-col space-y-1 items-end ml-auto max-w-[85%]">
+                        {testResponses[p.id]?.reply.split('|||').map((bubble, i) => (
+                          <div key={i} className="bg-ink p-2.5 rounded-lg text-white shadow-sm whitespace-pre-wrap">
+                            {renderMessagePart(bubble.trim())}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

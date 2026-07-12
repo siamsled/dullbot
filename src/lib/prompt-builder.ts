@@ -83,6 +83,8 @@ export function buildSystemPrompt(
   const imageLine = 'If a customer asks for pictures of a product, or if you are recommending a specific product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line.';
 
   const multiBubbleLine = 'IMPORTANT: If your character/persona dictates sending short bursts instead of one long paragraph, use `|||` as a delimiter to split your message into separate bubbles. E.g. "Sure!|||Here it is." will send as two separate messages.';
+  
+  const voiceMessageLine = 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
   // Product section
   const productSection = buildProductSection(products);
@@ -115,6 +117,7 @@ GUARDRAILS & RULES:
 - ${fallbackLine}
 - ${imageLine}
 - ${multiBubbleLine}
+- ${voiceMessageLine}
 - If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
