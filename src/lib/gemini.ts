@@ -13,7 +13,7 @@ export async function createPromptCache(systemPrompt: string): Promise<{ name: s
   try {
     const ttlSeconds = 3600; // 1 hour
     const cache = await cacheManager.create({
-      model: 'models/gemini-2.5-flash',
+      model: 'models/gemini-3.5-flash',
       systemInstruction: systemPrompt,
       ttlSeconds,
       contents: [{ role: 'user', parts: [{ text: 'Initialize context.' }] }]
@@ -50,13 +50,13 @@ export async function invokeGemini(
     } catch (e) {
       console.error("Failed to load cached content, falling back to full prompt:", e);
       model = genAI.getGenerativeModel({ 
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         systemInstruction: systemPrompt 
       });
     }
   } else {
     model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       systemInstruction: systemPrompt 
     });
   }
