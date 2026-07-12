@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Shield, MessageSquarePlus, Trash2, Loader2, Sparkles, Check, ChevronDown } from 'lucide-react';
-import { saveAiTuning, addExampleReply, deleteExampleReply } from './actions';
+import { saveAiTuning, addExampleReply, deleteExampleReply, testPersonaResponse } from './actions';
 
 type Shop = {
   id: string;
@@ -37,7 +37,6 @@ interface Props { shop: Shop; examples: ExampleReply[]; personas: AgentPersona[]
 export default function AiTuningClient({ shop, examples: initialExamples, personas }: Props) {
   const [isPending, startTransition] = useTransition();
   const [personaId, setPersonaId] = useState(shop.persona_id || (personas.length > 0 ? personas[0].id : ''));
-  const [personaCustomName, setPersonaCustomName] = useState(shop.persona_custom_name || '');
   const [disclosureMode, setDisclosureMode] = useState(shop.disclosure_mode || 'reactive_honest');
   const [maxDiscount, setMaxDiscount] = useState(shop.max_discount_pct || 0);
   const [autoEscalate, setAutoEscalate] = useState(shop.auto_escalate_on_complaint ?? true);
@@ -50,11 +49,42 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   const [saved, setSaved] = useState(false);
   const [expandedPreview, setExpandedPreview] = useState<string | null>(null);
 
+  const [testMessage, setTestMessage] = useState('');
+  const [testResponses, setTestResponses] = useState<Record<string, { msg: string, reply: string } | null>>({});
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestSend = async (pId: string) => {
+    if (!testMessage.trim()) return;
+    const msg = testMessage.trim();
+    setTestMessage('');
+    setIsTesting(true);
+    setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: 'Thinking...' } }));
+    
+    try {
+      const res = await testPersonaResponse(pId, msg, {
+        disclosure_mode: disclosureMode,
+        max_discount_pct: maxDiscount,
+        auto_escalate_on_complaint: autoEscalate,
+        confidence_fallback: confidenceFallback,
+        ai_instructions: aiInstructions,
+      });
+      if (res.success) {
+        setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: res.text?.split('|||').join('\n\n') || '' } }));
+      } else {
+         setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: 'Error: Could not get response.' } }));
+      }
+    } catch (error) {
+       setTestResponses(prev => ({ ...prev, [pId]: { msg, reply: 'An unexpected error occurred.' } }));
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleSave = () => {
     startTransition(async () => {
       await saveAiTuning({
         persona_id: personaId,
-        persona_custom_name: personaCustomName.trim() || null,
+        persona_custom_name: null,
         disclosure_mode: disclosureMode,
         max_discount_pct: maxDiscount,
         auto_escalate_on_complaint: autoEscalate,
@@ -162,8 +192,25 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
 
               {isSelected && (
                 <div className="mt-5 pt-5 border-t border-dove/20">
-                  <label className="block text-sm font-medium text-ink mb-2">Rename this Persona (Optional)</label>
-                  <input type="text" value={personaCustomName} onChange={e => setPersonaCustomName(e.target.value)} placeholder={`Call them: e.g. "Rafiq"`} className="w-full bg-fog border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none" />
+                  <label className="block text-sm font-medium text-ink mb-2">Send a text to see their response</label>
+                  
+                  {testResponses[p.id] && (
+                    <div className="mb-4 space-y-2 bg-fog p-3 rounded-inputs text-sm">
+                      <div className="bg-white p-2.5 rounded-lg text-ink self-start max-w-[85%] shadow-sm border border-dove/10">
+                        {testResponses[p.id]?.msg}
+                      </div>
+                      <div className="bg-ink p-2.5 rounded-lg text-white self-end ml-auto max-w-[85%] shadow-sm whitespace-pre-wrap">
+                        {testResponses[p.id]?.reply}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input type="text" value={testMessage} onChange={e => setTestMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleTestSend(p.id)} placeholder="e.g. Do you have this in medium?" disabled={isTesting} className="w-full bg-fog border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none disabled:opacity-50" />
+                    <button onClick={() => handleTestSend(p.id)} disabled={isTesting || !testMessage.trim()} className="px-4 py-2 bg-ink text-white rounded-inputs text-sm font-medium hover:bg-black transition-colors shrink-0 disabled:opacity-50">
+                      {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
