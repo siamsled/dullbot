@@ -104,11 +104,15 @@ export async function testPersonaResponse(
 
   const systemPrompt = buildSystemPrompt(shopSettings, persona, products || [], examples || []);
 
-  const result = await invokeGemini(systemPrompt, customerMessage, [], null);
-  
-  if (!result.success) {
-    return { success: false, error: 'Failed to generate response' };
+  try {
+    const result = await invokeGemini(systemPrompt, customerMessage, [], null);
+    
+    if (!result.success) {
+      return { success: false, error: 'Gemini invocation failed' };
+    }
+    
+    return { success: true, text: result.text };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Unknown error' };
   }
-  
-  return { success: true, text: result.text };
 }
