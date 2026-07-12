@@ -250,23 +250,23 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
       <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="bg-white border-b border-dove/20 px-8 pt-6 pb-0 shrink-0">
-          <div className="flex items-start justify-between mb-4">
+        <div className="bg-white border-b border-dove/20 px-8 pt-4 pb-0 shrink-0">
+          <div className="flex items-start justify-between mb-3">
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-2xl font-serif text-ink tracking-tight">{selectedPersona?.name}</h2>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-apricot-wash text-rust font-medium">
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-xl font-serif text-ink tracking-tight leading-none">{selectedPersona?.name}</h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-apricot-wash text-rust font-medium">
                   {JOB_FUNCTION_LABELS[selectedPersona?.job_function ?? ''] ?? selectedPersona?.job_function}
                 </span>
               </div>
-              <p className="text-sm text-graphite">{selectedPersona?.tagline}</p>
+              <p className="text-xs text-graphite mb-1.5">{selectedPersona?.tagline}</p>
               {selectedPersona && (
-                <div className="flex flex-wrap gap-1.5 mt-3">
+                <div className="flex flex-wrap gap-1">
                   {selectedPersona.personality_traits.map(t => (
-                    <span key={t} className="text-[11px] px-2 py-0.5 bg-fog text-graphite rounded-full">#{t}</span>
+                    <span key={t} className="text-[10px] px-1.5 py-0.5 bg-fog text-graphite rounded-full leading-none">#{t}</span>
                   ))}
                   {selectedPersona.best_for.map(t => (
-                    <span key={t} className="text-[11px] px-2 py-0.5 bg-sky-wash/60 text-blue-700 rounded-full">{t}</span>
+                    <span key={t} className="text-[10px] px-1.5 py-0.5 bg-sky-wash/60 text-blue-700 rounded-full leading-none">{t}</span>
                   ))}
                 </div>
               )}
@@ -305,28 +305,40 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               {/* Chat area */}
               <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {chatHistory.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-4 pb-16">
-                    <div className="w-16 h-16 rounded-full bg-apricot-wash flex items-center justify-center">
-                      <Bot className="w-7 h-7 text-rust" />
+                  <div className="h-full flex flex-col items-center justify-center text-center gap-3 pb-8">
+                    <div className="w-12 h-12 rounded-full bg-apricot-wash flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-rust" />
                     </div>
                     <div>
-                      <p className="text-base font-medium text-ink mb-1">Chat with {selectedPersona?.name}</p>
-                      <p className="text-sm text-graphite max-w-xs leading-relaxed">
+                      <p className="text-sm font-medium text-ink mb-1">Chat with {selectedPersona?.name}</p>
+                      <p className="text-xs text-graphite max-w-xs leading-relaxed">
                         Send a message to see how this persona responds to your customers.
                       </p>
                     </div>
                     {selectedPersona?.preview_dialogue?.length > 0 && (
-                      <div className="mt-2 space-y-2 max-w-sm w-full">
-                        <p className="text-xs text-dove text-center mb-3 uppercase tracking-wider">Sample exchanges</p>
+                      <div className="mt-4 space-y-4 max-w-md w-full">
+                        <p className="text-[10px] text-dove text-center mb-2 uppercase tracking-wider font-medium">Sample exchanges</p>
                         {selectedPersona.preview_dialogue.map((d, i) => (
-                          <div key={i} className="bg-white rounded-[20px] p-4 shadow-subtle text-left space-y-2">
-                            <div className="flex items-start gap-2">
-                              <User className="w-3.5 h-3.5 text-graphite mt-0.5 shrink-0" />
-                              <p className="text-xs text-ash">{d.customer_message}</p>
+                          <div key={i} className="flex flex-col gap-2 w-full px-4">
+                            <div className="flex justify-start">
+                              <div className="flex flex-col max-w-[85%] items-start">
+                                <div className="flex items-center gap-1.5 mb-1 mx-1">
+                                  <span className="text-[10px] font-medium text-ash uppercase tracking-wider">Customer</span>
+                                </div>
+                                <div className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                  {d.customer_message}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-start gap-2">
-                              <Bot className="w-3.5 h-3.5 text-rust mt-0.5 shrink-0" />
-                              <p className="text-xs text-graphite">{d.reply.split('|||')[0]}</p>
+                            <div className="flex justify-end">
+                              <div className="flex flex-col max-w-[85%] items-end">
+                                <div className="flex items-center gap-1.5 mb-1 mx-1">
+                                  <span className="text-[10px] font-medium text-ash uppercase tracking-wider">DullBot AI</span>
+                                </div>
+                                <div className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                  {d.reply.split('|||')[0]}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -335,36 +347,34 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                   </div>
                 ) : (
                   <>
-                    {chatHistory.map((msg, i) => (
-                      <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.role === 'bot' && (
-                          <div className="w-7 h-7 rounded-full bg-apricot-wash flex items-center justify-center shrink-0 mt-0.5">
-                            <Bot className="w-3.5 h-3.5 text-rust" />
-                          </div>
-                        )}
-                        <div className={`flex flex-col gap-1.5 max-w-[70%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          {msg.bubbles.map((bubble, bi) => (
-                            <div
-                              key={bi}
-                              className={`px-4 py-2.5 rounded-[18px] text-sm leading-relaxed ${
-                                msg.role === 'user'
-                                  ? 'bg-ink text-white rounded-tr-sm'
-                                  : bubble === '…'
-                                    ? 'bg-white text-graphite shadow-subtle animate-pulse rounded-tl-sm'
-                                    : 'bg-white text-ink shadow-subtle rounded-tl-sm'
-                              }`}
-                            >
-                              {renderBubbleContent(bubble)}
+                    {chatHistory.map((msg, i) => {
+                      const isCustomer = msg.role === 'user';
+                      return (
+                        <div key={i} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                          <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
+                            <div className="flex items-center gap-1.5 mb-1 mx-1">
+                              <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
+                                {isCustomer ? 'Customer (You)' : 'DullBot AI'}
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                        {msg.role === 'user' && (
-                          <div className="w-7 h-7 rounded-full bg-fog border border-dove/30 flex items-center justify-center shrink-0 mt-0.5">
-                            <User className="w-3.5 h-3.5 text-graphite" />
+                            {msg.bubbles.map((bubble, bi) => (
+                              <div
+                                key={bi}
+                                className={`px-4 py-2.5 rounded-2xl text-sm mb-1.5 last:mb-0 text-left ${
+                                  isCustomer
+                                    ? 'bg-fog text-ink rounded-tl-sm border border-dove/20'
+                                    : bubble === '…'
+                                      ? 'bg-white text-graphite shadow-subtle animate-pulse rounded-tr-sm border border-dove/20'
+                                      : 'bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle'
+                                }`}
+                              >
+                                {renderBubbleContent(bubble)}
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                     <div ref={chatEndRef} />
                   </>
                 )}
@@ -629,38 +639,38 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                     <p className="text-xs text-graphite">Add examples to shape how the persona responds to specific questions.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-6">
                     {examples.map(ex => (
-                      <div key={ex.id} className="bg-white rounded-[20px] p-5 shadow-subtle group">
-                        <div className="flex justify-between items-start gap-3">
-                          <div className="space-y-3 flex-1 min-w-0">
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-fog flex items-center justify-center shrink-0 mt-0.5">
-                                <User className="w-3 h-3 text-graphite" />
+                      <div key={ex.id} className="relative group">
+                        <div className="flex flex-col gap-2 w-full px-2">
+                          <div className="flex justify-start">
+                            <div className="flex flex-col max-w-[85%] items-start">
+                              <div className="flex items-center gap-1.5 mb-1 mx-1">
+                                <span className="text-[10px] font-medium text-ash uppercase tracking-wider">Customer</span>
                               </div>
-                              <div>
-                                <p className="text-[10px] text-dove uppercase tracking-wider mb-1">Customer</p>
-                                <p className="text-sm text-ink">{ex.customer_message}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-apricot-wash flex items-center justify-center shrink-0 mt-0.5">
-                                <Bot className="w-3 h-3 text-rust" />
-                              </div>
-                              <div>
-                                <p className="text-[10px] text-dove uppercase tracking-wider mb-1">Bot</p>
-                                <p className="text-sm text-graphite">{ex.ideal_reply}</p>
+                              <div className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                {ex.customer_message}
                               </div>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteExample(ex.id)}
-                            disabled={isPending}
-                            className="p-1.5 text-dove hover:text-rust opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <div className="flex justify-end">
+                            <div className="flex flex-col max-w-[85%] items-end">
+                              <div className="flex items-center gap-1.5 mb-1 mx-1">
+                                <span className="text-[10px] font-medium text-ash uppercase tracking-wider">DullBot AI</span>
+                              </div>
+                              <div className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                {ex.ideal_reply}
+                              </div>
+                            </div>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => handleDeleteExample(ex.id)}
+                          disabled={isPending}
+                          className="absolute -top-2 -right-2 p-1.5 bg-white rounded-full shadow-subtle border border-dove/10 text-dove hover:text-rust opacity-0 group-hover:opacity-100 transition-all z-10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     ))}
                   </div>
