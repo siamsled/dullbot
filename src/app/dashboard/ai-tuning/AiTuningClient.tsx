@@ -297,11 +297,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col">
 
           {/* ── TEST TAB ─────────────────────────────────────────────────── */}
           {activeTab === 'test' && (
-            <div className="h-full flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
               {/* Chat area */}
               <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {chatHistory.length === 0 ? (
@@ -371,24 +371,26 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               </div>
 
               {/* Chat input */}
-              <div className="shrink-0 px-8 py-4 bg-white border-t border-dove/20">
-                <div className="flex items-center gap-3 bg-fog rounded-full pl-5 pr-2 py-2 border border-dove/20 focus-within:border-ink/30 focus-within:bg-white transition-all">
-                  <input
-                    type="text"
-                    value={testInput}
-                    onChange={e => setTestInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleTestSend()}
-                    placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
-                    disabled={isTesting}
-                    className="flex-1 bg-transparent text-sm text-ink placeholder:text-dove focus:outline-none disabled:opacity-60"
-                  />
-                  <button
-                    onClick={handleTestSend}
-                    disabled={isTesting || !testInput.trim()}
-                    className="w-9 h-9 rounded-full bg-ink text-white flex items-center justify-center hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-90 shrink-0"
-                  >
-                    {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
+              <div className="shrink-0 px-8 py-6 bg-fog border-t border-dove/20">
+                <div className="max-w-3xl mx-auto">
+                  <div className="flex items-center gap-3 bg-white rounded-[20px] pl-5 pr-2 py-2 border border-dove/40 shadow-sm focus-within:border-ink/30 focus-within:shadow-md transition-all">
+                    <input
+                      type="text"
+                      value={testInput}
+                      onChange={e => setTestInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleTestSend()}
+                      placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
+                      disabled={isTesting}
+                      className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-graphite focus:outline-none disabled:opacity-60 py-1"
+                    />
+                    <button
+                      onClick={handleTestSend}
+                      disabled={isTesting || !testInput.trim()}
+                      className="w-10 h-10 rounded-full bg-ink text-white flex items-center justify-center hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shrink-0"
+                    >
+                      {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                    </button>
+                  </div>
                 </div>
                 {chatHistory.length > 0 && (
                   <button
