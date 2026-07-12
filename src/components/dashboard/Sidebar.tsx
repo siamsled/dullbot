@@ -58,8 +58,8 @@ export default function Sidebar() {
         })}
       </nav>
       
-      <div className="p-4 border-t border-dove/10">
-        <div className="flex items-center gap-3 px-4 py-3">
+      <div className="h-24 border-t border-dove/10 flex flex-col justify-center px-4">
+        <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-ink text-pure-white flex items-center justify-center text-xs font-bold shadow-subtle">
             DS
           </div>

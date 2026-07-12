@@ -235,7 +235,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
           })}
         </div>
 
-        <div className="p-4 border-t border-dove/20">
+        <div className="h-24 border-t border-dove/20 flex flex-col justify-center px-4">
           <button
             onClick={handleSave}
             disabled={isPending}
@@ -371,7 +371,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               </div>
 
               {/* Chat input */}
-              <div className="shrink-0 px-8 py-6 bg-fog border-t border-dove/20">
+              <div className="shrink-0 h-24 px-8 bg-fog border-t border-dove/20 flex flex-col justify-center">
                 <div className="max-w-3xl mx-auto">
                   <div className="flex items-center gap-3 bg-white rounded-[20px] pl-5 pr-2 py-2 border border-dove/40 shadow-sm focus-within:border-ink/30 focus-within:shadow-md transition-all">
                     <input
