@@ -141,13 +141,13 @@ function buildProductSection(products: ProductRow[]): string {
       lines.push(`  • ${p.name}${p.description ? ` — ${p.description}` : ''}${p.image_url ? ` (Image URL: ${p.image_url})` : ''}`);
       for (const v of p.variants) {
         const effectivePrice = v.price_override ?? p.price;
-        const stockStr = v.stock > 0 ? `${v.stock} in stock` : 'OUT OF STOCK';
+        const stockStr = v.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK';
         lines.push(`      – ${v.name}: ${effectivePrice} ${currency} (${stockStr})${v.sku ? ` [SKU: ${v.sku}]` : ''}`);
       }
     } else {
       // Simple product — single stock level
       const stockStr = p.stock_quantity != null
-        ? (p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'OUT OF STOCK')
+        ? (p.stock_quantity > 0 ? 'IN STOCK' : 'OUT OF STOCK')
         : '';
 
       lines.push(
@@ -160,5 +160,5 @@ function buildProductSection(products: ProductRow[]): string {
     }
   }
 
-  return `CURRENT PRODUCTS:\n${lines.join('\n')}\n\nIf a customer asks about a product not in the above list, tell them honestly that you only carry what is listed. When a customer asks about availability, be specific about variant stock levels.`;
+  return `CURRENT PRODUCTS:\n${lines.join('\n')}\n\nIf a customer asks about a product not in the above list, tell them honestly that you only carry what is listed. When a customer asks about availability, tell them if it is in stock, but NEVER reveal the exact numerical stock quantity.`;
 }
