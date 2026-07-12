@@ -108,7 +108,7 @@ export async function testPersonaResponse(
     const result = await invokeGemini(systemPrompt, customerMessage, [], null);
     
     if (!result.success) {
-      return { success: false, error: 'Gemini invocation failed' };
+      return { success: false, error: result.error || 'Gemini invocation failed' };
     }
     
     return { success: true, text: result.text };

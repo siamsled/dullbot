@@ -81,6 +81,7 @@ export async function invokeGemini(
         text: "Give me a second, let me check that for you.",
         inputTokens: 0,
         outputTokens: 0,
+        error: error.message
       };
     }
     return {
@@ -89,6 +90,7 @@ export async function invokeGemini(
       text: "Something went wrong on my end. I'm taking a break.",
       inputTokens: 0,
       outputTokens: 0,
+      error: error.message
     };
   }
 }
