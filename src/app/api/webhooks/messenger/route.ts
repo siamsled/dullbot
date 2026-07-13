@@ -322,6 +322,7 @@ export async function POST(request: Request) {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
+                              messaging_type: "RESPONSE",
                               recipient: { id: senderId },
                               message: { text: messengerText }
                             })
@@ -346,6 +347,7 @@ export async function POST(request: Request) {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
+                            messaging_type: "RESPONSE",
                             recipient: { id: senderId },
                             message: {
                               attachment: {
