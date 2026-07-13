@@ -373,12 +373,10 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                           const isFirst = sIdx === 0;
                           return (
                             <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                              <div className={`px-4 py-2.5 text-sm ${
+                              <div className={`px-4 py-2 text-[15px] ${
                                 isCustomer 
-                                  ? `bg-fog text-ink border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
-                                  : isHumanAgent
-                                    ? `bg-ink text-white shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
-                                    : `bg-white text-ink border border-dove/20 shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                  ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                  : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
                               }`}>
                                 {segment.type === 'image' ? (
                                   <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
@@ -447,14 +445,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder={isTakeover ? "Type a reply as human..." : "Take over to reply..."}
-                className="w-full bg-fog rounded-full pl-5 pr-12 py-3 text-sm text-ink border border-transparent focus:border-dove/30 focus:bg-white focus:ring-0 transition-all placeholder:text-ash"
+                className="w-full bg-[#F0F2F5] rounded-full pl-4 pr-12 py-2.5 text-[15px] text-[#050505] placeholder:text-[#65676B] border-none focus:outline-none focus:ring-0"
               />
               <button 
                 type="submit"
                 disabled={!input.trim()}
-                className="absolute right-2 p-2 bg-ink text-white rounded-full hover:bg-black disabled:opacity-50 disabled:hover:bg-ink transition-colors"
+                className="absolute right-2 p-1.5 text-[#0084FF] hover:bg-black/5 rounded-full disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </button>
             </form>
             {!isTakeover && input.trim() && (

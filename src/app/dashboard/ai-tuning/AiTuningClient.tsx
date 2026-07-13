@@ -308,7 +308,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                             <div className="flex justify-start">
                               <div className="flex flex-col max-w-[65%] items-start gap-1">
                                 {d.customer_message.split('|||').map((msg, mi) => (
-                                  <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                  <div key={mi} className="px-4 py-2 text-[15px] bg-[#E4E6EB] text-[#050505] rounded-2xl rounded-tl-sm text-left">
                                     {msg}
                                   </div>
                                 ))}
@@ -317,7 +317,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                             <div className="flex justify-end">
                               <div className="flex flex-col max-w-[65%] items-end gap-1">
                                 {d.reply.split('|||').map((msg, mi) => (
-                                  <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                  <div key={mi} className="px-4 py-2 text-[15px] bg-[#0084FF] text-white rounded-2xl rounded-tr-sm text-left">
                                     {msg}
                                   </div>
                                 ))}
@@ -342,12 +342,12 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                               return (
                                 <div
                                   key={bi}
-                                  className={`px-4 py-2.5 text-sm text-left ${
+                                  className={`px-4 py-2 text-[15px] text-left ${
                                     isCustomer
-                                      ? `bg-fog text-ink border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                      ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
                                       : segment.content === '…'
-                                        ? `bg-white text-graphite shadow-subtle animate-pulse border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
-                                        : `bg-white text-ink border border-dove/20 shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                        ? `bg-[#0084FF] text-white animate-pulse opacity-80 ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                        : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
                                   }`}
                                 >
                                   {segment.type === 'image' ? (
@@ -376,9 +376,9 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               </div>
 
               {/* Chat input */}
-              <div className="shrink-0 h-24 px-8 bg-fog border-t border-dove/20 flex flex-col justify-center">
-                <div className="max-w-3xl mx-auto">
-                  <div className="flex items-center gap-3 bg-white rounded-[20px] pl-5 pr-2 py-2 border border-dove/40 shadow-sm focus-within:border-ink/30 focus-within:shadow-md transition-all">
+              <div className="shrink-0 h-24 px-8 bg-white border-t border-dove/20 flex flex-col justify-center">
+                <div className="max-w-3xl mx-auto w-full">
+                  <div className="flex items-center gap-2 bg-[#F0F2F5] rounded-full pl-5 pr-2 py-2">
                     <input
                       type="text"
                       value={testInput}
@@ -386,14 +386,14 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       onKeyDown={e => e.key === 'Enter' && handleTestSend()}
                       placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
                       disabled={isTesting}
-                      className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-graphite focus:outline-none disabled:opacity-60 py-1"
+                      className="flex-1 bg-transparent text-[15px] text-[#050505] placeholder:text-[#65676B] focus:outline-none disabled:opacity-60"
                     />
                     <button
                       onClick={handleTestSend}
                       disabled={isTesting || !testInput.trim()}
-                      className="w-10 h-10 rounded-full bg-ink text-white flex items-center justify-center hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shrink-0"
+                      className="w-9 h-9 rounded-full text-[#0084FF] flex items-center justify-center hover:bg-black/5 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shrink-0"
                     >
-                      {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                      {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -641,7 +641,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className="flex justify-start">
                             <div className="flex flex-col max-w-[65%] items-start gap-1">
                               {ex.customer_message.split('|||').map((msg, mi) => (
-                                <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-fog text-ink rounded-tl-sm border border-dove/20 text-left">
+                                <div key={mi} className="px-4 py-2 text-[15px] bg-[#E4E6EB] text-[#050505] rounded-2xl rounded-tl-sm text-left">
                                   {msg}
                                 </div>
                               ))}
@@ -650,7 +650,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className="flex justify-end">
                             <div className="flex flex-col max-w-[65%] items-end gap-1">
                               {ex.ideal_reply.split('|||').map((msg, mi) => (
-                                <div key={mi} className="px-4 py-2.5 rounded-2xl text-sm bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle text-left">
+                                <div key={mi} className="px-4 py-2 text-[15px] bg-[#0084FF] text-white rounded-2xl rounded-tr-sm text-left">
                                   {msg}
                                 </div>
                               ))}
