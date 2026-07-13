@@ -332,6 +332,16 @@ export async function POST(request: Request) {
                     const cleanedText = aiResponseText.trim();
                     const textBubbles = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
 
+                    // Insert AI message into database FIRST so we don't lose it if Meta API fails
+                    await supabaseAdmin
+                      .from('messages')
+                      .insert({
+                        conversation_id: conversation.id,
+                        sender: 'bot',
+                        content: aiResponseText,
+                        fb_message_ids: null // Will update later if needed
+                      });
+
                     let capturedMids: string[] = [];
 
                     // Send to Meta Graph API
@@ -396,16 +406,6 @@ export async function POST(request: Request) {
                         }
                       }
                     }
-
-                    // Insert AI message into database
-                    await supabaseAdmin
-                      .from('messages')
-                      .insert({
-                        conversation_id: conversation.id,
-                        sender: 'bot',
-                        content: aiResponseText,
-                        fb_message_ids: capturedMids.length > 0 ? capturedMids : null
-                      });
 
                     // Check if the bot response indicates escalation/takeover
                     if (ticketReason) {
