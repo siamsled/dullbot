@@ -281,8 +281,21 @@ export async function POST(request: Request) {
                   if (audioPart) {
                     promptParts.push(audioPart);
                   }
+                  const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => reject(new Error("AI Generation Timeout: Exceeded 9000ms")), 9000);
+                  });
                   
-                  const result = await model.generateContent(promptParts);
+                  const parts: any[] = [{ text: prompt }];
+                  if (imagePart) parts.push(imagePart);
+                  if (audioPart) parts.push(audioPart);
+
+                  const result = await Promise.race([
+                    model.generateContent({
+                      contents: [{ role: 'user', parts }],
+                      generationConfig: { maxOutputTokens: 400 },
+                    }),
+                    timeoutPromise
+                  ]);
                   let aiResponseText = result.response.text().trim();
 
                   if (aiResponseText) {
@@ -398,6 +411,12 @@ export async function POST(request: Request) {
                       sender: 'bot',
                       content: `[SYSTEM ERROR] Failed to reply: ${aiError instanceof Error ? aiError.message : String(aiError)}`
                     });
+                    
+                  // Gracefully escalate to human to prevent infinite loop of bot crashing
+                  await supabaseAdmin
+                    .from('conversations')
+                    .update({ status: 'human_takeover', ticket_reason: 'System Error: AI failed' })
+                    .eq('id', conversation.id);
                 }
               }
 

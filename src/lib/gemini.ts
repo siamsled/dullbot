@@ -62,7 +62,10 @@ export async function invokeGemini(
   }
 
   try {
-    const chat = model.startChat({ history });
+    const chat = model.startChat({
+      history,
+      generationConfig: { maxOutputTokens: 400 },
+    });
     const result = await chat.sendMessage(customerMessage);
     const usage = result.response.usageMetadata;
 

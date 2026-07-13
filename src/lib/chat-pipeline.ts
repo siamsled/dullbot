@@ -158,11 +158,84 @@ async function billGeminiCall(
   await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
 }
 
-const QUICK_REPLIES = [
-  { trigger: /hello|hi|hey/i, reply: "Hello. Tell me what product you want to buy. I do not do small talk." },
-  { trigger: /thank/i, reply: "You are welcome. Goodbye." },
-  { trigger: /negotiate|discount|less price/i, reply: "Prices are fixed. No discounts. Take it or leave it." }
+// ── Pre-filter layer (zero-cost, no Gemini call) ──────────────────────────────
+// Each entry: { pattern, reply | replyFn }
+// replyFn receives the normalized text and the shop's live product list.
+// Returns null to fall through to Gemini if the lookup yields no useful data.
+
+const STATIC_PREFILTER: { trigger: RegExp; reply: string }[] = [
+  // Greetings
+  {
+    trigger: /^(hi|hello|hey|helo|heloo|salaam|salam|assalamualaikum|walaikum|আস্সালামু আলাইকুম|ওয়ালাইকুম|কেমন আছ|kemon acho|wadup|waddup|sup\??|yo\b|what['']?s up)/i,
+    reply: 'হ্যালো! কী সাহায্য করতে পারি?',
+  },
+  // Thanks / closing
+  {
+    trigger: /^(thank|thanks|tnx|thx|ty\b|dhonnobad|ধন্যবাদ|shukriya|জাজাকাল্লাহ|jazakallah|ok done|okok|okay done|বাই|bye|আল্লাহ হাফেজ|allah hafez|khoda hafez)/i,
+    reply: 'আপনাকে স্বাগতম! আর কিছু লাগলে জানাবেন।',
+  },
+  // Discount
+  {
+    trigger: /discount|ছাড়|কম দামে|negotiate|bargain|কমাবেন|দাম কমান|less price/i,
+    reply: 'দুঃখিত, দাম ফিক্সড। কোনো ডিসকাউন্ট দেওয়া সম্ভব না।',
+  },
+  // Delivery / shipping
+  {
+    trigger: /delivery|courier|shipping|পৌঁছাবে|পাঠাবেন|delivery charge|delivery cost|delivery fee|কতদিনে পাব|kotodin|কত দিন লাগবে/i,
+    reply: 'ঢাকার ভেতরে সাধারণত ১–২ কার্যদিবস এবং ঢাকার বাইরে ৩–৫ কার্যদিবস সময় লাগে। চার্জ অর্ডারের সময় নিশ্চিত করা হবে।',
+  },
+  // Business hours / open
+  {
+    trigger: /open|closed|khulan|খোলা|বন্ধ|hours|time|সময়|কটায় খোলে|কখন খোলা|are you open|are u open/i,
+    reply: 'আমরা সপ্তাহের প্রতিদিন সকাল ১০টা থেকে রাত ১০টা পর্যন্ত সার্ভিস দিই।',
+  },
+  // Short filler / noise that doesn't need Gemini
+  {
+    trigger: /^([?]+|[!]+|[.]+|hmm+|hm+|huh+|ok+|okay+|aight|lol|lmao|😂|👍|🙂|🔥|na|nah|and\??|ar\??|আর\??)$/i,
+    reply: 'হ্যাঁ, বলুন! কী জানতে চাইছেন?',
+  },
 ];
+
+// Product-aware stock/price pre-filter — performs a live DB lookup and returns
+// a templated reply, or null if no named product is matched.
+async function productPrefilter(
+  normalizedText: string,
+  shopId: string
+): Promise<string | null> {
+  const isStockCheck = /ache\??|আছে\??|available|stock|পাওয়া যাবে|পাবো|পাব|asbe|আসবে|আছে কি|in stock/i.test(normalizedText);
+  const isPriceCheck = /price|dam|দাম|কত|koto|কত টাকা|rate\??|cost|মূল্য/i.test(normalizedText);
+
+  if (!isStockCheck && !isPriceCheck) return null;
+
+  const { data: products } = await supabaseAdmin
+    .from('products')
+    .select('name, price, stock_quantity, currency')
+    .eq('shop_id', shopId)
+    .eq('is_active', true)
+    .eq('draft', false);
+
+  if (!products || products.length === 0) return null;
+
+  // Try to find a product whose name appears in the message
+  const matched = products.find(p =>
+    normalizedText.includes(p.name.toLowerCase())
+  );
+
+  if (!matched) return null;
+
+  if (isPriceCheck) {
+    return `${matched.name} এর দাম ${matched.price} ${matched.currency ?? 'BDT'}।`;
+  }
+  if (isStockCheck) {
+    const inStock = (matched.stock_quantity ?? 0) > 0;
+    return inStock
+      ? `হ্যাঁ, ${matched.name} এখন স্টকে আছে! অর্ডার করতে চাইলে বলুন।`
+      : `দুঃখিত, ${matched.name} এখন স্টকে নেই। নতুন স্টক এলে জানাতে পারব।`;
+  }
+  return null;
+}
+
+
 
 export async function processIncomingMessage(
   shopSlug: string,
@@ -213,15 +286,24 @@ export async function processIncomingMessage(
   // Save incoming customer message
   await persistMessage(conversation.id, 'customer', text);
 
-  const normalizedText = text.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").replace(/\s+/g, " ");
+  // 1. Pre-filter: static patterns (zero cost — no DB, no Gemini)
+  const rawText = text.trim();
+  const normalizedText = rawText.toLowerCase().replace(/\s+/g, ' ');
 
-  // 1. Pre-filter quick replies (zero cost)
-  for (const qr of QUICK_REPLIES) {
-    if (qr.trigger.test(normalizedText)) {
-      await persistMessage(conversation.id, 'bot', qr.reply);
+  for (const entry of STATIC_PREFILTER) {
+    if (entry.trigger.test(normalizedText)) {
+      await persistMessage(conversation.id, 'bot', entry.reply);
       await billGeminiCall(shop.id, conversation.id, 0, 0, false, true);
-      return { success: true, message: qr.reply, cacheHit: false, preFilterHit: true, geminiCalled: false };
+      return { success: true, message: entry.reply, cacheHit: false, preFilterHit: true, geminiCalled: false };
     }
+  }
+
+  // 1b. Pre-filter: product-aware stock/price lookup (DB hit, but no Gemini)
+  const productReply = await productPrefilter(normalizedText, shop.id);
+  if (productReply) {
+    await persistMessage(conversation.id, 'bot', productReply);
+    await billGeminiCall(shop.id, conversation.id, 0, 0, false, true);
+    return { success: true, message: productReply, cacheHit: false, preFilterHit: true, geminiCalled: false };
   }
 
   // 2. Check credit balance — block if zero
