@@ -82,7 +82,7 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="bg-white/80 rounded-xl p-3 max-w-[85%] text-[14px]">
                   <p className="text-graphite font-medium">Customer (01712...)</p>
-                  <p className="text-ink mt-0.5">Is the leather jacket available in size L? How much?</p>
+                  <p className="text-ink mt-0.5">Is the wireless earbuds available? How much?</p>
                 </div>
                 <div className="bg-ink text-white rounded-xl p-3 max-w-[85%] ml-auto text-[14px]">
                   <p className="text-dove font-medium">DullBot (AI Agent)</p>
@@ -106,8 +106,8 @@ export default function Home() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-b border-dove/10 pb-2">
                   <div>
-                    <h4 className="text-15px font-semibold text-ink">Premium Leather Jacket</h4>
-                    <p className="text-[13px] text-graphite">Size: L / Color: Black</p>
+                    <h4 className="text-15px font-semibold text-ink">Pro Wireless Earbuds</h4>
+                    <p className="text-[13px] text-graphite">Color: Matte Black</p>
                   </div>
                   <span className="font-serif text-16px font-normal text-rust">4,500 BDT</span>
                 </div>

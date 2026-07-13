@@ -19,7 +19,7 @@ export default function SandboxPage() {
     {
       id: 'init',
       sender: 'system',
-      text: "System initialized. Send a message to simulate a customer query. Try greeting ('hello'), asking for a price/negotiating ('discount?'), or requesting to purchase a Leather Jacket.",
+      text: "System initialized. Send a message to simulate a customer query. Try greeting ('hello'), asking for a price ('how much?'), or asking about one of your products.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -199,7 +199,7 @@ export default function SandboxPage() {
           type="text" 
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          placeholder="Type message as customer... (e.g. 'Is the leather jacket available?')" 
+          placeholder="Type message as customer... (e.g. 'Is this available?')" 
           className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
           disabled={loading}
         />
