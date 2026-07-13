@@ -88,6 +88,8 @@ export function buildSystemPrompt(
 
   const voiceMessageLine = 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
+  const abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults (e.g., in English or Bengali), DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them (e.g., never say "this is not a place to joke"). Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+
   // Product section
   const productSection = buildProductSection(products);
 
@@ -121,6 +123,7 @@ GUARDRAILS & RULES:
 - ${multiBubbleLine}
 - ${naturalLanguageLine}
 - ${voiceMessageLine}
+- ${abuseHandlingLine}
 - If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
