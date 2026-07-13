@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
+import { billGeminiCall } from '@/lib/chat-pipeline';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -273,7 +274,7 @@ export async function POST(request: Request) {
                 }
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+                  const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
                   const promptParts: any[] = [prompt];
                   if (imagePart) {
                     promptParts.push(imagePart);
@@ -296,6 +297,19 @@ export async function POST(request: Request) {
                     }),
                     timeoutPromise
                   ]);
+
+                  const usage = result.response.usageMetadata;
+                  if (usage) {
+                    await billGeminiCall(
+                      shop.id,
+                      conversation.id,
+                      usage.promptTokenCount ?? 0,
+                      usage.candidatesTokenCount ?? 0,
+                      false,
+                      false
+                    );
+                  }
+
                   let aiResponseText = result.response.text().trim();
 
                   if (aiResponseText) {

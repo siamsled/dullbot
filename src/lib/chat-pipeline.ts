@@ -92,7 +92,7 @@ async function persistMessage(conversationId: string, sender: 'customer' | 'bot'
     .eq('id', conversationId);
 }
 
-async function billGeminiCall(
+export async function billGeminiCall(
   shopId: string,
   conversationId: string,
   inputTokens: number,
