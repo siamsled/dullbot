@@ -62,24 +62,27 @@ export async function sendMessage(conversationId: string, content: string) {
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', conversationId);
 
-  // 3. Send out to Facebook (Non-blocking)
-  fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+  // 3. Send out to Facebook (Blocking)
+  const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
+      messaging_type: "RESPONSE",
       recipient: { id: conversation.customer_phone },
       message: { text: content }
     })
-  }).then(async (fbRes) => {
-    if (!fbRes.ok) {
-      const fbErr = await fbRes.json();
-      console.error("Facebook API Error (Human Reply):", fbErr);
-    }
-  }).catch((fbError) => {
-    console.error("Failed to push human message to FB:", fbError);
   });
+
+  if (!fbRes.ok) {
+    const fbErr = await fbRes.json();
+    console.error("Facebook API Error (Human Reply):", fbErr);
+    // Optionally delete the message from the database if we failed to send it,
+    // or just return null to indicate failure so UI doesn't append it optimistically.
+    await supabaseAdmin.from('messages').delete().eq('id', data.id);
+    return null;
+  }
   
   return data;
 }
