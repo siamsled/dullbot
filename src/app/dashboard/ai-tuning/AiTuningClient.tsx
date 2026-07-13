@@ -5,6 +5,7 @@ import {
   Shield, MessageSquarePlus, Trash2, Loader2, Sparkles,
   Check, ChevronRight, Send, Bot, User, AlertCircle, Plus, X
 } from 'lucide-react';
+import { parseMessageSegments } from '@/lib/message-parser';
 import { saveAiTuning, addExampleReply, deleteExampleReply, testPersonaResponse } from './actions';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -37,29 +38,13 @@ type AgentPersona = {
   disclosure_line: string;
 };
 
-type ChatMessage = { role: 'user' | 'bot'; bubbles: string[] };
+type ChatMessage = { role: 'user' | 'bot'; content: string };
 
 interface Props { shop: Shop; examples: ExampleReply[]; personas: AgentPersona[] }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function renderBubbleContent(text: string) {
-  const parts = text.split(/(!\[.*?\]\(.*?\))/g);
-  return parts.map((part, idx) => {
-    const match = part.match(/!\[(.*?)\]\((.*?)\)/);
-    if (match) {
-      return (
-        <img
-          key={idx}
-          src={match[2]}
-          alt={match[1]}
-          className="mt-2 rounded-xl max-w-full border border-white/10"
-        />
-      );
-    }
-    return <span key={idx}>{part}</span>;
-  });
-}
+
 
 const JOB_FUNCTION_LABELS: Record<string, string> = {
   negotiator: 'Negotiator',
@@ -142,7 +127,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     if (!msg || isTesting) return;
     setTestInput('');
     setIsTesting(true);
-    setChatHistory(prev => [...prev, { role: 'user', bubbles: [msg] }, { role: 'bot', bubbles: ['…'] }]);
+    setChatHistory(prev => [...prev, { role: 'user', content: msg }, { role: 'bot', content: '…' }]);
 
     try {
       const res = await testPersonaResponse(personaId, msg, {
@@ -152,12 +137,12 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         confidence_fallback: confidenceFallback,
         ai_instructions: aiInstructions,
       });
-      const bubbles = res.success
-        ? (res.text || '').split('|||').map(s => s.trim()).filter(Boolean)
-        : [`Error: ${res.error || 'Could not get a response.'}`];
-      setChatHistory(prev => [...prev.slice(0, -1), { role: 'bot', bubbles }]);
+      const content = res.success
+        ? (res.text || '')
+        : `Error: ${res.error || 'Could not get a response.'}`;
+      setChatHistory(prev => [...prev.slice(0, -1), { role: 'bot', content }]);
     } catch {
-      setChatHistory(prev => [...prev.slice(0, -1), { role: 'bot', bubbles: ['An unexpected error occurred.'] }]);
+      setChatHistory(prev => [...prev.slice(0, -1), { role: 'bot', content: 'An unexpected error occurred.' }]);
     } finally {
       setIsTesting(false);
     }
@@ -347,23 +332,40 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                   <>
                     {chatHistory.map((msg, i) => {
                       const isCustomer = msg.role === 'user';
+                      const segments = msg.content === '…' ? [{ type: 'text' as const, content: '…' }] : parseMessageSegments(msg.content);
+                      
                       return (
                         <div key={i} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                          <div className={`flex flex-col max-w-[65%] ${isCustomer ? 'items-start' : 'items-end'} gap-1`}>
-                            {msg.bubbles.flatMap(b => b.split('|||')).map((bubble, bi) => (
-                              <div
-                                key={bi}
-                                className={`px-4 py-2.5 rounded-2xl text-sm text-left ${
-                                  isCustomer
-                                    ? 'bg-fog text-ink rounded-tl-sm border border-dove/20'
-                                    : bubble === '…'
-                                      ? 'bg-white text-graphite shadow-subtle animate-pulse rounded-tr-sm border border-dove/20'
-                                      : 'bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle'
-                                }`}
-                              >
-                                {renderBubbleContent(bubble)}
-                              </div>
-                            ))}
+                          <div className={`flex flex-col max-w-[65%] gap-1 ${isCustomer ? 'items-start' : 'items-end'}`}>
+                            {segments.map((segment, bi) => {
+                              const isFirst = bi === 0;
+                              return (
+                                <div
+                                  key={bi}
+                                  className={`px-4 py-2.5 text-sm text-left ${
+                                    isCustomer
+                                      ? `bg-fog text-ink border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                      : segment.content === '…'
+                                        ? `bg-white text-graphite shadow-subtle animate-pulse border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                        : `bg-white text-ink border border-dove/20 shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                  }`}
+                                >
+                                  {segment.type === 'image' ? (
+                                    <img
+                                      src={segment.content}
+                                      alt="Attachment"
+                                      className="rounded-xl max-w-full border border-dove/10"
+                                    />
+                                  ) : segment.type === 'audio' ? (
+                                    <div className="py-1">
+                                      <audio src={segment.content} controls className="max-w-full" />
+                                    </div>
+                                  ) : (
+                                    segment.content
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );

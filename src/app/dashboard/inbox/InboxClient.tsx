@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText, ArrowDown, ArrowUp, ShieldAlert } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
+import { parseMessageSegments } from '@/lib/message-parser';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -367,24 +368,33 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                           {formatMessageDate(msg.created_at)}
                         </span>
                       </div>
-                      <div className={`px-4 py-2.5 rounded-2xl text-sm ${
-                        isCustomer 
-                          ? 'bg-fog text-ink rounded-tl-sm border border-dove/20' 
-                          : isHumanAgent
-                            ? 'bg-ink text-white rounded-tr-sm shadow-subtle'
-                            : 'bg-white text-ink border border-dove/20 rounded-tr-sm shadow-subtle'
-                      }`}>
-                        {msg.content.startsWith('IMAGE:') ? (
-                          <a href={msg.content.substring(6)} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
-                            <img src={msg.content.substring(6)} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
-                          </a>
-                        ) : msg.content.startsWith('AUDIO:') ? (
-                          <div className="py-1">
-                            <audio src={msg.content.substring(6)} controls className="max-w-full" />
-                          </div>
-                        ) : (
-                          msg.content
-                        )}
+                      <div className="flex flex-col gap-1 w-full mt-1">
+                        {parseMessageSegments(msg.content).map((segment, sIdx) => {
+                          const isFirst = sIdx === 0;
+                          return (
+                            <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                              <div className={`px-4 py-2.5 text-sm ${
+                                isCustomer 
+                                  ? `bg-fog text-ink border border-dove/20 ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                  : isHumanAgent
+                                    ? `bg-ink text-white shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                    : `bg-white text-ink border border-dove/20 shadow-subtle ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                              }`}>
+                                {segment.type === 'image' ? (
+                                  <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
+                                    <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
+                                  </a>
+                                ) : segment.type === 'audio' ? (
+                                  <div className="py-1">
+                                    <audio src={segment.content} controls className="max-w-full" />
+                                  </div>
+                                ) : (
+                                  segment.content
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                       
                       {/* Sent status check */}

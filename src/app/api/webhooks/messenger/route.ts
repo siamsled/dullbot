@@ -324,13 +324,30 @@ export async function POST(request: Request) {
                       ticketReason = 'complaint';
                     }
 
-                    // Parse out Markdown images
-                    const markdownImageRegex = /!\[.*?\]\((.*?)\)/g;
-                    const imageUrls: string[] = [];
+                    // Parse out Markdown images and text bubbles in precise order
+                    const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
+                    const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
                     
-                    // Parse legacy ||| to split into multiple bubbles
                     const cleanedText = aiResponseText.trim();
-                    const textBubbles = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
+                    const chunks = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
+                    
+                    const segments: { type: 'text' | 'image', content: string }[] = [];
+                    for (const chunk of chunks) {
+                      const parts = chunk.split(markdownImageSplitRegex);
+                      for (const part of parts) {
+                        if (!part) continue;
+                        
+                        const imgMatch = part.match(markdownImageExtractRegex);
+                        if (imgMatch) {
+                          segments.push({ type: 'image', content: imgMatch[1] });
+                        } else {
+                          const trimmedText = part.trim();
+                          if (trimmedText) {
+                            segments.push({ type: 'text', content: trimmedText });
+                          }
+                        }
+                      }
+                    }
 
                     // Insert AI message into database FIRST so we don't lose it if Meta API fails
                     await supabaseAdmin
@@ -346,26 +363,15 @@ export async function POST(request: Request) {
 
                     // Send to Meta Graph API
                     if (shop.meta_page_access_token) {
-                      for (const bubble of textBubbles) {
-                        let messengerText = bubble;
-
-                        let match;
-                        while ((match = markdownImageRegex.exec(bubble)) !== null) {
-                          if (match[1]) imageUrls.push(match[1]);
-                        }
-                        // Remove markdown tags for plain text Messenger
-                        messengerText = messengerText.replace(markdownImageRegex, '').trim();
-                        // Clean up stray double/triple blank lines caused by image removal
-                        messengerText = messengerText.replace(/\n{3,}/g, '\n\n');
-
-                        if (messengerText) {
+                      for (const segment of segments) {
+                        if (segment.type === 'text') {
                           const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                               messaging_type: "RESPONSE",
                               recipient: { id: senderId },
-                              message: { text: messengerText }
+                              message: { text: segment.content }
                             })
                           });
                           
@@ -376,34 +382,32 @@ export async function POST(request: Request) {
                             const fbData = await fbRes.json();
                             if (fbData.message_id) capturedMids.push(fbData.message_id);
                           }
-
-                          // Artificial delay for multi-bubble illusion of typing
-                          await new Promise(res => setTimeout(res, 1000));
-                        }
-                      }
-
-                      // Send image attachments separately
-                      for (const url of imageUrls) {
-                        const fbImgRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            messaging_type: "RESPONSE",
-                            recipient: { id: senderId },
-                            message: {
-                              attachment: {
-                                type: "image",
-                                payload: { url: url, is_reusable: true }
+                        } else if (segment.type === 'image') {
+                          const fbImgRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              messaging_type: "RESPONSE",
+                              recipient: { id: senderId },
+                              message: {
+                                attachment: {
+                                  type: "image",
+                                  payload: { url: segment.content, is_reusable: true }
+                                }
                               }
-                            }
-                          })
-                        });
-                        if (!fbImgRes.ok) {
-                          console.error("Failed to send image attachment to Messenger:", await fbImgRes.json());
-                        } else {
-                          const fbImgData = await fbImgRes.json();
-                          if (fbImgData.message_id) capturedMids.push(fbImgData.message_id);
+                            })
+                          });
+                          
+                          if (!fbImgRes.ok) {
+                            console.error("Failed to send image attachment to Messenger:", await fbImgRes.json());
+                          } else {
+                            const fbImgData = await fbImgRes.json();
+                            if (fbImgData.message_id) capturedMids.push(fbImgData.message_id);
+                          }
                         }
+                        
+                        // Artificial delay for multi-bubble illusion of typing
+                        await new Promise(res => setTimeout(res, 1000));
                       }
                     }
 
