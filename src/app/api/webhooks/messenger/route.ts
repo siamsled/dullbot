@@ -117,7 +117,8 @@ export async function POST(request: Request) {
                 .insert({
                   conversation_id: conversation.id,
                   sender: 'customer',
-                  content: dbContent
+                  content: dbContent,
+                  fb_message_ids: webhookEvent.message.mid ? [webhookEvent.message.mid] : null
                 });
 
               // 3. If bot is active, trigger AI
@@ -350,14 +351,16 @@ export async function POST(request: Request) {
                     }
 
                     // Insert AI message into database FIRST so we don't lose it if Meta API fails
-                    await supabaseAdmin
+                    const { data: insertedMsg } = await supabaseAdmin
                       .from('messages')
                       .insert({
                         conversation_id: conversation.id,
                         sender: 'bot',
                         content: aiResponseText,
                         fb_message_ids: null // Will update later if needed
-                      });
+                      })
+                      .select()
+                      .single();
 
                     let capturedMids: string[] = [];
 
@@ -408,6 +411,13 @@ export async function POST(request: Request) {
                         
                         // Artificial delay for multi-bubble illusion of typing
                         await new Promise(res => setTimeout(res, 1000));
+                      }
+
+                      if (capturedMids.length > 0 && insertedMsg) {
+                        await supabaseAdmin
+                          .from('messages')
+                          .update({ fb_message_ids: capturedMids })
+                          .eq('id', insertedMsg.id);
                       }
                     }
 
