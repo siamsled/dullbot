@@ -328,9 +328,9 @@ export async function POST(request: Request) {
                     const markdownImageRegex = /!\[.*?\]\((.*?)\)/g;
                     const imageUrls: string[] = [];
                     
-                    // Replace legacy ||| with double newline, then treat as one single bubble
-                    const cleanedText = aiResponseText.replace(/\|\|\|/g, '\n\n').trim();
-                    const textBubbles = cleanedText ? [cleanedText] : [];
+                    // Parse legacy ||| to split into multiple bubbles
+                    const cleanedText = aiResponseText.trim();
+                    const textBubbles = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
 
                     let capturedMids: string[] = [];
 

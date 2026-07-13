@@ -75,6 +75,8 @@ export function buildSystemPrompt(
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
     
   const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in 1-2 short sentences. Only elaborate with descriptive detail if the customer asks for more or shows interest beyond the initial question.';
+  
+  const multiBubbleLine = 'If you need to send multiple messages in a row (e.g., to mimic a real human sending separate short bursts instead of one long paragraph), use ||| to separate them.';
 
   // Custom Instructions
   const customInstructionsSection = shop.ai_instructions 
@@ -120,6 +122,7 @@ GUARDRAILS & RULES:
 - ${escalateLine}
 - ${fallbackLine}
 - ${brevityLine}
+- ${multiBubbleLine}
 - ${imageLine}
 - ${naturalLanguageLine}
 - ${voiceMessageLine}
