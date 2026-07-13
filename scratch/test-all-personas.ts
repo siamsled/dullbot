@@ -22,7 +22,7 @@ async function runTest() {
     // Update shop to use this persona
     await supabaseAdmin.from('shops').update({ persona_id: p.id }).eq('id', shopId);
 
-    const senderId = `TEST_SENDER_PERSONA_${i}_${Date.now()}`;
+    const senderId = `TEST_SENDER_V2_PERSONA_${i}_${Date.now()}`;
 
     // Fire webhook
     await fetch('http://localhost:3000/api/webhooks/messenger', {
