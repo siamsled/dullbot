@@ -8,8 +8,10 @@ function formatCredits(n: number) {
   return n.toFixed(4);
 }
 
-function formatUSD(n: number) {
-  return `$${n.toFixed(6)}`;
+function formatBDT(usd: number) {
+  const bdt = usd * 120; // Approx exchange rate
+  // For tiny fractional costs, we might still want to see the decimal precision
+  return `৳${bdt.toFixed(4)}`;
 }
 
 export default async function CreditsPage() {
@@ -119,7 +121,7 @@ export default async function CreditsPage() {
                 <th className="px-5 py-3 font-medium">Type</th>
                 <th className="px-5 py-3 font-medium text-right">Input Tokens</th>
                 <th className="px-5 py-3 font-medium text-right">Output Tokens</th>
-                <th className="px-5 py-3 font-medium text-right">Raw Cost</th>
+                <th className="px-5 py-3 font-medium text-right">Cost (BDT)</th>
                 <th className="px-5 py-3 font-medium text-right">Credits Billed</th>
               </tr>
             </thead>
@@ -142,7 +144,7 @@ export default async function CreditsPage() {
                   </td>
                   <td className="px-5 py-3 text-right text-ink">{log.input_tokens?.toLocaleString()}</td>
                   <td className="px-5 py-3 text-right text-ink">{log.output_tokens?.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-right text-ash text-xs">{formatUSD(log.raw_cost ?? 0)}</td>
+                  <td className="px-5 py-3 text-right text-ash text-xs">{formatBDT(log.raw_cost ?? 0)}</td>
                   <td className="px-5 py-3 text-right font-medium text-ink">{formatCredits(log.billed_credits ?? 0)}</td>
                 </tr>
               ))}
