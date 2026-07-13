@@ -81,8 +81,6 @@ export function buildSystemPrompt(
 
   // Image Instructions
   const imageLine = 'If a customer asks for pictures of a product, or if you are recommending a specific product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line.';
-
-  const multiBubbleLine = 'IMPORTANT: If your character/persona dictates sending short bursts instead of one long paragraph, use `|||` as a delimiter to split your message into separate bubbles. E.g. "Sure!|||Here it is." will send as two separate messages.';
   
   const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar), and avoid using them altogether. They sound very unnatural and AI-like in this context. Use natural, conversational greetings instead if needed (like "Hello", "Hi", "আসসালামু আলাইকুম", or just get straight to the point).';
 
@@ -120,7 +118,6 @@ GUARDRAILS & RULES:
 - ${escalateLine}
 - ${fallbackLine}
 - ${imageLine}
-- ${multiBubbleLine}
 - ${naturalLanguageLine}
 - ${voiceMessageLine}
 - ${abuseHandlingLine}
