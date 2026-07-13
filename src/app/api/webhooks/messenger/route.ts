@@ -345,6 +345,8 @@ export async function POST(request: Request) {
                         }
                         // Remove markdown tags for plain text Messenger
                         messengerText = messengerText.replace(markdownImageRegex, '').trim();
+                        // Clean up stray double/triple blank lines caused by image removal
+                        messengerText = messengerText.replace(/\n{3,}/g, '\n\n');
 
                         if (messengerText) {
                           const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {

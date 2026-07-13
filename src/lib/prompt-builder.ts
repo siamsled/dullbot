@@ -73,6 +73,8 @@ export function buildSystemPrompt(
     confidenceFallback === 'guess' ? 'If unsure, give your best guess while acknowledging uncertainty.'
     : confidenceFallback === 'say_checking' ? 'If you are unsure about something, say "Let me check on that for you" and do not fabricate information.'
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
+    
+  const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in 1-2 short sentences. Only elaborate with descriptive detail if the customer asks for more or shows interest beyond the initial question.';
 
   // Custom Instructions
   const customInstructionsSection = shop.ai_instructions 
@@ -117,6 +119,7 @@ GUARDRAILS & RULES:
 - ${discountLine}
 - ${escalateLine}
 - ${fallbackLine}
+- ${brevityLine}
 - ${imageLine}
 - ${naturalLanguageLine}
 - ${voiceMessageLine}
