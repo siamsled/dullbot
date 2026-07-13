@@ -4,8 +4,8 @@ import { buildSystemPrompt } from './prompt-builder';
 import crypto from 'crypto';
 
 // Gemini Flash Lite pricing (USD per million tokens) as of 2025
-const GEMINI_INPUT_COST_PER_M = 0.075;
-const GEMINI_OUTPUT_COST_PER_M = 0.30;
+const GEMINI_INPUT_COST_PER_M = 0.25;
+const GEMINI_OUTPUT_COST_PER_M = 1.50;
 
 // In-process pricing config cache — refreshed every 5 minutes
 let pricingConfigCache: {

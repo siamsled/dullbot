@@ -274,7 +274,7 @@ export async function POST(request: Request) {
                 }
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+                  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
                   const promptParts: any[] = [prompt];
                   if (imagePart) {
                     promptParts.push(imagePart);
