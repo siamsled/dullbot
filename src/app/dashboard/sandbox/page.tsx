@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import MessengerInput, { ChatMedia } from '@/components/dashboard/MessengerInput';
 
 interface ChatMessage {
   id: string;
@@ -23,7 +24,6 @@ export default function SandboxPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
-  const [inputText, setInputText] = useState('');
   const [customerPhone, setCustomerPhone] = useState('+8801712345678');
   const [shopSlug, setShopSlug] = useState('dull-store');
   const [loading, setLoading] = useState(false);
@@ -33,12 +33,9 @@ export default function SandboxPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || loading) return;
-
-    const userMsgText = inputText.trim();
-    setInputText('');
+  const handleSend = async (text: string, media?: ChatMedia) => {
+    const userMsgText = text.trim() || (media ? (media.type === 'image' ? '[Image Attachment]' : '[Voice Message]') : '');
+    if (!userMsgText || loading) return;
 
     const newCustomerMsg: ChatMessage = {
       id: Math.random().toString(),
@@ -194,23 +191,13 @@ export default function SandboxPage() {
       </div>
 
       {/* Input Form Box */}
-      <form onSubmit={handleSend} className="mt-3 flex gap-2">
-        <input 
-          type="text" 
-          value={inputText}
-          onChange={e => setInputText(e.target.value)}
-          placeholder="Type message as customer... (e.g. 'Is this available?')" 
-          className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+      <div className="mt-3 bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <MessengerInput 
+          onSend={handleSend}
           disabled={loading}
+          placeholder="Type message as customer... (e.g. 'Is this available?')" 
         />
-        <button 
-          type="submit" 
-          disabled={loading || !inputText.trim()}
-          className="bg-black hover:bg-gray-800 text-white rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:bg-gray-300"
-        >
-          Send
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

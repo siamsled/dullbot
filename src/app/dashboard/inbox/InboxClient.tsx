@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, Send, AlertTriangle, ShieldCheck, UserCog, MessageSquareText, ArrowDown, ArrowUp, ShieldAlert } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
+import MessengerInput, { ChatMedia } from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments } from '@/lib/message-parser';
 
 function formatMessageDate(dateString: string) {
@@ -30,7 +31,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const [conversations, setConversations] = useState(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(conversations[0]?.id || null);
   const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState('');
   const [isTakeover, setIsTakeover] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,7 +71,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
   }, [activeConv]);
 
-  // Asynchronously resolve Facebook names/pics in the background on the client
   useEffect(() => {
     conversations.forEach(async (conv) => {
       if (conv.channel === 'messenger' && /^\d+$/.test(conv.customer_phone) && !profiles[conv.customer_phone]) {
@@ -88,7 +87,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     if (activeId) {
       const msgs = await getMessages(activeId);
       setMessages(prev => {
-        // Keep any optimistic messages that aren't yet saved in the DB
         const optimisticMsgs = prev.filter(m => m.isOptimistic);
         const unsavedOptimistic = optimisticMsgs.filter(opt => 
           !msgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
@@ -116,7 +114,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 1000); // 1s polling for live inbox feel!
+    const interval = setInterval(loadData, 1000);
     return () => clearInterval(interval);
   }, [activeId]);
 
@@ -125,7 +123,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   useEffect(() => {
     isFirstLoadRef.current = true;
-    setMessages([]); // Clear old messages immediately on switch to prevent flicker
+    setMessages([]);
   }, [activeId]);
 
   useEffect(() => {
@@ -142,14 +140,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     setTimeout(handleScroll, 100);
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !activeId) return;
+  const handleSend = async (text: string, media?: ChatMedia) => {
+    if (media) {
+      alert("Media uploads via Live Inbox require a public storage bucket to send to Facebook API. Coming soon!");
+    }
     
-    const text = input;
-    setInput('');
+    if (!text.trim() || !activeId) return;
     
-    // Optimistic UI update
     const newMsg = { 
       id: `temp-${Date.now()}`, 
       sender: 'human_agent', 
@@ -160,7 +157,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     setMessages(prev => [...prev, newMsg]);
 
     await sendMessage(activeId, text);
-    // Reload to get real ID
     loadData();
   };
 
@@ -438,25 +434,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           </div>
 
           {/* Message Input */}
-          <div className="p-4 bg-white border-t border-dove/20 shrink-0">
-            <form onSubmit={handleSend} className="relative flex items-center">
-              <input 
-                type="text" 
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder={isTakeover ? "Type a reply as human..." : "Take over to reply..."}
-                className="w-full bg-[#F0F2F5] rounded-full pl-4 pr-12 py-2.5 text-[15px] text-[#050505] placeholder:text-[#65676B] border-none focus:outline-none focus:ring-0"
-              />
-              <button 
-                type="submit"
-                disabled={!input.trim()}
-                className="absolute right-2 p-1.5 text-[#0084FF] hover:bg-black/5 rounded-full disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
-            {!isTakeover && input.trim() && (
-              <p className="text-[10px] text-rust mt-2 px-2">
+          <div className="shrink-0 bg-white">
+            <MessengerInput 
+              onSend={handleSend}
+              isTakeover={isTakeover}
+            />
+            {!isTakeover && (
+              <p className="text-[10px] text-rust mt-1 px-4 pb-2 bg-white">
                 Note: Sending a message will not automatically pause the bot unless you toggle Human Takeover.
               </p>
             )}

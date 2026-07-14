@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
-import {
-  Shield, MessageSquarePlus, Trash2, Loader2, Sparkles,
-  Check, ChevronRight, Send, Bot, User, AlertCircle, Plus, X
-} from 'lucide-react';
+import { AlertCircle, ChevronDown, Wand2, RefreshCw, Send, Loader2, Info, Plus, Sparkles, Trash2, Mic, Play, Pause, Check, ChevronRight, Bot, Shield, MessageSquarePlus, X, User } from 'lucide-react';
+import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments } from '@/lib/message-parser';
 import { saveAiTuning, addExampleReply, deleteExampleReply, testPersonaResponse } from './actions';
 
@@ -144,12 +142,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     });
   };
 
-  const handleTestSend = async () => {
-    const msg = testInput.trim();
-    if (!msg || isTesting) return;
-    setTestInput('');
+  const handleTestSend = async (msg: string, media?: any) => {
+    const actualMsg = msg.trim() || (media ? (media.type === 'image' ? '[Image Attachment]' : '[Voice Message]') : '');
+    if (!actualMsg || isTesting) return;
     setIsTesting(true);
-    setChatHistory(prev => [...prev, { role: 'user', content: msg }, { role: 'bot', content: '…' }]);
+    setChatHistory(prev => [...prev, { role: 'user', content: actualMsg }, { role: 'bot', content: '…' }]);
 
     try {
       const res = await testPersonaResponse(personaId, msg, {
@@ -405,27 +402,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               </div>
 
               {/* Chat input */}
-              <div className="shrink-0 h-24 px-8 bg-white border-t border-dove/20 flex flex-col justify-center">
-                <div className="max-w-3xl mx-auto w-full">
-                  <div className="flex items-center gap-2 bg-[#F0F2F5] rounded-full pl-5 pr-2 py-2">
-                    <input
-                      type="text"
-                      value={testInput}
-                      onChange={e => setTestInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleTestSend()}
-                      placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
-                      disabled={isTesting}
-                      className="flex-1 bg-transparent text-[15px] text-[#050505] placeholder:text-[#65676B] focus:outline-none disabled:opacity-60"
-                    />
-                    <button
-                      onClick={handleTestSend}
-                      disabled={isTesting || !testInput.trim()}
-                      className="w-9 h-9 rounded-full text-[#0084FF] flex items-center justify-center hover:bg-black/5 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shrink-0"
-                    >
-                      {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+              <div className="shrink-0">
+                <MessengerInput 
+                  onSend={handleTestSend}
+                  disabled={isTesting}
+                  placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
+                />
+                
                 {chatHistory.length > 0 && (
                   <button
                     onClick={() => setChatHistory([])}
@@ -544,7 +527,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${escalationSeverity === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
                             {escalationSeverity === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
-                          <input id={`escalation-${opt.val}`} name="escalationSeverity" type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="sr-only" />
+                          <input id={`escalation-${opt.val}`} name="escalationSeverity" type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="hidden" />
                           <div>
                             <p className="text-sm text-ink">{opt.label}</p>
                           </div>
@@ -565,7 +548,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${confidenceFallback === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {confidenceFallback === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input id={`confidence-${opt.val}`} name="confidenceFallback" type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="sr-only" />
+                          <input id={`confidence-${opt.val}`} name="confidenceFallback" type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="hidden" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -587,7 +570,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${abusiveHandlingMode === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {abusiveHandlingMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input id={`abusive-${opt.val}`} name="abusiveHandlingMode" type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="sr-only" />
+                          <input id={`abusive-${opt.val}`} name="abusiveHandlingMode" type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="hidden" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -620,7 +603,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${offTopicTolerance === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
                             {offTopicTolerance === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
-                          <input id={`offtopic-${opt.val}`} name="offTopicTolerance" type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="sr-only" />
+                          <input id={`offtopic-${opt.val}`} name="offTopicTolerance" type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="hidden" />
                           <div>
                             <p className="text-sm text-ink font-medium">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -655,7 +638,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                           <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${disclosureMode === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input id={`disclosure-${opt.val}`} name="disclosureMode" type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="sr-only" />
+                          <input id={`disclosure-${opt.val}`} name="disclosureMode" type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="hidden" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite mt-0.5">{opt.desc}</p>
