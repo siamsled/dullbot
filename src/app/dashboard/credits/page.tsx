@@ -148,7 +148,7 @@ export default async function CreditsPage() {
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-ash text-sm">No usage logged yet.</td>
                 </tr>
-              ) : logs.map(log => (
+              ) : logs.map((log, index) => (
                 <tr key={log.id} className="hover:bg-fog/50 transition-colors">
                   <td className="px-5 py-3 text-ash text-xs">{new Date(log.created_at).toLocaleString()}</td>
                   <td className="px-5 py-3">
