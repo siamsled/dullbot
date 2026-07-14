@@ -198,7 +198,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-fog">
+    <div className="flex h-full overflow-hidden bg-fog">
 
       {/* ── Left Sidebar: Persona Picker ────────────────────────────────────── */}
       <aside className="w-72 shrink-0 bg-white border-r border-dove/20 flex flex-col">
