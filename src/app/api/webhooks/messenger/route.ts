@@ -252,7 +252,10 @@ export async function POST(request: Request) {
                 // Customer context
                 systemPrompt += `\n\nCUSTOMER DETAILS:
                 - Name: ${customerName}
-                - Gender: ${customerGender}`;
+                - Gender: ${customerGender}
+                
+                GENDER AND HONORIFICS RULE:
+                If the gender is "unknown", you must deduce the gender based on the customer's name (e.g., Anik is male, Sadia is female). Use the appropriate honorific (bhaiya/apu) if your persona requires it. If the name is ambiguous, do NOT use gender-specific honorifics like "bhaiya" or "apu", simply speak politely without them. NEVER use both at the same time (e.g. "apu/bhaiya").`;
 
                 let prompt = systemPrompt;
                 prompt += `\n\nHere is the recent chat history:\n${chatHistory}\n`;

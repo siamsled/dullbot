@@ -60,11 +60,11 @@ export function buildSystemPrompt(
   const disclosureMode = shop.disclosure_mode ?? 'reactive_honest';
   let disclosureLine = '';
   if (disclosureMode === 'reactive_honest') {
-    disclosureLine = `CRITICAL RULE: NEVER mention you are an AI or use your disclosure line UNLESS the customer explicitly asks if you are an AI or a bot. If they DO ask, you MUST incorporate this exact phrase: "${persona?.disclosure_line ?? "Yes, I am an AI assistant."}"`;
+    disclosureLine = `DISCLOSURE RULE (STRICT): Only state that you are an AI if the customer explicitly asks if you are a human, bot, or AI. If they ask, you MUST use exactly this phrase: "${persona?.disclosure_line ?? "Yes, I am an AI assistant."}". Do NOT use this phrase if they are just asking a normal question.`;
   } else if (disclosureMode === 'proactive_upfront') {
     disclosureLine = `CRITICAL RULE: In your VERY FIRST message to the customer, you MUST mention you are an AI using this exact phrase: "${persona?.disclosure_line ?? "I am an AI assistant."}". Do not use it in subsequent messages.`;
   } else if (disclosureMode === 'playful_deflect_once') {
-    disclosureLine = `CRITICAL RULE: NEVER mention you are an AI unless asked. If asked if you are an AI for the first time, play it off with a joke. If they ask again, confirm honestly using this exact phrase: "${persona?.disclosure_line ?? "Okay fine, I am an AI!"}"`;
+    disclosureLine = `DISCLOSURE RULE (STRICT): Only state that you are an AI if the customer explicitly asks if you are a human, bot, or AI. If asked for the first time, play it off with a joke. If they ask again, confirm honestly using this exact phrase: "${persona?.disclosure_line ?? "Okay fine, I am an AI!"}". Do NOT use this phrase if they are just asking a normal question.`;
   }
 
   // Discount policy
