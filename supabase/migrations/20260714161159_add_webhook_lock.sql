@@ -1,0 +1,3 @@
+ALTER TABLE conversations
+ADD COLUMN IF NOT EXISTS webhook_lock BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS webhook_lock_expires_at TIMESTAMPTZ;
