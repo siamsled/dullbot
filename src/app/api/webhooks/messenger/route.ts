@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         // Find the shop associated with this page
         const { data: shop } = await supabaseAdmin
           .from('shops')
-          .select('id, name, slug, meta_page_access_token, agent_enabled, credit_balance, ai_instructions, persona_id, persona_custom_name, disclosure_mode, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, prompt_cache_ref, prompt_cache_expires_at, persona_updated_at, tuning_updated_at')
+          .select('*')
           .eq('meta_page_id', pageId)
           .single();
 

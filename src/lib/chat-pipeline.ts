@@ -246,7 +246,7 @@ export async function processIncomingMessage(
   // Resolve shop with all tuning columns
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, credit_balance, agent_enabled, name, ai_instructions, persona_id, persona_custom_name, disclosure_mode, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, prompt_cache_ref, prompt_cache_expires_at, persona_updated_at, tuning_updated_at')
+    .select('*')
     .eq('slug', shopSlug)
     .single();
 

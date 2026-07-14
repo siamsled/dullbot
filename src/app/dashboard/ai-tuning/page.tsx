@@ -8,7 +8,7 @@ export default async function AiTuningPage() {
 
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('id, name, persona_id, persona_custom_name, disclosure_mode, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, ai_instructions')
+    .select('*')
     .eq('slug', shopSlug)
     .single();
 
