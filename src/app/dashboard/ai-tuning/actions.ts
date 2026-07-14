@@ -14,6 +14,13 @@ export async function saveAiTuning(payload: {
   auto_escalate_on_complaint: boolean;
   confidence_fallback: string;
   ai_instructions: string | null;
+  allow_discounts: boolean;
+  escalation_severity: string;
+  handle_audio: boolean;
+  abusive_handling_mode: string;
+  abusive_block_threshold: number;
+  high_value_order_threshold: number;
+  off_topic_tolerance: string;
 }) {
   const { error } = await supabaseAdmin
     .from('shops')
@@ -63,6 +70,13 @@ export async function testPersonaResponse(
     auto_escalate_on_complaint: boolean;
     confidence_fallback: string;
     ai_instructions: string | null;
+    allow_discounts: boolean;
+    escalation_severity: string;
+    handle_audio: boolean;
+    abusive_handling_mode: string;
+    abusive_block_threshold: number;
+    high_value_order_threshold: number;
+    off_topic_tolerance: string;
   }
 ) {
   // Fetch full persona
@@ -100,6 +114,13 @@ export async function testPersonaResponse(
     auto_escalate_on_complaint: shopTuningState.auto_escalate_on_complaint,
     confidence_fallback: shopTuningState.confidence_fallback,
     ai_instructions: shopTuningState.ai_instructions,
+    allow_discounts: shopTuningState.allow_discounts,
+    escalation_severity: shopTuningState.escalation_severity,
+    handle_audio: shopTuningState.handle_audio,
+    abusive_handling_mode: shopTuningState.abusive_handling_mode,
+    abusive_block_threshold: shopTuningState.abusive_block_threshold,
+    high_value_order_threshold: shopTuningState.high_value_order_threshold,
+    off_topic_tolerance: shopTuningState.off_topic_tolerance,
   };
 
   const systemPrompt = buildSystemPrompt(shopSettings, persona, products || [], examples || []);

@@ -255,7 +255,7 @@ export async function POST(request: Request) {
                 }
 
                 let audioPart: any = null;
-                if (audioUrl) {
+                if (audioUrl && (shop.handle_audio !== false)) {
                   try {
                     const audioRes = await fetch(audioUrl);
                     if (audioRes.ok) {
@@ -321,6 +321,20 @@ export async function POST(request: Request) {
                     } else if (aiResponseText.includes('[ESCALATION: UNSURE]')) {
                       ticketReason = 'unsure';
                       aiResponseText = aiResponseText.replace('[ESCALATION: UNSURE]', '').trim();
+                    } else if (aiResponseText.includes('[ESCALATION: FLAG ABUSE]')) {
+                      ticketReason = 'abusive_customer';
+                      aiResponseText = aiResponseText.replace('[ESCALATION: FLAG ABUSE]', '').trim();
+                      
+                      // Also flag internally
+                      const { flagCustomerAsFraud } = await import('@/app/dashboard/inbox/actions');
+                      await flagCustomerAsFraud(conversation.id, 'Repeated abusive language');
+                    } else if (aiResponseText.includes('[ESCALATION: BLOCK ABUSE]')) {
+                      ticketReason = 'abusive_customer';
+                      aiResponseText = aiResponseText.replace('[ESCALATION: BLOCK ABUSE]', '').trim();
+                      
+                      // Flag and block
+                      const { flagCustomerAsFraud } = await import('@/app/dashboard/inbox/actions');
+                      await flagCustomerAsFraud(conversation.id, 'Repeated abusive language - Auto Blocked');
                     } else if (isEscalationResponse(aiResponseText)) {
                       ticketReason = 'complaint';
                     }

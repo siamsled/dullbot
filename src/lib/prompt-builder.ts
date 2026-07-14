@@ -16,6 +16,13 @@ type ShopTuningSettings = {
   auto_escalate_on_complaint?: boolean | null;
   confidence_fallback?: string | null;        // 'guess' | 'say_checking' | 'escalate'
   ai_instructions?: string | null;           // optional advanced override
+  allow_discounts?: boolean | null;
+  escalation_severity?: string | null;
+  handle_audio?: boolean | null;
+  abusive_handling_mode?: string | null;
+  abusive_block_threshold?: number | null;
+  high_value_order_threshold?: number | null;
+  off_topic_tolerance?: string | null;
 };
 
 type VariantRow = {
@@ -56,16 +63,24 @@ export function buildSystemPrompt(
   }
 
   // Discount policy
+  const allowDiscounts = shop.allow_discounts ?? false;
   const maxDiscount = shop.max_discount_pct ?? 0;
-  const discountLine = maxDiscount > 0
+  const discountLine = (allowDiscounts && maxDiscount > 0)
     ? `You may offer up to ${maxDiscount}% discount if the customer explicitly asks. Never volunteer a discount unprompted.`
     : 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
 
   // Escalation
+  const escalateSeverity = shop.escalation_severity ?? 'serious_complaints';
   const escalateOnComplaint = shop.auto_escalate_on_complaint ?? true;
-  const escalateLine = escalateOnComplaint
-    ? 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself. You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.'
-    : 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+  
+  let escalateLine = 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+  if (escalateOnComplaint) {
+    if (escalateSeverity === 'any_frustration') {
+      escalateLine = 'If a customer expresses even mild frustration, annoyance, or dissatisfaction, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+    } else {
+      escalateLine = 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself. You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+    }
+  }
 
   // Confidence fallback
   const confidenceFallback = shop.confidence_fallback ?? 'say_checking';
@@ -88,9 +103,28 @@ export function buildSystemPrompt(
   
   const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar), and avoid using them altogether. They sound very unnatural and AI-like in this context. Use natural, conversational greetings instead if needed (like "Hello", "Hi", "আসসালামু আলাইকুম", or just get straight to the point).';
 
-  const voiceMessageLine = 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
+  const handleAudio = shop.handle_audio ?? true;
+  const voiceMessageLine = handleAudio 
+    ? '' 
+    : 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
-  const abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults (e.g., in English or Bengali), DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them (e.g., never say "this is not a place to joke"). Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+  const abusiveMode = shop.abusive_handling_mode ?? 'polite';
+  let abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+  if (abusiveMode === 'flag') {
+    abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST append the tag [ESCALATION: FLAG ABUSE] at the very end of your response. Maintain a strictly polite, professional tone and ignore the insult entirely.';
+  } else if (abusiveMode === 'block') {
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response. Maintain a strictly polite, professional tone and ignore the insult entirely.`;
+  }
+
+  const offTopicTolerance = shop.off_topic_tolerance ?? 'strict';
+  const offTopicLine = offTopicTolerance === 'casual'
+    ? 'You may engage in light, friendly casual chat if the customer initiates it, but always gently steer the conversation back to business (our products/services) after 1-2 exchanges.'
+    : 'If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, politely but firmly redirect them back to business topics (our products and services). Do not engage in extended off-topic banter.';
+
+  const highValueThreshold = shop.high_value_order_threshold ?? 0;
+  const orderTakingLine = highValueThreshold > 0
+    ? `- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address. Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.`
+    : '- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.';
 
   // Product section
   const productSection = buildProductSection(products);
@@ -125,9 +159,9 @@ GUARDRAILS & RULES:
 - ${multiBubbleLine}
 - ${imageLine}
 - ${naturalLanguageLine}
-- ${voiceMessageLine}
-- ${abuseHandlingLine}
-- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.
+${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
+- ${offTopicLine}
+${orderTakingLine}
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
 }

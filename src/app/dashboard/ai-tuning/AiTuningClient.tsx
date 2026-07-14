@@ -20,6 +20,13 @@ type Shop = {
   auto_escalate_on_complaint: boolean;
   confidence_fallback: string;
   ai_instructions?: string | null;
+  allow_discounts?: boolean | null;
+  escalation_severity?: string | null;
+  handle_audio?: boolean | null;
+  abusive_handling_mode?: string | null;
+  abusive_block_threshold?: number | null;
+  high_value_order_threshold?: number | null;
+  off_topic_tolerance?: string | null;
 };
 
 type ExampleReply = { id: string; customer_message: string; ideal_reply: string };
@@ -80,6 +87,14 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   const [autoEscalate, setAutoEscalate] = useState(shop.auto_escalate_on_complaint ?? true);
   const [confidenceFallback, setConfidenceFallback] = useState(shop.confidence_fallback || 'say_checking');
   const [aiInstructions, setAiInstructions] = useState(shop.ai_instructions || '');
+  const [allowDiscounts, setAllowDiscounts] = useState(shop.allow_discounts ?? false);
+  const [escalationSeverity, setEscalationSeverity] = useState(shop.escalation_severity || 'serious_complaints');
+  const [handleAudio, setHandleAudio] = useState(shop.handle_audio ?? true);
+  const [abusiveHandlingMode, setAbusiveHandlingMode] = useState(shop.abusive_handling_mode || 'polite');
+  const [abusiveBlockThreshold, setAbusiveBlockThreshold] = useState(shop.abusive_block_threshold || 3);
+  const [highValueOrderThreshold, setHighValueOrderThreshold] = useState(shop.high_value_order_threshold || 0);
+  const [offTopicTolerance, setOffTopicTolerance] = useState(shop.off_topic_tolerance || 'strict');
+  
   const [saved, setSaved] = useState(false);
 
   // Examples
@@ -116,6 +131,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         auto_escalate_on_complaint: autoEscalate,
         confidence_fallback: confidenceFallback,
         ai_instructions: aiInstructions.trim() || null,
+        allow_discounts: allowDiscounts,
+        escalation_severity: escalationSeverity,
+        handle_audio: handleAudio,
+        abusive_handling_mode: abusiveHandlingMode,
+        abusive_block_threshold: abusiveBlockThreshold,
+        high_value_order_threshold: highValueOrderThreshold,
+        off_topic_tolerance: offTopicTolerance,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -136,6 +158,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         auto_escalate_on_complaint: autoEscalate,
         confidence_fallback: confidenceFallback,
         ai_instructions: aiInstructions,
+        allow_discounts: allowDiscounts,
+        escalation_severity: escalationSeverity,
+        handle_audio: handleAudio,
+        abusive_handling_mode: abusiveHandlingMode,
+        abusive_block_threshold: abusiveBlockThreshold,
+        high_value_order_threshold: highValueOrderThreshold,
+        off_topic_tolerance: offTopicTolerance,
       });
       const content = res.success
         ? (res.text || '')
@@ -414,71 +443,37 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
             <div className="h-full overflow-y-auto px-8 py-6">
               <div className="max-w-2xl space-y-5">
 
-                {/* AI Disclosure */}
-                <div className="bg-white rounded-[20px] p-6 shadow-subtle">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-9 h-9 rounded-full bg-apricot-wash flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-rust" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">AI Disclosure</p>
-                      <p className="text-xs text-graphite">When should the bot reveal it's an AI?</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {[
-                      { val: 'reactive_honest', label: 'Only when directly asked', desc: 'Most natural — stays in character until questioned' },
-                      { val: 'proactive_upfront', label: 'Mention it upfront', desc: 'Discloses in the very first message' },
-                      { val: 'playful_deflect_once', label: 'Playful once, then honest', desc: 'One joke, then comes clean if pressed' },
-                    ].map(opt => (
-                      <label
-                        key={opt.val}
-                        className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${
-                          disclosureMode === opt.val
-                            ? 'bg-fog border-ink/20 ring-1 ring-ink/10'
-                            : 'border-transparent hover:bg-fog'
-                        }`}
-                      >
-                        <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                          disclosureMode === opt.val ? 'border-ink' : 'border-dove'
-                        }`}>
-                          {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
-                        </div>
-                        <input
-                          type="radio"
-                          name="disclosure"
-                          value={opt.val}
-                          checked={disclosureMode === opt.val}
-                          onChange={() => setDisclosureMode(opt.val)}
-                          className="sr-only"
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-ink">{opt.label}</p>
-                          <p className="text-xs text-graphite mt-0.5">{opt.desc}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pricing & Escalation */}
+                {/* 1. Money & Orders */}
                 <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="w-9 h-9 rounded-full bg-sky-wash flex items-center justify-center">
-                      <AlertCircle className="w-4 h-4 text-blue-600" />
+                    <div className="w-9 h-9 rounded-full bg-apricot-wash flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 text-rust" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">Pricing & Escalation</p>
-                      <p className="text-xs text-graphite">Control discount authority and complaint handling</p>
+                      <p className="text-sm font-semibold text-ink">Money & Orders</p>
+                      <p className="text-xs text-graphite">Rules for pricing and transaction limits</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between py-4 border-t border-dove/15">
                     <div>
-                      <p className="text-sm font-medium text-ink">Max Discount</p>
-                      <p className="text-xs text-graphite mt-0.5">Set to 0 to disable discounts entirely</p>
+                      <p className="text-sm font-medium text-ink">Allow Discounts</p>
+                      <p className="text-xs text-graphite mt-0.5">Let the AI offer discounts when asked</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setAllowDiscounts(!allowDiscounts)}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${allowDiscounts ? 'bg-ink' : 'bg-dove/40'}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${allowDiscounts ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
+                    </button>
+                  </div>
+                  
+                  {allowDiscounts && (
+                    <div className="flex items-center justify-between py-2 pl-4 border-l-2 border-dove/20 ml-2">
+                      <div>
+                        <p className="text-sm font-medium text-ink">Max Discount Percentage</p>
+                        <p className="text-xs text-graphite mt-0.5">Maximum allowed reduction</p>
+                      </div>
                       <div className="flex items-center bg-fog border border-dove/30 rounded-[12px] overflow-hidden">
                         <input
                           type="number"
@@ -491,6 +486,36 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         <span className="text-sm text-graphite pr-3">%</span>
                       </div>
                     </div>
+                  )}
+
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
+                    <div>
+                      <p className="text-sm font-medium text-ink">High-Value Order Review</p>
+                      <p className="text-xs text-graphite mt-0.5">Hold orders over this amount for manual review (0 to disable)</p>
+                    </div>
+                    <div className="flex items-center bg-fog border border-dove/30 rounded-[12px] overflow-hidden">
+                      <input
+                        type="number"
+                        min="0"
+                        value={highValueOrderThreshold}
+                        onChange={e => setHighValueOrderThreshold(parseFloat(e.target.value) || 0)}
+                        className="w-20 bg-transparent px-3 py-2 text-sm text-ink text-center focus:outline-none"
+                      />
+                      <span className="text-sm text-graphite pr-3">BDT</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Escalation & Tone */}
+                <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-9 h-9 rounded-full bg-sky-wash flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Escalation & Tone</p>
+                      <p className="text-xs text-graphite">How the AI handles complaints, abuse, and off-topic chat</p>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between py-4 border-t border-dove/15">
@@ -500,11 +525,31 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                     </div>
                     <button
                       onClick={() => setAutoEscalate(!autoEscalate)}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${autoEscalate ? 'bg-ink' : 'bg-dove/40'}`}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${autoEscalate ? 'bg-ink' : 'bg-dove/40'}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoEscalate ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
                     </button>
                   </div>
+
+                  {autoEscalate && (
+                    <div className="py-2 pl-4 border-l-2 border-dove/20 ml-2 space-y-2">
+                      <p className="text-sm font-medium text-ink mb-2">Escalation Sensitivity</p>
+                      {[
+                        { val: 'any_frustration', label: 'Escalate on any frustration', desc: 'Highly sensitive trigger' },
+                        { val: 'serious_complaints', label: 'Only on serious complaints', desc: 'Allows AI to resolve minor issues' },
+                      ].map(opt => (
+                        <label key={opt.val} className="flex items-center gap-3 cursor-pointer">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${escalationSeverity === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
+                            {escalationSeverity === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <input type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="sr-only" />
+                          <div>
+                            <p className="text-sm text-ink">{opt.label}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="py-4 border-t border-dove/15">
                     <p className="text-sm font-medium text-ink mb-3">When Bot is Unsure</p>
@@ -514,20 +559,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'guess', label: 'Give best guess with caveat', desc: 'More proactive but may be wrong' },
                         { val: 'escalate', label: 'Escalate immediately', desc: 'Strictest — always transfers to staff' },
                       ].map(opt => (
-                        <label
-                          key={opt.val}
-                          className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${
-                            confidenceFallback === opt.val
-                              ? 'bg-fog border-ink/20 ring-1 ring-ink/10'
-                              : 'border-transparent hover:bg-fog'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                            confidenceFallback === opt.val ? 'border-ink' : 'border-dove'
-                          }`}>
+                        <label key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${confidenceFallback === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${confidenceFallback === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {confidenceFallback === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input type="radio" name="fallback" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="sr-only" />
+                          <input type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -535,6 +571,109 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         </label>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="py-4 border-t border-dove/15">
+                    <p className="text-sm font-medium text-ink mb-3">Abusive Customers</p>
+                    <div className="space-y-2">
+                      {[
+                        { val: 'polite', label: 'Just stay polite and continue', desc: 'Ignore insults and stay professional' },
+                        { val: 'flag', label: 'Flag conversation for review', desc: 'Flags after repeated abuse' },
+                        { val: 'block', label: 'Auto-block after N incidents', desc: 'Ties into fraud-flag feature' },
+                      ].map(opt => (
+                        <label key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${abusiveHandlingMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${abusiveHandlingMode === opt.val ? 'border-ink' : 'border-dove'}`}>
+                            {abusiveHandlingMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
+                          </div>
+                          <input type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="sr-only" />
+                          <div>
+                            <p className="text-sm font-medium text-ink">{opt.label}</p>
+                            <p className="text-xs text-graphite">{opt.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    {abusiveHandlingMode === 'block' && (
+                      <div className="flex items-center gap-3 mt-3 pl-11">
+                        <p className="text-sm text-graphite">Incidents before blocking:</p>
+                        <input
+                          type="number"
+                          min="1"
+                          value={abusiveBlockThreshold}
+                          onChange={e => setAbusiveBlockThreshold(parseInt(e.target.value) || 3)}
+                          className="w-16 bg-fog border border-dove/30 rounded-[12px] px-3 py-1.5 text-sm text-ink text-center focus:outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="py-4 border-t border-dove/15">
+                    <p className="text-sm font-medium text-ink mb-3">Off-Topic Tolerance</p>
+                    <div className="space-y-2">
+                      {[
+                        { val: 'strict', label: 'Stay strictly on business topics', desc: 'Firmly redirect personal chatter' },
+                        { val: 'casual', label: 'Allow some casual chat', desc: 'Friendly banter before redirecting' },
+                      ].map(opt => (
+                        <label key={opt.val} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-fog rounded-[12px] transition-colors">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${offTopicTolerance === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
+                            {offTopicTolerance === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <input type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="sr-only" />
+                          <div>
+                            <p className="text-sm text-ink font-medium">{opt.label}</p>
+                            <p className="text-xs text-graphite">{opt.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Honesty */}
+                <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-full bg-fog flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-graphite" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Honesty & Media</p>
+                      <p className="text-xs text-graphite">Disclosure and multi-modal handling</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-ink mb-3">AI Disclosure Mode</p>
+                    <div className="space-y-2">
+                      {[
+                        { val: 'reactive_honest', label: 'Only if directly asked', desc: 'Most natural — stays in character until questioned' },
+                        { val: 'proactive_upfront', label: 'Mention upfront', desc: 'Discloses in the very first message' },
+                        { val: 'playful_deflect_once', label: 'Playful once, then honest', desc: 'One joke, then comes clean if pressed' },
+                      ].map(opt => (
+                        <label key={opt.val} className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${disclosureMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                          <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${disclosureMode === opt.val ? 'border-ink' : 'border-dove'}`}>
+                            {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
+                          </div>
+                          <input type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="sr-only" />
+                          <div>
+                            <p className="text-sm font-medium text-ink">{opt.label}</p>
+                            <p className="text-xs text-graphite mt-0.5">{opt.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
+                    <div>
+                      <p className="text-sm font-medium text-ink">Listen to Voice Messages</p>
+                      <p className="text-xs text-graphite mt-0.5">Toggle whether the AI processes audio (saves tokens if off)</p>
+                    </div>
+                    <button
+                      onClick={() => setHandleAudio(!handleAudio)}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${handleAudio ? 'bg-ink' : 'bg-dove/40'}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${handleAudio ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
+                    </button>
                   </div>
                 </div>
 
