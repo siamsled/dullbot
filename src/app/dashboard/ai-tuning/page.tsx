@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import AiTuningClient from './AiTuningClient';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 
 
@@ -35,5 +36,9 @@ export default async function AiTuningPage() {
     disclosure_mode: shop.disclosure_mode ?? 'reactive_honest',
   };
 
-  return <AiTuningClient shop={safeShop} examples={examples ?? []} personas={personas ?? []} />;
+  return (
+    <ErrorBoundary>
+      <AiTuningClient shop={safeShop} examples={examples ?? []} personas={personas ?? []} />
+    </ErrorBoundary>
+  );
 }

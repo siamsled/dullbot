@@ -157,7 +157,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         max_discount_pct: maxDiscount,
         auto_escalate_on_complaint: autoEscalate,
         confidence_fallback: confidenceFallback,
-        ai_instructions: aiInstructions,
+        ai_instructions: (aiInstructions || '').trim(),
         allow_discounts: allowDiscounts,
         escalation_severity: escalationSeverity,
         handle_audio: handleAudio,
@@ -461,6 +461,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       <p className="text-xs text-graphite mt-0.5">Let the AI offer discounts when asked</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setAllowDiscounts(!allowDiscounts)}
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${allowDiscounts ? 'bg-ink' : 'bg-dove/40'}`}
                     >
@@ -524,6 +525,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       <p className="text-xs text-graphite mt-0.5">Flag for human takeover when customer is frustrated</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setAutoEscalate(!autoEscalate)}
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${autoEscalate ? 'bg-ink' : 'bg-dove/40'}`}
                     >
@@ -669,6 +671,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       <p className="text-xs text-graphite mt-0.5">Toggle whether the AI processes audio (saves tokens if off)</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setHandleAudio(!handleAudio)}
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${handleAudio ? 'bg-ink' : 'bg-dove/40'}`}
                     >
