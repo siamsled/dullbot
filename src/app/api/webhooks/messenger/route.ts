@@ -97,7 +97,39 @@ export async function POST(request: Request) {
 
               if (!conversation) continue;
 
-              // 2. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
+              // Queue / Lock system to prevent interleaving race condition
+              const lockKey = `webhook_lock_${conversation.id}`;
+              let isLocked = true;
+              let lockAttempts = 0;
+
+              while (isLocked && lockAttempts < 15) {
+                const { data: lockRecord } = await supabaseAdmin
+                  .from('response_cache')
+                  .select('expires_at')
+                  .eq('shop_id', shop.id)
+                  .eq('cache_key', lockKey)
+                  .maybeSingle();
+                  
+                if (!lockRecord || new Date(lockRecord.expires_at) < new Date()) {
+                  isLocked = false;
+                  break;
+                }
+                
+                // wait 1 second
+                await new Promise(res => setTimeout(res, 1000));
+                lockAttempts++;
+              }
+
+              // Acquire the lock
+              await supabaseAdmin.from('response_cache').upsert({
+                shop_id: shop.id,
+                cache_key: lockKey,
+                response_text: 'locked',
+                expires_at: new Date(Date.now() + 30000).toISOString()
+              }, { onConflict: 'shop_id,cache_key' });
+
+              try {
+                // 2. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
               let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
               
               if (replyToMid) {
@@ -471,6 +503,15 @@ export async function POST(request: Request) {
                 .from('conversations')
                 .update({ last_message_at: new Date().toISOString() })
                 .eq('id', conversation.id);
+                
+              } finally {
+                // Release the lock
+                await supabaseAdmin
+                  .from('response_cache')
+                  .delete()
+                  .eq('shop_id', shop.id)
+                  .eq('cache_key', lockKey);
+              }
             }
           }
         }
