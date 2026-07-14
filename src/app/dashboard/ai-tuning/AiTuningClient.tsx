@@ -408,15 +408,6 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                   disabled={isTesting}
                   placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
                 />
-                
-                {chatHistory.length > 0 && (
-                  <button
-                    onClick={() => setChatHistory([])}
-                    className="text-xs text-dove hover:text-graphite mt-2 mx-auto block transition-colors"
-                  >
-                    Clear conversation
-                  </button>
-                )}
               </div>
             </div>
           )}

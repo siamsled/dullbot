@@ -434,13 +434,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           </div>
 
           {/* Message Input */}
-          <div className="shrink-0 bg-white">
+          <div className="shrink-0">
             <MessengerInput 
               onSend={handleSend}
               isTakeover={isTakeover}
             />
             {!isTakeover && (
-              <p className="text-[10px] text-rust mt-1 px-4 pb-2 bg-white">
+              <p className="text-[10px] text-rust mt-1 px-4 pb-2">
                 Note: Sending a message will not automatically pause the bot unless you toggle Human Takeover.
               </p>
             )}
