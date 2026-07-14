@@ -540,11 +540,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'any_frustration', label: 'Escalate on any frustration', desc: 'Highly sensitive trigger' },
                         { val: 'serious_complaints', label: 'Only on serious complaints', desc: 'Allows AI to resolve minor issues' },
                       ].map(opt => (
-                        <label key={opt.val} className="flex items-center gap-3 cursor-pointer">
+                        <label htmlFor={`escalation-${opt.val}`} key={opt.val} className="flex items-center gap-3 cursor-pointer">
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${escalationSeverity === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
                             {escalationSeverity === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
-                          <input type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="sr-only" />
+                          <input id={`escalation-${opt.val}`} name="escalationSeverity" type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm text-ink">{opt.label}</p>
                           </div>
@@ -561,11 +561,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'guess', label: 'Give best guess with caveat', desc: 'More proactive but may be wrong' },
                         { val: 'escalate', label: 'Escalate immediately', desc: 'Strictest — always transfers to staff' },
                       ].map(opt => (
-                        <label key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${confidenceFallback === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                        <label htmlFor={`confidence-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${confidenceFallback === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${confidenceFallback === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {confidenceFallback === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="sr-only" />
+                          <input id={`confidence-${opt.val}`} name="confidenceFallback" type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -583,11 +583,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'flag', label: 'Flag conversation for review', desc: 'Flags after repeated abuse' },
                         { val: 'block', label: 'Auto-block after N incidents', desc: 'Ties into fraud-flag feature' },
                       ].map(opt => (
-                        <label key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${abusiveHandlingMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                        <label htmlFor={`abusive-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${abusiveHandlingMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${abusiveHandlingMode === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {abusiveHandlingMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="sr-only" />
+                          <input id={`abusive-${opt.val}`} name="abusiveHandlingMode" type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -616,11 +616,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'strict', label: 'Stay strictly on business topics', desc: 'Firmly redirect personal chatter' },
                         { val: 'casual', label: 'Allow some casual chat', desc: 'Friendly banter before redirecting' },
                       ].map(opt => (
-                        <label key={opt.val} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-fog rounded-[12px] transition-colors">
+                        <label htmlFor={`offtopic-${opt.val}`} key={opt.val} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-fog rounded-[12px] transition-colors">
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${offTopicTolerance === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
                             {offTopicTolerance === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
-                          <input type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="sr-only" />
+                          <input id={`offtopic-${opt.val}`} name="offTopicTolerance" type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm text-ink font-medium">{opt.label}</p>
                             <p className="text-xs text-graphite">{opt.desc}</p>
@@ -651,11 +651,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         { val: 'proactive_upfront', label: 'Mention upfront', desc: 'Discloses in the very first message' },
                         { val: 'playful_deflect_once', label: 'Playful once, then honest', desc: 'One joke, then comes clean if pressed' },
                       ].map(opt => (
-                        <label key={opt.val} className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${disclosureMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
+                        <label htmlFor={`disclosure-${opt.val}`} key={opt.val} className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${disclosureMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
                           <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${disclosureMode === opt.val ? 'border-ink' : 'border-dove'}`}>
                             {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
                           </div>
-                          <input type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="sr-only" />
+                          <input id={`disclosure-${opt.val}`} name="disclosureMode" type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="sr-only" />
                           <div>
                             <p className="text-sm font-medium text-ink">{opt.label}</p>
                             <p className="text-xs text-graphite mt-0.5">{opt.desc}</p>
