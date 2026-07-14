@@ -7,6 +7,11 @@ type AgentPersona = {
   language_style: string;
   full_specification: string;
   disclosure_line: string;
+  msg_discount_decline?: string;
+  msg_escalation?: string;
+  msg_let_me_check?: string;
+  msg_abusive_fallback?: string;
+  msg_off_topic?: string;
 };
 
 type ShopTuningSettings = {
