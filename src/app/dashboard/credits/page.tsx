@@ -14,6 +14,8 @@ function formatBDT(usd: number) {
   return `৳${bdt.toFixed(4)}`;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function CreditsPage() {
   const shopSlug = 'dull-store';
 
@@ -38,6 +40,21 @@ export default async function CreditsPage() {
     .eq('shop_id', shop.id)
     .order('created_at', { ascending: false })
     .limit(5);
+
+  // Fetch the triggering customer message for each log
+  const logMessages = await Promise.all((logs || []).map(async (log) => {
+    if (!log.conversation_id) return null;
+    const { data } = await supabaseAdmin
+      .from('messages')
+      .select('content')
+      .eq('conversation_id', log.conversation_id)
+      .eq('sender', 'customer')
+      .lte('created_at', log.created_at)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    return data?.content || null;
+  }));
 
   const totalSpent = logs?.reduce((s, l) => s + (l.billed_credits ?? 0), 0) ?? 0;
   const lastTopup = topups?.[0];
@@ -119,6 +136,7 @@ export default async function CreditsPage() {
               <tr>
                 <th className="px-5 py-3 font-medium">Time</th>
                 <th className="px-5 py-3 font-medium">Type</th>
+                <th className="px-5 py-3 font-medium">Message</th>
                 <th className="px-5 py-3 font-medium text-right">Input Tokens</th>
                 <th className="px-5 py-3 font-medium text-right">Output Tokens</th>
                 <th className="px-5 py-3 font-medium text-right">Cost (BDT)</th>
@@ -142,10 +160,13 @@ export default async function CreditsPage() {
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-apricot-wash text-rust">AI Reply</span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-right text-ink">{log.input_tokens?.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-right text-ink">{log.output_tokens?.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-right text-ash text-xs">{formatBDT(log.raw_cost ?? 0)}</td>
-                  <td className="px-5 py-3 text-right font-medium text-ink">{formatCredits(log.billed_credits ?? 0)}</td>
+                  <td className="px-5 py-3 text-xs text-graphite max-w-[200px] truncate">
+                    {logMessages[index] ? `"${logMessages[index]}"` : <span className="text-ash italic">System check</span>}
+                  </td>
+                  <td className="px-5 py-3 text-right tabular-nums text-graphite text-xs">{log.input_tokens?.toLocaleString() ?? 0}</td>
+                  <td className="px-5 py-3 text-right tabular-nums text-graphite text-xs">{log.output_tokens?.toLocaleString() ?? 0}</td>
+                  <td className="px-5 py-3 text-right tabular-nums text-graphite text-xs">{formatBDT(log.raw_cost ?? 0)}</td>
+                  <td className="px-5 py-3 text-right tabular-nums font-medium text-ink text-xs">{formatCredits(log.billed_credits ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
