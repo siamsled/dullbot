@@ -311,11 +311,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
 
           {/* ── TEST TAB ─────────────────────────────────────────────────── */}
           {activeTab === 'test' && (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Chat area */}
               <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {chatHistory.length === 0 ? (
