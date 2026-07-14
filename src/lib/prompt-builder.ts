@@ -65,28 +65,31 @@ export function buildSystemPrompt(
   // Discount policy
   const allowDiscounts = shop.allow_discounts ?? false;
   const maxDiscount = shop.max_discount_pct ?? 0;
+  const discountDeclineMsg = persona?.msg_discount_decline ?? 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
   const discountLine = (allowDiscounts && maxDiscount > 0)
     ? `You may offer up to ${maxDiscount}% discount if the customer explicitly asks. Never volunteer a discount unprompted.`
-    : 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
+    : `If a customer asks for a discount, reply exactly with this phrase: "${discountDeclineMsg}"`;
 
   // Escalation
   const escalateSeverity = shop.escalation_severity ?? 'serious_complaints';
   const escalateOnComplaint = shop.auto_escalate_on_complaint ?? true;
+  const escalateMsg = persona?.msg_escalation ?? 'Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent").';
   
-  let escalateLine = 'Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+  let escalateLine = `Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST reply with exactly this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
   if (escalateOnComplaint) {
     if (escalateSeverity === 'any_frustration') {
-      escalateLine = 'If a customer expresses even mild frustration, annoyance, or dissatisfaction, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+      escalateLine = `If a customer expresses even mild frustration, annoyance, or dissatisfaction, immediately escalate the chat. You MUST reply exactly with this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
     } else {
-      escalateLine = 'If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent"). Do not try to resolve serious complaints yourself. You MUST append the tag [ESCALATION: COMPLAINT] at the very end of your response.';
+      escalateLine = `If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Do not try to resolve serious complaints yourself. You MUST reply exactly with this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
     }
   }
 
   // Confidence fallback
   const confidenceFallback = shop.confidence_fallback ?? 'say_checking';
+  const checkMsg = persona?.msg_let_me_check ?? 'say "Let me check on that for you"';
   const fallbackLine =
     confidenceFallback === 'guess' ? 'If unsure, give your best guess while acknowledging uncertainty.'
-    : confidenceFallback === 'say_checking' ? 'If you are unsure about something, say "Let me check on that for you" and do not fabricate information.'
+    : confidenceFallback === 'say_checking' ? `If you are unsure about something, exactly ${checkMsg} and do not fabricate information.`
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
     
   const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in 1-2 short sentences. Only elaborate with descriptive detail if the customer asks for more or shows interest beyond the initial question.';
@@ -109,17 +112,20 @@ export function buildSystemPrompt(
     : 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
   const abusiveMode = shop.abusive_handling_mode ?? 'polite';
-  let abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+  const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+  
+  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Instead, reply exactly with this phrase: "${abusiveFallbackMsg}"`;
   if (abusiveMode === 'flag') {
-    abuseHandlingLine = 'If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST append the tag [ESCALATION: FLAG ABUSE] at the very end of your response. Maintain a strictly polite, professional tone and ignore the insult entirely.';
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST reply exactly with this phrase: "${abusiveFallbackMsg}" and append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
   } else if (abusiveMode === 'block') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response. Maintain a strictly polite, professional tone and ignore the insult entirely.`;
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST reply exactly with this phrase: "${abusiveFallbackMsg}" and append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
   }
 
   const offTopicTolerance = shop.off_topic_tolerance ?? 'strict';
+  const offTopicMsg = persona?.msg_off_topic ?? 'politely but firmly redirect them back to business topics (our products and services). Do not engage in extended off-topic banter.';
   const offTopicLine = offTopicTolerance === 'casual'
-    ? 'You may engage in light, friendly casual chat if the customer initiates it, but always gently steer the conversation back to business (our products/services) after 1-2 exchanges.'
-    : 'If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, politely but firmly redirect them back to business topics (our products and services). Do not engage in extended off-topic banter.';
+    ? `You may engage in light, friendly casual chat if the customer initiates it, but always gently steer the conversation back to business (our products/services) after 1-2 exchanges.`
+    : `If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, reply exactly with this phrase: "${offTopicMsg}"`;
 
   const highValueThreshold = shop.high_value_order_threshold ?? 0;
   const orderTakingLine = highValueThreshold > 0
@@ -127,6 +133,8 @@ export function buildSystemPrompt(
     : '- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.';
 
   // Product section
+  const greetingRule = 'If the customer sends a simple greeting (like hi, hello, assalamu alaikum) with no other content, reply with a simple, warm greeting back. DO NOT pitch products, do not ask about purchase intent, and do not reference collections unprompted. Only bring up products if the customer asks something or shows specific interest.';
+
   const productSection = buildProductSection(products);
 
   // Few-shot examples
@@ -161,6 +169,7 @@ GUARDRAILS & RULES:
 - ${naturalLanguageLine}
 ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 - ${offTopicLine}
+- ${greetingRule}
 ${orderTakingLine}
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
