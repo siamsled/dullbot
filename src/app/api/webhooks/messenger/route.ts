@@ -119,6 +119,20 @@ export async function POST(request: Request) {
                 }
               }
 
+              // Deduplicate: Facebook will retry webhooks if they timeout or fail.
+              if (webhookEvent.message.mid) {
+                const { data: existingMsg } = await supabaseAdmin
+                  .from('messages')
+                  .select('id')
+                  .contains('fb_message_ids', [webhookEvent.message.mid])
+                  .single();
+
+                if (existingMsg) {
+                  console.log(`[Webhook] Duplicate message mid ${webhookEvent.message.mid} detected. Skipping.`);
+                  continue;
+                }
+              }
+
               const { data: insertedMsg } = await supabaseAdmin
                 .from('messages')
                 .insert({
