@@ -97,7 +97,7 @@ export function buildSystemPrompt(
     : confidenceFallback === 'say_checking' ? `If you are unsure about something, exactly ${checkMsg} and do not fabricate information.`
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
     
-  const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in 1-2 short sentences. Only elaborate with descriptive detail if the customer asks for more or shows interest beyond the initial question.';
+  const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in a single short sentence. DO NOT over-explain, do NOT act like a salesperson giving a long pitch, and NEVER write a fairytale description of the product. Be extremely precise and concise.';
   
   const multiBubbleLine = 'If you need to send multiple messages in a row (e.g., to mimic a real human sending separate short bursts instead of one long paragraph), use ||| to separate them.';
 
@@ -107,7 +107,7 @@ export function buildSystemPrompt(
     : '';
 
   // Image Instructions
-  const imageLine = 'If a customer asks for pictures of a product, or if you are recommending a specific product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line.';
+  const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line. CRITICAL: If the customer ALREADY sent an image of a product to ask about it, DO NOT send that exact same image back to them! Just answer their question about it directly.';
   
   const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar), and avoid using them altogether. They sound very unnatural and AI-like in this context. Use natural, conversational greetings instead if needed (like "Hello", "Hi", "আসসালামু আলাইকুম", or just get straight to the point).';
 

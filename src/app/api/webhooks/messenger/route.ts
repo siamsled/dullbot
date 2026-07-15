@@ -98,7 +98,56 @@ export async function POST(request: Request) {
 
               if (!conversation) continue;
 
-              // Queue / Lock system to prevent interleaving race condition
+              // 1. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
+              let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
+              
+              // If both image and text exist, preserve the text!
+              if (imageUrl && messageText) {
+                dbContent = `[IMAGE_WITH_CAPTION] ${messageText} ||| IMAGE:${imageUrl}`;
+              }
+
+              if (replyToMid) {
+                const { data: repliedMsg } = await supabaseAdmin
+                  .from('messages')
+                  .select('content')
+                  .contains('fb_message_ids', [replyToMid])
+                  .single();
+                  
+                if (repliedMsg) {
+                  dbContent = `[Replying to bot's message: "${repliedMsg.content}"] ${dbContent}`;
+                }
+              }
+
+              const { data: insertedMsg } = await supabaseAdmin
+                .from('messages')
+                .insert({
+                  conversation_id: conversation.id,
+                  sender: 'customer',
+                  content: dbContent,
+                  fb_message_ids: webhookEvent.message.mid ? [webhookEvent.message.mid] : null
+                })
+                .select('id, created_at')
+                .single();
+
+              // 1.5. Wait for text if it's just an image
+              if (imageUrl && !messageText) {
+                await new Promise(res => setTimeout(res, 8000)); // wait 8 seconds
+
+                const { data: newerMessages } = await supabaseAdmin
+                  .from('messages')
+                  .select('id')
+                  .eq('conversation_id', conversation.id)
+                  .eq('sender', 'customer')
+                  .gt('created_at', insertedMsg?.created_at || new Date().toISOString())
+                  .limit(1);
+
+                if (newerMessages && newerMessages.length > 0) {
+                  console.log("Newer text message detected after image. Aborting image webhook to let text webhook handle it.");
+                  continue; // Skip the rest of this webhook entry, the newer webhook will handle it!
+                }
+              }
+
+              // 2. Queue / Lock system to prevent interleaving race condition
               const lockKey = `webhook_lock_${conversation.id}`;
               let isLocked = true;
               let lockAttempts = 0;
@@ -130,32 +179,8 @@ export async function POST(request: Request) {
               }, { onConflict: 'shop_id,cache_key' });
 
               try {
-                // 2. Insert incoming message (use IMAGE:url or AUDIO:url prefix for rendering in client)
-              let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
-              
-              if (replyToMid) {
-                const { data: repliedMsg } = await supabaseAdmin
-                  .from('messages')
-                  .select('content')
-                  .contains('fb_message_ids', [replyToMid])
-                  .single();
-                  
-                if (repliedMsg) {
-                  dbContent = `[Replying to bot's message: "${repliedMsg.content}"] ${dbContent}`;
-                }
-              }
-
-              await supabaseAdmin
-                .from('messages')
-                .insert({
-                  conversation_id: conversation.id,
-                  sender: 'customer',
-                  content: dbContent,
-                  fb_message_ids: webhookEvent.message.mid ? [webhookEvent.message.mid] : null
-                });
-
-              // 3. If bot is active, trigger AI
-              if (conversation.status === 'bot_active') {
+                // 3. If bot is active, trigger AI
+                if (conversation.status === 'bot_active') {
                 // Fetch last 10 messages for context, gated by shop's tuning update timestamp
                 let historyQuery = supabaseAdmin
                   .from('messages')
