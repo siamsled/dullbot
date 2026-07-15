@@ -97,7 +97,7 @@ export function buildSystemPrompt(
     : confidenceFallback === 'say_checking' ? `If you are unsure about something, exactly ${checkMsg} and do not fabricate information.`
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
     
-  const brevityLine = 'For simple factual questions (stock check, price check, yes/no availability), respond in a single short sentence. DO NOT over-explain, do NOT act like a salesperson giving a long pitch, and NEVER write a fairytale description of the product. Be extremely precise and concise.';
+  const brevityLine = 'CRITICAL RULE - CONCISENESS: NEVER use forced conversational fillers, long paragraphs, or "Shakespearean" fairytales. Do not act like a salesperson giving a long pitch. Keep all responses extremely precise, direct, and short (1-2 sentences max). Do not over-talk. If you use a persona phrase, integrate it naturally without rambling.';
   
   const multiBubbleLine = 'If you need to send multiple messages in a row (e.g., to mimic a real human sending separate short bursts instead of one long paragraph), use ||| to separate them.';
 
@@ -107,7 +107,7 @@ export function buildSystemPrompt(
     : '';
 
   // Image Instructions
-  const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line. CRITICAL: If the customer ALREADY sent an image of a product to ask about it, DO NOT send that exact same image back to them! Just answer their question about it directly.';
+  const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line. CRITICAL: If the customer ALREADY sent an image to ask about it, DO NOT send that same image back. If the customer sends an image BUT DOES NOT ask a question, DO NOT write a long paragraph guessing what they want. Just ask a very brief question like "কী জানতে চাচ্ছেন?" or "Which detail do you need?" (max 4-5 words).';
   
   const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar). Avoid awkward literal English-to-Bengali translations that sound unnatural to a native speaker (e.g., instead of "দেখতে কি ভালো লাগবে?", use conversational, authentic Bengali like "ওটা দেখবেন কি?" or "দেখতে চান?"). Speak exactly like a native Bangladeshi shopkeeper: warm, natural, and fluid.';
 
