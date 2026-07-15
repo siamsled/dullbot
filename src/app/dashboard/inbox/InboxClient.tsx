@@ -61,6 +61,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const activeConv = conversations.find(c => c.id === activeId);
 
   const isTakeoverRef = useRef(isTakeover);
+  const pendingTogglesRef = useRef(new Set<string>());
   useEffect(() => {
     isTakeoverRef.current = isTakeover;
   }, [isTakeover]);
@@ -101,14 +102,24 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
     const convs = await getConversations(shop.id);
     setConversations(prev => {
-      const isIdentical = prev.length === convs.length && 
+      const mergedConvs = convs.map(serverConv => {
+        if (pendingTogglesRef.current.has(serverConv.id)) {
+           const optimisticConv = prev.find(p => p.id === serverConv.id);
+           if (optimisticConv) {
+               return { ...serverConv, status: optimisticConv.status, ticket_reason: optimisticConv.ticket_reason };
+           }
+        }
+        return serverConv;
+      });
+
+      const isIdentical = prev.length === mergedConvs.length && 
         prev.every((c, i) => 
-          c.id === convs[i].id && 
-          c.last_message_at === convs[i].last_message_at && 
-          c.status === convs[i].status &&
-          c.ticket_reason === convs[i].ticket_reason
+          c.id === mergedConvs[i].id && 
+          c.last_message_at === mergedConvs[i].last_message_at && 
+          c.status === mergedConvs[i].status &&
+          c.ticket_reason === mergedConvs[i].ticket_reason
         );
-      return isIdentical ? prev : convs;
+      return isIdentical ? prev : mergedConvs;
     });
   };
 
@@ -162,14 +173,23 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   const handleToggle = async () => {
     if (!activeId) return;
+    
+    const targetId = activeId;
     const newStatus = !isTakeover;
     setIsTakeover(newStatus);
     
+    pendingTogglesRef.current.add(targetId);
+    
     setConversations(prev => prev.map(c => 
-      c.id === activeId ? { ...c, status: newStatus ? 'human_takeover' : 'bot_active' } : c
+      c.id === targetId ? { ...c, status: newStatus ? 'human_takeover' : 'bot_active' } : c
     ));
     
-    await toggleTakeover(activeId, newStatus);
+    await toggleTakeover(targetId, newStatus);
+    
+    setTimeout(() => {
+      pendingTogglesRef.current.delete(targetId);
+      loadData();
+    }, 2000);
   };
 
   const handleFlagFraud = async () => {
