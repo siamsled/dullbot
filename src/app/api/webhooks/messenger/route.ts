@@ -462,7 +462,7 @@ export async function POST(request: Request) {
                           
                           if (!fbRes.ok) {
                             const fbErr = await fbRes.json();
-                            throw new Error(`Meta API Rejected: ${fbErr.error?.message || 'Unknown error'}`);
+                            throw new Error(`Meta API Rejected: ${JSON.stringify(fbErr.error) || 'Unknown error'}`);
                           } else {
                             const fbData = await fbRes.json();
                             if (fbData.message_id) capturedMids.push(fbData.message_id);
