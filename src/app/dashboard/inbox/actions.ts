@@ -78,7 +78,7 @@ export async function sendMessage(
 
   if (error) {
     console.error('Error sending message:', error);
-    return null;
+    return { error: 'Database error' };
   }
 
   await supabaseAdmin
@@ -118,7 +118,7 @@ export async function sendMessage(
     const errData = await fbRes.json();
     console.error('Facebook API Error:', errData);
     await supabaseAdmin.from('messages').delete().eq('id', data.id);
-    return null;
+    return { error: errData.error?.message || 'Facebook API Error' };
   }
   
   const fbData = await fbRes.json();

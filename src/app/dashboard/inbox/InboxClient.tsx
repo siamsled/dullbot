@@ -179,8 +179,13 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     const replyMid = replyingTo?.mid;
     setReplyingTo(null);
 
-    await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
-    loadData();
+    const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
+    if (!result || result.error) {
+      setMessages(prev => prev.filter(m => m.id !== newMsg.id));
+      alert(`Failed to send message: ${result?.error || 'Unknown error'}`);
+    } else {
+      loadData();
+    }
   };
 
   const handleToggle = async () => {
