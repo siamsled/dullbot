@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { billGeminiCall } from '@/lib/chat-pipeline';
+import { invokeGemini } from '@/lib/gemini';
 import sharp from 'sharp';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
@@ -195,17 +196,22 @@ export async function POST(request: Request) {
                 const { data: rawHistory } = await historyQuery.limit(10);
                 const history = rawHistory ? [...rawHistory].reverse() : [];
                 
-                let chatHistory = '';
-                if (history) {
-                  history.forEach(msg => {
-                    const textContent = msg.content.startsWith('IMAGE:') 
-                      ? '[Sent an image]' 
-                      : msg.content.startsWith('AUDIO:') 
-                        ? '[Sent a voice message]' 
-                        : msg.content;
-                    chatHistory += `${msg.sender}: ${textContent}\n`;
-                  });
+                if (history && history.length > 0) {
+                  // Pop the last message because it's the current one being processed
+                  history.pop();
                 }
+                
+                const historyParts = history.map(msg => {
+                  const textContent = msg.content.startsWith('IMAGE:') 
+                    ? '[Sent an image]' 
+                    : msg.content.startsWith('AUDIO:') 
+                      ? '[Sent a voice message]' 
+                      : msg.content;
+                  return {
+                    role: (msg.sender === 'bot' ? 'model' : 'user') as 'user' | 'model',
+                    parts: [{ text: textContent }]
+                  };
+                });
 
                 // Fetch custom AI instructions
                 const { data: customInstructions } = await supabaseAdmin
@@ -284,7 +290,6 @@ export async function POST(request: Request) {
                 If the gender is "unknown", you must deduce the gender based on the customer's name (e.g., Anik is male, Sadia is female). Use the appropriate honorific (bhaiya/apu) if your persona requires it. If the name is ambiguous, do NOT use gender-specific honorifics like "bhaiya" or "apu", simply speak politely without them. NEVER use both at the same time (e.g. "apu/bhaiya").`;
 
                 let prompt = systemPrompt;
-                prompt += `\n\nHere is the recent chat history:\n${chatHistory}\n`;
 
                 if (imageUrl) {
                   prompt += `\nNote: The customer has sent an image which is attached to this request. Analyze the image to answer their query if relevant.`;
@@ -292,8 +297,6 @@ export async function POST(request: Request) {
                 if (audioUrl) {
                   prompt += `\nNote: The customer has sent a voice message which is attached to this request. Listen to the audio to understand and answer their query.`;
                 }
-
-                prompt += `\n\nPlease generate your reply directly without any prefixes (do not output 'bot:' or your name).`;
 
                 let imagePart: any = null;
                 if (imageUrl) {
@@ -343,43 +346,25 @@ export async function POST(request: Request) {
                 }
 
                 try {
-                  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-                  const promptParts: any[] = [prompt];
-                  if (imagePart) {
-                    promptParts.push(imagePart);
-                  }
-                  if (audioPart) {
-                    promptParts.push(audioPart);
-                  }
-                  const timeoutPromise = new Promise<never>((_, reject) => {
-                    setTimeout(() => reject(new Error("AI Generation Timeout: Exceeded 9000ms")), 9000);
-                  });
-                  
-                  const parts: any[] = [{ text: prompt }];
-                  if (imagePart) parts.push(imagePart);
-                  if (audioPart) parts.push(audioPart);
+                  const mediaParts: any[] = [];
+                  if (imagePart) mediaParts.push(imagePart);
+                  if (audioPart) mediaParts.push(audioPart);
 
-                  const result = await Promise.race([
-                    model.generateContent({
-                      contents: [{ role: 'user', parts }],
-                      generationConfig: { maxOutputTokens: 400 },
-                    }),
-                    timeoutPromise
-                  ]);
+                  const aiResponse = await invokeGemini(prompt, messageText, historyParts, null, mediaParts);
 
-                  const usage = result.response.usageMetadata;
-                  if (usage) {
+                  if (aiResponse.success) {
                     await billGeminiCall(
                       shop.id,
                       conversation.id,
-                      usage.promptTokenCount ?? 0,
-                      usage.candidatesTokenCount ?? 0,
+                      aiResponse.inputTokens ?? 0,
+                      aiResponse.outputTokens ?? 0,
                       false,
                       false
                     );
                   }
 
-                  let aiResponseText = result.response.text().trim();
+                  let aiResponseText = aiResponse.success ? (aiResponse.text || '') : (aiResponse.error || "Error occurred.");
+                  aiResponseText = aiResponseText.trim();
 
                   if (aiResponseText) {
                     let ticketReason: string | null = null;

@@ -31,8 +31,9 @@ export async function createPromptCache(systemPrompt: string): Promise<{ name: s
 export async function invokeGemini(
   systemPrompt: string, 
   customerMessage: string, 
-  history: { role: 'user' | 'model', parts: { text: string }[] }[],
-  promptCacheRef?: string | null
+  history: { role: 'user' | 'model', parts: any[] }[],
+  promptCacheRef?: string | null,
+  mediaParts?: any[]
 ) {
   console.log("=== GEMINI INVOCATION ===");
   if (promptCacheRef) {
@@ -66,7 +67,13 @@ export async function invokeGemini(
       history,
       generationConfig: { maxOutputTokens: 400 },
     });
-    const result = await chat.sendMessage(customerMessage);
+    
+    const messageParts: any[] = [{ text: customerMessage }];
+    if (mediaParts && mediaParts.length > 0) {
+      messageParts.push(...mediaParts);
+    }
+
+    const result = await chat.sendMessage(messageParts);
     const usage = result.response.usageMetadata;
 
     return {
