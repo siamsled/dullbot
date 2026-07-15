@@ -421,7 +421,9 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         
                         {quotedText && (() => {
                           const quotedSegments = parseMessageSegments(quotedText);
-                          const isQuotedImage = quotedSegments.length > 0 && quotedSegments[0].type === 'image';
+                          const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
+                          const firstTextSegment = quotedSegments.find(s => s.type === 'text');
+                          
                           return (
                             <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
                               <div 
@@ -446,15 +448,18 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                                 }`}
                               >
                                 <Reply className="w-3 h-3 shrink-0" />
-                                {isQuotedImage ? (
+                                {quotedImageSegment && (
                                   <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
-                                    <img src={quotedSegments[0].content} alt="Quoted image" className="h-full w-full object-cover" />
+                                    <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
                                   </div>
-                                ) : (
-                                  <span className="truncate max-w-[200px] italic">
-                                    {quotedText}
-                                  </span>
                                 )}
+                                {firstTextSegment ? (
+                                  <span className="truncate max-w-[150px] italic">
+                                    {firstTextSegment.content}
+                                  </span>
+                                ) : quotedImageSegment ? (
+                                  <span className="italic">Photo</span>
+                                ) : null}
                               </div>
                             </div>
                           );
