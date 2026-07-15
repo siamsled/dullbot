@@ -103,7 +103,7 @@ export async function sendMessage(
   }
 
   if (replyToMid) {
-    payload.message.reply_to = { mid: replyToMid };
+    payload.reply_to = { mid: replyToMid };
   }
 
   const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
