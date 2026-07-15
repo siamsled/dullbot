@@ -48,7 +48,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'Wait, let me escalate this. Amar senior ekjon dekhbe ekhon theke.',
   msg_let_me_check = 'One sec, ami ektu confirm hoye ni.',
   msg_abusive_fallback = 'Chill, evabe bolle to hobe na. Ki problem hoise exactly bolen amake.',
-  msg_off_topic = 'Haha thanks! But amra mainly product niyei kotha boli, kono kichu janar thakle bolte paren.'
+  msg_off_topic = 'Haha temon kichu na, specific kono product niye kichu janar thakle bolte paren.'
 WHERE name = 'Nila';
 
 -- Seed Rakib (English)
