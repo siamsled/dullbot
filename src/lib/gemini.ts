@@ -62,9 +62,28 @@ export async function invokeGemini(
     });
   }
 
+  // Sanitize history for Gemini: must start with 'user' and roles must strictly alternate
+  const sanitizedHistory: { role: 'user' | 'model', parts: any[] }[] = [];
+  for (const msg of history) {
+    if (sanitizedHistory.length === 0) {
+      if (msg.role === 'model') continue; // Skip leading model messages
+      sanitizedHistory.push({ role: msg.role, parts: [...msg.parts] });
+    } else {
+      const lastMsg = sanitizedHistory[sanitizedHistory.length - 1];
+      if (lastMsg.role === msg.role) {
+        // Merge consecutive messages from the same role
+        const lastText = lastMsg.parts[0]?.text || '';
+        const thisText = msg.parts[0]?.text || '';
+        lastMsg.parts[0] = { text: `${lastText}\n\n${thisText}` };
+      } else {
+        sanitizedHistory.push({ role: msg.role, parts: [...msg.parts] });
+      }
+    }
+  }
+
   try {
     const chat = model.startChat({
-      history,
+      history: sanitizedHistory,
       generationConfig: { maxOutputTokens: 400 },
     });
     
