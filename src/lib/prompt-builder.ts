@@ -73,19 +73,19 @@ export function buildSystemPrompt(
   const discountDeclineMsg = persona?.msg_discount_decline ?? 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
   const discountLine = (allowDiscounts && maxDiscount > 0)
     ? `You may offer up to ${maxDiscount}% discount if the customer explicitly asks. Never volunteer a discount unprompted.`
-    : `If a customer asks for a discount, reply exactly with this phrase: "${discountDeclineMsg}"`;
+    : `If a customer asks for a discount, firmly decline. Use this phrase as a baseline for your reply, but adapt it naturally to fit the context of the conversation: "${discountDeclineMsg}"`;
 
   // Escalation
   const escalateSeverity = shop.escalation_severity ?? 'serious_complaints';
   const escalateOnComplaint = shop.auto_escalate_on_complaint ?? true;
   const escalateMsg = persona?.msg_escalation ?? 'Tell the customer you are transferring them to a senior colleague or manager (NEVER say "human agent").';
   
-  let escalateLine = `Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, you MUST reply with exactly this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
+  let escalateLine = `Try to handle complaints politely. Escalate to a senior colleague only if you genuinely cannot help. When you do escalate, convey this message naturally to the customer: "${escalateMsg}". Adapt it to the context, and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
   if (escalateOnComplaint) {
     if (escalateSeverity === 'any_frustration') {
-      escalateLine = `If a customer expresses even mild frustration, annoyance, or dissatisfaction, immediately escalate the chat. You MUST reply exactly with this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
+      escalateLine = `If a customer expresses even mild frustration, annoyance, or dissatisfaction, immediately escalate the chat. Convey this message naturally to the customer: "${escalateMsg}". Adapt it to the context, and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
     } else {
-      escalateLine = `If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Do not try to resolve serious complaints yourself. You MUST reply exactly with this phrase: "${escalateMsg}" and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
+      escalateLine = `If a customer expresses serious dissatisfaction, frustration, or makes a complaint, immediately escalate the chat. Do not try to resolve serious complaints yourself. Convey this message naturally to the customer: "${escalateMsg}". Adapt it to the context, and append the tag [ESCALATION: COMPLAINT] at the very end of your response.`;
     }
   }
 
@@ -119,18 +119,18 @@ export function buildSystemPrompt(
   const abusiveMode = shop.abusive_handling_mode ?? 'polite';
   const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
   
-  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Instead, reply exactly with this phrase: "${abusiveFallbackMsg}"`;
+  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Instead, use this phrase as a baseline for your reply, adapting it naturally to the context: "${abusiveFallbackMsg}"`;
   if (abusiveMode === 'flag') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST reply exactly with this phrase: "${abusiveFallbackMsg}" and append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST use this phrase as a baseline for your reply, adapting it naturally: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
   } else if (abusiveMode === 'block') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST reply exactly with this phrase: "${abusiveFallbackMsg}" and append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, you MUST use this phrase as a baseline for your reply, adapting it naturally: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
   }
 
   const offTopicTolerance = shop.off_topic_tolerance ?? 'strict';
   const offTopicMsg = persona?.msg_off_topic ?? 'politely but firmly redirect them back to business topics (our products and services). Do not engage in extended off-topic banter.';
   const offTopicLine = offTopicTolerance === 'casual'
     ? `You may engage in light, friendly casual chat if the customer initiates it, but always gently steer the conversation back to business (our products/services) after 1-2 exchanges.`
-    : `If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, reply exactly with this phrase: "${offTopicMsg}"`;
+    : `If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, gently redirect them using this phrase as a baseline, adapting it naturally to what they said: "${offTopicMsg}"`;
 
   const highValueThreshold = shop.high_value_order_threshold ?? 0;
   const orderTakingLine = highValueThreshold > 0
