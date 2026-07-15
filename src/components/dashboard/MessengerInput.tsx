@@ -148,24 +148,40 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
 
   return (
     <div className="flex flex-col w-full bg-white border-t border-[#E5E5E5]">
-      {replyingTo && (
-        <div className="flex items-center justify-between px-4 py-2 bg-[#F0F2F5]/50 border-b border-[#E5E5E5]">
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <span className="text-[12px] font-semibold text-[#050505]">Replying to</span>
-            <span className="text-[13px] text-[#65676B] truncate">{replyingTo.text}</span>
+      {replyingTo && (() => {
+        const isImage = replyingTo.text.startsWith('IMAGE:') || /!\[.*?\]\((.*?)\)/.test(replyingTo.text);
+        const imageUrl = replyingTo.text.startsWith('IMAGE:') 
+          ? replyingTo.text.substring(6) 
+          : replyingTo.text.match(/!\[.*?\]\((.*?)\)/)?.[1];
+
+        return (
+          <div className="flex items-center justify-between px-4 py-2 bg-[#F0F2F5]/50 border-b border-[#E5E5E5]">
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <span className="text-[12px] font-semibold text-[#050505]">Replying to</span>
+              {isImage ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
+                    <img src={imageUrl} alt="Replying to image" className="h-full w-full object-cover" />
+                  </div>
+                  <span className="text-[13px] text-[#65676B] italic">Photo</span>
+                </div>
+              ) : (
+                <span className="text-[13px] text-[#65676B] truncate">{replyingTo.text}</span>
+              )}
+            </div>
+            <button 
+              type="button" 
+              onClick={onCancelReply}
+              className="p-1 rounded-full text-[#65676B] hover:bg-black/5 transition-colors shrink-0"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
-          <button 
-            type="button" 
-            onClick={onCancelReply}
-            className="p-1 rounded-full text-[#65676B] hover:bg-black/5 transition-colors shrink-0"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-      )}
+        );
+      })()}
       <div className="flex items-center gap-2.5 w-full max-w-full px-3 py-2">
       {/* Left Icons */}
       {!isRecording && (

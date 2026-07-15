@@ -392,7 +392,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                 const segments = parseMessageSegments(actualContent);
                 
                 return (
-                  <div key={msg.id} className={`flex group ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                  <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
                     {/* Reply Button (Hover) - Right side for customer, left for agent */}
                     {!isCustomer && (
                       <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
@@ -419,20 +419,46 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                       </div>
                       <div className="flex flex-col gap-1 w-full mt-1">
                         
-                        {quotedText && (
-                          <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
-                            <div className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 ${
-                              isCustomer 
-                                ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
-                                : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
-                            }`}>
-                              <Reply className="w-3 h-3 shrink-0" />
-                              <span className="truncate max-w-[200px] italic">
-                                {quotedText}
-                              </span>
+                        {quotedText && (() => {
+                          const quotedSegments = parseMessageSegments(quotedText);
+                          const isQuotedImage = quotedSegments.length > 0 && quotedSegments[0].type === 'image';
+                          return (
+                            <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
+                              <div 
+                                onClick={() => {
+                                  // Find the original message this is replying to
+                                  const target = [...messages].reverse().find(m => extractReplyContext(m.content).actualContent === quotedText);
+                                  if (target) {
+                                    const el = document.getElementById(`message-${target.id}`);
+                                    if (el) {
+                                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
+                                      setTimeout(() => {
+                                        el.style.backgroundColor = 'transparent';
+                                      }, 1000);
+                                    }
+                                  }
+                                }}
+                                className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${
+                                  isCustomer 
+                                    ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
+                                    : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
+                                }`}
+                              >
+                                <Reply className="w-3 h-3 shrink-0" />
+                                {isQuotedImage ? (
+                                  <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
+                                    <img src={quotedSegments[0].content} alt="Quoted image" className="h-full w-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <span className="truncate max-w-[200px] italic">
+                                    {quotedText}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         {segments.map((segment, sIdx) => {
                           const isFirst = sIdx === 0 && !quotedText;
