@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { billGeminiCall } from '@/lib/chat-pipeline';
+import sharp from 'sharp';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -275,8 +276,15 @@ export async function POST(request: Request) {
                     const imgRes = await fetch(imageUrl);
                     if (imgRes.ok) {
                       const buffer = await imgRes.arrayBuffer();
-                      const base64 = Buffer.from(buffer).toString('base64');
-                      const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+                      
+                      // Compress image to a max of 512x512 to ensure it only takes 1 Gemini tile (258 tokens)
+                      const compressedBuffer = await sharp(buffer)
+                        .resize({ width: 512, height: 512, fit: 'inside' })
+                        .webp({ quality: 80 })
+                        .toBuffer();
+
+                      const base64 = compressedBuffer.toString('base64');
+                      const mime = 'image/webp';
                       imagePart = {
                         inlineData: {
                           data: base64,
