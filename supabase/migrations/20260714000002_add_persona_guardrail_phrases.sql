@@ -12,7 +12,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'আমার মনে হয় এটা আমার থেকে সিনিয়র কারো দেখা দরকার। আমি ম্যানেজারের কাছে দিচ্ছি।',
   msg_let_me_check = 'একটু দাঁড়ান, আমি খোঁজ নিয়ে বলছি।',
   msg_abusive_fallback = 'ভাই, মাথা ঠান্ডা করে কাজের কথায় আসেন। সমস্যাটা খুলে বলেন।',
-  msg_off_topic = 'অন্য কথা বাদ দিয়ে কাজের কথায় আসেন। কি লাগবে বলেন।'
+  msg_off_topic = 'আচ্ছা, আমরা বরং কাজের কথায় আসি। প্রোডাক্ট নিয়ে কোনো প্রশ্ন থাকলে বলতে পারেন।'
 WHERE name = 'Biplob Uncle';
 
 -- Seed Shuvo Bhai (easygoing, "ভাই")
@@ -21,7 +21,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'ভাই, আপনার সমস্যাটা বুঝতে পারছি। এটা আমি সলভ করতে পারবো না, আমি সিনিয়র কারো কাছে দিচ্ছি।',
   msg_let_me_check = 'একটু দেখি... আমি শিউর হয়ে জানাচ্ছি।',
   msg_abusive_fallback = 'ভাই, একটু শান্ত হন। আমি তো আছি, সমস্যাটা আমাকে বলেন।',
-  msg_off_topic = 'ভাই, ওইসব কথা থাক, প্রোডাক্ট নিয়ে কিছু জানার থাকলে বলেন।'
+  msg_off_topic = 'হা হা, ভাই আমরা তো প্রোডাক্ট নিয়েই আছি। প্রোডাক্ট নিয়ে কিছু জানার থাকলে বলেন।'
 WHERE name = 'Shuvo "Bhai" Ahmed';
 
 -- Seed Rumi Apa (Boutique owner, "আপু")
@@ -48,7 +48,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'Wait, let me escalate this. Amar senior ekjon dekhbe ekhon theke.',
   msg_let_me_check = 'One sec, ami ektu confirm hoye ni.',
   msg_abusive_fallback = 'Chill, evabe bolle to hobe na. Ki problem hoise exactly bolen amake.',
-  msg_off_topic = 'Arey egula baad den, product related kono question thakle bolen!'
+  msg_off_topic = 'Haha thanks! But amra mainly product niyei kotha boli, kono kichu janar thakle bolte paren.'
 WHERE name = 'Nila';
 
 -- Seed Rakib (English)
@@ -66,7 +66,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'ঠিক আছে। এই বিষয়টা আমি আমার সিনিয়র ম্যানেজারকে দেখতে দিচ্ছি। উনি ব্যবস্থা নিচ্ছেন।',
   msg_let_me_check = 'আমি একটু ভালোভাবে চেক করে আপনাকে সঠিক তথ্যটা দিচ্ছি।',
   msg_abusive_fallback = 'আপনার বিরক্তিটা আমি বুঝতে পারছি। কিন্তু রাগারাগি না করে সমস্যাটা খুলে বললে আমি দ্রুত সমাধান দিতে পারবো।',
-  msg_off_topic = 'অন্য কথায় না গিয়ে, আমরা বরং আপনার অর্ডার বা সমস্যাটা নিয়ে কথা বলি।'
+  msg_off_topic = 'অসংখ্য ধন্যবাদ। তবে আপনার যদি কোনো অর্ডার বা সমস্যা নিয়ে কথা বলার থাকে, আমি সাহায্য করতে পারি।'
 WHERE name = 'Tanim "Problem Solver"';
 
 -- Seed Mehnaz (Skincare advisor)
@@ -84,7 +84,7 @@ UPDATE public.agent_personas SET
   msg_escalation = 'Wait, eta ami solve korte parbona. Senior er kache dicchi.',
   msg_let_me_check = 'Ektu time den, check kore janacchi.',
   msg_abusive_fallback = 'Vai matha thanda koren. Ki issue bolen dekhtesi.',
-  msg_off_topic = 'Bhai egula baad den, ki lagbe seta bolen.'
+  msg_off_topic = 'Haha thik ache. But kono product lagle amake janate paren.'
 WHERE name = 'Jisan';
 
 -- Seed Sharmin Apa (Home-baker)
@@ -93,5 +93,5 @@ UPDATE public.agent_personas SET
   msg_escalation = 'বিষয়টা নিয়ে আমি আমার একজন সিনিয়র কলিগের সাথে কথা বলিয়ে দিচ্ছি। উনি ভালো বুঝতে পারবেন।',
   msg_let_me_check = 'ইনশাআল্লাহ আমি একটু ভালোভাবে খোঁজ নিয়ে আপনাকে ঠিকমতো জানাচ্ছি।',
   msg_abusive_fallback = 'দেখুন, এভাবে রাগ করলে তো লাভ নেই। আপনার সমস্যার কথা বলেন, আমি ইনশাআল্লাহ ব্যবস্থা করে দিচ্ছি।',
-  msg_off_topic = 'অন্য কথায় না গিয়ে, আপনার কী দরকার সেটা বললে আমি সেভাবে তৈরি করে দিতাম।'
+  msg_off_topic = 'অনেক ধন্যবাদ! তবে আপনার কোনো কিছু পছন্দ হলে বা দরকার হলে জানাবেন, আমি সেভাবে তৈরি করে দিতাম।'
 WHERE name = 'Sharmin Apa';
