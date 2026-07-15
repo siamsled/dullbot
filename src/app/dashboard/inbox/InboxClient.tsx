@@ -123,18 +123,21 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       lastTimestampRef.current = msgs[msgs.length - 1].created_at;
       
       setMessages(prev => {
-        // If this is the initial load, just set the messages.
-        if (prev.length === 0) return msgs;
-        
-        // Otherwise, append new messages and remove duplicate optimistics
-        const optimisticMsgs = prev.filter(m => m.isOptimistic);
-        const newDbMsgs = msgs;
-        
-        const unsavedOptimistic = optimisticMsgs.filter(opt => 
-          !newDbMsgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
-        );
+        let merged;
+        // If this is the initial load, just use the messages.
+        if (prev.length === 0) {
+          merged = msgs;
+        } else {
+          // Otherwise, append new messages and remove duplicate optimistics
+          const optimisticMsgs = prev.filter(m => m.isOptimistic);
+          const newDbMsgs = msgs;
+          
+          const unsavedOptimistic = optimisticMsgs.filter(opt => 
+            !newDbMsgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
+          );
 
-        const merged = [...prev.filter(m => !m.isOptimistic), ...newDbMsgs, ...unsavedOptimistic];
+          merged = [...prev.filter(m => !m.isOptimistic), ...newDbMsgs, ...unsavedOptimistic];
+        }
         
         if (activeId) {
           messageCacheRef.current[activeId] = {
