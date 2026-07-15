@@ -90,6 +90,8 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const isFirstLoadRef = useRef(true);
   const lastTimestampRef = useRef<string | null>(null);
   const messageCacheRef = useRef<Record<string, { msgs: any[], lastTimestamp: string | null }>>({});
+  const activeIdRef = useRef<string | null>(activeId);
+  activeIdRef.current = activeId;
 
   useEffect(() => {
     isFirstLoadRef.current = true;
@@ -103,14 +105,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
   }, [activeId]);
 
-  const loadData = async () => {
-    if (!activeId) return;
-    
-    // Fetch new messages since the last timestamp we know about
+  const loadMessages = async () => {
+    const currentId = activeIdRef.current;
+    if (!currentId) return;
+
     let query = supabaseBrowser
       .from('messages')
       .select('*')
-      .eq('conversation_id', activeId)
+      .eq('conversation_id', currentId)
       .order('created_at', { ascending: true });
 
     if (lastTimestampRef.current) {
@@ -118,54 +120,49 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     }
 
     const { data: msgs, error } = await query;
-    
+
     if (!error && msgs && msgs.length > 0) {
       lastTimestampRef.current = msgs[msgs.length - 1].created_at;
-      
+
       setMessages(prev => {
         let merged;
-        // If this is the initial load, just use the messages.
         if (prev.length === 0) {
           merged = msgs;
         } else {
-          // Otherwise, append new messages and remove duplicate optimistics
           const optimisticMsgs = prev.filter(m => m.isOptimistic);
-          const newDbMsgs = msgs;
-          
-          const unsavedOptimistic = optimisticMsgs.filter(opt => 
-            !newDbMsgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
+          const unsavedOptimistic = optimisticMsgs.filter(opt =>
+            !msgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
           );
+          merged = [...prev.filter(m => !m.isOptimistic), ...msgs, ...unsavedOptimistic];
+        }
 
-          merged = [...prev.filter(m => !m.isOptimistic), ...newDbMsgs, ...unsavedOptimistic];
-        }
-        
-        if (activeId) {
-          messageCacheRef.current[activeId] = {
-            msgs: merged,
-            lastTimestamp: lastTimestampRef.current
-          };
-        }
+        messageCacheRef.current[currentId] = {
+          msgs: merged,
+          lastTimestamp: lastTimestampRef.current
+        };
 
         return merged;
       });
     }
+  };
 
+  const loadConversations = async () => {
     const convs = await getConversations(shop.id);
     setConversations(prev => {
       const mergedConvs = convs.map(serverConv => {
         if (pendingTogglesRef.current.has(serverConv.id)) {
-           const optimisticConv = prev.find(p => p.id === serverConv.id);
-           if (optimisticConv) {
-               return { ...serverConv, status: optimisticConv.status, ticket_reason: optimisticConv.ticket_reason };
-           }
+          const optimisticConv = prev.find(p => p.id === serverConv.id);
+          if (optimisticConv) {
+            return { ...serverConv, status: optimisticConv.status, ticket_reason: optimisticConv.ticket_reason };
+          }
         }
         return serverConv;
       });
 
-      const isIdentical = prev.length === mergedConvs.length && 
-        prev.every((c, i) => 
-          c.id === mergedConvs[i].id && 
-          c.last_message_at === mergedConvs[i].last_message_at && 
+      const isIdentical = prev.length === mergedConvs.length &&
+        prev.every((c, i) =>
+          c.id === mergedConvs[i].id &&
+          c.last_message_at === mergedConvs[i].last_message_at &&
           c.status === mergedConvs[i].status &&
           c.ticket_reason === mergedConvs[i].ticket_reason
         );
@@ -174,10 +171,18 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 1000);
-    return () => clearInterval(interval);
+    // Reset and immediately load when switching conversations
+    lastTimestampRef.current = messageCacheRef.current[activeId ?? '']?.lastTimestamp ?? null;
+    loadMessages();
+    const msgInterval = setInterval(loadMessages, 2000);
+    return () => clearInterval(msgInterval);
   }, [activeId]);
+
+  useEffect(() => {
+    loadConversations();
+    const convInterval = setInterval(loadConversations, 5000);
+    return () => clearInterval(convInterval);
+  }, []);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -226,7 +231,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
         setMessages(prev => prev.filter(m => m.id !== newMsg.id));
         alert(`Failed to send message: ${result?.error || 'Unknown error'}`);
       } else {
-        loadData();
+        loadMessages();
       }
     } catch (err: any) {
       console.error("Error sending message:", err);
@@ -252,7 +257,8 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     
     setTimeout(() => {
       pendingTogglesRef.current.delete(targetId);
-      loadData();
+      loadMessages();
+      loadConversations();
     }, 2000);
   };
 
