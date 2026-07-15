@@ -488,17 +488,27 @@ export async function POST(request: Request) {
                               }
                             })
                           });
-                          
                           if (!fbImgRes.ok) {
                             console.error("Failed to send image attachment to Messenger:", await fbImgRes.json());
+                            // Fallback to sending the URL as text
+                            const fbFallbackRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                messaging_type: "RESPONSE",
+                                recipient: { id: senderId },
+                                message: { text: `[Image]: ${segment.content}` }
+                              })
+                            });
+                            if (fbFallbackRes.ok) {
+                               const fbData = await fbFallbackRes.json();
+                               if (fbData.message_id) capturedMids.push(fbData.message_id);
+                            }
                           } else {
                             const fbImgData = await fbImgRes.json();
                             if (fbImgData.message_id) capturedMids.push(fbImgData.message_id);
                           }
                         }
-                        
-                        // Artificial delay for multi-bubble illusion of typing
-                        await new Promise(res => setTimeout(res, 1000));
                       }
 
                       if (capturedMids.length > 0 && insertedMsg) {

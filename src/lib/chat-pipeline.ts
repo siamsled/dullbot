@@ -54,10 +54,10 @@ async function getOrCreateConversation(shopId: string, customerPhone: string, ch
   return created;
 }
 
-async function getConversationHistory(conversationId: string, tuningUpdatedAt?: string | null) {
+async function getConversationHistory(shopId: string, conversationId: string, tuningUpdatedAt?: string | null) {
   let query = supabaseAdmin
     .from('messages')
-    .select('sender, content, created_at')
+    .select('id, sender, content, created_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false });
 
@@ -65,17 +65,84 @@ async function getConversationHistory(conversationId: string, tuningUpdatedAt?: 
     query = query.gt('created_at', tuningUpdatedAt);
   }
 
-  const { data: messages } = await query.limit(12);
+  const { data: messages } = await query.limit(20);
 
-  if (!messages) return [];
+  if (!messages || messages.length === 0) return [];
 
-  const formatted = messages
-    .reverse() // Re-order to be chronological
-    .filter(m => m.sender === 'customer' || m.sender === 'bot')
-    .map(m => ({
-      role: m.sender === 'customer' ? 'user' as const : 'model' as const,
-      parts: [{ text: m.content }],
-    }));
+  // Check if we have a summary stored
+  const cacheKey = `summary_${conversationId}`;
+  const { data: cachedSummary } = await supabaseAdmin
+    .from('response_cache')
+    .select('response_text')
+    .eq('shop_id', shopId)
+    .eq('cache_key', cacheKey)
+    .single();
+
+  let summaryText = '';
+  let summarizedUpToMsgId = '';
+  if (cachedSummary) {
+    const parts = cachedSummary.response_text.split('|||');
+    if (parts.length >= 2) {
+      summarizedUpToMsgId = parts[0];
+      summaryText = parts.slice(1).join('|||');
+    }
+  }
+
+  const chronological = [...messages].reverse();
+  
+  // Find index of the message we've summarized up to
+  let unsummarizedStartIndex = 0;
+  if (summarizedUpToMsgId) {
+    const idx = chronological.findIndex(m => m.id === summarizedUpToMsgId);
+    if (idx !== -1) {
+      unsummarizedStartIndex = idx + 1;
+    }
+  }
+
+  const unsummarizedMessages = chronological.slice(unsummarizedStartIndex);
+
+  // If there are > 8 unsummarized messages, let's summarize the oldest 4
+  if (unsummarizedMessages.length > 8) {
+    const messagesToSummarize = unsummarizedMessages.slice(0, 4);
+    const textToSummarize = messagesToSummarize.map(m => `${m.sender}: ${m.content}`).join('\\n');
+    
+    const summaryPrompt = `You are summarizing an ongoing chat between a customer and a bot.
+Previous summary: ${summaryText || 'None'}
+New messages to append to summary:
+${textToSummarize}
+
+Write a very brief factual summary (under 3 sentences) of what the customer wants, their preferences, and what has been offered so far. DO NOT include pleasantries.`;
+    
+    try {
+      const summaryResponse = await invokeGemini(summaryPrompt, 'Summarize this.', []);
+      if (summaryResponse.success && summaryResponse.text) {
+        summaryText = summaryResponse.text.trim();
+        summarizedUpToMsgId = messagesToSummarize[3].id;
+        unsummarizedStartIndex += 4;
+        
+        // Save to cache
+        await supabaseAdmin.from('response_cache').upsert({
+          shop_id: shopId,
+          cache_key: cacheKey,
+          response_text: `${summarizedUpToMsgId}|||${summaryText}`,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        }, { onConflict: 'shop_id,cache_key' });
+      }
+    } catch (err) {
+      console.error("Failed to generate summary", err);
+    }
+  }
+
+  const activeMessages = chronological.slice(unsummarizedStartIndex).filter(m => m.sender === 'customer' || m.sender === 'bot');
+
+  const formatted = activeMessages.map(m => ({
+    role: m.sender === 'customer' ? 'user' as const : 'model' as const,
+    parts: [{ text: m.content }],
+  }));
+
+  if (summaryText && formatted.length > 0) {
+    formatted[0].parts[0].text = `[SYSTEM NOTE: Summary of earlier conversation: ${summaryText}]\\n\\n${formatted[0].parts[0].text}`;
+  }
 
   while (formatted.length > 0 && formatted[0].role === 'model') {
     formatted.shift();
@@ -335,27 +402,41 @@ export async function processIncomingMessage(
     return { success: true, message: cached.response_text, cacheHit: true, preFilterHit: false, geminiCalled: false };
   }
 
-  // 4. Fetch live inventory (products + variants) for AI context
-  const { data: products } = await supabaseAdmin
-    .from('products')
-    .select('name, description, price, stock_quantity, currency, sku, image_url')
-    .eq('shop_id', shop.id)
-    .eq('is_active', true)
-    .eq('draft', false)
-    .gt('stock_quantity', 0);
-
-  // Fetch variants for products that have them
-  const productIds = (products ?? []).map(p => (p as { id?: string }).id).filter(Boolean);
-  let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
-
-  // Re-query with id field to attach variants
-  const { data: productsWithId } = await supabaseAdmin
+  // 4. Fetch scoped live inventory (products + variants) for AI context
+  // Extract keywords from user message to perform simple search
+  const keywords = normalizedText.toLowerCase().replace(/[^\\w\\s]/g, '').split(/\\s+/).filter(w => w.length > 2);
+  
+  let productQuery = supabaseAdmin
     .from('products')
     .select('id, name, description, price, stock_quantity, currency, sku, image_url')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .eq('draft', false)
     .gt('stock_quantity', 0);
+
+  if (keywords.length > 0) {
+    const orClauses = keywords.map(k => `name.ilike.%${k}%,description.ilike.%${k}%`).join(',');
+    productQuery = productQuery.or(orClauses).limit(10);
+  } else {
+    productQuery = productQuery.limit(5); // generic fallback limit
+  }
+
+  let { data: productsWithId } = await productQuery;
+  
+  // If no matches found with keywords, fallback to top 5 products to provide some generic context
+  if ((!productsWithId || productsWithId.length === 0) && keywords.length > 0) {
+    const { data: fallbackProducts } = await supabaseAdmin
+      .from('products')
+      .select('id, name, description, price, stock_quantity, currency, sku, image_url')
+      .eq('shop_id', shop.id)
+      .eq('is_active', true)
+      .eq('draft', false)
+      .gt('stock_quantity', 0)
+      .limit(5);
+    productsWithId = fallbackProducts;
+  }
+
+  let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
 
   if (productsWithId && productsWithId.length > 0) {
     const ids = productsWithId.map(p => p.id);
@@ -420,7 +501,7 @@ export async function processIncomingMessage(
   }
 
   // 6. Load conversation history from Supabase, applying tuning timestamp gate
-  const history = await getConversationHistory(conversation.id, shop.persona_updated_at || shop.tuning_updated_at);
+  const history = await getConversationHistory(shop.id, conversation.id, shop.persona_updated_at || shop.tuning_updated_at);
 
   // 7. Call Gemini
   const response = await invokeGemini(systemPrompt, text, history, promptCacheRef);
