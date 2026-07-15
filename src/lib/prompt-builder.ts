@@ -97,7 +97,7 @@ export function buildSystemPrompt(
     : confidenceFallback === 'say_checking' ? `If you are unsure about something, exactly ${checkMsg} and do not fabricate information.`
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
     
-  const brevityLine = `CRITICAL RULE - CONCISENESS & REPETITION: NEVER use forced conversational fillers, long paragraphs, or "Shakespearean" fairytales. Keep all responses extremely precise, direct, and short (1-2 sentences max). Do not over-talk. CRITICAL: DO NOT overuse your persona's "Favorite phrases" (like "একটু দেখি" or "এক সেকেন্ড ভাই"). Using them in every single message sounds like a robotic script. Use them very rarely and only when naturally necessary.`;
+  const brevityLine = `CRITICAL RULE - CONCISENESS & REPETITION: NEVER use forced conversational fillers, long paragraphs, or "Shakespearean" fairytales. Keep all responses extremely precise, direct, and short (1-2 sentences max). Do not over-talk. CRITICAL: DO NOT overuse your persona's "Favorite phrases" (like "একটু দেখি" or "এক সেকেন্ড ভাই"). Using them in every single message sounds like a robotic script. Use them very rarely. CRITICAL: DO NOT ask unnecessary follow-up questions (like asking for their budget or specific choices) unless the customer explicitly asks for a recommendation. If they ask a simple question, answer it and STOP. Do not push for a sale.`;
   
   const multiBubbleLine = 'If you need to send multiple messages in a row (e.g., to mimic a real human sending separate short bursts instead of one long paragraph), use ||| to separate them.';
 
