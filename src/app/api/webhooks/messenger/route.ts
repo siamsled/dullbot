@@ -107,6 +107,7 @@ export async function POST(request: Request) {
                 dbContent = `[IMAGE_WITH_CAPTION] ${messageText} ||| IMAGE:${imageUrl}`;
               }
 
+              let repliedMsgContent: string | null = null;
               if (replyToMid) {
                 const { data: repliedMsg } = await supabaseAdmin
                   .from('messages')
@@ -115,6 +116,7 @@ export async function POST(request: Request) {
                   .single();
                   
                 if (repliedMsg) {
+                  repliedMsgContent = repliedMsg.content;
                   dbContent = `[Replying to bot's message: "${repliedMsg.content}"] ${dbContent}`;
                 }
               }
@@ -364,7 +366,12 @@ export async function POST(request: Request) {
                   if (imagePart) mediaParts.push(imagePart);
                   if (audioPart) mediaParts.push(audioPart);
 
-                  const aiResponse = await invokeGemini(prompt, messageText, historyParts, null, mediaParts);
+                  let geminiMessageText = messageText;
+                  if (repliedMsgContent) {
+                    geminiMessageText = `[Customer is replying to the following specific message from you: "${repliedMsgContent}"]\n\nCustomer's response: ${geminiMessageText || '(Sent an attachment)'}`;
+                  }
+
+                  const aiResponse = await invokeGemini(prompt, geminiMessageText, historyParts, null, mediaParts);
 
                   if (aiResponse.success) {
                     await billGeminiCall(
