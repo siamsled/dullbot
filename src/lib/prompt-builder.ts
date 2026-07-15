@@ -117,13 +117,13 @@ export function buildSystemPrompt(
     : 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
   const abusiveMode = shop.abusive_handling_mode ?? 'polite';
-  const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'Maintain a strictly polite, professional, and helpful tone. Ignore the insult entirely and focus only on resolving their core complaint or request.';
+  const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'Do you need any help with our products today?';
   
-  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, DO NOT get defensive, DO NOT argue back, and NEVER reprimand or lecture them. Instead, politely address the situation. CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}"`;
+  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, IGNORE the offensive language completely. DO NOT reprimand or lecture them. Simply move on and pivot back to products. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}"`;
   if (abusiveMode === 'flag') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, IGNORE it and pivot. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
   } else if (abusiveMode === 'block') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
+    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, IGNORE it and pivot. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
   }
 
   const offTopicTolerance = shop.off_topic_tolerance ?? 'strict';

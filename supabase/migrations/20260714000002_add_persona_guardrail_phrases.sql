@@ -47,7 +47,7 @@ UPDATE public.agent_personas SET
   msg_discount_decline = 'Sorry vaiya/apu, amader prices totally fixed. No discount possible.',
   msg_escalation = 'Wait, amader senior ekjon asche help korar jonno.',
   msg_let_me_check = 'One sec, ami ektu confirm hoye ni.',
-  msg_abusive_fallback = 'Vaiya/apu amra ekhane just product niye kotha boli, kindly language ta ektu thik rakhle bhalo hoy.',
+  msg_abusive_fallback = 'Vaiya/apu kono jacket ba product niye kichu jante chaile bolte paren.',
   msg_off_topic = 'Haha temon kichu na, specific kono product niye kichu janar thakle bolte paren.'
 WHERE name = 'Nila';
 
