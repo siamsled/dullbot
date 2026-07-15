@@ -64,6 +64,7 @@ export async function deleteExampleReply(id: string) {
 export async function testPersonaResponse(
   personaId: string,
   customerMessage: string,
+  chatHistory: { role: string; content: string }[],
   shopTuningState: {
     disclosure_mode: string;
     max_discount_pct: number;
@@ -125,8 +126,13 @@ export async function testPersonaResponse(
 
   const systemPrompt = buildSystemPrompt(shopSettings, persona, products || [], examples || []);
 
+  const formattedHistory = chatHistory.map((msg) => ({
+    role: msg.role === 'bot' ? 'model' : 'user',
+    parts: [{ text: msg.content }],
+  }));
+
   try {
-    const result = await invokeGemini(systemPrompt, customerMessage, [], null);
+    const result = await invokeGemini(systemPrompt, customerMessage, formattedHistory, null);
     
     if (!result.success) {
       return { success: false, error: result.error || 'Gemini invocation failed' };

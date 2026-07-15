@@ -149,7 +149,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     setChatHistory(prev => [...prev, { role: 'user', content: actualMsg }, { role: 'bot', content: '…' }]);
 
     try {
-      const res = await testPersonaResponse(personaId, msg, {
+      const res = await testPersonaResponse(personaId, msg, chatHistory, {
         disclosure_mode: disclosureMode,
         max_discount_pct: maxDiscount,
         auto_escalate_on_complaint: autoEscalate,
