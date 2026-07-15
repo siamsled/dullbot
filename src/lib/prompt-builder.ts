@@ -109,7 +109,7 @@ export function buildSystemPrompt(
   // Image Instructions
   const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line. CRITICAL: If the customer ALREADY sent an image of a product to ask about it, DO NOT send that exact same image back to them! Just answer their question about it directly.';
   
-  const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar), and avoid using them altogether. They sound very unnatural and AI-like in this context. Use natural, conversational greetings instead if needed (like "Hello", "Hi", "আসসালামু আলাইকুম", or just get straight to the point).';
+  const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar). Avoid awkward literal English-to-Bengali translations that sound unnatural to a native speaker (e.g., instead of "দেখতে কি ভালো লাগবে?", use conversational, authentic Bengali like "ওটা দেখবেন কি?" or "দেখতে চান?"). Speak exactly like a native Bangladeshi shopkeeper: warm, natural, and fluid.';
 
   const handleAudio = shop.handle_audio ?? true;
   const voiceMessageLine = handleAudio 
