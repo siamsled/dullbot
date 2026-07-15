@@ -178,13 +178,19 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     setMessages(prev => [...prev, newMsg]);
     const replyMid = replyingTo?.mid;
     setReplyingTo(null);
-
-    const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
-    if (!result || result.error) {
+    
+    try {
+      const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
+      if (!result || result.error) {
+        setMessages(prev => prev.filter(m => m.id !== newMsg.id));
+        alert(`Failed to send message: ${result?.error || 'Unknown error'}`);
+      } else {
+        loadData();
+      }
+    } catch (err: any) {
+      console.error("Error sending message:", err);
       setMessages(prev => prev.filter(m => m.id !== newMsg.id));
-      alert(`Failed to send message: ${result?.error || 'Unknown error'}`);
-    } else {
-      loadData();
+      alert(`Network or Server error: ${err.message || 'Please refresh the page and try again.'}`);
     }
   };
 

@@ -115,13 +115,24 @@ export async function sendMessage(
   });
 
   if (!fbRes.ok) {
-    const errData = await fbRes.json();
+    let errData: any = {};
+    try {
+      errData = await fbRes.json();
+    } catch (e) {
+      errData = { error: { message: `HTTP ${fbRes.status}` } };
+    }
     console.error('Facebook API Error:', errData);
     await supabaseAdmin.from('messages').delete().eq('id', data.id);
     return { error: errData.error?.message || 'Facebook API Error' };
   }
   
-  const fbData = await fbRes.json();
+  let fbData: any = {};
+  try {
+    fbData = await fbRes.json();
+  } catch (e) {
+    console.error('Failed to parse Facebook success response');
+  }
+  
   if (fbData.message_id && data) {
     await supabaseAdmin
       .from('messages')
