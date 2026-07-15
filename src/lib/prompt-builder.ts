@@ -72,8 +72,8 @@ export function buildSystemPrompt(
   const maxDiscount = shop.max_discount_pct ?? 0;
   const discountDeclineMsg = persona?.msg_discount_decline ?? 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
   const discountLine = (allowDiscounts && maxDiscount > 0)
-    ? `You may offer up to ${maxDiscount}% discount if the customer explicitly asks. Never volunteer a discount unprompted.`
-    : `If a customer asks for a discount, firmly decline. CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${discountDeclineMsg}"`;
+    ? `IMPORTANT: ONLY mention discounts if the customer EXPLICITLY asks for one. If they do, you may offer up to ${maxDiscount}%. Never volunteer a discount unprompted.`
+    : `IMPORTANT: DO NOT mention anything about discounts UNLESS the customer explicitly asks for one. If they ask, firmly decline by rephrasing this core message naturally: "${discountDeclineMsg}". If they just ask for a price, DO NOT mention discounts.`;
 
   // Escalation
   const escalateSeverity = shop.escalation_severity ?? 'serious_complaints';
