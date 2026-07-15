@@ -277,9 +277,9 @@ export async function POST(request: Request) {
                     if (imgRes.ok) {
                       const buffer = await imgRes.arrayBuffer();
                       
-                      // Compress image to a max of 512x512 to ensure it only takes 1 Gemini tile (258 tokens)
+                      // Compress image to a max of 256x256 to ensure it only takes 1 Gemini tile (258 tokens instead of 1032)
                       const compressedBuffer = await sharp(buffer)
-                        .resize({ width: 512, height: 512, fit: 'inside' })
+                        .resize({ width: 256, height: 256, fit: 'inside' })
                         .webp({ quality: 80 })
                         .toBuffer();
 
