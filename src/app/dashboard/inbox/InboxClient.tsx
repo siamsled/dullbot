@@ -89,11 +89,18 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const lastMsgCountRef = useRef(0);
   const isFirstLoadRef = useRef(true);
   const lastTimestampRef = useRef<string | null>(null);
+  const messageCacheRef = useRef<Record<string, { msgs: any[], lastTimestamp: string | null }>>({});
 
   useEffect(() => {
     isFirstLoadRef.current = true;
-    lastTimestampRef.current = null;
-    setMessages([]);
+    if (activeId && messageCacheRef.current[activeId]) {
+      // Instant restore from memory cache
+      setMessages(messageCacheRef.current[activeId].msgs);
+      lastTimestampRef.current = messageCacheRef.current[activeId].lastTimestamp;
+    } else {
+      lastTimestampRef.current = null;
+      setMessages([]);
+    }
   }, [activeId]);
 
   const loadData = async () => {
@@ -128,6 +135,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
         );
 
         const merged = [...prev.filter(m => !m.isOptimistic), ...newDbMsgs, ...unsavedOptimistic];
+        
+        if (activeId) {
+          messageCacheRef.current[activeId] = {
+            msgs: merged,
+            lastTimestamp: lastTimestampRef.current
+          };
+        }
+
         return merged;
       });
     }
