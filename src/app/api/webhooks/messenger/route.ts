@@ -526,11 +526,14 @@ export async function POST(request: Request) {
                       content: `[SYSTEM ERROR] Failed to reply: ${aiError instanceof Error ? aiError.message : String(aiError)}`
                     });
                     
-                  // Gracefully escalate to human to prevent infinite loop of bot crashing
-                  await supabaseAdmin
-                    .from('conversations')
-                    .update({ status: 'human_takeover', ticket_reason: 'System Error: AI failed' })
-                    .eq('id', conversation.id);
+                  // Gracefully escalate to human ONLY if it's an AI failure, not a Meta API rejection
+                  const isMetaError = aiError instanceof Error && aiError.message.includes('Meta API Rejected');
+                  if (!isMetaError) {
+                    await supabaseAdmin
+                      .from('conversations')
+                      .update({ status: 'human_takeover', ticket_reason: 'System Error: AI failed' })
+                      .eq('id', conversation.id);
+                  }
                 }
               }
 
