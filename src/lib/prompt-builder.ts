@@ -137,8 +137,9 @@ export function buildSystemPrompt(
     ? `- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address. Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.`
     : '- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.';
 
-  // Product section
   const greetingRule = 'If the customer sends a simple greeting (like hi, hello, assalamu alaikum) with no other content, reply with a simple, warm greeting back. DO NOT pitch products, do not ask about purchase intent, and do not reference collections unprompted. Only bring up products if the customer asks something or shows specific interest.';
+
+  const contextRule = 'CRITICAL RULE - CONTEXT AWARENESS: Always maintain the context of the conversation. If a customer asks a follow-up question (like "price?", "colors?", or "details?") without specifying the product name, ASSUME they are talking about the product that was most recently discussed or pictured in the chat history. Do not ask them which product they mean unless the context is truly ambiguous.';
 
   const productSection = buildProductSection(products);
 
@@ -175,6 +176,7 @@ GUARDRAILS & RULES:
 ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 - ${offTopicLine}
 - ${greetingRule}
+- ${contextRule}
 ${orderTakingLine}
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
