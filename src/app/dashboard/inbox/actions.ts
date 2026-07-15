@@ -17,7 +17,13 @@ export async function getMessages(conversationId: string) {
   return data;
 }
 
-export async function sendMessage(conversationId: string, content: string) {
+export async function sendMessage(
+  conversationId: string, 
+  content: string, 
+  replyToMid?: string, 
+  mediaUrl?: string, 
+  mediaType?: 'image' | 'audio'
+) {
   // 1. Fetch conversation and shop details to get the access token and customer ID
   const { data: conversation } = await supabaseAdmin
     .from('conversations')
@@ -42,12 +48,30 @@ export async function sendMessage(conversationId: string, content: string) {
   }
 
   // 2. Insert into database
+  let dbContent = content;
+  if (mediaUrl) {
+    dbContent = mediaType === 'image' ? `IMAGE:${mediaUrl}` : `AUDIO:${mediaUrl}`;
+  }
+  
+  if (replyToMid) {
+    const { data: repliedMsg } = await supabaseAdmin
+      .from('messages')
+      .select('content')
+      .contains('fb_message_ids', [replyToMid])
+      .single();
+      
+    if (repliedMsg) {
+      dbContent = `[Replying to: "${repliedMsg.content}"] ${dbContent}`;
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('messages')
     .insert({
       conversation_id: conversationId,
       sender: 'human_agent',
-      content: content,
+      content: dbContent,
+      fb_message_ids: null
     })
     .select()
     .single();
@@ -63,27 +87,48 @@ export async function sendMessage(conversationId: string, content: string) {
     .eq('id', conversationId);
 
   // 3. Send out to Facebook (Blocking)
+  const payload: any = {
+    messaging_type: "RESPONSE",
+    recipient: { id: conversation.customer_phone },
+    message: {}
+  };
+
+  if (mediaUrl && mediaType === 'image') {
+    payload.message.attachment = {
+      type: "image",
+      payload: { url: mediaUrl, is_reusable: true }
+    };
+  } else {
+    payload.message.text = content;
+  }
+
+  if (replyToMid) {
+    payload.message.reply_to = { mid: replyToMid };
+  }
+
   const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      messaging_type: "RESPONSE",
-      recipient: { id: conversation.customer_phone },
-      message: { text: content }
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!fbRes.ok) {
-    const fbErr = await fbRes.json();
-    console.error("Facebook API Error (Human Reply):", fbErr);
-    // Optionally delete the message from the database if we failed to send it,
-    // or just return null to indicate failure so UI doesn't append it optimistically.
+    const errData = await fbRes.json();
+    console.error('Facebook API Error:', errData);
     await supabaseAdmin.from('messages').delete().eq('id', data.id);
     return null;
   }
   
+  const fbData = await fbRes.json();
+  if (fbData.message_id && data) {
+    await supabaseAdmin
+      .from('messages')
+      .update({ fb_message_ids: [fbData.message_id] })
+      .eq('id', data.id);
+  }
+
   return data;
 }
 

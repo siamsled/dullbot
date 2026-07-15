@@ -407,6 +407,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                   onSend={handleTestSend}
                   disabled={isTesting}
                   placeholder={`Message ${selectedPersona?.name ?? 'the persona'}…`}
+                  shopId={shop.id}
                 />
               </div>
             </div>

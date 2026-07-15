@@ -28,3 +28,27 @@ export function parseMessageSegments(content: string): { type: 'text' | 'image' 
   }
   return segments;
 }
+
+export function extractReplyContext(content: string): { quotedText: string | null; actualContent: string } {
+  if (!content) return { quotedText: null, actualContent: '' };
+
+  // Match 1: Customer replying to Bot: [Customer is replying to the following specific message from you: "..."] Customer's response: ...
+  const match1 = content.match(/^\[Customer is replying to the following specific message from you: "([\s\S]*?)"\]\n*Customer's response: ([\s\S]*)$/);
+  if (match1) {
+    return { quotedText: match1[1], actualContent: match1[2] };
+  }
+
+  // Match 2: [Replying to bot's message: "..."] ...
+  const match2 = content.match(/^\[Replying to bot's message: "([\s\S]*?)"\]\s*([\s\S]*)$/);
+  if (match2) {
+    return { quotedText: match2[1], actualContent: match2[2] };
+  }
+
+  // Match 3: [Replying to: "..."] ...
+  const match3 = content.match(/^\[Replying to: "([\s\S]*?)"\]\s*([\s\S]*)$/);
+  if (match3) {
+    return { quotedText: match3[1], actualContent: match3[2] };
+  }
+
+  return { quotedText: null, actualContent: content };
+}

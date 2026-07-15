@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import MessengerInput, { ChatMedia } from '@/components/dashboard/MessengerInput';
+import MessengerInput from '@/components/dashboard/MessengerInput';
 
 interface ChatMessage {
   id: string;
@@ -33,8 +33,8 @@ export default function SandboxPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (text: string, media?: ChatMedia) => {
-    const userMsgText = text.trim() || (media ? (media.type === 'image' ? '[Image Attachment]' : '[Voice Message]') : '');
+  const handleSend = async (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => {
+    const userMsgText = text.trim() || (mediaUrl ? `[${mediaType === 'image' ? 'Image' : 'Voice'} Attachment]` : '');
     if (!userMsgText || loading) return;
 
     const newCustomerMsg: ChatMessage = {
@@ -195,7 +195,8 @@ export default function SandboxPage() {
         <MessengerInput 
           onSend={handleSend}
           disabled={loading}
-          placeholder="Type message as customer... (e.g. 'Is this available?')" 
+          placeholder="Type message as customer... (e.g. 'Is this available?')"
+          shopId="sandbox"
         />
       </div>
     </div>

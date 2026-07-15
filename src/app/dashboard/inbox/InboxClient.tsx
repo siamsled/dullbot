@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
-import MessengerInput, { ChatMedia } from '@/components/dashboard/MessengerInput';
-import { parseMessageSegments } from '@/lib/message-parser';
+import MessengerInput from '@/components/dashboard/MessengerInput';
+import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -38,6 +38,7 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed'>('all');
+  const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -151,23 +152,34 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     setTimeout(handleScroll, 100);
   }, [messages]);
 
-  const handleSend = async (text: string, media?: ChatMedia) => {
-    if (media) {
-      alert("Media uploads via Live Inbox require a public storage bucket to send to Facebook API. Coming soon!");
+  const handleSend = async (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => {
+    if (!text.trim() && !mediaUrl) return;
+    if (!activeId) return;
+    
+    // Create an optimistic message object.
+    let displayContent = text;
+    if (mediaUrl) {
+      displayContent = mediaType === 'image' ? `IMAGE:${mediaUrl}` : `AUDIO:${mediaUrl}`;
     }
     
-    if (!text.trim() || !activeId) return;
-    
+    // Prefix with reply text so UI updates optimistically like it will when saved
+    if (replyingTo) {
+      displayContent = `[Replying to: "${replyingTo.text}"] ${displayContent}`;
+    }
+
     const newMsg = { 
       id: `temp-${Date.now()}`, 
       sender: 'human_agent', 
-      content: text, 
+      content: displayContent, 
       created_at: new Date().toISOString(),
       isOptimistic: true
     };
+    
     setMessages(prev => [...prev, newMsg]);
+    const replyMid = replyingTo?.mid;
+    setReplyingTo(null);
 
-    await sendMessage(activeId, text);
+    await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
     loadData();
   };
 
@@ -371,8 +383,24 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                 const isHumanAgent = msg.sender === 'human_agent';
                 const isLastMsg = idx === messages.length - 1;
                 
+                const { quotedText, actualContent } = extractReplyContext(msg.content);
+                const segments = parseMessageSegments(actualContent);
+                
                 return (
-                  <div key={msg.id} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                  <div key={msg.id} className={`flex group ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                    {/* Reply Button (Hover) - Right side for customer, left for agent */}
+                    {!isCustomer && (
+                      <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
+                        <button 
+                          onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                          className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                          title="Reply to this message"
+                        >
+                          <Reply className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    
                     <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
                       <div className="flex items-center gap-1.5 mb-1 mx-1">
                         {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
@@ -385,8 +413,24 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         </span>
                       </div>
                       <div className="flex flex-col gap-1 w-full mt-1">
-                        {parseMessageSegments(msg.content).map((segment, sIdx) => {
-                          const isFirst = sIdx === 0;
+                        
+                        {quotedText && (
+                          <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
+                            <div className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 ${
+                              isCustomer 
+                                ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
+                                : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
+                            }`}>
+                              <Reply className="w-3 h-3 shrink-0" />
+                              <span className="truncate max-w-[200px] italic">
+                                {quotedText}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {segments.map((segment, sIdx) => {
+                          const isFirst = sIdx === 0 && !quotedText;
                           return (
                             <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
                               <div className={`px-4 py-2 text-[15px] ${
@@ -422,6 +466,19 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
                         </div>
                       )}
                     </div>
+
+                    {/* Reply Button (Hover) - Left side for customer */}
+                    {isCustomer && (
+                      <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pl-2 pb-5">
+                        <button 
+                          onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                          className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                          title="Reply to this message"
+                        >
+                          <Reply className="w-4 h-4 scale-x-[-1]" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -458,6 +515,9 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
             <MessengerInput 
               onSend={handleSend}
               isTakeover={isTakeover}
+              shopId={shop.id}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
             />
             {!isTakeover && (
               <p className="text-[10px] text-rust mt-1 px-4 pb-2">

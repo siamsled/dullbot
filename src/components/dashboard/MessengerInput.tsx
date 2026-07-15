@@ -10,13 +10,16 @@ export type ChatMedia = {
 };
 
 interface MessengerInputProps {
-  onSend: (text: string, media?: ChatMedia) => void;
+  onSend: (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => void;
   disabled?: boolean;
   placeholder?: string;
   isTakeover?: boolean;
+  shopId: string;
+  replyingTo?: { id: string; text: string; mid?: string } | null;
+  onCancelReply?: () => void;
 }
 
-export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', isTakeover }: MessengerInputProps) {
+export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', isTakeover, shopId, replyingTo, onCancelReply }: MessengerInputProps) {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -49,24 +52,34 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
   };
 
   // Image Upload
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64String = event.target?.result as string;
-      const match = base64String.match(/^data:(image\/[a-zA-Z0-9\-\+]+);base64,(.+)$/);
-      if (match) {
-        onSend('', {
-          type: 'image',
-          mimeType: match[1],
-          data: match[2],
-        });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('shopId', shopId);
+
+      const res = await fetch('/api/inventory/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error('Upload failed');
       }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ''; // Reset input
+
+      const data = await res.json();
+      if (data.url) {
+        onSend('', data.url, 'image');
+      }
+    } catch (err) {
+      console.error('Failed to upload image:', err);
+      alert('Failed to upload image.');
+    } finally {
+      e.target.value = ''; // Reset input
+    }
   };
 
   // Audio Recording
@@ -88,14 +101,9 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64String = reader.result as string;
-          const match = base64String.match(/^data:(audio\/[a-zA-Z0-9\-\+]+);base64,(.+)$/);
-          if (match) {
-            onSend('', {
-              type: 'audio',
-              mimeType: match[1],
-              data: match[2],
-            });
-          }
+          // In a real implementation, you would upload this blob to Supabase storage
+          // and get a public URL like we do with images. For now, we alert it's unsupported.
+          alert("Audio uploads not yet supported.");
         };
         reader.readAsDataURL(audioBlob);
         
@@ -139,7 +147,26 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
   const placeholderText = isTakeover ? 'Type a reply as human...' : placeholder;
 
   return (
-    <div className="flex items-center gap-2.5 w-full max-w-full px-3 py-2 bg-white border-t border-[#E5E5E5]">
+    <div className="flex flex-col w-full bg-white border-t border-[#E5E5E5]">
+      {replyingTo && (
+        <div className="flex items-center justify-between px-4 py-2 bg-[#F0F2F5]/50 border-b border-[#E5E5E5]">
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <span className="text-[12px] font-semibold text-[#050505]">Replying to</span>
+            <span className="text-[13px] text-[#65676B] truncate">{replyingTo.text}</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={onCancelReply}
+            className="p-1 rounded-full text-[#65676B] hover:bg-black/5 transition-colors shrink-0"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      )}
+      <div className="flex items-center gap-2.5 w-full max-w-full px-3 py-2">
       {/* Left Icons */}
       {!isRecording && (
         <div className="flex items-center gap-1 shrink-0 text-[#0084FF]">
@@ -231,6 +258,7 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
           <SendHorizontal className="w-[24px] h-[24px]" strokeWidth={2.5} />
         </button>
       )}
+      </div>
     </div>
   );
 }
