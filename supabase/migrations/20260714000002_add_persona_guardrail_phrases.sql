@@ -45,9 +45,9 @@ WHERE name = 'Imran';
 -- Seed Nila (Gen Z, Banglish)
 UPDATE public.agent_personas SET
   msg_discount_decline = 'Sorry vaiya/apu, amader prices totally fixed. No discount possible.',
-  msg_escalation = 'Wait, let me escalate this. Amar senior ekjon dekhbe ekhon theke.',
+  msg_escalation = 'Wait, amader senior ekjon asche help korar jonno.',
   msg_let_me_check = 'One sec, ami ektu confirm hoye ni.',
-  msg_abusive_fallback = 'Chill, evabe bolle to hobe na. Ki problem hoise exactly bolen amake.',
+  msg_abusive_fallback = 'Vaiya/apu amra ekhane just product niye kotha boli, kindly language ta ektu thik rakhle bhalo hoy.',
   msg_off_topic = 'Haha temon kichu na, specific kono product niye kichu janar thakle bolte paren.'
 WHERE name = 'Nila';
 
