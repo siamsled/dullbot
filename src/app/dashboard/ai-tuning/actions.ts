@@ -127,7 +127,7 @@ export async function testPersonaResponse(
   const systemPrompt = buildSystemPrompt(shopSettings, persona, products || [], examples || []);
 
   const formattedHistory = chatHistory.map((msg) => ({
-    role: msg.role === 'bot' ? 'model' : 'user',
+    role: (msg.role === 'bot' ? 'model' : 'user') as 'user' | 'model',
     parts: [{ text: msg.content }],
   }));
 
