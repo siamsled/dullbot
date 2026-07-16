@@ -3,12 +3,18 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'crypto';
 
-export async function getMessages(conversationId: string) {
-  const { data, error } = await supabaseAdmin
+export async function getMessages(conversationId: string, since?: string) {
+  let query = supabaseAdmin
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
+
+  if (since) {
+    query = query.gt('created_at', since);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching messages:', error);

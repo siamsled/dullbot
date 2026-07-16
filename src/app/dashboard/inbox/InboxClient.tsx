@@ -92,47 +92,42 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const activeIdRef = useRef<string | null>(activeId);
   activeIdRef.current = activeId;
 
-  useEffect(() => {
-    isFirstLoadRef.current = true;
-    if (activeId && messageCacheRef.current[activeId]) {
-      // Instant restore from memory cache
-      setMessages(messageCacheRef.current[activeId].msgs);
-      lastTimestampRef.current = messageCacheRef.current[activeId].lastTimestamp;
-    } else {
-      lastTimestampRef.current = null;
-      setMessages([]);
-    }
-  }, [activeId]);
 
-  const loadMessages = async () => {
+
+
+  const loadMessages = async (since?: string) => {
     const currentId = activeIdRef.current;
     if (!currentId) return;
 
-    const msgs = await getMessages(currentId);
+    const msgs = await getMessages(currentId, since);
 
     if (msgs && msgs.length > 0) {
       lastTimestampRef.current = msgs[msgs.length - 1].created_at;
 
       setMessages(prev => {
-        let merged;
-        if (prev.length === 0) {
-          merged = msgs;
-        } else {
-          const existing = prev.filter(m => !m.isOptimistic);
-          const existingIds = new Set(existing.map((m: any) => m.id));
-          const newOnly = msgs.filter((m: any) => !existingIds.has(m.id));
-          const optimisticMsgs = prev.filter(m => m.isOptimistic);
-          const unsavedOptimistic = optimisticMsgs.filter(opt =>
-            !msgs.some((dbMsg: any) => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
-          );
-          merged = [...existing, ...newOnly, ...unsavedOptimistic];
+        if (prev.length === 0 && !since) {
+          // Initial load
+          const merged = msgs;
+          messageCacheRef.current[currentId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
+          return merged;
         }
+        // Incremental: add only genuinely new messages
+        const existingIds = new Set(prev.filter(m => !m.isOptimistic).map((m: any) => m.id));
+        const newOnly = msgs.filter((m: any) => !existingIds.has(m.id));
+        if (newOnly.length === 0) return prev; // nothing new, no re-render
 
-        messageCacheRef.current[currentId] = {
-          msgs: merged,
-          lastTimestamp: lastTimestampRef.current
-        };
+        // Remove any optimistic messages that now have a real DB counterpart
+        // Match by tempId stored in the optimistic message
+        const realIds = new Set(msgs.map((m: any) => m.id));
+        const remainingOptimistic = prev.filter(m => {
+          if (!m.isOptimistic) return false;
+          // If this optimistic message has been confirmed via tempId on the real message, remove it
+          if (m.tempId && msgs.some((dbMsg: any) => dbMsg.temp_id === m.tempId)) return false;
+          return true;
+        });
 
+        const merged = [...prev.filter(m => !m.isOptimistic), ...newOnly, ...remainingOptimistic];
+        messageCacheRef.current[currentId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
         return merged;
       });
     }
@@ -163,10 +158,19 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   };
 
   useEffect(() => {
-    // Reset and immediately load when switching conversations
-    lastTimestampRef.current = messageCacheRef.current[activeId ?? '']?.lastTimestamp ?? null;
-    loadMessages();
-    const msgInterval = setInterval(loadMessages, 2000);
+    // On conversation switch: restore from cache or do a full fetch
+    const cached = activeId ? messageCacheRef.current[activeId] : null;
+    if (cached) {
+      setMessages(cached.msgs);
+      lastTimestampRef.current = cached.lastTimestamp;
+      // Immediately poll for anything new since cache
+      loadMessages(cached.lastTimestamp ?? undefined);
+    } else {
+      lastTimestampRef.current = null;
+      setMessages([]);
+      loadMessages();
+    }
+    const msgInterval = setInterval(() => loadMessages(lastTimestampRef.current ?? undefined), 2000);
     return () => clearInterval(msgInterval);
   }, [activeId]);
 
@@ -205,8 +209,10 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
       displayContent = `[Replying to: "${replyingTo.text}"] ${displayContent}`;
     }
 
+    const tempId = `temp-${Date.now()}`;
     const newMsg = { 
-      id: `temp-${Date.now()}`, 
+      id: tempId,
+      tempId,
       sender: 'human_agent', 
       content: displayContent, 
       created_at: new Date().toISOString(),
@@ -220,14 +226,26 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     try {
       const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
       if (!result || result.error) {
-        setMessages(prev => prev.filter(m => m.id !== newMsg.id));
+        setMessages(prev => prev.filter(m => m.id !== tempId));
         alert(`Failed to send message: ${result?.error || 'Unknown error'}`);
       } else {
-        loadMessages();
+        // Replace the optimistic message with the real one from DB
+        setMessages(prev => {
+          const without = prev.filter(m => m.id !== tempId);
+          const realMsg = { ...result, isOptimistic: false };
+          // Avoid duplicate if polling already picked it up
+          if (without.some((m: any) => m.id === realMsg.id)) return without;
+          if (result.created_at && (!lastTimestampRef.current || result.created_at > lastTimestampRef.current)) {
+            lastTimestampRef.current = result.created_at;
+          }
+          const merged = [...without, realMsg];
+          if (activeId) messageCacheRef.current[activeId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
+          return merged;
+        });
       }
     } catch (err: any) {
       console.error("Error sending message:", err);
-      setMessages(prev => prev.filter(m => m.id !== newMsg.id));
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       alert(`Network or Server error: ${err.message || 'Please refresh the page and try again.'}`);
     }
   };
