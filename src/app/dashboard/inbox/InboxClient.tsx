@@ -5,7 +5,6 @@ import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Ph
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
-import { supabaseBrowser } from '@/lib/supabase-browser';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -109,19 +108,9 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     const currentId = activeIdRef.current;
     if (!currentId) return;
 
-    let query = supabaseBrowser
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', currentId)
-      .order('created_at', { ascending: true });
+    const msgs = await getMessages(currentId);
 
-    if (lastTimestampRef.current) {
-      query = query.gt('created_at', lastTimestampRef.current);
-    }
-
-    const { data: msgs, error } = await query;
-
-    if (!error && msgs && msgs.length > 0) {
+    if (msgs && msgs.length > 0) {
       lastTimestampRef.current = msgs[msgs.length - 1].created_at;
 
       setMessages(prev => {
@@ -129,11 +118,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
         if (prev.length === 0) {
           merged = msgs;
         } else {
+          const existing = prev.filter(m => !m.isOptimistic);
+          const existingIds = new Set(existing.map((m: any) => m.id));
+          const newOnly = msgs.filter((m: any) => !existingIds.has(m.id));
           const optimisticMsgs = prev.filter(m => m.isOptimistic);
           const unsavedOptimistic = optimisticMsgs.filter(opt =>
-            !msgs.some(dbMsg => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
+            !msgs.some((dbMsg: any) => dbMsg.content === opt.content && dbMsg.sender === opt.sender)
           );
-          merged = [...prev.filter(m => !m.isOptimistic), ...msgs, ...unsavedOptimistic];
+          merged = [...existing, ...newOnly, ...unsavedOptimistic];
         }
 
         messageCacheRef.current[currentId] = {
