@@ -28,6 +28,15 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (replyingTo) {
+      // Focus the input box when a reply is initiated
+      inputRef.current?.focus();
+    }
+  }, [replyingTo]);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -241,6 +250,7 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
         ) : (
           <>
             <input
+              ref={inputRef}
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
