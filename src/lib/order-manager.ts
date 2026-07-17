@@ -1,0 +1,322 @@
+import { supabaseAdmin } from './supabase-admin';
+import { verifyMerchantPayment } from './payment-verification';
+import { triggerCourierShipment } from './courier';
+
+export interface CreateOrderPayload {
+  product_id: string;
+  variant_name?: string | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  amount?: number;
+}
+
+/**
+ * Parses Gemini response text, intercepts [CREATE_ORDER: ...] tag,
+ * inserts a pending order into the database, and returns the cleaned response.
+ */
+export async function handleOrderCreationIntercept(
+  conversationId: string,
+  shopId: string,
+  aiText: string
+): Promise<{ cleanedText: string; orderId: string | null }> {
+  // Regex to extract [CREATE_ORDER: { ... }]
+  const orderRegex = /\[CREATE_ORDER:\s*(\{[\s\S]*?\})\]/;
+  const match = aiText.match(orderRegex);
+
+  if (!match) {
+    return { cleanedText: aiText, orderId: null };
+  }
+
+  const jsonString = match[1];
+  const cleanedText = aiText.replace(orderRegex, '').trim();
+
+  try {
+    const payload: CreateOrderPayload = JSON.parse(jsonString);
+    console.log(`[ORDER INTERCEPT] parsed order payload for conversation ${conversationId}:`, payload);
+
+    // 1. Fetch product details to verify price & stock
+    const { data: product } = await supabaseAdmin
+      .from('products')
+      .select('price, name, stock_quantity')
+      .eq('id', payload.product_id)
+      .single();
+
+    if (!product) {
+      console.warn(`[ORDER INTERCEPT] Product ID ${payload.product_id} not found.`);
+      return { cleanedText, orderId: null };
+    }
+
+    let finalPrice = product.price;
+    let variantId: string | null = null;
+
+    // 2. Fetch variant details if specified
+    if (payload.variant_name) {
+      const { data: variant } = await supabaseAdmin
+        .from('product_variants')
+        .select('id, price_override, stock')
+        .eq('product_id', payload.product_id)
+        .eq('name', payload.variant_name)
+        .single();
+
+      if (variant) {
+        variantId = variant.id;
+        if (variant.price_override != null) {
+          finalPrice = variant.price_override;
+        }
+      }
+    }
+
+    const deliveryCharge = 100; // Flat delivery charge in BDT
+    const expectedAmount = finalPrice + deliveryCharge;
+
+    // 3. Create the pending order
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        shop_id: shopId,
+        conversation_id: conversationId,
+        customer_name: payload.customer_name,
+        customer_phone: payload.customer_phone,
+        customer_address: payload.customer_address,
+        product_id: payload.product_id,
+        status: 'pending_verification',
+        delivery_charge_amount: deliveryCharge
+      })
+      .select()
+      .single();
+
+    if (orderErr || !order) {
+      console.error('[ORDER INTERCEPT] failed to create order:', orderErr);
+      return { cleanedText, orderId: null };
+    }
+
+    // Attempt to update variant_id or variant_name if columns exist
+    // Using a dynamic update statement that ignores columns errors
+    await supabaseAdmin
+      .from('orders')
+      .update({
+        // @ts-ignore
+        variant_id: variantId,
+        // @ts-ignore
+        variant_name: payload.variant_name
+      })
+      .eq('id', order.id);
+
+    // 4. Fetch the shop's preferred payment verification method
+    const { data: shop } = await supabaseAdmin
+      .from('shops')
+      .select('payment_verification_method')
+      .eq('id', shopId)
+      .single();
+
+    const verificationMethod = shop?.payment_verification_method === 'merchant_api' 
+      ? 'merchant_api' 
+      : (shop?.payment_verification_method === 'notification_app' ? 'notification_app' : 'merchant_api');
+
+    // 5. Create payment verification entry
+    const { error: pvErr } = await supabaseAdmin
+      .from('payment_verifications')
+      .insert({
+        order_id: order.id,
+        method: verificationMethod,
+        expected_amount: expectedAmount,
+        status: 'pending'
+      });
+
+    if (pvErr) {
+      console.error('[ORDER INTERCEPT] failed to create payment verification record:', pvErr);
+    }
+
+    return { cleanedText, orderId: order.id };
+  } catch (error) {
+    console.error('[ORDER INTERCEPT] failed to parse order JSON:', error);
+    return { cleanedText, orderId: null };
+  }
+}
+
+/**
+ * Processes incoming payment claim messages.
+ * If verified, confirms the order, decrements stock, and triggers shipment.
+ * Otherwise, counts attempts, fails/escalates to manual support review, and triggers human takeover.
+ */
+export async function processPaymentVerification(
+  conversationId: string,
+  shopId: string,
+  customerMessage: string
+): Promise<string | null> {
+  // 1. Fetch pending verifications for this conversation
+  const { data: pendingVerifications } = await supabaseAdmin
+    .from('payment_verifications')
+    .select('*, orders!inner(*)')
+    .eq('orders.conversation_id', conversationId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (!pendingVerifications || pendingVerifications.length === 0) {
+    return null; // No pending payment check for this conversation
+  }
+
+  const pv = pendingVerifications[0];
+  const order = pv.orders;
+
+  const cleanMsg = customerMessage.trim().toUpperCase();
+  
+  // Regex to match TrxID or phone digits
+  const trxRegex = /\b(TEST_[A-Z0-9_]+|[A-Z0-9]{8,10})\b/i;
+  const digitsRegex = /\b\d{3,4}\b/;
+
+  let extractedRef = '';
+  const trxMatch = cleanMsg.match(trxRegex);
+  if (trxMatch) {
+    extractedRef = trxMatch[0];
+  } else {
+    const digitsMatch = cleanMsg.match(digitsRegex);
+    if (digitsMatch) {
+      extractedRef = digitsMatch[0];
+    }
+  }
+
+  if (!extractedRef) {
+    const paidKeywords = ['PAID', 'PAY', 'টাকা', 'দিয়েছি', 'পাঠালাম', 'SENT', 'DONE'];
+    if (paidKeywords.some(k => cleanMsg.includes(k))) {
+      return "আপনার পেমেন্টের TrxID (Transaction ID) অথবা যে নম্বর থেকে টাকা পাঠিয়েছেন তার শেষের ৩-৪টি সংখ্যা দিন, যাতে আমরা পেমেন্ট নিশ্চিত করতে পারি।";
+    }
+    return null;
+  }
+
+  // 2. Fetch config
+  const { data: shop } = await supabaseAdmin
+    .from('shops')
+    .select('bkash_config_encrypted, nagad_config_encrypted, payment_verification_method')
+    .eq('id', shopId)
+    .single();
+
+  if (!shop) return null;
+
+  const provider = shop.nagad_config_encrypted && (cleanMsg.includes('NAGAD') || cleanMsg.includes('NGD') || cleanMsg.startsWith('TEST_NAGAD')) ? 'nagad' : 'bkash';
+  const configEncrypted = provider === 'bkash' ? shop.bkash_config_encrypted : shop.nagad_config_encrypted;
+
+  if (!configEncrypted && !extractedRef.startsWith('TEST_')) {
+    console.warn(`[PAYMENT VERIFICATION] No merchant config found for provider ${provider}`);
+    return null;
+  }
+
+  // 3. Verify payment via merchant API (or mock wrapper)
+  const verification = await verifyMerchantPayment(provider, configEncrypted || 'mock_fallback', extractedRef);
+
+  if (verification.success) {
+    if (Math.abs((verification.amount || 0) - pv.expected_amount) <= 1) {
+      // Confirm verification entry
+      await supabaseAdmin
+        .from('payment_verifications')
+        .update({
+          status: 'confirmed',
+          customer_provided_ref: extractedRef,
+          matched_reference: verification.reference || null,
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', pv.id);
+
+      // Confirm order entry
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          status: 'confirmed',
+          bkash_transaction_id: extractedRef,
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+
+      // Atomically decrement stock
+      const { data: stockResult, error: stockErr } = await supabaseAdmin.rpc('decrement_stock', {
+        p_product_id: order.product_id,
+        p_variant_id: order.variant_id || null,
+        p_shop_id: shopId,
+        p_note: `Order ${order.id} verified via ${pv.method}`
+      });
+      if (stockErr) {
+        console.error('[PAYMENT VERIFICATION] stock decrement failed:', stockErr);
+      }
+
+      // Trigger courier shipment booking (Phase 2)
+      await triggerCourierShipment(order.id, shopId);
+
+      return `অনেক ধন্যবাদ! আপনার পেমেন্ট সফলভাবে নিশ্চিত করা হয়েছে। অর্ডারটি কনফার্ম হয়েছে এবং শীঘ্রই ডেলিভারির জন্য পাঠানো হবে।`;
+    } else {
+      console.warn(`[PAYMENT VERIFICATION] amount mismatch. Expected: ${pv.expected_amount}, Found: ${verification.amount}`);
+      
+      await supabaseAdmin
+        .from('payment_verifications')
+        .update({
+          status: 'mismatch',
+          customer_provided_ref: extractedRef
+        })
+        .eq('id', pv.id);
+
+      // Force human takeover
+      await supabaseAdmin
+        .from('conversations')
+        .update({ status: 'human_takeover' })
+        .eq('id', conversationId);
+
+      // Log mismatch in audit logs
+      await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          action: 'payment_mismatch',
+          target_shop_id: shopId,
+          target_conversation_id: conversationId,
+          metadata: {
+            expected: pv.expected_amount,
+            found: verification.amount,
+            trxId: extractedRef
+          }
+        });
+
+      return `দুঃখিত, আমরা পেমেন্ট পেয়েছি তবে টাকার পরিমাণ মেলেনি। সঠিক বিষয়টির জন্য আপনাকে আমাদের একজন কাস্টমার প্রতিনিধির কাছে স্থানান্তর করা হচ্ছে।`;
+    }
+  } else {
+    console.log(`[PAYMENT VERIFICATION] check failed for ref ${extractedRef}: ${verification.error}`);
+
+    // Check if we already tried to verify and failed on this conversation
+    const { count } = await supabaseAdmin
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId)
+      .eq('sender', 'bot')
+      .ilike('content', '%পেমেন্ট পাওয়া যায়নি%');
+
+    const failsCount = count || 0;
+
+    if (failsCount >= 1) {
+      await supabaseAdmin
+        .from('payment_verifications')
+        .update({
+          status: 'failed',
+          customer_provided_ref: extractedRef
+        })
+        .eq('id', pv.id);
+
+      // Force human takeover
+      await supabaseAdmin
+        .from('conversations')
+        .update({ status: 'human_takeover' })
+        .eq('id', conversationId);
+
+      // Log failure escalation in audit logs
+      await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          action: 'payment_failed_escalate',
+          target_shop_id: shopId,
+          target_conversation_id: conversationId,
+          metadata: { trxId: extractedRef, error: verification.error }
+        });
+
+      return `দুঃখিত, পেমেন্টটি এখনও পাওয়া যায়নি। আমরা এই চ্যাটটি আমাদের সাপোর্ট টিমের কাছে হস্তান্তর করছি। একজন প্রতিনিধি দ্রুত পেমেন্ট চেক করে কনফার্ম করবেন।`;
+    } else {
+      return `দুঃখিত, এই TrxID বা নম্বরের কোনো পেমেন্ট পাওয়া যায়নি। দয়া করে আপনার ট্রানজেকশন আইডি (যেমন: 9H7A2K1L9S) অথবা নম্বরটি আবার চেক করে সঠিকভাবে পাঠান।`;
+    }
+  }
+}

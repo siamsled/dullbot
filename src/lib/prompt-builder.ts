@@ -38,6 +38,7 @@ type VariantRow = {
 };
 
 type ProductRow = {
+  id: string;
   name: string;
   description?: string | null;
   price: number;
@@ -133,9 +134,14 @@ export function buildSystemPrompt(
     : `If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, gently redirect them. CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${offTopicMsg}"`;
 
   const highValueThreshold = shop.high_value_order_threshold ?? 0;
-  const orderTakingLine = highValueThreshold > 0
-    ? `- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address. Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.`
-    : '- If a customer wants to place an order, collect: Name, Phone Number, and Delivery Address.';
+  const orderTakingLine = `CRITICAL ORDER CREATION RULE: If a customer decides to buy/order a product, you must collect:
+1. Customer Name
+2. Phone Number
+3. Delivery Address (with city)
+
+Once you have gathered all 3 details AND the user has confirmed their intent to purchase, you MUST append the following tag to the very end of your final response (on a new line):
+[CREATE_ORDER: {"product_id": "<PRODUCT_UUID>", "variant_name": "<VARIANT_NAME_OR_NULL>", "customer_name": "<NAME>", "customer_phone": "<PHONE>", "customer_address": "<ADDRESS>"}]
+Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODUCTS list below, <VARIANT_NAME_OR_NULL> with the name of the variant if selected (or null), and the customer's details. DO NOT output the tag until you have all 3 details. Keep your response short and append this tag quietly at the end. ${highValueThreshold > 0 ? `Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.` : ''}`;
 
   const greetingRule = 'If the customer sends a simple greeting (like hi, hello, assalamu alaikum) with no other content, reply with a simple, warm greeting back. DO NOT pitch products, do not ask about purchase intent, and do not reference collections unprompted. Only bring up products if the customer asks something or shows specific interest.';
 
@@ -194,7 +200,7 @@ function buildProductSection(products: ProductRow[]): string {
 
     if (p.variants && p.variants.length > 0) {
       // Product with variants — emit each variant's stock and price
-      lines.push(`  • ${p.name}${p.description ? ` — ${p.description}` : ''}${p.image_url ? ` (Image URL: ${p.image_url})` : ''}`);
+      lines.push(`  • [ID: ${p.id}] ${p.name}${p.description ? ` — ${p.description}` : ''}${p.image_url ? ` (Image URL: ${p.image_url})` : ''}`);
       for (const v of p.variants) {
         const effectivePrice = v.price_override ?? p.price;
         const stockStr = v.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK';
@@ -207,7 +213,7 @@ function buildProductSection(products: ProductRow[]): string {
         : '';
 
       lines.push(
-        `  • ${p.name}: ${p.price} ${currency}` +
+        `  • [ID: ${p.id}] ${p.name}: ${p.price} ${currency}` +
         (p.description ? ` — ${p.description}` : '') +
         (stockStr ? ` (${stockStr})` : '') +
         (p.sku ? ` [SKU: ${p.sku}]` : '') +

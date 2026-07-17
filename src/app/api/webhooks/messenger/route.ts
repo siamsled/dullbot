@@ -4,6 +4,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { billGeminiCall } from '@/lib/chat-pipeline';
 import { invokeGemini } from '@/lib/gemini';
+import { handleOrderCreationIntercept, processPaymentVerification } from '@/lib/order-manager';
+import { sendMetaMessage } from '@/lib/meta-api';
 import sharp from 'sharp';
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
@@ -198,6 +200,29 @@ export async function POST(request: Request) {
               try {
                 // 3. If bot is active, trigger AI
                 if (conversation.status === 'bot_active') {
+                  // Intercept for payment claims first
+                  const paymentReply = await processPaymentVerification(conversation.id, shop.id, dbContent);
+                  if (paymentReply) {
+                    const { data: insertedMsg } = await supabaseAdmin
+                      .from('messages')
+                      .insert({
+                        conversation_id: conversation.id,
+                        sender: 'bot',
+                        content: paymentReply
+                      })
+                      .select('id')
+                      .single();
+
+                    const metaRes = await sendMetaMessage(senderId, paymentReply, shop.slug);
+                    if (metaRes.success && metaRes.messageId && insertedMsg) {
+                      await supabaseAdmin
+                        .from('messages')
+                        .update({ fb_message_ids: [metaRes.messageId] })
+                        .eq('id', insertedMsg.id);
+                    }
+                    continue;
+                  }
+
                 // Fetch last 10 messages for context, gated by shop's tuning update timestamp
                 let historyQuery = supabaseAdmin
                   .from('messages')
@@ -240,7 +265,7 @@ export async function POST(request: Request) {
                  // Fetch live inventory + example replies
                 const { data: products } = await supabaseAdmin
                   .from('products')
-                  .select('name, description, price, stock_quantity, currency, image_url')
+                  .select('id, name, description, price, stock_quantity, currency, image_url')
                   .eq('shop_id', shop.id)
                   .eq('is_active', true)
                   .eq('draft', false)
@@ -386,6 +411,11 @@ export async function POST(request: Request) {
 
                   let aiResponseText = aiResponse.success ? (aiResponse.text || '') : (aiResponse.error || "Error occurred.");
                   aiResponseText = aiResponseText.trim();
+
+                  if (aiResponse.success && aiResponseText) {
+                    const intercept = await handleOrderCreationIntercept(conversation.id, shop.id, aiResponseText);
+                    aiResponseText = intercept.cleanedText;
+                  }
 
                   if (aiResponseText) {
                     let ticketReason: string | null = null;

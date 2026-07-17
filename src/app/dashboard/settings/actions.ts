@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
+import { encrypt } from '@/lib/encryption';
 
 export async function disconnectFacebook(shopSlug: string = 'dull-store') {
   const { error } = await supabaseAdmin
@@ -21,20 +22,35 @@ export async function disconnectFacebook(shopSlug: string = 'dull-store') {
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
+
 export async function saveSettings(
   shopId: string,
   payload: {
     confirmationTier: 'light' | 'otp_verified' | 'prepay_verified';
     bkashNumber: string;
     agentEnabled: boolean;
+    paymentVerificationMethod: 'none' | 'merchant_api' | 'notification_app';
+    bkashConfig: any;
+    nagadConfig: any;
+    courierProvider: string;
+    courierConfig: any;
   }
 ) {
+  const bkashConfigEncrypted = payload.bkashConfig ? encrypt(JSON.stringify(payload.bkashConfig)) : null;
+  const nagadConfigEncrypted = payload.nagadConfig ? encrypt(JSON.stringify(payload.nagadConfig)) : null;
+  const courierConfigEncrypted = payload.courierConfig ? encrypt(JSON.stringify(payload.courierConfig)) : null;
+
   const { error: shopErr } = await supabaseAdmin
     .from('shops')
     .update({
       confirmation_tier: payload.confirmationTier,
       bkash_number: payload.bkashNumber,
       agent_enabled: payload.agentEnabled,
+      payment_verification_method: payload.paymentVerificationMethod,
+      bkash_config_encrypted: bkashConfigEncrypted,
+      nagad_config_encrypted: nagadConfigEncrypted,
+      courier_provider: payload.courierProvider || null,
+      courier_config_encrypted: courierConfigEncrypted
     })
     .eq('id', shopId);
 

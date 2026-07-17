@@ -20,6 +20,31 @@ export default function SettingsClient({
   );
   const [bkashNumber, setBkashNumber] = useState(shop?.bkash_number ?? '');
 
+  const [paymentVerificationMethod, setPaymentVerificationMethod] = useState<'none' | 'merchant_api' | 'notification_app'>(
+    shop?.payment_verification_method ?? 'none'
+  );
+
+  // bKash Merchant Config
+  const [bkashAppKey, setBkashAppKey] = useState(shop?.bkashConfig?.app_key ?? '');
+  const [bkashAppSecret, setBkashAppSecret] = useState(shop?.bkashConfig?.app_secret ?? '');
+  const [bkashUsername, setBkashUsername] = useState(shop?.bkashConfig?.username ?? '');
+  const [bkashPassword, setBkashPassword] = useState(shop?.bkashConfig?.password ?? '');
+  const [bkashSandbox, setBkashSandbox] = useState(shop?.bkashConfig?.sandbox ?? true);
+
+  // Nagad Merchant Config
+  const [nagadMerchantId, setNagadMerchantId] = useState(shop?.nagadConfig?.merchant_id ?? '');
+  const [nagadPrivateKey, setNagadPrivateKey] = useState(shop?.nagadConfig?.private_key ?? '');
+  const [nagadPublicKey, setNagadPublicKey] = useState(shop?.nagadConfig?.public_key ?? '');
+
+  // Courier Config
+  const [courierProvider, setCourierProvider] = useState(shop?.courier_provider ?? 'none');
+  const [courierClientId, setCourierClientId] = useState(shop?.courierConfig?.client_id ?? '');
+  const [courierClientSecret, setCourierClientSecret] = useState(shop?.courierConfig?.client_secret ?? '');
+  const [courierUsername, setCourierUsername] = useState(shop?.courierConfig?.username ?? '');
+  const [courierPassword, setCourierPassword] = useState(shop?.courierConfig?.password ?? '');
+  const [courierStoreId, setCourierStoreId] = useState(shop?.courierConfig?.store_id ?? '');
+  const [courierApiKey, setCourierApiKey] = useState(shop?.courierConfig?.api_key ?? '');
+
   const handleDisconnect = () => {
     if (confirm("Are you sure you want to disconnect Facebook?")) {
       startTransition(async () => {
@@ -34,6 +59,28 @@ export default function SettingsClient({
         confirmationTier,
         bkashNumber,
         agentEnabled,
+        paymentVerificationMethod,
+        bkashConfig: {
+          app_key: bkashAppKey,
+          app_secret: bkashAppSecret,
+          username: bkashUsername,
+          password: bkashPassword,
+          sandbox: bkashSandbox
+        },
+        nagadConfig: {
+          merchant_id: nagadMerchantId,
+          private_key: nagadPrivateKey,
+          public_key: nagadPublicKey
+        },
+        courierProvider,
+        courierConfig: {
+          client_id: courierClientId,
+          client_secret: courierClientSecret,
+          username: courierUsername,
+          password: courierPassword,
+          store_id: courierStoreId,
+          api_key: courierApiKey
+        }
       });
       if (res.success) {
         alert("Settings saved successfully!");
@@ -183,6 +230,104 @@ export default function SettingsClient({
               placeholder="e.g. 01712345678" 
               className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all placeholder:text-dove/70" 
             />
+          </div>
+
+          {/* Payment Verification Section */}
+          <div className="bg-white rounded-cards shadow-subtle p-8 border border-transparent hover:border-dove/20 transition-colors relative overflow-hidden group md:col-span-2">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-fog rounded-lg text-graphite">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-medium text-ink">Payment Verification Integration</h3>
+            </div>
+            <p className="text-sm text-ash mb-5 leading-relaxed">Select how payment confirmations are processed. Real-time Merchant API verifies transactions on checkout.</p>
+            <select 
+              value={paymentVerificationMethod}
+              onChange={e => setPaymentVerificationMethod(e.target.value as any)}
+              className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all cursor-pointer mb-6"
+            >
+              <option value="none">None (Manual Checking)</option>
+              <option value="merchant_api">Merchant API (bKash/Nagad)</option>
+              <option value="notification_app">Android Notification Companion App</option>
+            </select>
+
+            {paymentVerificationMethod === 'merchant_api' && (
+              <div className="space-y-6 border-t border-dove/10 pt-6">
+                <div>
+                  <h4 className="text-md font-semibold text-ink mb-4">bKash Merchant Settings</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" value={bkashAppKey} onChange={e => setBkashAppKey(e.target.value)} placeholder="bKash App Key" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                    <input type="password" value={bkashAppSecret} onChange={e => setBkashAppSecret(e.target.value)} placeholder="bKash App Secret" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                    <input type="text" value={bkashUsername} onChange={e => setBkashUsername(e.target.value)} placeholder="bKash API Username" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                    <input type="password" value={bkashPassword} onChange={e => setBkashPassword(e.target.value)} placeholder="bKash API Password" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                  </div>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                    <input type="checkbox" checked={bkashSandbox} onChange={e => setBkashSandbox(e.target.checked)} className="rounded text-ink focus:ring-ink" />
+                    <span className="text-xs text-ash">Enable Sandbox Mode</span>
+                  </label>
+                </div>
+                
+                <div className="border-t border-dove/10 pt-6">
+                  <h4 className="text-md font-semibold text-ink mb-4">Nagad Merchant Settings</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <input type="text" value={nagadMerchantId} onChange={e => setNagadMerchantId(e.target.value)} placeholder="Nagad Merchant ID" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                    <textarea value={nagadPrivateKey} onChange={e => setNagadPrivateKey(e.target.value)} placeholder="Nagad Private Key (PEM format)" rows={3} className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                    <textarea value={nagadPublicKey} onChange={e => setNagadPublicKey(e.target.value)} placeholder="Nagad Public Key (PEM format)" rows={3} className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Courier Integration Section */}
+          <div className="bg-white rounded-cards shadow-subtle p-8 border border-transparent hover:border-dove/20 transition-colors relative overflow-hidden group md:col-span-2">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-fog rounded-lg text-graphite">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-medium text-ink">Courier Integration</h3>
+            </div>
+            <p className="text-sm text-ash mb-5 leading-relaxed">Configure courier delivery booking automatically on order confirmation.</p>
+            <select 
+              value={courierProvider}
+              onChange={e => setCourierProvider(e.target.value)}
+              className="w-full bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm focus:border-ink focus:ring-1 focus:ring-ink focus:outline-none transition-all cursor-pointer mb-6"
+            >
+              <option value="none">None (Manual Booking)</option>
+              <option value="pathao">Pathao Courier</option>
+              <option value="steadfast">Steadfast</option>
+              <option value="redx">RedX</option>
+              <option value="paperfly">Paperfly</option>
+              <option value="ecourier">eCourier</option>
+            </select>
+
+            {courierProvider !== 'none' && (
+              <div className="space-y-6 border-t border-dove/10 pt-6">
+                <h4 className="text-md font-semibold text-ink mb-2 capitalize">{courierProvider} Settings</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(courierProvider === 'pathao' || courierProvider === 'ecourier') && (
+                    <>
+                      <input type="text" value={courierClientId} onChange={e => setCourierClientId(e.target.value)} placeholder="Client ID / API Key" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                      <input type="password" value={courierClientSecret} onChange={e => setCourierClientSecret(e.target.value)} placeholder="Client Secret / Secret Key" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                      <input type="text" value={courierUsername} onChange={e => setCourierUsername(e.target.value)} placeholder="Username" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                      <input type="password" value={courierPassword} onChange={e => setCourierPassword(e.target.value)} placeholder="Password" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                      <input type="text" value={courierStoreId} onChange={e => setCourierStoreId(e.target.value)} placeholder="Store / Warehouse ID" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full md:col-span-2" />
+                    </>
+                  )}
+                  {(courierProvider === 'steadfast' || courierProvider === 'redx' || courierProvider === 'paperfly') && (
+                    <>
+                      <input type="text" value={courierApiKey} onChange={e => setCourierApiKey(e.target.value)} placeholder="API Key / Token" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full md:col-span-2" />
+                      {courierProvider === 'paperfly' && (
+                        <>
+                          <input type="text" value={courierUsername} onChange={e => setCourierUsername(e.target.value)} placeholder="Paperfly Username" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                          <input type="password" value={courierPassword} onChange={e => setCourierPassword(e.target.value)} placeholder="Paperfly Password" className="bg-fog border border-transparent rounded-inputs py-3.5 px-4 text-ink text-sm w-full" />
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
         </motion.div>

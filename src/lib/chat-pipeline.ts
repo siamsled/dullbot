@@ -1,6 +1,7 @@
 import { invokeGemini, createPromptCache } from './gemini';
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
+import { handleOrderCreationIntercept, processPaymentVerification } from './order-manager';
 import crypto from 'crypto';
 
 // Gemini Flash Lite pricing (USD per million tokens) as of 2025
@@ -353,6 +354,13 @@ export async function processIncomingMessage(
   // Save incoming customer message
   await persistMessage(conversation.id, 'customer', text);
 
+  // Check for payment verification claims first (before pre-filters or Gemini)
+  const paymentReply = await processPaymentVerification(conversation.id, shop.id, text);
+  if (paymentReply) {
+    await persistMessage(conversation.id, 'bot', paymentReply);
+    return { success: true, message: paymentReply, cacheHit: false, preFilterHit: true, geminiCalled: false };
+  }
+
   // 1. Pre-filter: static patterns (zero cost — no DB, no Gemini)
   const rawText = text.trim();
   const normalizedText = rawText.toLowerCase().replace(/\s+/g, ' ');
@@ -507,7 +515,11 @@ export async function processIncomingMessage(
   const response = await invokeGemini(systemPrompt, text, history, promptCacheRef);
 
   if (response.success && response.text) {
-    const aiMessage = response.text.trim();
+    let aiMessage = response.text.trim();
+
+    // Intercept [CREATE_ORDER: ...] tag
+    const intercept = await handleOrderCreationIntercept(conversation.id, shop.id, aiMessage);
+    aiMessage = intercept.cleanedText;
 
     // Persist bot reply
     await persistMessage(conversation.id, 'bot', aiMessage);
