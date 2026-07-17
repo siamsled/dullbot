@@ -1,0 +1,2 @@
+rootProject.name = "DullBot Companion"
+include ':app'
