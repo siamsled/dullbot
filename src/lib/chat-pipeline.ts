@@ -485,11 +485,18 @@ export async function processIncomingMessage(
   }
 
   // 5. Build dynamic system prompt (with variant-level context)
+  const { data: activeOrders } = await supabaseAdmin
+    .from('orders')
+    .select('*, products(price)')
+    .eq('conversation_id', conversation.id)
+    .order('created_at', { ascending: false });
+
   const systemPrompt = buildSystemPrompt(
     shop,
     persona,
     productsForPrompt ?? [],
-    exampleReplies ?? []
+    exampleReplies ?? [],
+    activeOrders ?? []
   );
 
   // 5.5 Check Gemini Prompt Cache

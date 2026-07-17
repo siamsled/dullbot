@@ -53,7 +53,8 @@ export function buildSystemPrompt(
   shop: ShopTuningSettings,
   persona: AgentPersona | null,
   products: ProductRow[],
-  exampleReplies: { customer_message: string; ideal_reply: string }[] = []
+  exampleReplies: { customer_message: string; ideal_reply: string }[] = [],
+  activeOrders: any[] = []
 ): string {
   const shopName = shop.name ?? 'this shop';
 
@@ -73,7 +74,7 @@ export function buildSystemPrompt(
   const maxDiscount = shop.max_discount_pct ?? 0;
   const discountDeclineMsg = persona?.msg_discount_decline ?? 'Prices are fixed. Do not offer or negotiate discounts under any circumstances.';
   const discountLine = (allowDiscounts && maxDiscount > 0)
-    ? `IMPORTANT: ONLY mention discounts if the customer EXPLICITLY asks for one. If they do, you may offer up to ${maxDiscount}%. Never volunteer a discount unprompted.`
+    ? `IMPORTANT: ONLY mention discounts if the customer EXPLICITLY asks for one. If they ask, you may offer up to ${maxDiscount}%. Never volunteer a discount unprompted.`
     : `IMPORTANT: DO NOT mention anything about discounts UNLESS the customer explicitly asks for one. If they ask, firmly decline by rephrasing this core message naturally: "${discountDeclineMsg}". If they just ask for a price, DO NOT mention discounts.`;
 
   // Escalation
@@ -90,14 +91,13 @@ export function buildSystemPrompt(
     }
   }
 
-  // Confidence fallback
   const confidenceFallback = shop.confidence_fallback ?? 'say_checking';
   const checkMsg = persona?.msg_let_me_check ?? 'say "Let me check on that for you"';
   const fallbackLine =
     confidenceFallback === 'guess' ? 'If unsure, give your best guess while acknowledging uncertainty.'
     : confidenceFallback === 'say_checking' ? `If you are unsure about something, exactly ${checkMsg} and do not fabricate information.`
     : 'If unsure, escalate to a senior colleague immediately rather than guessing. When you do escalate, you MUST append the tag [ESCALATION: UNSURE] at the very end of your response.';
-    
+
   const brevityLine = `CRITICAL RULE - CONCISENESS & REPETITION: NEVER use forced conversational fillers, long paragraphs, or "Shakespearean" fairytales. Keep all responses extremely precise, direct, and short (1-2 sentences max). Do not over-talk. CRITICAL: DO NOT overuse your persona's "Favorite phrases" (like "একটু দেখি" or "এক সেকেন্ড ভাই"). Using them in every single message sounds like a robotic script. Use them very rarely. CRITICAL: DO NOT ask unnecessary follow-up questions (like asking for their budget or specific choices) unless the customer explicitly asks for a recommendation. If they ask a simple question, answer it and STOP. Do not push for a sale.`;
   
   const multiBubbleLine = 'If you need to send multiple messages in a row (e.g., to mimic a real human sending separate short bursts instead of one long paragraph), use ||| to separate them.';
@@ -166,6 +166,19 @@ CHARACTER DETAILS:
 ${persona.full_specification}
 ` : 'Use a professional, neutral tone.';
 
+  let orderHistorySection = '';
+  if (activeOrders && activeOrders.length > 0) {
+    orderHistorySection = `\n\nCUSTOMER ORDER HISTORY:
+The customer has the following order(s) registered. Use this data to answer their tracking, delivery, or confirmation queries immediately:
+${activeOrders.map(o => {
+  const dateStr = new Date(o.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' });
+  const courierInfo = o.courier_tracking_id 
+    ? `(Shipped via ${o.courier_ref || 'Courier'} - Tracking ID: ${o.courier_tracking_id}, Delivery Status: ${o.courier_status || 'consignment_created'})`
+    : '(Fulfillment pending - packing order)';
+  return `- Order placed on ${dateStr}. Status: ${o.status}. Delivery Address: ${o.customer_address}. ${courierInfo}`;
+}).join('\n')}`;
+  }
+
   return `You are an AI sales assistant for ${shopName}.
 
 ${personaSection}
@@ -184,6 +197,7 @@ ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 - ${greetingRule}
 - ${contextRule}
 ${orderTakingLine}
+${orderHistorySection}
 ${customInstructionsSection}
 ${productSection}${examplesSection}`;
 }

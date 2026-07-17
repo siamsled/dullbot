@@ -320,7 +320,13 @@ export async function POST(request: Request) {
                   }
                 }
 
-                let systemPrompt = buildSystemPrompt(shopWithInstructions, persona, products || [], exampleReplies || []);
+                 const { data: activeOrders } = await supabaseAdmin
+                  .from('orders')
+                  .select('*, products(price)')
+                  .eq('conversation_id', conversation.id)
+                  .order('created_at', { ascending: false });
+
+                let systemPrompt = buildSystemPrompt(shopWithInstructions, persona, products || [], exampleReplies || [], activeOrders || []);
 
                 // Customer context
                 systemPrompt += `\n\nCUSTOMER DETAILS:
