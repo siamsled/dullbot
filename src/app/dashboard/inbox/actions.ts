@@ -3,15 +3,16 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'crypto';
 
-export async function getMessages(conversationId: string, since?: string) {
+export async function getMessages(conversationId: string, before?: string, limit: number = 40) {
   let query = supabaseAdmin
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-  if (since) {
-    query = query.gt('created_at', since);
+  if (before) {
+    query = query.lt('created_at', before);
   }
 
   const { data, error } = await query;
@@ -20,7 +21,9 @@ export async function getMessages(conversationId: string, since?: string) {
     console.error('Error fetching messages:', error);
     return [];
   }
-  return data;
+  
+  // Return in chronological order
+  return (data || []).reverse();
 }
 
 export async function sendMessage(

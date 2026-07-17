@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2 } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -40,15 +41,27 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
   const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed'>('all');
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
 
+  // Pagination and Virtualization State
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+
   const handleScroll = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    const { scrollTop: currentScrollTop, scrollHeight, clientHeight } = container;
+    setScrollTop(currentScrollTop);
+
+    const isAtBottom = scrollHeight - currentScrollTop - clientHeight < 50;
 
     setShowScrollBottom(!isAtBottom);
     setShowScrollTop(!isAtBottom && scrollHeight > clientHeight + 100);
+
+    // Trigger scroll-up pagination if scrolled near top (< 100px)
+    if (currentScrollTop < 100 && messages.length >= 30 && hasMoreMessages && !isLoadingMore) {
+      loadMoreMessages();
+    }
   };
 
   const scrollToBottom = () => {
@@ -87,112 +100,188 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
 
   const lastMsgCountRef = useRef(0);
   const isFirstLoadRef = useRef(true);
-  const lastTimestampRef = useRef<string | null>(null);
-  const messageCacheRef = useRef<Record<string, { msgs: any[], lastTimestamp: string | null }>>({});
-  const activeIdRef = useRef<string | null>(activeId);
-  activeIdRef.current = activeId;
+  const messageCacheRef = useRef<Record<string, { msgs: any[], hasMore: boolean }>>({});
 
-
-
-
-  const loadMessages = async (since?: string) => {
-    const currentId = activeIdRef.current;
-    if (!currentId) return;
-
-    const msgs = await getMessages(currentId, since);
-
-    if (msgs && msgs.length > 0) {
-      lastTimestampRef.current = msgs[msgs.length - 1].created_at;
-
-      setMessages(prev => {
-        if (prev.length === 0 && !since) {
-          // Initial load
-          const merged = msgs;
-          messageCacheRef.current[currentId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
-          return merged;
-        }
-        // Incremental: add only genuinely new messages
-        const existingIds = new Set(prev.filter(m => !m.isOptimistic).map((m: any) => m.id));
-        const newOnly = msgs.filter((m: any) => !existingIds.has(m.id));
-        if (newOnly.length === 0) return prev; // nothing new, no re-render
-
-        // Remove any optimistic messages that now have a real DB counterpart
-        // Match by tempId stored in the optimistic message
-        const realIds = new Set(msgs.map((m: any) => m.id));
-        const remainingOptimistic = prev.filter(m => {
-          if (!m.isOptimistic) return false;
-          // If this optimistic message has been confirmed via tempId on the real message, remove it
-          if (m.tempId && msgs.some((dbMsg: any) => dbMsg.temp_id === m.tempId)) return false;
-          return true;
-        });
-
-        const merged = [...prev.filter(m => !m.isOptimistic), ...newOnly, ...remainingOptimistic];
-        messageCacheRef.current[currentId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
-        return merged;
-      });
-    }
-  };
-
-  const loadConversations = async () => {
-    const convs = await getConversations(shop.id);
-    setConversations(prev => {
-      const mergedConvs = convs.map(serverConv => {
-        if (pendingTogglesRef.current.has(serverConv.id)) {
-          const optimisticConv = prev.find(p => p.id === serverConv.id);
-          if (optimisticConv) {
-            return { ...serverConv, status: optimisticConv.status, ticket_reason: optimisticConv.ticket_reason };
-          }
-        }
-        return serverConv;
-      });
-
-      const isIdentical = prev.length === mergedConvs.length &&
-        prev.every((c, i) =>
-          c.id === mergedConvs[i].id &&
-          c.last_message_at === mergedConvs[i].last_message_at &&
-          c.status === mergedConvs[i].status &&
-          c.ticket_reason === mergedConvs[i].ticket_reason
-        );
-      return isIdentical ? prev : mergedConvs;
-    });
-  };
-
+  // 1. Initial Load of Messages on Conversation switch
   useEffect(() => {
-    // On conversation switch: restore from cache or do a full fetch
-    const cached = activeId ? messageCacheRef.current[activeId] : null;
+    if (!activeId) return;
+
+    const cached = messageCacheRef.current[activeId];
     if (cached) {
       setMessages(cached.msgs);
-      lastTimestampRef.current = cached.lastTimestamp;
-      // Immediately poll for anything new since cache
-      loadMessages(cached.lastTimestamp ?? undefined);
+      setHasMoreMessages(cached.hasMore);
+      setIsLoadingMore(false);
+      isFirstLoadRef.current = true;
     } else {
-      lastTimestampRef.current = null;
       setMessages([]);
-      loadMessages();
+      setHasMoreMessages(true);
+      setIsLoadingMore(false);
+      isFirstLoadRef.current = true;
+
+      const fetchInit = async () => {
+        const msgs = await getMessages(activeId, undefined, 40);
+        setMessages(msgs || []);
+        const hasMore = msgs && msgs.length >= 40;
+        setHasMoreMessages(hasMore);
+        messageCacheRef.current[activeId] = { msgs: msgs || [], hasMore };
+
+        // Scroll to bottom immediately
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          }
+        });
+      };
+      fetchInit();
     }
-    const msgInterval = setInterval(() => loadMessages(lastTimestampRef.current ?? undefined), 2000);
-    return () => clearInterval(msgInterval);
   }, [activeId]);
 
-  useEffect(() => {
-    loadConversations();
-    const convInterval = setInterval(loadConversations, 5000);
-    return () => clearInterval(convInterval);
-  }, []);
+  // 2. Paginated scroll-up load of older messages
+  const loadMoreMessages = async () => {
+    if (!activeId || isLoadingMore || !hasMoreMessages || messages.length === 0) return;
+    setIsLoadingMore(true);
 
+    const container = scrollContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    const prevScrollTop = container?.scrollTop || 0;
+
+    const oldestTimestamp = messages[0].created_at;
+    const msgs = await getMessages(activeId, oldestTimestamp, 40);
+
+    const hasMore = msgs && msgs.length >= 40;
+    setHasMoreMessages(hasMore);
+
+    if (msgs && msgs.length > 0) {
+      setMessages(prev => {
+        const merged = [...msgs, ...prev];
+        messageCacheRef.current[activeId] = { msgs: merged, hasMore };
+        return merged;
+      });
+
+      // Maintain scroll position to avoid layout jumps
+      if (container) {
+        requestAnimationFrame(() => {
+          const nextScrollHeight = container.scrollHeight;
+          container.scrollTop = prevScrollTop + (nextScrollHeight - prevScrollHeight);
+        });
+      }
+    }
+    setIsLoadingMore(false);
+  };
+
+  // 3. Realtime message thread subscriber
+  useEffect(() => {
+    if (!activeId) return;
+
+    const channelName = `messages-thread:${activeId}`;
+    const channel = supabaseBrowser
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeId}`
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          setMessages(prev => {
+            // Check if duplicate
+            if (prev.some((m: any) => m.id === newMsg.id)) return prev;
+
+            // Remove corresponding optimistic message if exists
+            const filtered = prev.filter(m => {
+              if (!m.isOptimistic) return true;
+              return m.tempId !== newMsg.temp_id;
+            });
+
+            const merged = [...filtered, newMsg];
+            // Update cache as well
+            const cached = messageCacheRef.current[activeId];
+            messageCacheRef.current[activeId] = {
+              msgs: merged,
+              hasMore: cached ? cached.hasMore : true
+            };
+            return merged;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+    };
+  }, [activeId]);
+
+  // 4. Realtime conversation list updating (bumps and additions)
+  useEffect(() => {
+    const channelName = `conversations-inbox:${shop.id}`;
+    const channel = supabaseBrowser
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+          filter: `shop_id=eq.${shop.id}`
+        },
+        (payload) => {
+          const updatedConv = payload.new as any;
+          setConversations(prev => {
+            const exists = prev.some(c => c.id === updatedConv.id);
+            let nextList = [];
+            if (exists) {
+              nextList = prev.map(c => c.id === updatedConv.id ? { ...c, ...updatedConv } : c);
+            } else {
+              nextList = [updatedConv, ...prev];
+            }
+            // Sort by last message time
+            return nextList.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+    };
+  }, [shop.id]);
+
+  // Scroll bottom on new message insertion if user was already at bottom
   useEffect(() => {
     if (messages.length === 0) return;
 
     if (isFirstLoadRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
       isFirstLoadRef.current = false;
     } else if (messages.length > lastMsgCountRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // Check if user is near bottom
+      const container = scrollContainerRef.current;
+      if (container) {
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 300;
+        if (isNearBottom) {
+          scrollToBottom();
+        }
+      }
     }
     
     lastMsgCountRef.current = messages.length;
     setTimeout(handleScroll, 100);
   }, [messages]);
+
+  // Virtualization constants (estimated average heights)
+  const containerHeight = 600;
+  const estimatedHeight = 85;
+  const visibleCount = Math.ceil(containerHeight / estimatedHeight);
+  const startIndex = Math.max(0, Math.floor(scrollTop / estimatedHeight) - 8);
+  const endIndex = Math.min(messages.length, startIndex + visibleCount + 16);
+
+  const paddingTop = startIndex * estimatedHeight;
+  const paddingBottom = Math.max(0, (messages.length - endIndex) * estimatedHeight);
 
   const handleSend = async (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => {
     if (!text.trim() && !mediaUrl) return;
@@ -235,11 +324,14 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           const realMsg = { ...result, isOptimistic: false };
           // Avoid duplicate if polling already picked it up
           if (without.some((m: any) => m.id === realMsg.id)) return without;
-          if (result.created_at && (!lastTimestampRef.current || result.created_at > lastTimestampRef.current)) {
-            lastTimestampRef.current = result.created_at;
-          }
           const merged = [...without, realMsg];
-          if (activeId) messageCacheRef.current[activeId] = { msgs: merged, lastTimestamp: lastTimestampRef.current };
+          const cached = messageCacheRef.current[activeId];
+          if (activeId) {
+            messageCacheRef.current[activeId] = {
+              msgs: merged,
+              hasMore: cached ? cached.hasMore : true
+            };
+          }
           return merged;
         });
       }
@@ -267,8 +359,6 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
     
     setTimeout(() => {
       pendingTogglesRef.current.delete(targetId);
-      loadMessages();
-      loadConversations();
     }, 2000);
   };
 
@@ -441,146 +531,154 @@ export default function InboxClient({ shop, initialConversations }: { shop: any,
           <div 
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-6 space-y-6"
+            className="flex-1 overflow-y-auto p-6 relative"
           >
+            {isLoadingMore && (
+              <div className="flex justify-center py-2 text-ash text-xs items-center gap-1.5 absolute top-2 left-1/2 -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full shadow-sm border border-dove/20 backdrop-blur-sm z-10">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+              </div>
+            )}
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
             ) : (
-              messages.map((msg, idx) => {
-                const isCustomer = msg.sender === 'customer';
-                const isHumanAgent = msg.sender === 'human_agent';
-                const isLastMsg = idx === messages.length - 1;
-                
-                const { quotedText, actualContent } = extractReplyContext(msg.content);
-                const segments = parseMessageSegments(actualContent);
-                
-                return (
-                  <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                    {/* Reply Button (Hover) - Right side for customer, left for agent */}
-                    {!isCustomer && (
-                      <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
-                        <button 
-                          onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
-                          className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
-                          title="Reply to this message"
-                        >
-                          <Reply className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                    
-                    <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
-                      <div className="flex items-center gap-1.5 mb-1 mx-1">
-                        {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
-                        {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
-                        <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                          {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
-                        </span>
-                        <span className="text-[10px] text-ash">
-                          {formatMessageDate(msg.created_at)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-1 w-full mt-1">
-                        
-                        {quotedText && (() => {
-                          const quotedSegments = parseMessageSegments(quotedText);
-                          const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
-                          const firstTextSegment = quotedSegments.find(s => s.type === 'text');
-                          
-                          return (
-                            <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
-                              <div 
-                                onClick={() => {
-                                  // Find the original message this is replying to
-                                  const target = [...messages].reverse().find(m => extractReplyContext(m.content).actualContent === quotedText);
-                                  if (target) {
-                                    const el = document.getElementById(`message-${target.id}`);
-                                    if (el) {
-                                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                      el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
-                                      setTimeout(() => {
-                                        el.style.backgroundColor = 'transparent';
-                                      }, 1000);
-                                    }
-                                  }
-                                }}
-                                className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${
-                                  isCustomer 
-                                    ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
-                                    : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
-                                }`}
-                              >
-                                <Reply className="w-3 h-3 shrink-0" />
-                                {quotedImageSegment && (
-                                  <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
-                                    <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
-                                  </div>
-                                )}
-                                {firstTextSegment ? (
-                                  <span className="truncate max-w-[150px] italic">
-                                    {firstTextSegment.content}
-                                  </span>
-                                ) : quotedImageSegment ? (
-                                  <span className="italic">Photo</span>
-                                ) : null}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {segments.map((segment, sIdx) => {
-                          const isFirst = sIdx === 0 && !quotedText;
-                          return (
-                            <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                              <div className={`px-4 py-2 text-[15px] ${
-                                isCustomer 
-                                  ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
-                                  : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
-                              }`}>
-                                {segment.type === 'image' ? (
-                                  <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
-                                    <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
-                                  </a>
-                                ) : segment.type === 'audio' ? (
-                                  <div className="py-1">
-                                    <audio src={segment.content} controls className="max-w-full" />
-                                  </div>
-                                ) : (
-                                  segment.content
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Sent status check */}
+              <div style={{ paddingTop: `${paddingTop}px`, paddingBottom: `${paddingBottom}px`, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {messages.slice(startIndex, endIndex).map((msg, sliceIdx) => {
+                  const idx = startIndex + sliceIdx;
+                  const isCustomer = msg.sender === 'customer';
+                  const isHumanAgent = msg.sender === 'human_agent';
+                  const isLastMsg = idx === messages.length - 1;
+                  
+                  const { quotedText, actualContent } = extractReplyContext(msg.content);
+                  const segments = parseMessageSegments(actualContent);
+                  
+                  return (
+                    <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                      {/* Reply Button (Hover) - Right side for customer, left for agent */}
                       {!isCustomer && (
-                        <div className="text-[10px] text-ash/80 mt-1 mx-1 select-none font-medium">
-                          {msg.isOptimistic ? (
-                            <span className="italic text-ash/60">Sending...</span>
-                          ) : (
-                            isLastMsg && <span>Sent</span>
-                          )}
+                        <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
+                          <button 
+                            onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                            className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                            title="Reply to this message"
+                          >
+                            <Reply className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
+                        <div className="flex items-center gap-1.5 mb-1 mx-1">
+                          {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
+                          {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
+                          <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
+                            {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
+                          </span>
+                          <span className="text-[10px] text-ash">
+                            {formatMessageDate(msg.created_at)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1 w-full mt-1">
+                          
+                          {quotedText && (() => {
+                            const quotedSegments = parseMessageSegments(quotedText);
+                            const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
+                            const firstTextSegment = quotedSegments.find(s => s.type === 'text');
+                            
+                            return (
+                              <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
+                                <div 
+                                  onClick={() => {
+                                    // Find the original message this is replying to
+                                    const target = [...messages].reverse().find(m => extractReplyContext(m.content).actualContent === quotedText);
+                                    if (target) {
+                                      const el = document.getElementById(`message-${target.id}`);
+                                      if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
+                                        setTimeout(() => {
+                                          el.style.backgroundColor = 'transparent';
+                                        }, 1000);
+                                      }
+                                    }
+                                  }}
+                                  className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${
+                                    isCustomer 
+                                      ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
+                                      : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
+                                  }`}
+                                >
+                                  <Reply className="w-3 h-3 shrink-0" />
+                                  {quotedImageSegment && (
+                                    <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
+                                      <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
+                                    </div>
+                                  )}
+                                  {firstTextSegment ? (
+                                    <span className="truncate max-w-[150px] italic">
+                                      {firstTextSegment.content}
+                                    </span>
+                                  ) : quotedImageSegment ? (
+                                    <span className="italic">Photo</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })()}
+  
+                          {segments.map((segment, sIdx) => {
+                            const isFirst = sIdx === 0 && !quotedText;
+                            return (
+                              <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                                <div className={`px-4 py-2 text-[15px] ${
+                                  isCustomer 
+                                    ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                    : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                }`}>
+                                  {segment.type === 'image' ? (
+                                    <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
+                                      <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
+                                    </a>
+                                  ) : segment.type === 'audio' ? (
+                                    <div className="py-1">
+                                      <audio src={segment.content} controls className="max-w-full" />
+                                    </div>
+                                  ) : (
+                                    segment.content
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Sent status check */}
+                        {!isCustomer && (
+                          <div className="text-[10px] text-ash/80 mt-1 mx-1 select-none font-medium">
+                            {msg.isOptimistic ? (
+                              <span className="italic text-ash/60">Sending...</span>
+                            ) : (
+                              isLastMsg && <span>Sent</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+  
+                      {/* Reply Button (Hover) - Left side for customer */}
+                      {isCustomer && (
+                        <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pl-2 pb-5">
+                          <button 
+                            onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                            className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                            title="Reply to this message"
+                          >
+                            <Reply className="w-4 h-4 scale-x-[-1]" />
+                          </button>
                         </div>
                       )}
                     </div>
-
-                    {/* Reply Button (Hover) - Left side for customer */}
-                    {isCustomer && (
-                      <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pl-2 pb-5">
-                        <button 
-                          onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
-                          className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
-                          title="Reply to this message"
-                        >
-                          <Reply className="w-4 h-4 scale-x-[-1]" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
             <div ref={messagesEndRef} />
           </div>
