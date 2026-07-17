@@ -4,6 +4,8 @@ import { getConversations } from './actions';
 
 
 
+export const dynamic = 'force-dynamic';
+
 export default async function InboxPage() {
   const shopSlug = 'dull-store';
   

@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import OverviewClient from './OverviewClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardOverview() {
   const shopSlug = 'dull-store';
   const { data: shop, error } = await supabaseAdmin
@@ -11,7 +13,7 @@ export default async function DashboardOverview() {
 
   if (error || !shop) {
     console.error('SUPABASE ERROR IN OVERVIEW PAGE:', error);
-    return <div>Shop not found. Error: {error ? JSON.stringify(error) : 'No data returned'}</div>;
+    return <div>Shop not found.</div>;
   }
 
   // Fetch product count for checklist verification
