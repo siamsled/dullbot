@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
-import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight, Sparkles } from 'lucide-react';
+import { Settings, MessageCircle, Link2, ShieldCheck, CreditCard, ChevronRight, Sparkles, Lock } from 'lucide-react';
 import { disconnectFacebook, saveSettings } from './actions';
 
 export default function SettingsClient({ 
@@ -178,16 +178,22 @@ export default function SettingsClient({
           <p className="text-ash text-sm mb-8 flex-grow leading-relaxed">Let DullBot handle customer queries automatically in the background while you focus on fulfillment.</p>
           
           <div className="flex items-center justify-between mt-auto p-4 bg-fog rounded-inputs">
-            <span className="text-sm font-medium text-ink">Status: {agentEnabled ? 'Active' : 'Paused'}</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={agentEnabled}
-                onChange={e => setAgentEnabled(e.target.checked)} 
-              />
-              <div className="w-11 h-6 bg-dove/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ink"></div>
-            </label>
+            <span className="text-sm font-medium text-ink">Status: {agentEnabled && shop?.onboarding_complete ? 'Active' : 'Paused'}</span>
+            {!shop?.onboarding_complete ? (
+              <span className="text-xs text-rust font-semibold flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5" /> Locked
+              </span>
+            ) : (
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={agentEnabled}
+                  onChange={e => setAgentEnabled(e.target.checked)} 
+                />
+                <div className="w-11 h-6 bg-dove/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ink"></div>
+              </label>
+            )}
           </div>
         </motion.div>
 
