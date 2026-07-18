@@ -17,12 +17,18 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err?.message || 'Connection failed. Please check your internet connection or disable any blocker blocking supabase.co.');
       setLoading(false);
-    } else {
-      router.push('/dashboard');
     }
   };
 

@@ -64,28 +64,34 @@ export default function SignupPage() {
 
     const slug = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Math.random().toString(36).slice(2, 6);
 
-    const { data: authData, error: authErr } = await supabaseBrowser.auth.signUp({ email, password });
-    if (authErr || !authData.user) {
-      setError(authErr?.message || 'Signup failed.');
+    try {
+      const { data: authData, error: authErr } = await supabaseBrowser.auth.signUp({ email, password });
+      if (authErr || !authData.user) {
+        setError(authErr?.message || 'Signup failed.');
+        setLoading(false);
+        return;
+      }
+
+      // Create shop row
+      const { error: shopErr } = await supabaseBrowser.from('shops').insert({
+        owner_id: authData.user.id,
+        name: shopName,
+        slug,
+        credit_balance: 0,
+      });
+
+      if (shopErr) {
+        setError('Account created but shop setup failed. Contact support.');
+        setLoading(false);
+        return;
+      }
+
+      router.push('/dashboard?onboarding=true');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err?.message || 'Connection failed. Please check your internet connection or disable any blocker blocking supabase.co.');
       setLoading(false);
-      return;
     }
-
-    // Create shop row
-    const { error: shopErr } = await supabaseBrowser.from('shops').insert({
-      owner_id: authData.user.id,
-      name: shopName,
-      slug,
-      credit_balance: 0,
-    });
-
-    if (shopErr) {
-      setError('Account created but shop setup failed. Contact support.');
-      setLoading(false);
-      return;
-    }
-
-    router.push('/dashboard?onboarding=true');
   };
 
   const plan = PLANS.find(p => p.id === selectedPlan)!;
