@@ -1,7 +1,8 @@
 import { getCurrentShop } from '@/lib/supabase-admin';
-import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { redirect } from 'next/navigation';
 import OverviewClient from './OverviewClient';
+import { getShopStats } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,9 @@ export default async function DashboardOverview() {
     .select('id', { count: 'exact', head: true })
     .eq('shop_id', shop.id);
 
-  return <OverviewClient shop={shop} productCount={productCount || 0} />;
+  // Fetch real analytics stats
+  const stats = await getShopStats(shop.id);
+
+  return <OverviewClient shop={shop} productCount={productCount || 0} stats={stats} />;
 }
 

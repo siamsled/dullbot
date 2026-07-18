@@ -1,6 +1,8 @@
 import { supabaseAdmin } from './supabase-admin';
 import { verifyMerchantPayment } from './payment-verification';
 import { triggerCourierShipment } from './courier';
+import { extractDistrict } from './analytics';
+
 
 export interface CreateOrderPayload {
   product_id: string;
@@ -71,6 +73,7 @@ export async function handleOrderCreationIntercept(
     const expectedAmount = finalPrice + deliveryCharge;
 
     // 3. Create the pending order
+    const totalAmount = finalPrice + deliveryCharge;
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -79,9 +82,11 @@ export async function handleOrderCreationIntercept(
         customer_name: payload.customer_name,
         customer_phone: payload.customer_phone,
         customer_address: payload.customer_address,
+        customer_district: extractDistrict(payload.customer_address ?? ''),
         product_id: payload.product_id,
         status: 'pending_verification',
-        delivery_charge_amount: deliveryCharge
+        delivery_charge_amount: deliveryCharge,
+        total_amount: totalAmount,
       })
       .select()
       .single();
