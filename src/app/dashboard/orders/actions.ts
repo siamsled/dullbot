@@ -196,7 +196,7 @@ export async function bulkConfirmPayment(orderIds: string[]) {
     const shop = await getCurrentShop();
     if (!shop) throw new Error('Unauthorized: No shop session found.');
 
-    // 1. Confirm all orders that belong to this shop
+    // 1. Confirm all orders that belong to this shop in a single batched update
     const { error: updateErr } = await supabaseAdmin
       .from('orders')
       .update({
@@ -212,34 +212,35 @@ export async function bulkConfirmPayment(orderIds: string[]) {
 
     if (updateErr) throw new Error(updateErr.message);
 
-    // 2. Write history logs and decrement stock for each
-    for (const orderId of orderIds) {
-      await supabaseAdmin
-        .from('order_status_history')
-        .insert({
-          order_id: orderId,
-          status: 'confirmed',
-          note: 'Payment confirmed in batch by merchant.'
-        });
+    // 2. Batch insert status history logs
+    const historyLogs = orderIds.map(orderId => ({
+      order_id: orderId,
+      status: 'confirmed',
+      note: 'Payment confirmed in batch by merchant.'
+    }));
+    await supabaseAdmin.from('order_status_history').insert(historyLogs);
 
-      // Get order details to decrement stock
-      const { data: order } = await supabaseAdmin
-        .from('orders')
-        .select('product_id, variant_id')
-        .eq('id', orderId)
-        .single();
+    // 3. Process stock decrements and courier triggers in parallel
+    const { data: orderDetails } = await supabaseAdmin
+      .from('orders')
+      .select('id, product_id, variant_id')
+      .in('id', orderIds)
+      .eq('shop_id', shop.id);
 
-      if (order) {
-        await supabaseAdmin.rpc('decrement_stock', {
-          p_product_id: order.product_id,
-          p_variant_id: order.variant_id || null,
-          p_shop_id: shop.id,
-          p_note: `Batch payment confirmation for order ${orderId}`
-        });
-
-        // Trigger shipment
-        await triggerCourierShipment(orderId, shop.id);
-      }
+    if (orderDetails && orderDetails.length > 0) {
+      await Promise.all(
+        orderDetails.map(async (order) => {
+          // Decrement stock
+          await supabaseAdmin.rpc('decrement_stock', {
+            p_product_id: order.product_id,
+            p_variant_id: order.variant_id || null,
+            p_shop_id: shop.id,
+            p_note: `Batch payment confirmation for order ${order.id}`
+          });
+          // Trigger courier
+          await triggerCourierShipment(order.id, shop.id);
+        })
+      );
     }
 
     return { success: true };
@@ -254,28 +255,32 @@ export async function bulkDispatchToCourier(orderIds: string[]) {
     const shop = await getCurrentShop();
     if (!shop) throw new Error('Unauthorized: No shop session found.');
 
-    let successCount = 0;
-    let failCount = 0;
+    // 1. Trigger bookings in parallel
+    const results = await Promise.all(
+      orderIds.map(async (orderId) => {
+        const success = await triggerCourierShipment(orderId, shop.id);
+        return { orderId, success };
+      })
+    );
 
-    for (const orderId of orderIds) {
-      const success = await triggerCourierShipment(orderId, shop.id);
-      if (success) {
-        successCount++;
-        await supabaseAdmin
-          .from('orders')
-          .update({ fulfillment_status: 'dispatched' })
-          .eq('id', orderId);
+    const successfulIds = results.filter(r => r.success).map(r => r.orderId);
+    const successCount = successfulIds.length;
+    const failCount = orderIds.length - successCount;
 
-        await supabaseAdmin
-          .from('order_status_history')
-          .insert({
-            order_id: orderId,
-            status: 'dispatched',
-            note: 'Order dispatched in batch to courier service.'
-          });
-      } else {
-        failCount++;
-      }
+    if (successCount > 0) {
+      // 2. Batch update order fulfillment status
+      await supabaseAdmin
+        .from('orders')
+        .update({ fulfillment_status: 'dispatched' })
+        .in('id', successfulIds);
+
+      // 3. Batch insert history logs
+      const historyLogs = successfulIds.map(orderId => ({
+        order_id: orderId,
+        status: 'dispatched',
+        note: 'Order dispatched in batch to courier service.'
+      }));
+      await supabaseAdmin.from('order_status_history').insert(historyLogs);
     }
 
     return { success: true, successCount, failCount };
