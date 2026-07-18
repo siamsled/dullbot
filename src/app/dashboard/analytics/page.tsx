@@ -24,7 +24,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   }
 
   const { range } = await searchParams;
-  const days = Number(range) === 7 ? 7 : Number(range) === 90 ? 90 : 30;
+  const rawRange = Number(range);
+  // 0 = all time (use 3650 days as proxy); default to 30
+  const days = rawRange === 0 ? 3650 : [7, 30, 90].includes(rawRange) ? rawRange : 30;
+  // active value passed to client for button highlight (0 means All Time pill is active)
+  const activeRange = rawRange === 0 ? 0 : days;
 
   const [
     revenueTrend,
@@ -46,7 +50,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <AnalyticsClient
-      range={days}
+      range={activeRange}
+
       revenueTrend={revenueTrend}
       peakTimes={peakTimes}
       customerGrowth={customerGrowth}

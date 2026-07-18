@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend
@@ -52,11 +53,14 @@ export default function AnalyticsClient({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const handleRangeChange = (days: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('range', days.toString());
-    router.push(`/dashboard/analytics?${params.toString()}`);
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('range', days.toString());
+      router.replace(`/dashboard/analytics?${params.toString()}`, { scroll: false });
+    });
   };
 
   const maxPeak = Math.max(...peakTimes.flatMap(row => row), 1);
@@ -70,20 +74,32 @@ export default function AnalyticsClient({
           <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Analytics</h1>
           <p className="text-ash text-sm">Understand your sales performance, customer trends, and conversion channels.</p>
         </div>
-        <div className="flex gap-1.5 bg-fog p-1 rounded-inputs self-start shadow-subtle border border-dove/5">
+        <div className="flex gap-1 bg-fog p-1 rounded-inputs self-start shadow-subtle border border-dove/5">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
               onClick={() => handleRangeChange(d)}
-              className={`px-4 py-2 rounded-buttons text-xs font-semibold transition-all ${
+              disabled={isPending}
+              className={`px-3.5 py-1.5 rounded-buttons text-xs font-semibold transition-all ${
                 range === d
                   ? 'bg-white text-ink shadow-subtle'
-                  : 'text-ash hover:text-ink'
+                  : 'text-ash hover:text-ink disabled:opacity-50'
               }`}
             >
-              {d} Days
+              {d}d
             </button>
           ))}
+          <button
+            onClick={() => handleRangeChange(0)}
+            disabled={isPending}
+            className={`px-3.5 py-1.5 rounded-buttons text-xs font-semibold transition-all ${
+              range === 0
+                ? 'bg-white text-ink shadow-subtle'
+                : 'text-ash hover:text-ink disabled:opacity-50'
+            }`}
+          >
+            All
+          </button>
         </div>
       </div>
 

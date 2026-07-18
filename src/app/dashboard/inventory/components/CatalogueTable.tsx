@@ -93,6 +93,7 @@ export default function CatalogueTable({
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
   const reorderIds = useMemo(() => new Set(reorderCandidates.map(r => r.id)), [reorderCandidates]);
 
   const filtered = useMemo(() => {
@@ -259,83 +260,84 @@ export default function CatalogueTable({
         </div>
       )}
 
-      {/* ── API Sync Card ──────────────────────────────────── */}
-      <div className={`rounded-cards shadow-subtle border p-5 transition-colors ${
-        syncSuccess ? 'bg-green-50 border-green-200' : 'bg-white border-dove/10'
-      }`}>
-        <div className="flex items-center gap-2 mb-1">
-          <Globe className="w-4 h-4 text-graphite" />
-          <h2 className="text-base font-medium text-ink">API Sync Integration</h2>
-          {syncSuccess && (
-            <span className="ml-auto text-xs text-green-700 font-medium">Reloading…</span>
-          )}
-        </div>
-        <p className="text-xs text-ash mb-4">
-          Connect your store&apos;s API to automatically import and update your product catalog. 
-          Use Shopify&apos;s <code className="bg-fog px-1 py-0.5 rounded text-ink font-mono text-[10px]">/products.json</code> endpoint 
-          or connect a custom API that matches our standard schema.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <select 
-            value={syncFormat}
-            onChange={(e) => setSyncFormat(e.target.value)}
-            disabled={syncLoading}
-            className="bg-fog border border-transparent rounded-inputs px-3 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none min-w-[140px] disabled:opacity-60"
-          >
-            <option value="shopify">Shopify API</option>
-            <option value="custom">Custom API</option>
-          </select>
-
-          <input
-            type="url"
-            value={syncUrl}
-            onChange={e => setSyncUrl(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSync()}
-            placeholder={syncFormat === 'shopify' ? "https://your-store.myshopify.com/products.json" : "https://api.your-store.com/inventory"}
-            disabled={syncLoading}
-            className="flex-1 bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove disabled:opacity-60"
-          />
-          <button
-            onClick={handleSync}
-            disabled={syncLoading || !syncUrl.trim()}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-buttons bg-ink text-white text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 shrink-0"
-          >
-            {syncLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-            {syncLoading ? 'Syncing…' : 'Sync Now'}
-          </button>
-        </div>
-
-        {/* Result message */}
-        {syncMsg && !syncLoading && (
-          <div className={`mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm ${
-            syncSuccess
-              ? 'bg-green-100 text-green-800'
-              : 'bg-apricot-wash text-rust'
+      {/* ── API Sync Widget (floating bottom-right) ──────────────────── */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        {/* Expanded popover */}
+        {syncOpen && (
+          <div className={`w-80 rounded-cards shadow-subtle border p-4 transition-colors ${
+            syncSuccess ? 'bg-green-50 border-green-200' : 'bg-white border-dove/10'
           }`}>
-            {syncSuccess
-              ? <Check className="w-4 h-4 shrink-0 mt-0.5" />
-              : <AlertTriangle className="w-3.5 h-3.5 text-rust shrink-0 mt-0.5" />}
-            <span>{syncMsg}</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-graphite" />
+                <span className="text-xs font-semibold text-ink">API Sync</span>
+              </div>
+              <button onClick={() => setSyncOpen(false)} className="p-0.5 text-graphite hover:text-ink transition-colors rounded-full">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <select
+                value={syncFormat}
+                onChange={(e) => setSyncFormat(e.target.value)}
+                disabled={syncLoading}
+                className="w-full bg-fog border border-transparent rounded-inputs px-3 py-2 text-xs text-ink focus:border-ink/20 focus:outline-none disabled:opacity-60"
+              >
+                <option value="shopify">Shopify API</option>
+                <option value="custom">Custom API</option>
+              </select>
+
+              <input
+                type="url"
+                value={syncUrl}
+                onChange={e => setSyncUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSync()}
+                placeholder={syncFormat === 'shopify' ? "https://your-store.myshopify.com/products.json" : "https://api.your-store.com/inventory"}
+                disabled={syncLoading}
+                className="w-full bg-fog border border-transparent rounded-inputs px-3 py-2 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove disabled:opacity-60"
+              />
+
+              <button
+                onClick={handleSync}
+                disabled={syncLoading || !syncUrl.trim()}
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-buttons bg-ink text-white text-xs font-medium hover:bg-black transition-colors disabled:opacity-50"
+              >
+                {syncLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCcw className="w-3.5 h-3.5" />}
+                {syncLoading ? 'Syncing…' : 'Sync Now'}
+              </button>
+            </div>
+
+            {syncMsg && !syncLoading && (
+              <div className={`mt-2 flex items-start gap-1.5 rounded-xl px-2.5 py-2 text-xs ${
+                syncSuccess ? 'bg-green-100 text-green-800' : 'bg-apricot-wash text-rust'
+              }`}>
+                {syncSuccess ? <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" /> : <AlertTriangle className="w-3 h-3 text-rust shrink-0 mt-0.5" />}
+                <span>{syncMsg}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Tips */}
-        {!syncLoading && !syncMsg && (
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-            {[
-              'Direct API connection ensures 100% accuracy',
-              'Syncs product names, prices, images, and categories',
-              'Automatically matches existing items to prevent duplicates',
-              'Safe to re-sync anytime to pull in fresh updates'
-            ].map(tip => (
-              <p key={tip} className="text-xs text-dove flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-dove/40 shrink-0" />
-                {tip}
-              </p>
-            ))}
-          </div>
-        )}
+        {/* Pill toggle button */}
+        <button
+          onClick={() => setSyncOpen(o => !o)}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-buttons shadow-subtle text-xs font-semibold transition-all ${
+            syncSuccess
+              ? 'bg-green-600 text-white hover:bg-green-700'
+              : syncOpen
+                ? 'bg-ink text-white hover:bg-black'
+                : 'bg-white text-ink border border-dove/20 hover:bg-fog hover:border-dove/40'
+          }`}
+        >
+          {syncLoading
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : syncSuccess
+              ? <Check className="w-3.5 h-3.5" />
+              : <RefreshCcw className="w-3.5 h-3.5" />
+          }
+          {syncLoading ? 'Syncing…' : syncSuccess ? 'Synced!' : 'API Sync'}
+        </button>
       </div>
 
       {/* ── Toolbar ─────────────────────────────────────────────────── */}
