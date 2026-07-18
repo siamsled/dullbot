@@ -1,4 +1,4 @@
-import { invokeGemini, createPromptCache } from './gemini';
+import { invokeGemini, createPromptCache, fetchAndCompressImagePart } from './gemini';
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
 import { handleOrderCreationIntercept, processPaymentVerification } from './order-manager';
@@ -136,9 +136,21 @@ Write a very brief factual summary (under 3 sentences) of what the customer want
 
   const activeMessages = chronological.slice(unsummarizedStartIndex).filter(m => m.sender === 'customer' || m.sender === 'bot');
 
-  const formatted = activeMessages.map(m => ({
-    role: m.sender === 'customer' ? 'user' as const : 'model' as const,
-    parts: [{ text: m.content }],
+  const formatted = await Promise.all(activeMessages.map(async m => {
+    if (m.content.startsWith('IMAGE:')) {
+      const url = m.content.replace('IMAGE:', '').trim();
+      const imgPart = await fetchAndCompressImagePart(url);
+      const parts: any[] = [{ text: '[Sent an image]' }];
+      if (imgPart) parts.push(imgPart);
+      return {
+        role: (m.sender === 'customer' ? 'user' as const : 'model' as const),
+        parts
+      };
+    }
+    return {
+      role: (m.sender === 'customer' ? 'user' as const : 'model' as const),
+      parts: [{ text: m.content }],
+    };
   }));
 
   if (summaryText && formatted.length > 0) {
@@ -150,6 +162,7 @@ Write a very brief factual summary (under 3 sentences) of what the customer want
   }
 
   return formatted;
+
 }
 
 async function persistMessage(conversationId: string, sender: 'customer' | 'bot' | 'human_agent', content: string) {

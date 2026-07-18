@@ -3,10 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { billGeminiCall } from '@/lib/chat-pipeline';
-import { invokeGemini } from '@/lib/gemini';
+import { invokeGemini, fetchAndCompressImagePart } from '@/lib/gemini';
 import { handleOrderCreationIntercept, processPaymentVerification } from '@/lib/order-manager';
 import { sendMetaMessage } from '@/lib/meta-api';
 import sharp from 'sharp';
+
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -242,17 +243,26 @@ export async function POST(request: Request) {
                   history.pop();
                 }
                 
-                const historyParts = history.map(msg => {
-                  const textContent = msg.content.startsWith('IMAGE:') 
-                    ? '[Sent an image]' 
-                    : msg.content.startsWith('AUDIO:') 
-                      ? '[Sent a voice message]' 
-                      : msg.content;
+                const historyParts = await Promise.all(history.map(async msg => {
+                  if (msg.content.startsWith('IMAGE:')) {
+                    const url = msg.content.replace('IMAGE:', '').trim();
+                    const imgPart = await fetchAndCompressImagePart(url);
+                    const parts: any[] = [{ text: '[Sent an image]' }];
+                    if (imgPart) parts.push(imgPart);
+                    return {
+                      role: (msg.sender === 'bot' ? 'model' : 'user') as 'user' | 'model',
+                      parts
+                    };
+                  }
+                  const textContent = msg.content.startsWith('AUDIO:') 
+                    ? '[Sent a voice message]' 
+                    : msg.content;
                   return {
                     role: (msg.sender === 'bot' ? 'model' : 'user') as 'user' | 'model',
                     parts: [{ text: textContent }]
                   };
-                });
+                }));
+
 
                 // Fetch custom AI instructions
                 const { data: customInstructions } = await supabaseAdmin

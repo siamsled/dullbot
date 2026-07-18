@@ -1,5 +1,28 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GoogleAICacheManager } from '@google/generative-ai/server';
+import sharp from 'sharp';
+
+export async function fetchAndCompressImagePart(imageUrl: string): Promise<any | null> {
+  try {
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) return null;
+    const buffer = await imgRes.arrayBuffer();
+    const compressedBuffer = await sharp(buffer)
+      .resize({ width: 256, height: 256, fit: 'inside' })
+      .webp({ quality: 80 })
+      .toBuffer();
+    return {
+      inlineData: {
+        data: compressedBuffer.toString('base64'),
+        mimeType: 'image/webp'
+      }
+    };
+  } catch (err) {
+    console.error("Failed to fetch/compress image for Gemini history:", err);
+    return null;
+  }
+}
+
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
