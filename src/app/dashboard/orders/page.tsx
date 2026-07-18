@@ -28,8 +28,9 @@ export default async function OrdersPage() {
       courier_tracking_id, 
       fulfillment_status, 
       internal_note, 
-      order_line_items(*), 
-      order_status_history(*)
+      order_line_items(*, products(image_url)), 
+      order_status_history(*),
+      payment_verifications(*)
     `)
     .eq('shop_id', shop.id)
     .order('created_at', { ascending: false })
@@ -52,10 +53,18 @@ export default async function OrdersPage() {
     courierTrackingId: o.courier_tracking_id ?? null,
     fulfillmentStatus: o.fulfillment_status ?? 'awaiting_dispatch',
     internalNote: o.internal_note ?? '',
-    lineItems: o.order_line_items ?? [],
+    lineItems: (o.order_line_items ?? []).map((li: any) => ({
+      id: li.id,
+      product_id: li.product_id,
+      product_name: li.product_name,
+      quantity: li.quantity,
+      unit_price: li.unit_price,
+      imageUrl: li.products?.image_url ?? null
+    })),
     statusHistory: (o.order_status_history ?? []).sort(
       (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
+    ),
+    paymentVerifications: o.payment_verifications ?? []
   }));
 
   return <OrdersClient shopId={shop.id} orders={orderList} />;

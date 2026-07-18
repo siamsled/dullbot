@@ -49,6 +49,7 @@ type Order = {
   internalNote: string;
   lineItems: LineItem[];
   statusHistory: StatusHistory[];
+  paymentVerifications: any[];
 };
 
 const FULFILLMENT_COLORS: Record<string, { label: string; bg: string; text: string }> = {
@@ -138,7 +139,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               fulfillmentStatus: raw.fulfillment_status ?? 'awaiting_dispatch',
               internalNote: raw.internal_note ?? '',
               lineItems: lineItems ?? [],
-              statusHistory: statusHistory ?? []
+              statusHistory: statusHistory ?? [],
+              paymentVerifications: []
             }, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             const { data: lineItems } = await supabase
@@ -167,7 +169,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 fulfillmentStatus: raw.fulfillment_status ?? o.fulfillmentStatus,
                 internalNote: raw.internal_note ?? '',
                 lineItems: lineItems ?? o.lineItems,
-                statusHistory: statusHistory ?? o.statusHistory
+                statusHistory: statusHistory ?? o.statusHistory,
+                paymentVerifications: o.paymentVerifications ?? []
               } : o
             ));
           }
