@@ -21,11 +21,11 @@ const navItems = [
   { name: 'Playground', href: '/dashboard/sandbox', icon: Sparkles, id: 'nav-sandbox' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [shop, setShop] = useState<any>(null);
+  const [shop, setShop] = useState<any>(initialShop || null);
   
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [isTourDismissed, setIsTourDismissed] = useState(true); // start true to avoid flash
@@ -37,17 +37,21 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
-    const fetchShop = async () => {
-      const { data: shop } = await supabaseBrowser
-        .from('shops')
-        .select('*')
-        .eq('slug', 'dull-store')
-        .single();
-      if (shop) {
-        setShop(shop);
-      }
-    };
-    fetchShop();
+    if (initialShop) {
+      setShop(initialShop);
+    } else {
+      const fetchShop = async () => {
+        const { data: shop } = await supabaseBrowser
+          .from('shops')
+          .select('*')
+          .eq('slug', 'dull-store')
+          .single();
+        if (shop) {
+          setShop(shop);
+        }
+      };
+      fetchShop();
+    }
 
     // Subscribe to changes to update sidebar instantly when they go live
     const channel = supabaseBrowser
