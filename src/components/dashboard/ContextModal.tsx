@@ -84,16 +84,17 @@ export default function ContextModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
             onClick={onClose}
-            className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-ink/45 z-50"
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, x: '-50%', y: '-46%' }}
+            initial={{ opacity: 0, scale: 0.98, x: '-50%', y: '-49%' }}
             animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-            exit={{ opacity: 0, scale: 0.96, x: '-50%', y: '-46%' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            exit={{ opacity: 0, scale: 0.98, x: '-50%', y: '-49%' }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
             className="fixed top-1/2 left-1/2 w-full max-w-[520px] bg-white rounded-cards shadow-xl border border-dove/20 z-50 flex flex-col max-h-[90vh]"
           >
             {/* Header */}
