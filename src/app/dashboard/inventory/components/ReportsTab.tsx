@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { BarChart2, Download, TrendingDown, DollarSign, Package, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+  BarChart2, Download, TrendingDown, DollarSign, Package, AlertTriangle, 
+  Calendar, Award, Star, ShoppingBag, Eye, ArrowRight, Loader2, Search, Sparkles
+} from 'lucide-react';
 import { getSalesByProduct } from '../actions';
 
 const BOM = '\uFEFF';
@@ -20,6 +23,14 @@ interface LowStockProduct {
   stock_quantity: number;
   low_stock_threshold: number;
   price: number;
+}
+
+interface SalesItem {
+  productId: string;
+  name: string;
+  imageUrl: string | null;
+  price: number;
+  unitsSold: number;
 }
 
 interface Props {
@@ -44,11 +55,18 @@ function exportCSV(filename: string, headers: string[], rows: (string | number)[
 export default function ReportsTab({ stats, lowStockProducts }: Props) {
   const today = new Date();
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
   const [startDate, setStartDate] = useState(thirtyDaysAgo.toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(today.toISOString().slice(0, 10));
-  const [salesData, setSalesData] = useState<{ name: string; unitsSold: number; productId: string }[]>([]);
+  const [salesData, setSalesData] = useState<SalesItem[]>([]);
   const [loadingSales, setLoadingSales] = useState(false);
   const [salesLoaded, setSalesLoaded] = useState(false);
+  const [reportSearch, setReportSearch] = useState('');
+
+  // Auto-run report on mount
+  useEffect(() => {
+    fetchSales();
+  }, []);
 
   const fetchSales = async () => {
     setLoadingSales(true);
@@ -57,11 +75,38 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
         new Date(startDate).toISOString(),
         new Date(endDate + 'T23:59:59').toISOString()
       );
-      setSalesData(data);
+      setSalesData(data as any);
       setSalesLoaded(true);
     } finally {
       setLoadingSales(false);
     }
+  };
+
+  const applyPreset = (days: number) => {
+    const end = new Date();
+    let start = new Date();
+    if (days === 0) {
+      // Year to date
+      start = new Date(end.getFullYear(), 0, 1);
+    } else {
+      start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    setStartDate(startStr);
+    setEndDate(endStr);
+    
+    // Trigger fetch instantly using the newly computed dates
+    setLoadingSales(true);
+    getSalesByProduct(
+      new Date(startStr).toISOString(),
+      new Date(endStr + 'T23:59:59').toISOString()
+    ).then(data => {
+      setSalesData(data as any);
+      setSalesLoaded(true);
+    }).finally(() => {
+      setLoadingSales(false);
+    });
   };
 
   const handleExportLowStock = () => {
@@ -81,10 +126,20 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
     if (!salesData.length) return;
     exportCSV(
       `sales-report-${startDate}-to-${endDate}.csv`,
-      ['Product', 'Units Sold'],
-      salesData.map(s => [s.name, s.unitsSold])
+      ['Product', 'Units Sold', 'Unit Price', 'Est. Revenue'],
+      salesData.map(s => [s.name, s.unitsSold, s.price, s.unitsSold * s.price])
     );
   };
+
+  // Filter report results by search term
+  const filteredSales = salesData.filter(s => 
+    s.name.toLowerCase().includes(reportSearch.toLowerCase())
+  );
+
+  // Compute stats aggregates
+  const totalUnits = salesData.reduce((acc, s) => acc + s.unitsSold, 0);
+  const totalEstRevenue = salesData.reduce((acc, s) => acc + (s.unitsSold * s.price), 0);
+  const topProduct = salesData.length > 0 ? salesData[0] : null;
 
   const valueCards = [
     {
@@ -121,7 +176,7 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
     <div className="space-y-8">
       <div className="flex items-center gap-2">
         <BarChart2 className="w-4 h-4 text-graphite" />
-        <h2 className="text-lg font-medium text-ink">Inventory Reports</h2>
+        <h2 className="text-lg font-medium text-ink font-sans">Inventory &amp; Sales Reports</h2>
       </div>
 
       {/* Value Cards */}
@@ -141,14 +196,20 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
         })}
       </div>
 
-      {/* Sales by Product */}
-      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-medium text-ink">Sales by Product</h3>
+      {/* Sales by Product Section */}
+      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dove/10 pb-4">
+          <div>
+            <h3 className="text-base font-semibold text-ink flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-ink" />
+              Sales by Product Performance
+            </h3>
+            <p className="text-xs text-ash mt-0.5">Identify your highest volume and most valuable products</p>
+          </div>
           {salesData.length > 0 && (
             <button
               onClick={handleExportSales}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-buttons border border-dove/30 text-xs text-ash hover:text-ink hover:border-ink/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-buttons border border-dove/30 text-xs text-ash hover:text-ink hover:border-ink/30 transition-colors self-start sm:self-center shrink-0 shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -156,58 +217,173 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-3 items-end mb-5">
-          <div>
-            <label className="block text-xs text-ash mb-1">From</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="bg-fog border border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none"
-            />
+        {/* Filters and Date Pickers */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 bg-fog/50 p-4 rounded-inputs border border-dove/10">
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider">From</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="bg-white border border-dove/30 rounded-inputs px-3 py-2 pr-8 text-xs text-ink focus:border-ink/50 focus:outline-none shadow-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider">To</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="bg-white border border-dove/30 rounded-inputs px-3 py-2 pr-8 text-xs text-ink focus:border-ink/50 focus:outline-none shadow-sm"
+                />
+              </div>
+            </div>
+            <button
+              onClick={fetchSales}
+              disabled={loadingSales}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-buttons bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-50 shadow-subtle shrink-0 h-[34px]"
+            >
+              {loadingSales ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <BarChart2 className="w-3.5 h-3.5" />
+              )}
+              {loadingSales ? 'Running...' : 'Run Report'}
+            </button>
           </div>
-          <div>
-            <label className="block text-xs text-ash mb-1">To</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="bg-fog border border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none"
-            />
+
+          {/* Quick Preset buttons */}
+          <div className="space-y-1.5 lg:text-right">
+            <span className="block text-[10px] font-bold text-graphite uppercase tracking-wider">Quick Presets</span>
+            <div className="flex flex-wrap gap-1 bg-white p-1 rounded-inputs border border-dove/25 shadow-sm inline-flex">
+              {[
+                { label: '7d', days: 7 },
+                { label: '30d', days: 30 },
+                { label: '90d', days: 90 },
+                { label: 'YTD', days: 0 },
+              ].map(preset => (
+                <button
+                  key={preset.label}
+                  onClick={() => applyPreset(preset.days)}
+                  disabled={loadingSales}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-ash hover:text-ink rounded-buttons hover:bg-fog transition-colors disabled:opacity-40"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={fetchSales}
-            disabled={loadingSales}
-            className="flex items-center gap-2 px-4 py-2 rounded-buttons bg-ink text-white text-sm font-medium hover:bg-black transition-colors disabled:opacity-50"
-          >
-            {loadingSales ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <BarChart2 className="w-4 h-4" />
-            )}
-            Run Report
-          </button>
         </div>
 
-        {salesLoaded && (
-          salesData.length === 0 ? (
-            <p className="text-sm text-ash text-center py-8">No sales found in this period.</p>
+        {/* Report Loading State / Aggregate Cards */}
+        {salesLoaded && !loadingSales && salesData.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-fog/30 border border-dove/10 rounded-cards p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-sky-wash/50 flex items-center justify-center shrink-0 text-ink">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-graphite font-bold uppercase tracking-wider block">Total Volume Sold</span>
+                <p className="text-lg font-serif text-ink tracking-tight mt-0.5">{totalUnits} units</p>
+              </div>
+            </div>
+
+            <div className="bg-fog/30 border border-dove/10 rounded-cards p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0 text-green-700">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-graphite font-bold uppercase tracking-wider block">Estimated Gross Revenue</span>
+                <p className="text-lg font-serif text-ink tracking-tight mt-0.5">৳{totalEstRevenue.toLocaleString('en-BD')}</p>
+              </div>
+            </div>
+
+            <div className="bg-fog/30 border border-dove/10 rounded-cards p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-apricot-wash/50 flex items-center justify-center shrink-0 text-rust">
+                <Award className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] text-graphite font-bold uppercase tracking-wider block">Top Performer</span>
+                <p className="text-sm font-semibold text-ink truncate mt-0.5">{topProduct?.name}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Search bar inside report */}
+        {salesLoaded && salesData.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-graphite pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search products within this report..."
+              value={reportSearch}
+              onChange={e => setReportSearch(e.target.value)}
+              className="w-full bg-white border border-dove/25 rounded-inputs pl-9 pr-4 py-2 text-xs text-ink focus:border-ink/50 focus:outline-none placeholder:text-dove shadow-sm"
+            />
+          </div>
+        )}
+
+        {/* Results List */}
+        {loadingSales ? (
+          <div className="h-48 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-graphite" />
+            <span className="text-xs text-graphite">Generating report...</span>
+          </div>
+        ) : salesLoaded ? (
+          filteredSales.length === 0 ? (
+            <p className="text-sm text-ash text-center py-12">No matching products found in this period.</p>
           ) : (
-            <div className="space-y-2">
-              {salesData.map((s, i) => {
+            <div className="space-y-4">
+              {filteredSales.map((s, i) => {
                 const max = salesData[0].unitsSold;
                 const pct = max > 0 ? (s.unitsSold / max) * 100 : 0;
+                
+                // Top 3 style classes
+                const isGold = i === 0;
+                const isSilver = i === 1;
+                const isBronze = i === 2;
+                
+                const badgeColor = isGold ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                                   isSilver ? 'bg-slate-100 border-slate-200 text-slate-700' :
+                                   isBronze ? 'bg-orange-50 border-orange-200 text-orange-700' :
+                                   'bg-fog border-dove/10 text-ash';
+
                 return (
-                  <div key={s.productId} className="flex items-center gap-3">
-                    <span className="text-xs text-dove w-5 text-right shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-ink truncate">{s.name}</span>
-                        <span className="text-sm font-medium text-ink ml-2 shrink-0">{s.unitsSold}</span>
+                  <div key={s.productId} className="flex items-center gap-4 group p-2 hover:bg-fog/30 rounded-cards transition-colors border border-transparent hover:border-dove/5">
+                    {/* Rank Badge */}
+                    <div className={`w-6 h-6 rounded-full border text-[10px] font-bold flex items-center justify-center shrink-0 ${badgeColor}`}>
+                      {i + 1}
+                    </div>
+
+                    {/* Product Thumbnail */}
+                    <div className="w-10 h-10 rounded-images bg-fog border border-dove/10 flex items-center justify-center overflow-hidden shrink-0">
+                      {s.imageUrl ? (
+                        <img src={s.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <Package className="w-4 h-4 text-graphite" />
+                      )}
+                    </div>
+
+                    {/* Performance details & slider */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-ink truncate">{s.name}</p>
+                          <p className="text-[10px] text-graphite font-mono">Unit Price: ৳{s.price.toLocaleString('en-BD')}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-bold text-ink">{s.unitsSold} sold</p>
+                          <p className="text-[10px] text-green-700 font-semibold font-mono">৳{(s.unitsSold * s.price).toLocaleString('en-BD')}</p>
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-fog rounded-full overflow-hidden">
+                      <div className="h-2 bg-fog rounded-full overflow-hidden relative">
                         <div
-                          className="h-full bg-ink/30 rounded-full transition-all duration-500"
+                          className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-ink/30 via-ink/65 to-ink"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -217,12 +393,11 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
               })}
             </div>
           )
-        )}
-
-        {!salesLoaded && (
-          <p className="text-xs text-ash text-center py-6">
-            Select a date range and click Run Report to see sales data.
-          </p>
+        ) : (
+          <div className="h-32 flex flex-col items-center justify-center gap-2 border border-dashed border-dove/20 rounded-inputs p-6 text-center">
+            <Calendar className="w-6 h-6 text-graphite" />
+            <p className="text-xs text-ash">Select dates or quick presets above to display product sales metrics.</p>
+          </div>
         )}
       </div>
 
@@ -230,10 +405,10 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
       {lowStockProducts.length > 0 && (
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-base font-medium text-ink">Low & Out-of-Stock Products</h3>
+            <h3 className="text-base font-medium text-ink">Low &amp; Out-of-Stock Products</h3>
             <button
               onClick={handleExportLowStock}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-buttons border border-dove/30 text-xs text-ash hover:text-ink hover:border-ink/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-buttons border border-dove/30 text-xs text-ash hover:text-ink hover:border-ink/30 transition-colors shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV

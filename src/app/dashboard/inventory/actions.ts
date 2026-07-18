@@ -458,7 +458,7 @@ export async function getSalesByProduct(startDate: string, endDate: string) {
 
   const { data } = await supabaseAdmin
     .from('stock_movements')
-    .select('product_id, quantity_delta, created_at, products(name)')
+    .select('product_id, quantity_delta, created_at, products(name, image_url, price)')
     .eq('shop_id', shopId)
     .eq('change_type', 'order')
     .gte('created_at', startDate)
@@ -468,14 +468,23 @@ export async function getSalesByProduct(startDate: string, endDate: string) {
   if (!data) return [];
 
   // Aggregate by product
-  const map = new Map<string, { name: string; unitsSold: number; productId: string }>();
+  const map = new Map<string, { name: string; imageUrl: string | null; price: number; unitsSold: number; productId: string }>();
   for (const m of data) {
-    const name = (m.products as { name?: string } | null)?.name ?? 'Unknown';
+    const prod = m.products as { name?: string; image_url?: string; price?: number } | null;
+    const name = prod?.name ?? 'Unknown';
+    const imageUrl = prod?.image_url ?? null;
+    const price = prod?.price ?? 0;
     const existing = map.get(m.product_id);
     if (existing) {
       existing.unitsSold += Math.abs(m.quantity_delta);
     } else {
-      map.set(m.product_id, { productId: m.product_id, name, unitsSold: Math.abs(m.quantity_delta) });
+      map.set(m.product_id, { 
+        productId: m.product_id, 
+        name, 
+        imageUrl,
+        price,
+        unitsSold: Math.abs(m.quantity_delta) 
+      });
     }
   }
 
