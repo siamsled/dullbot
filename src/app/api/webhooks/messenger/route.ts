@@ -7,9 +7,41 @@ import { invokeGemini, fetchAndCompressImagePart } from '@/lib/gemini';
 import { handleOrderCreationIntercept, processPaymentVerification } from '@/lib/order-manager';
 import { sendMetaMessage } from '@/lib/meta-api';
 import sharp from 'sharp';
-
+function getRepliedSegment(content: string, fbMessageIds: string[] | null, replyToMid: string): string {
+  if (!fbMessageIds || !fbMessageIds.includes(replyToMid)) {
+    return content;
+  }
+  const idx = fbMessageIds.indexOf(replyToMid);
+  const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
+  const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
+  const chunks = content ? content.split('|||').map(s => s.trim()).filter(Boolean) : [];
+  
+  const segments: { raw: string; isImage: boolean }[] = [];
+  for (const chunk of chunks) {
+    const parts = chunk.split(markdownImageSplitRegex);
+    for (const part of parts) {
+      if (!part) continue;
+      const imgMatch = part.match(markdownImageExtractRegex);
+      if (imgMatch) {
+        segments.push({ raw: part, isImage: true });
+      } else {
+        const trimmedText = part.trim();
+        if (trimmedText) {
+          segments.push({ raw: trimmedText, isImage: false });
+        }
+      }
+    }
+  }
+  
+  if (idx >= 0 && idx < segments.length) {
+    const seg = segments[idx];
+    return seg.isImage ? `[Product Image] ${seg.raw}` : seg.raw;
+  }
+  return content;
+}
 
 const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const webhookProfileCache = new Map<string, { first_name: string; last_name: string; gender?: string }>();
 
@@ -114,15 +146,16 @@ export async function POST(request: Request) {
               if (replyToMid) {
                 const { data: repliedMsg } = await supabaseAdmin
                   .from('messages')
-                  .select('content')
+                  .select('content, fb_message_ids')
                   .contains('fb_message_ids', [replyToMid])
                   .single();
                   
                 if (repliedMsg) {
-                  repliedMsgContent = repliedMsg.content;
-                  dbContent = `[Replying to bot's message: "${repliedMsg.content}"] ${dbContent}`;
+                  repliedMsgContent = getRepliedSegment(repliedMsg.content, repliedMsg.fb_message_ids, replyToMid);
+                  dbContent = `[Replying to bot's message: "${repliedMsgContent}"] ${dbContent}`;
                 }
               }
+
 
               // Deduplicate: Facebook will retry webhooks if they timeout or fail.
               if (webhookEvent.message.mid) {
