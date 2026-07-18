@@ -49,18 +49,19 @@ export default function OverviewClient({ shop: initialShop, productCount }: { sh
 
   const hardRequirementsMet = isClassificationDone && isContextDone && isMetaDone;
 
-  // Soft Requirements
   const isCatalogDone = productCount > 0;
   const isPaymentsDone = shop.bkash_number !== null && shop.payment_verification_method !== 'none';
   const isCourierDone = shop.courier_provider !== null && shop.courier_provider !== 'none';
 
+  const businessType = shop.business_type || 'retail';
+
   const softSteps = [
-    { id: 'catalog', title: 'Add your first product', done: isCatalogDone, link: '/dashboard/inventory', actionLabel: 'Add' },
+    ...(businessType !== 'service' ? [{ id: 'catalog', title: 'Add your first product', done: isCatalogDone, link: '/dashboard/inventory', actionLabel: 'Add' }] : []),
     { id: 'payments', title: 'Set up bKash/Nagad payments', done: isPaymentsDone, link: '/dashboard/settings', actionLabel: 'Set up' },
     { id: 'courier', title: 'Link a courier for automation', done: isCourierDone, link: '/dashboard/settings', actionLabel: 'Set up' },
   ];
   const softStepsDoneCount = softSteps.filter(s => s.done).length;
-  const allSoftDone = softStepsDoneCount === softSteps.length;
+  const allSoftDone = softSteps.length === 0 || softStepsDoneCount === softSteps.length;
 
   // If Business Classification is not completed yet — show the type picker
   if (!isClassificationDone) {

@@ -45,7 +45,7 @@ export async function saveOnboardingProfileAndTone(
     operatingHours: string;
     deliveryAreas: string;
     businessOverview: string;
-    aiInstructions: string;
+    aiInstructions?: string;
     toneTemplate: 'casual' | 'formal' | 'technical' | 'wholesale';
   }
 ) {
@@ -103,7 +103,7 @@ export async function saveOnboardingProfileAndTone(
       operating_hours: payload.operatingHours,
       delivery_areas: payload.deliveryAreas,
       business_overview: payload.businessOverview,
-      ai_instructions: payload.aiInstructions,
+      ...(payload.aiInstructions !== undefined ? { ai_instructions: payload.aiInstructions } : {}),
       persona_id: persona?.id || null,
       onboarding_steps_done: stepsDone,
       // Unlock if hard requirements met

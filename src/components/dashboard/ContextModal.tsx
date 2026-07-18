@@ -12,6 +12,10 @@ const PERSONAS = [
   { id: 'wholesale', label: 'Wholesale & Direct', desc: 'Negotiation-heavy, straight to the point.' },
 ];
 
+const RETAIL_CATEGORIES = ['Fashion', 'Electronics', 'Beauty', 'Food', 'Home goods', 'Other'];
+const SERVICE_CATEGORIES = ['Clinic', 'Salon', 'Tutoring', 'Consulting', 'Other'];
+const WHOLESALE_CATEGORIES = ['Apparel', 'Electronics Component', 'FMCG', 'Industrial Supplies', 'Other'];
+
 export default function ContextModal({
   shop,
   isOpen,
@@ -23,16 +27,24 @@ export default function ContextModal({
   onClose: () => void;
   onSaveSuccess?: (updatedShop: any) => void;
 }) {
+  const businessType = shop.business_type || 'retail';
+
   const [shopName, setShopName] = useState(shop.name || '');
   const [category, setCategory] = useState(shop.category || '');
   const [operatingHours, setOperatingHours] = useState(shop.operating_hours || '');
   const [deliveryAreas, setDeliveryAreas] = useState(shop.delivery_areas || '');
   const [businessOverview, setBusinessOverview] = useState(shop.business_overview || '');
-  const [aiInstructions, setAiInstructions] = useState(shop.ai_instructions || '');
   const [toneTemplate, setToneTemplate] = useState<'casual' | 'formal' | 'technical' | 'wholesale'>(
     shop.tone_template || 'casual'
   );
   const [isSaving, setIsSaving] = useState(false);
+
+  const getCategories = () => {
+    if (businessType === 'service') return SERVICE_CATEGORIES;
+    if (businessType === 'wholesale') return WHOLESALE_CATEGORIES;
+    return RETAIL_CATEGORIES;
+  };
+  const categories = getCategories();
 
   const handleSave = async () => {
     if (!businessOverview.trim()) {
@@ -46,7 +58,6 @@ export default function ContextModal({
       operatingHours,
       deliveryAreas,
       businessOverview,
-      aiInstructions,
       toneTemplate,
     });
 
@@ -61,7 +72,6 @@ export default function ContextModal({
           operating_hours: operatingHours,
           delivery_areas: deliveryAreas,
           business_overview: businessOverview,
-          ai_instructions: aiInstructions,
           tone_template: toneTemplate,
           onboarding_steps_done: [
             ...(shop.onboarding_steps_done || []).filter((s: string) => s !== 'context_form'),
@@ -152,13 +162,16 @@ export default function ContextModal({
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-ash mb-1">Category</label>
-                    <input
-                      type="text"
+                    <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full text-sm border border-dove/25 rounded-lg px-3 py-2 focus:outline-none focus:border-ink transition-colors"
-                      placeholder="e.g. Fashion, Electronics"
-                    />
+                      className="w-full text-sm border border-dove/25 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-ink transition-colors"
+                    >
+                      <option value="" disabled>Select category</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-ash mb-1">Operating Hours</label>
@@ -171,13 +184,19 @@ export default function ContextModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-ash mb-1">Delivery Areas</label>
+                    <label className="block text-xs font-medium text-ash mb-1">
+                      {businessType === 'service' ? 'Service Area' : 'Delivery Areas'}
+                    </label>
                     <input
                       type="text"
                       value={deliveryAreas}
                       onChange={(e) => setDeliveryAreas(e.target.value)}
                       className="w-full text-sm border border-dove/25 rounded-lg px-3 py-2 focus:outline-none focus:border-ink transition-colors"
-                      placeholder="e.g. Dhaka + nationwide courier"
+                      placeholder={
+                        businessType === 'service'
+                          ? 'e.g. Dhaka, Gulshan branch'
+                          : 'e.g. Dhaka + nationwide courier'
+                      }
                     />
                   </div>
                 </div>
@@ -193,7 +212,7 @@ export default function ContextModal({
                 </div>
 
                 {/* Horizontal persona row */}
-                <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {PERSONAS.map((p) => (
                     <button
                       key={p.id}
@@ -209,19 +228,6 @@ export default function ContextModal({
                       <span className="text-[10px] text-ash leading-snug">{p.desc}</span>
                     </button>
                   ))}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-ash mb-1">
-                    Custom Instructions &amp; Rules
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={aiInstructions}
-                    onChange={(e) => setAiInstructions(e.target.value)}
-                    className="w-full text-sm border border-dove/25 rounded-lg px-3 py-2.5 focus:outline-none focus:border-ink resize-none transition-colors"
-                    placeholder="e.g. 'Never offer discounts', 'Delivery takes 3-5 days outside Dhaka', 'No refunds after opening.'"
-                  />
                 </div>
               </section>
             </div>
