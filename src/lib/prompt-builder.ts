@@ -16,6 +16,7 @@ type AgentPersona = {
 
 type ShopTuningSettings = {
   name?: string | null;
+  business_type?: string | null;
   disclosure_mode?: string | null;
   max_discount_pct?: number | null;
   auto_escalate_on_complaint?: boolean | null;
@@ -147,7 +148,9 @@ Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODU
 
   const contextRule = 'CRITICAL RULE - CONTEXT AWARENESS: Always maintain the context of the conversation. If a customer asks a follow-up question (like "price?", "colors?", or "details?") without specifying the product name, ASSUME they are talking about the product that was most recently discussed or pictured in the chat history. Do not ask them which product they mean unless the context is truly ambiguous.';
 
-  const productSection = buildProductSection(products);
+  const productSection = shop.business_type === 'service'
+    ? buildServiceSection(products)
+    : buildProductSection(products);
 
   // Few-shot examples
   const examplesSection = exampleReplies.length > 0
@@ -202,6 +205,24 @@ ${customInstructionsSection}
 ${productSection}${examplesSection}`;
 }
 
+function buildServiceSection(services: ProductRow[]): string {
+  if (!services || services.length === 0) {
+    return 'SERVICES: No services are currently offered.';
+  }
+
+  const lines: string[] = [];
+
+  for (const s of services) {
+    // Check description for duration or parse duration if mapped
+    lines.push(
+      `  • [ID: ${s.id}] ${s.name}: ${s.price} BDT` +
+      (s.description ? ` — ${s.description}` : '')
+    );
+  }
+
+  return `CURRENT SERVICES OFFERED:\n${lines.join('\n')}\n\nIf a customer asks about a service not in the above list, tell them honestly that you only offer what is listed.`;
+}
+
 function buildProductSection(products: ProductRow[]): string {
   if (!products || products.length === 0) {
     return 'PRODUCTS: No products are currently listed in the catalogue.';
@@ -238,3 +259,4 @@ function buildProductSection(products: ProductRow[]): string {
 
   return `CURRENT PRODUCTS:\n${lines.join('\n')}\n\nIf a customer asks about a product not in the above list, tell them honestly that you only carry what is listed. When a customer asks about availability, tell them if it is in stock, but NEVER reveal the exact numerical stock quantity.`;
 }
+

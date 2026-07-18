@@ -410,59 +410,87 @@ export async function processIncomingMessage(
     return { success: true, message: cached.response_text, cacheHit: true, preFilterHit: false, geminiCalled: false };
   }
 
-  // 4. Fetch scoped live inventory (products + variants) for AI context
-  // Extract keywords from user message to perform simple search
-  const keywords = normalizedText.toLowerCase().replace(/[^\\w\\s]/g, '').split(/\\s+/).filter(w => w.length > 2);
+  // 4. Fetch scoped live inventory (products + variants) or services for AI context
+  let productsWithId: any[] = [];
   
-  let productQuery = supabaseAdmin
-    .from('products')
-    .select('id, name, description, price, stock_quantity, currency, sku, image_url')
-    .eq('shop_id', shop.id)
-    .eq('is_active', true)
-    .eq('draft', false)
-    .gt('stock_quantity', 0);
-
-  if (keywords.length > 0) {
-    const orClauses = keywords.map(k => `name.ilike.%${k}%,description.ilike.%${k}%`).join(',');
-    productQuery = productQuery.or(orClauses).limit(10);
+  if (shop.business_type === 'service') {
+    const { data: services } = await supabaseAdmin
+      .from('services')
+      .select('id, name, description, price, duration_minutes, active')
+      .eq('shop_id', shop.id)
+      .eq('active', true)
+      .limit(15);
+      
+    productsWithId = (services || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      description: `${s.description || ''} (Duration: ${s.duration_minutes} minutes)`.trim(),
+      price: s.price,
+      currency: 'BDT',
+      stock_quantity: 1,
+      image_url: null,
+      sku: null
+    }));
   } else {
-    productQuery = productQuery.limit(5); // generic fallback limit
-  }
-
-  let { data: productsWithId } = await productQuery;
-  
-  // If no matches found with keywords, fallback to top 5 products to provide some generic context
-  if ((!productsWithId || productsWithId.length === 0) && keywords.length > 0) {
-    const { data: fallbackProducts } = await supabaseAdmin
+    // Extract keywords from user message to perform simple search
+    const keywords = normalizedText.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+    
+    let productQuery = supabaseAdmin
       .from('products')
       .select('id, name, description, price, stock_quantity, currency, sku, image_url')
       .eq('shop_id', shop.id)
       .eq('is_active', true)
       .eq('draft', false)
-      .gt('stock_quantity', 0)
-      .limit(5);
-    productsWithId = fallbackProducts;
-  }
+      .gt('stock_quantity', 0);
 
-  let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
-
-  if (productsWithId && productsWithId.length > 0) {
-    const ids = productsWithId.map(p => p.id);
-    const { data: allVariants } = await supabaseAdmin
-      .from('product_variants')
-      .select('product_id, name, sku, price_override, stock')
-      .in('product_id', ids)
-      .gt('stock', 0);
-
-    for (const v of allVariants ?? []) {
-      if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-      variantsByProduct[v.product_id].push(v);
+    if (keywords.length > 0) {
+      const orClauses = keywords.map(k => `name.ilike.%${k}%,description.ilike.%${k}%`).join(',');
+      productQuery = productQuery.or(orClauses).limit(10);
+    } else {
+      productQuery = productQuery.limit(5); // generic fallback limit
     }
+
+    let { data: fetchedProducts } = await productQuery;
+    productsWithId = fetchedProducts || [];
+    
+    // If no matches found with keywords, fallback to top 5 products to provide some generic context
+    if (productsWithId.length === 0 && keywords.length > 0) {
+      const { data: fallbackProducts } = await supabaseAdmin
+        .from('products')
+        .select('id, name, description, price, stock_quantity, currency, sku, image_url')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true)
+        .eq('draft', false)
+        .gt('stock_quantity', 0)
+        .limit(5);
+      productsWithId = fallbackProducts || [];
+    }
+
+    let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
+
+    if (productsWithId && productsWithId.length > 0) {
+      const ids = productsWithId.map(p => p.id);
+      const { data: allVariants } = await supabaseAdmin
+        .from('product_variants')
+        .select('product_id, name, sku, price_override, stock')
+        .in('product_id', ids)
+        .gt('stock', 0);
+
+      for (const v of allVariants ?? []) {
+        if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
+        variantsByProduct[v.product_id].push(v);
+      }
+    }
+
+    productsWithId = productsWithId.map(p => ({
+      ...p,
+      variants: variantsByProduct[p.id] ?? [],
+    }));
   }
 
   const productsForPrompt = (productsWithId ?? []).map(p => ({
     ...p,
-    variants: variantsByProduct[p.id] ?? [],
+    variants: p.variants ?? [],
   }));
 
   const { data: exampleReplies } = await supabaseAdmin
