@@ -6,8 +6,7 @@ import {
   ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
 import {
-  TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert,
-  Percent, AlertCircle
+  TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert
 } from 'lucide-react';
 
 interface Props {
@@ -27,11 +26,18 @@ interface Props {
 }
 
 const TOOLTIP_STYLE = {
-  contentStyle: { background: '#ffffff', border: '1px solid #e5e0d8', borderRadius: '12px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
-  labelStyle: { color: '#6b6461', fontSize: '11px', fontWeight: 600 }
+  contentStyle: {
+    background: '#ffffff',
+    border: '1px solid rgba(163, 166, 175, 0.3)', // Dove tint
+    borderRadius: '16px', // Input radius
+    fontSize: '11px',
+    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)',
+    fontFamily: 'var(--font-sohne)',
+  },
+  labelStyle: { color: '#777b86', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' as const }
 };
 
-const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SESSIONS = ['Morning (<12 PM)', 'Afternoon (12-6 PM)', 'Evening (>6 PM)'];
 
 export default function AnalyticsClient({
@@ -53,19 +59,18 @@ export default function AnalyticsClient({
     router.push(`/dashboard/analytics?${params.toString()}`);
   };
 
-  // Find max value in peakTimes for heatmap scaling
   const maxPeak = Math.max(...peakTimes.flatMap(row => row), 1);
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
 
       {/* HEADER & DATE RANGE FILTER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-serif text-ink tracking-tight mb-1">Analytics</h1>
+          <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Analytics</h1>
           <p className="text-ash text-sm">Understand your sales performance, customer trends, and conversion channels.</p>
         </div>
-        <div className="flex gap-1.5 bg-fog p-1 rounded-inputs self-start">
+        <div className="flex gap-1.5 bg-fog p-1 rounded-inputs self-start shadow-subtle border border-dove/5">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
@@ -84,7 +89,7 @@ export default function AnalyticsClient({
 
       {/* REVENUE TREND */}
       <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2.5 mb-5">
           <TrendingUp className="w-4 h-4 text-ink" />
           <div>
             <h3 className="text-sm font-semibold text-ink">Revenue Trend</h3>
@@ -101,15 +106,15 @@ export default function AnalyticsClient({
             <AreaChart data={revenueTrend} margin={{ top: 10, right: 5, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#17191c" stopOpacity={0.08} />
+                  <stop offset="5%" stopColor="#17191c" stopOpacity={0.06} />
                   <stop offset="95%" stopColor="#17191c" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1eeea" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
               <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [`৳${Number(v).toLocaleString()}`, 'Revenue']} />
-              <Area type="monotone" dataKey="revenue" stroke="#17191c" strokeWidth={2} fill="url(#revenueGrad)" />
+              <Area type="monotone" dataKey="revenue" stroke="#17191c" strokeWidth={1.5} fill="url(#revenueGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -120,7 +125,7 @@ export default function AnalyticsClient({
         {/* Heatmap */}
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2.5 mb-5">
               <Clock className="w-4 h-4 text-ink" />
               <div>
                 <h3 className="text-sm font-semibold text-ink">Peak Order Times</h3>
@@ -129,24 +134,24 @@ export default function AnalyticsClient({
             </div>
 
             <div className="overflow-x-auto">
-              <div className="min-w-[420px] grid grid-cols-4 gap-2 pt-2">
+              <div className="min-w-[420px] grid grid-cols-4 gap-2 pt-1">
                 {/* Header row */}
                 <div />
                 {SESSIONS.map((s, idx) => (
-                  <div key={idx} className="text-[10px] font-semibold text-ash text-center truncate">{s}</div>
+                  <div key={idx} className="text-[10px] font-semibold text-graphite text-center truncate">{s}</div>
                 ))}
 
                 {/* Day rows */}
                 {DAYS_OF_WEEK.map((day, dIdx) => (
-                  <>
-                    <div key={`lbl-${day}`} className="text-[10px] font-semibold text-ink flex items-center">{day}</div>
+                  <div key={day} className="contents">
+                    <div className="text-[10px] font-semibold text-ink flex items-center">{day}</div>
                     {SESSIONS.map((_, sIdx) => {
                       const count = peakTimes[dIdx]?.[sIdx] ?? 0;
-                      const opacity = count > 0 ? 0.1 + (count / maxPeak) * 0.9 : 0.02;
+                      const opacity = count > 0 ? 0.08 + (count / maxPeak) * 0.92 : 0.02;
                       return (
                         <div
                           key={`cell-${dIdx}-${sIdx}`}
-                          className="h-10 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold text-ink transition-all hover:scale-105"
+                          className="h-10 rounded-inputs flex items-center justify-center font-mono text-[10px] font-bold text-ink transition-all hover:scale-[1.03]"
                           style={{
                             backgroundColor: `rgba(23, 25, 28, ${opacity})`,
                             border: '1px solid rgba(23, 25, 28, 0.05)'
@@ -157,16 +162,16 @@ export default function AnalyticsClient({
                         </div>
                       );
                     })}
-                  </>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Color scale legend */}
-          <div className="mt-6 flex items-center justify-between text-[10px] text-ash">
+          <div className="mt-6 flex items-center justify-between text-[10px] text-graphite font-semibold">
             <span>Fewer orders</span>
-            <div className="flex-1 mx-3 h-2 rounded bg-gradient-to-r from-ink/10 to-ink" />
+            <div className="flex-1 mx-4 h-1.5 rounded-full bg-gradient-to-r from-ink/5 to-ink" />
             <span>More orders</span>
           </div>
         </div>
@@ -174,7 +179,7 @@ export default function AnalyticsClient({
         {/* Stacked Customer Growth */}
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2.5 mb-5">
               <Users className="w-4 h-4 text-ink" />
               <div>
                 <h3 className="text-sm font-semibold text-ink">Customer Growth</h3>
@@ -190,12 +195,12 @@ export default function AnalyticsClient({
               <ResponsiveContainer width="100%" height={230}>
                 <BarChart data={customerGrowth} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1eeea" vertical={false} />
-                  <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
                   <Tooltip {...TOOLTIP_STYLE} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="new" name="New Customers" stackId="a" fill="#17191c" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="returning" name="Returning" stackId="a" fill="#c4b8b0" radius={[4, 4, 0, 0]} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', fontFamily: 'var(--font-sohne)' }} />
+                  <Bar dataKey="new" name="New Customers" stackId="a" fill="#17191c" barSize={20} />
+                  <Bar dataKey="returning" name="Returning" stackId="a" fill="#fbe1d1" radius={[4, 4, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -207,7 +212,7 @@ export default function AnalyticsClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Regions */}
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2.5 mb-5">
             <MapPin className="w-4 h-4 text-ink" />
             <div>
               <h3 className="text-sm font-semibold text-ink">Top Customer Regions</h3>
@@ -220,10 +225,10 @@ export default function AnalyticsClient({
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={topRegions} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1eeea" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
                 <YAxis dataKey="district" type="category" tick={{ fontSize: 10, fill: '#17191c', fontWeight: 500 }} tickLine={false} axisLine={false} />
                 <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Order Share']} />
-                <Bar dataKey="share" fill="#17191c" radius={[0, 4, 4, 0]} barSize={12} />
+                <Bar dataKey="share" fill="#17191c" radius={[0, 4, 4, 0]} barSize={10} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -231,7 +236,7 @@ export default function AnalyticsClient({
 
         {/* Channel Performance */}
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2.5 mb-5">
             <Share2 className="w-4 h-4 text-ink" />
             <div>
               <h3 className="text-sm font-semibold text-ink">Channel Performance</h3>
@@ -244,10 +249,10 @@ export default function AnalyticsClient({
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={channelPerformance} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1eeea" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
                 <YAxis dataKey="channel" type="category" tick={{ fontSize: 10, fill: '#17191c', fontWeight: 500 }} tickLine={false} axisLine={false} />
                 <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Conv. Rate']} />
-                <Bar dataKey="convRate" fill="#c4b8b0" radius={[0, 4, 4, 0]} barSize={12} />
+                <Bar dataKey="convRate" fill="#fbe1d1" radius={[0, 4, 4, 0]} barSize={10} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -258,7 +263,7 @@ export default function AnalyticsClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Products */}
         <div className="lg:col-span-2 bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2.5 mb-5">
             <Award className="w-4 h-4 text-ink" />
             <div>
               <h3 className="text-sm font-semibold text-ink">Top Products</h3>
@@ -271,10 +276,10 @@ export default function AnalyticsClient({
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={topProducts} layout="vertical" margin={{ top: 5, right: 5, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1eeea" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#8a827e' }} tickLine={false} axisLine={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#777b86' }} tickLine={false} axisLine={false} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: '#17191c', fontWeight: 500 }} tickLine={false} axisLine={false} />
                 <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [`৳${Number(v).toLocaleString()}`, 'Revenue']} />
-                <Bar dataKey="revenue" fill="#17191c" radius={[0, 4, 4, 0]} barSize={12} />
+                <Bar dataKey="revenue" fill="#17191c" radius={[0, 4, 4, 0]} barSize={10} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -283,7 +288,7 @@ export default function AnalyticsClient({
         {/* Payment Verification Tiles */}
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2.5 mb-5">
               <ShieldAlert className="w-4 h-4 text-ink" />
               <div>
                 <h3 className="text-sm font-semibold text-ink">Verification Stats</h3>
@@ -291,35 +296,35 @@ export default function AnalyticsClient({
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-green-50 text-green-700 flex items-center justify-center text-xs font-bold">T1</div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs border border-dove/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-green-50 text-green-700 flex items-center justify-center text-[10px] font-bold border border-green-150">T1</div>
                   <div>
-                    <p className="text-[11px] font-semibold text-ink">Companion App Confirmation</p>
-                    <p className="text-[9px] text-ash">Tier 1 Automatic verification</p>
+                    <p className="text-[11px] font-semibold text-ink leading-tight">Companion App Confirmation</p>
+                    <p className="text-[9px] text-graphite mt-0.5">Tier 1 Automatic verification</p>
                   </div>
                 </div>
                 <span className="font-mono text-xs font-bold text-ink">{paymentStats.tier1Rate}%</span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-bold">T2</div>
+              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs border border-dove/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center text-[10px] font-bold border border-blue-150">T2</div>
                   <div>
-                    <p className="text-[11px] font-semibold text-ink">Merchant API Confirmation</p>
-                    <p className="text-[9px] text-ash">Tier 2 Real-time API query</p>
+                    <p className="text-[11px] font-semibold text-ink leading-tight">Merchant API Confirmation</p>
+                    <p className="text-[9px] text-graphite mt-0.5">Tier 2 Real-time API query</p>
                   </div>
                 </div>
                 <span className="font-mono text-xs font-bold text-ink">{paymentStats.tier2Rate}%</span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-red-50 text-red-700 flex items-center justify-center text-xs font-bold">ERR</div>
+              <div className="flex items-center justify-between p-3.5 bg-fog rounded-inputs border border-dove/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-red-50 text-red-750 flex items-center justify-center text-[10px] font-bold border border-red-150">ERR</div>
                   <div>
-                    <p className="text-[11px] font-semibold text-ink">Mismatch / Escalation Rate</p>
-                    <p className="text-[9px] text-ash">Transferred to manual agent review</p>
+                    <p className="text-[11px] font-semibold text-ink leading-tight">Mismatch / Escalation Rate</p>
+                    <p className="text-[9px] text-graphite mt-0.5">Transferred to manual review</p>
                   </div>
                 </div>
                 <span className="font-mono text-xs font-bold text-rust">{paymentStats.mismatchRate}%</span>

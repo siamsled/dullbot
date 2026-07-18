@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import {
-  Activity, MessageSquareText, Package, Users, AlertCircle, X,
-  CheckCircle2, Plus, ChevronRight, Sparkles, AlertTriangle, ShieldCheck
+  Activity, MessageSquareText, Package, Clock, X,
+  CheckCircle2, Plus, ChevronRight, Sparkles, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
-import { ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { saveBusinessType } from './actions';
 import { ShopStats } from '@/lib/analytics';
 
 const BANNER_DISMISSED_KEY = 'dullbot_setup_banner_dismissed';
 const NUDGE_DISMISSED_KEY = 'dullbot_nudge_widget_dismissed';
 
-const COLORS = ['#1c1917', '#e5e0d8']; // Donut slices: AI-resolved (Neutral dark), Escalated (Neutral light)
+const COLORS = ['#17191c', '#fbe1d1']; // AI Resolved (Ink), Escalated (Apricot Wash)
 
 interface Props {
   shop: any;
@@ -46,13 +46,13 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.05 }
+      transition: { staggerChildren: 0.04 }
     }
   };
 
   const item: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 350, damping: 28 } }
   };
 
   const stepsDone = shop.onboarding_steps_done || [];
@@ -92,17 +92,17 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
     return (
       <div className="min-h-[85vh] flex items-center justify-center p-6 bg-pure-white">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-xl w-full bg-white rounded-cards shadow-subtle border border-dove/10 p-10 flex flex-col items-center text-center"
+          className="max-w-[520px] w-full bg-white rounded-cards shadow-subtle border border-dove/20 p-10 flex flex-col items-center text-center"
         >
-          <span className="w-14 h-14 bg-apricot-wash rounded-full flex items-center justify-center text-rust text-2xl mb-6 shadow-sm">🎯</span>
-          <h1 className="text-3xl font-serif text-ink tracking-tight mb-3">Welcome to DullBot</h1>
+          <span className="w-12 h-12 bg-apricot-wash rounded-full flex items-center justify-center text-rust text-xl mb-6 shadow-sm">🎯</span>
+          <h1 className="text-3xl font-serif text-ink tracking-tight mb-2">Welcome to DullBot</h1>
           <p className="text-ash text-sm mb-8 leading-relaxed">
             Let's get your store set up. First, what kind of business do you run? This helps us configure the right automated checkout flows for your customers.
           </p>
 
-          <div className="grid grid-cols-1 gap-4 w-full">
+          <div className="grid grid-cols-1 gap-3.5 w-full">
             {[
               { id: 'retail', title: 'E-commerce / Retail', desc: 'Manage inventory, variants, shipping, and automated product checkout suggestions.' },
               { id: 'service', title: 'Service-Based', desc: 'Appointments, clinic time slots, or tutoring package schedules.' },
@@ -124,9 +124,9 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                 }}
                 className="flex flex-col items-start p-5 rounded-inputs border border-dove/20 hover:border-ink hover:bg-fog transition-all text-left group"
               >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="font-semibold text-ink group-hover:text-rust transition-colors">{type.title}</span>
-                  <span className="text-xs text-ash group-hover:text-ink font-medium">Select &rarr;</span>
+                <div className="flex items-center justify-between w-full mb-1.5">
+                  <span className="font-semibold text-ink group-hover:text-rust transition-colors text-sm">{type.title}</span>
+                  <span className="text-[10px] text-ash group-hover:text-ink font-bold uppercase tracking-wider">Select &rarr;</span>
                 </div>
                 <p className="text-xs text-ash leading-relaxed">{type.desc}</p>
               </button>
@@ -141,12 +141,12 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const Sparkline = ({ data }: { data: number[] }) => {
     const chartData = data.map((v, i) => ({ day: i, val: v }));
     return (
-      <div className="h-10 w-full mt-2 overflow-hidden">
+      <div className="h-10 w-full mt-3 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 2, bottom: 2, left: 2, right: 2 }}>
             <defs>
               <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#17191c" stopOpacity={0.1} />
+                <stop offset="5%" stopColor="#17191c" stopOpacity={0.06} />
                 <stop offset="95%" stopColor="#17191c" stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -160,27 +160,24 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const hasNeedsAttention = stats.pendingOrders > 0 || stats.paymentMismatches > 0 || stats.lowStockProducts > 0;
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
 
       {/* SETUP WARNING */}
       <AnimatePresence>
         {!hardRequirementsMet && !isBannerDismissed && (
           <motion.div
-            initial={{ opacity: 0, y: -16, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -16, height: 0 }}
-            className="overflow-hidden"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
           >
-            <div className="bg-apricot-wash border border-rust/20 rounded-cards p-4 flex items-start gap-3 relative pr-10">
-              <div className="w-8 h-8 shrink-0 bg-white rounded-full flex items-center justify-center text-rust shadow-sm border border-rust/10 mt-0.5">
-                <AlertCircle className="w-4 h-4" />
+            <div className="bg-apricot-wash border border-rust/15 rounded-cards p-5 flex items-start gap-4 relative pr-12 shadow-subtle">
+              <div className="w-9 h-9 shrink-0 bg-white rounded-full flex items-center justify-center text-rust shadow-subtle border border-rust/10 mt-0.5">
+                <AlertTriangle className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <h3 className="font-serif font-medium text-ink mb-0.5">AI Autopilot is disabled</h3>
-                <p className="text-sm text-ash leading-relaxed">
-                  Complete your{' '}
-                  <strong className="text-ink">Business Context</strong>{' '}
-                  in the sidebar
+                <h3 className="font-serif font-medium text-ink text-base mb-0.5">AI Autopilot is disabled</h3>
+                <p className="text-xs text-ash leading-relaxed">
+                  Complete your <strong className="text-ink">Business Context</strong> in the sidebar
                   {!isMetaDone && (
                     <> and <Link href="/dashboard/settings" className="font-semibold text-rust hover:underline">connect your Facebook Page</Link></>
                   )}{' '}
@@ -189,9 +186,9 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               </div>
               <button
                 onClick={dismissBanner}
-                className="absolute top-3.5 right-3.5 p-1 text-rust/60 hover:text-rust hover:bg-white/60 rounded transition-colors"
+                className="absolute top-4 right-4 p-1 text-rust/60 hover:text-rust hover:bg-white/60 rounded-full transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </motion.div>
@@ -201,25 +198,25 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
       {/* HEADER & INSIGHT CALLOUT */}
       <div className="space-y-4">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-end justify-between"
         >
           <div>
-            <h1 className="text-4xl font-serif text-ink tracking-tight mb-1">Overview</h1>
+            <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Overview</h1>
             <p className="text-ash text-sm">Here's what DullBot has been up to today.</p>
           </div>
         </motion.div>
 
         {/* Insight callout banner */}
         <motion.div
-          initial={{ opacity: 0, y: 5 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-fog border border-dove/20 rounded-inputs px-4 py-3 flex items-center gap-2"
+          className="bg-fog border border-dove/20 rounded-inputs px-5 py-3.5 flex items-center gap-3 shadow-subtle"
         >
           <Sparkles className="w-4 h-4 text-rust shrink-0" />
-          <p className="text-xs font-medium text-ink leading-relaxed">
-            <span className="font-bold text-rust">Weekly Insight:</span> {getInsightCallout()}
+          <p className="text-xs font-semibold text-ink leading-relaxed">
+            <span className="text-rust">Weekly Insight:</span> {getInsightCallout()}
           </p>
         </motion.div>
       </div>
@@ -228,50 +225,44 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
       <AnimatePresence>
         {!isNudgeDismissed && !allSoftDone && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden"
+            exit={{ opacity: 0, y: -12 }}
+            className="bg-white rounded-cards shadow-subtle border border-dove/15 overflow-hidden"
           >
-            {/* Widget header */}
-            <div className="px-5 pt-5 pb-3 flex items-start justify-between">
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-ink text-sm">Finish setting up</h3>
                 <p className="text-xs text-ash mt-0.5">
                   {softStepsDoneCount} of {softSteps.length} optional steps done.{' '}
-                  <span className="text-green-600 font-medium">DullBot is already live.</span>
+                  <span className="text-emerald-600 font-semibold">DullBot is live.</span>
                 </p>
               </div>
               <button
                 onClick={dismissNudge}
-                className="p-1 text-ash hover:text-ink hover:bg-fog rounded transition-colors mt-0.5"
+                className="p-1 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors mt-0.5"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Item list */}
-            <div className="px-5 pb-4 flex flex-col divide-y divide-dove/8">
+            <div className="px-6 pb-4 flex flex-col divide-y divide-dove/10">
               {softSteps.map((step) => (
                 <div key={step.id} className="flex items-center gap-3 py-3">
                   {step.done ? (
                     <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-dashed border-dove/50 shrink-0" />
+                    <div className="w-4 h-4 rounded-full border-2 border-dashed border-dove/40 shrink-0" />
                   )}
-                  <span
-                    className={`flex-1 text-sm ${
-                      step.done ? 'text-ash line-through' : 'text-ink'
-                    }`}
-                  >
+                  <span className={`flex-1 text-sm ${step.done ? 'text-ash line-through' : 'text-ink'}`}>
                     {step.title}
                   </span>
                   {!step.done && (
                     <Link
                       href={step.link}
-                      className="shrink-0 px-3 py-1 text-xs font-medium bg-fog text-ink border border-dove/20 rounded-full hover:bg-dove/15 hover:border-ink transition-colors flex items-center gap-1"
+                      className="shrink-0 px-3.5 py-1 text-xs font-semibold bg-fog text-ink border border-dove/20 rounded-buttons hover:bg-dove/15 hover:border-ink transition-colors flex items-center gap-1 shadow-subtle"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                       {step.actionLabel}
                     </Link>
                   )}
@@ -287,85 +278,41 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
       >
-        {/* Revenue */}
-        <motion.div variants={item} className="bg-white rounded-cards shadow-subtle p-5 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-medium text-ash uppercase tracking-wider">Revenue (7d)</span>
-              <span className="p-1.5 bg-fog text-ink rounded-md"><Package className="w-3.5 h-3.5" /></span>
+        {[
+          { label: 'Revenue (7d)', value: `৳${stats.revenueTotal.toLocaleString()}`, series: stats.revenueSeries, delta: stats.revenueDelta, sub: 'vs last week', icon: Package },
+          { label: 'Orders Captured', value: stats.ordersTotal, series: stats.ordersSeries, delta: stats.ordersDelta, sub: 'vs last week', icon: Package },
+          { label: 'Conversations', value: stats.convsTotal, series: stats.convSeries, delta: stats.convDelta, sub: 'vs last week', icon: MessageSquareText },
+          { label: 'AI Autopilot Rate', value: `${stats.autopilotRate}%`, series: stats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity }
+        ].map((tile, idx) => (
+          <motion.div
+            key={idx}
+            variants={item}
+            className="bg-white rounded-cards shadow-subtle p-6 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex justify-between items-start mb-3">
+                <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider">{tile.label}</span>
+                <span className="p-1.5 bg-fog text-ink rounded-lg"><tile.icon className="w-4 h-4" /></span>
+              </div>
+              <p className="text-[32px] font-serif text-ink tracking-tight font-medium leading-none">{tile.value}</p>
             </div>
-            <p className="text-2xl font-serif font-medium text-ink">৳{stats.revenueTotal.toLocaleString()}</p>
-          </div>
-          <div className="mt-3">
-            <Sparkline data={stats.revenueSeries} />
-            <div className="flex justify-between text-[10px] text-ash mt-1.5">
-              <span className={stats.revenueDelta >= 0 ? 'text-emerald-600 font-semibold' : 'text-rust font-semibold'}>
-                {stats.revenueDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.revenueDelta)}%
-              </span>
-              <span>vs last week</span>
+            <div className="mt-4">
+              <Sparkline data={tile.series} />
+              <div className="flex justify-between text-[10px] text-ash mt-2 font-semibold">
+                {tile.delta !== null ? (
+                  <span className={tile.delta >= 0 ? 'text-emerald-600' : 'text-rust'}>
+                    {tile.delta >= 0 ? '↑' : '↓'} {Math.abs(tile.delta)}%
+                  </span>
+                ) : (
+                  <span className="text-emerald-600">Active</span>
+                )}
+                <span>{tile.sub}</span>
+              </div>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Orders Captured */}
-        <motion.div variants={item} className="bg-white rounded-cards shadow-subtle p-5 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-medium text-ash uppercase tracking-wider">Orders Captured</span>
-              <span className="p-1.5 bg-fog text-ink rounded-md"><Package className="w-3.5 h-3.5" /></span>
-            </div>
-            <p className="text-2xl font-serif font-medium text-ink">{stats.ordersTotal}</p>
-          </div>
-          <div className="mt-3">
-            <Sparkline data={stats.ordersSeries} />
-            <div className="flex justify-between text-[10px] text-ash mt-1.5">
-              <span className={stats.ordersDelta >= 0 ? 'text-emerald-600 font-semibold' : 'text-rust font-semibold'}>
-                {stats.ordersDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.ordersDelta)}%
-              </span>
-              <span>vs last week</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Active Conversations */}
-        <motion.div variants={item} className="bg-white rounded-cards shadow-subtle p-5 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-medium text-ash uppercase tracking-wider">Conversations</span>
-              <span className="p-1.5 bg-fog text-ink rounded-md"><MessageSquareText className="w-3.5 h-3.5" /></span>
-            </div>
-            <p className="text-2xl font-serif font-medium text-ink">{stats.convsTotal}</p>
-          </div>
-          <div className="mt-3">
-            <Sparkline data={stats.convSeries} />
-            <div className="flex justify-between text-[10px] text-ash mt-1.5">
-              <span className={stats.convDelta >= 0 ? 'text-emerald-600 font-semibold' : 'text-rust font-semibold'}>
-                {stats.convDelta >= 0 ? '↑' : '↓'} {Math.abs(stats.convDelta)}%
-              </span>
-              <span>vs last week</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Autopilot Rate */}
-        <motion.div variants={item} className="bg-white rounded-cards shadow-subtle p-5 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-medium text-ash uppercase tracking-wider">AI Autopilot Rate</span>
-              <span className="p-1.5 bg-fog text-ink rounded-md"><Activity className="w-3.5 h-3.5" /></span>
-            </div>
-            <p className="text-2xl font-serif font-medium text-ink">{stats.autopilotRate}%</p>
-          </div>
-          <div className="mt-3">
-            <Sparkline data={stats.autopilotSeries} />
-            <div className="flex justify-between text-[10px] text-ash mt-1.5">
-              <span className="text-emerald-600 font-semibold">Active</span>
-              <span>handling channel traffic</span>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        ))}
       </motion.div>
 
       {/* JOURNEY FUNNEL & AI RESOLUTION */}
@@ -383,12 +330,12 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                 { name: 'Order confirmed',        count: stats.funnelConfirmed,     percent: stats.funnelOrderIntent > 0 ? Math.round((stats.funnelConfirmed / stats.funnelOrderIntent) * 100) : 0 },
                 { name: 'Fulfilled',              count: stats.funnelFulfilled,     percent: stats.funnelConfirmed > 0 ? Math.round((stats.funnelFulfilled / stats.funnelConfirmed) * 100) : 0 },
               ].map((step, idx) => (
-                <div key={idx} className="space-y-1">
+                <div key={idx} className="space-y-1.5">
                   <div className="flex justify-between text-xs font-semibold text-ink">
                     <span>{step.name}</span>
-                    <span className="font-mono">{step.count} ({step.percent}%)</span>
+                    <span className="font-mono text-ash">{step.count} ({step.percent}%)</span>
                   </div>
-                  <div className="w-full bg-fog rounded-full h-3.5 overflow-hidden">
+                  <div className="w-full bg-fog rounded-full h-3 overflow-hidden">
                     <div
                       className="bg-ink h-full rounded-full transition-all duration-500"
                       style={{ width: `${step.percent}%` }}
@@ -415,9 +362,9 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                         { name: 'Resolved by AI', value: stats.aiResolved },
                         { name: 'Human Escalations', value: stats.humanEscalated }
                       ]}
-                      innerRadius={38}
-                      outerRadius={50}
-                      paddingAngle={4}
+                      innerRadius={36}
+                      outerRadius={48}
+                      paddingAngle={3}
                       dataKey="value"
                     >
                       <Cell fill={COLORS[0]} />
@@ -427,23 +374,23 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-lg font-bold text-ink leading-none">{stats.autopilotRate}%</span>
-                  <span className="text-[9px] text-ash font-medium mt-0.5">Autopilot</span>
+                  <span className="text-[9px] text-ash font-bold mt-0.5">Autopilot</span>
                 </div>
               </div>
 
               {/* Custom Legend */}
               <div className="w-full space-y-2 pt-2">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-ink" />
-                    <span className="text-ink font-medium">Autopilot Resolved</span>
+                    <span className="text-ink font-semibold">Autopilot Resolved</span>
                   </div>
                   <span className="font-semibold text-ink font-mono">{stats.aiResolved}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-dove/40" />
-                    <span className="text-ash">Human Takeover</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-apricot-wash border border-rust/10" />
+                    <span className="text-ash font-semibold">Human Takeover</span>
                   </div>
                   <span className="font-semibold text-ash font-mono">{stats.humanEscalated}</span>
                 </div>
@@ -456,40 +403,40 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
       {/* NEEDS ATTENTION */}
       {hasNeedsAttention && (
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2.5 mb-4">
             <AlertTriangle className="w-4 h-4 text-rust shrink-0" />
             <h3 className="text-sm font-semibold text-ink">Needs Attention</h3>
           </div>
           <div className="flex flex-col divide-y divide-dove/10">
             {stats.pendingOrders > 0 && (
               <div className="flex justify-between items-center py-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rust" />
-                  <span className="text-xs text-ink font-medium">{stats.pendingOrders} order{stats.pendingOrders > 1 ? 's' : ''} pending confirmation</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
+                  <span className="text-xs text-ink font-semibold">{stats.pendingOrders} order{stats.pendingOrders > 1 ? 's' : ''} pending confirmation</span>
                 </div>
-                <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5">
+                <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Confirm orders <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
             )}
             {stats.paymentMismatches > 0 && (
               <div className="flex justify-between items-center py-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rust" />
-                  <span className="text-xs text-ink font-medium">{stats.paymentMismatches} payment mismatch{stats.paymentMismatches > 1 ? 'es' : ''} detected</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
+                  <span className="text-xs text-ink font-semibold">{stats.paymentMismatches} payment mismatch{stats.paymentMismatches > 1 ? 'es' : ''} detected</span>
                 </div>
-                <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5">
+                <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Review payments <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
             )}
             {stats.lowStockProducts > 0 && (
               <div className="flex justify-between items-center py-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rust" />
-                  <span className="text-xs text-ink font-medium">{stats.lowStockProducts} product{stats.lowStockProducts > 1 ? 's are' : ' is'} low on stock</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
+                  <span className="text-xs text-ink font-semibold">{stats.lowStockProducts} product{stats.lowStockProducts > 1 ? 's are' : ' is'} low on stock</span>
                 </div>
-                <Link href="/dashboard/inventory" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5">
+                <Link href="/dashboard/inventory" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Update inventory <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
@@ -503,11 +450,11 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-6"
       >
         <motion.div variants={item} className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
-            <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+            <div className="h-10 w-10 bg-sky-wash text-ink rounded-lg flex items-center justify-center mb-4">
               <MessageSquareText className="w-5 h-5" />
             </div>
             <h3 className="text-lg font-serif font-medium text-ink mb-2">Live Inbox</h3>
@@ -515,7 +462,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               Watch DullBot interact with your customers in real-time. Jump in and take over any conversation manually if needed.
             </p>
           </div>
-          <Link href="/dashboard/inbox" className="self-start px-5 py-2.5 bg-fog text-ink font-semibold rounded-buttons hover:bg-dove/20 transition-colors text-xs">
+          <Link href="/dashboard/inbox" className="self-start px-5 py-2.5 bg-fog text-ink font-semibold rounded-buttons border border-dove/20 hover:bg-dove/15 transition-all text-xs shadow-subtle">
             Go to Inbox
           </Link>
         </motion.div>
@@ -530,7 +477,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               Review captured orders, verify payments, and generate invoices or courier consignments with one click.
             </p>
           </div>
-          <Link href="/dashboard/orders" className="self-start px-5 py-2.5 bg-ink text-white font-semibold rounded-buttons hover:bg-black transition-colors text-xs">
+          <Link href="/dashboard/orders" className="self-start px-5 py-2.5 bg-ink text-white font-semibold rounded-buttons hover:bg-black transition-all text-xs shadow-subtle">
             View Orders
           </Link>
         </motion.div>
