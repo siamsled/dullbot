@@ -90,11 +90,11 @@ export default function ContextModal({
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[520px] bg-white rounded-cards shadow-xl border border-dove/20 z-50 flex flex-col max-h-[90vh]"
+            initial={{ opacity: 0, scale: 0.96, x: '-50%', y: '-46%' }}
+            animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+            exit={{ opacity: 0, scale: 0.96, x: '-50%', y: '-46%' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            className="fixed top-1/2 left-1/2 w-full max-w-[520px] bg-white rounded-cards shadow-xl border border-dove/20 z-50 flex flex-col max-h-[90vh]"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-dove/10 shrink-0">

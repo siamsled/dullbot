@@ -148,14 +148,16 @@ export default function TourOverlay({
         <motion.div
           key={`spotlight-${step.targetId}`}
           animate={{
-            top: targetRect.top - 4,
-            left: targetRect.left - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
+            x: targetRect.left - 4,
+            y: targetRect.top - 4,
           }}
-          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
           className="absolute rounded-xl pointer-events-none z-50"
           style={{
+            top: 0,
+            left: 0,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
             border: '2px solid #C0392B',
             boxShadow: '0 0 0 4px rgba(192,57,43,0.18), 0 0 16px 2px rgba(192,57,43,0.12)',
           }}
@@ -164,14 +166,19 @@ export default function TourOverlay({
         {/* Tooltip callout card */}
         <motion.div
           key={`tooltip-${step.id}`}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -8 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            x: tooltipLeft,
+            y: Math.max(8, tooltipTop),
+          }}
+          exit={{ opacity: 0, scale: 0.96 }}
+          transition={{ type: 'spring', stiffness: 240, damping: 24 }}
           className="absolute z-50 w-[280px] bg-white rounded-cards shadow-xl border border-dove/20 p-5 pointer-events-auto flex flex-col gap-3"
           style={{
-            top: Math.max(8, tooltipTop),
-            left: tooltipLeft,
+            top: 0,
+            left: 0,
           }}
         >
           {/* Triangle pointer on left edge */}
