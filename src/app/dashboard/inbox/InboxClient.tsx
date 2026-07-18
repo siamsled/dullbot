@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
@@ -50,6 +50,14 @@ export default function InboxClient({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed'>('all');
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
+
+  // Hard Requirements Check
+  const stepsDone = shop.onboarding_steps_done || [];
+  const isClassificationDone = stepsDone.includes('classification');
+  const isContextDone = stepsDone.includes('context_form');
+  const isMetaDone = shop.meta_page_access_token !== null;
+  const hardRequirementsMet = isClassificationDone && isContextDone && isMetaDone;
 
   // Pagination and Virtualization State
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -384,21 +392,25 @@ export default function InboxClient({
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] gap-4">
       {/* Launch Control Panel Banner redirect */}
-      {!shop.onboarding_complete && (
+      {!hardRequirementsMet && !isBannerDismissed && (
         <div className="bg-apricot-wash border border-rust/10 p-4 rounded-cards flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-rust text-sm">🚀</span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-rust shadow-sm border border-rust/10">
+              <AlertCircle className="w-4 h-4" />
+            </div>
             <div>
-              <h3 className="text-xs font-semibold text-ink">Launch Control Required</h3>
-              <p className="text-[10px] text-ash">AI Autopilot is disabled. Please complete the setup steps to activate it.</p>
+              <h3 className="font-serif font-medium text-ink text-sm">AI Autopilot is disabled</h3>
+              <p className="text-xs text-ash">
+                Complete your <strong className="text-ink">Business Context</strong> in the sidebar and connect your <strong className="text-ink">Facebook Page</strong> in Settings to activate the AI agent.
+              </p>
             </div>
           </div>
-          <Link 
-            href="/dashboard/launch-control" 
-            className="px-4 py-2 bg-ink text-pure-white text-xs font-semibold rounded-buttons hover:bg-black transition-all flex items-center gap-1.5"
+          <button 
+            onClick={() => setIsBannerDismissed(true)}
+            className="p-1.5 text-rust/70 hover:text-rust hover:bg-white/50 rounded-lg transition-colors"
           >
-            Open Launch Control &rarr;
-          </Link>
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -409,7 +421,7 @@ export default function InboxClient({
           <div className="p-4 border-b border-dove/10 bg-white">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-serif text-ink font-medium">Inbox</h2>
-              {!shop.onboarding_complete && (
+              {!hardRequirementsMet && (
                 <span className="px-2.5 py-1 bg-apricot-wash text-rust text-[10px] font-bold rounded-full">
                   Setup Mode
                 </span>

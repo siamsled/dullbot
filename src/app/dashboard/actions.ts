@@ -41,6 +41,10 @@ export async function saveOnboardingProfileAndTone(
   shopId: string,
   payload: {
     name: string;
+    category: string;
+    operatingHours: string;
+    deliveryAreas: string;
+    businessOverview: string;
     aiInstructions: string;
     toneTemplate: 'casual' | 'formal' | 'technical' | 'wholesale';
   }
@@ -69,10 +73,10 @@ export async function saveOnboardingProfileAndTone(
     persona = firstPersona;
   }
 
-  // Fetch current steps
+  // Fetch current shop state to check hard requirements
   const { data: shop, error: getErr } = await supabaseAdmin
     .from('shops')
-    .select('onboarding_steps_done')
+    .select('onboarding_steps_done, meta_page_access_token, agent_enabled, onboarding_complete')
     .eq('id', shopId)
     .single();
 
@@ -81,57 +85,34 @@ export async function saveOnboardingProfileAndTone(
   }
 
   const stepsDone = shop.onboarding_steps_done || [];
-  if (!stepsDone.includes('profile_tone')) {
-    stepsDone.push('profile_tone');
+  if (!stepsDone.includes('context_form')) {
+    stepsDone.push('context_form');
   }
+
+  // Check hard requirements to unlock AI automatically
+  const isClassificationDone = stepsDone.includes('classification');
+  const isContextDone = stepsDone.includes('context_form');
+  const isMetaDone = shop.meta_page_access_token !== null;
+  const hardRequirementsMet = isClassificationDone && isContextDone && isMetaDone;
 
   const { error } = await supabaseAdmin
     .from('shops')
     .update({
       name: payload.name,
+      category: payload.category,
+      operating_hours: payload.operatingHours,
+      delivery_areas: payload.deliveryAreas,
+      business_overview: payload.businessOverview,
       ai_instructions: payload.aiInstructions,
       persona_id: persona?.id || null,
-      onboarding_steps_done: stepsDone
+      onboarding_steps_done: stepsDone,
+      // Unlock if hard requirements met
+      ...(hardRequirementsMet && !shop.onboarding_complete ? { agent_enabled: true, onboarding_complete: true } : {})
     })
     .eq('id', shopId);
 
   if (error) {
     console.error('Failed to save profile and tone:', error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath('/dashboard');
-  return { success: true };
-}
-
-export async function completeOnboarding(shopId: string) {
-  // Fetch current steps
-  const { data: shop, error: getErr } = await supabaseAdmin
-    .from('shops')
-    .select('onboarding_steps_done')
-    .eq('id', shopId)
-    .single();
-
-  if (getErr || !shop) {
-    return { success: false, error: getErr?.message || 'Shop not found' };
-  }
-
-  const stepsDone = shop.onboarding_steps_done || [];
-  if (!stepsDone.includes('go_live')) {
-    stepsDone.push('go_live');
-  }
-
-  const { error } = await supabaseAdmin
-    .from('shops')
-    .update({
-      onboarding_complete: true,
-      agent_enabled: true, // Go live automatically enables the agent
-      onboarding_steps_done: stepsDone
-    })
-    .eq('id', shopId);
-
-  if (error) {
-    console.error('Failed to complete onboarding:', error);
     return { success: false, error: error.message };
   }
 
