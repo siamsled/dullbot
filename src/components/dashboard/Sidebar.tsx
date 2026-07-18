@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
@@ -19,16 +19,53 @@ const navItems = [
   { name: 'Playground', href: '/dashboard/sandbox', icon: Sparkles },
 ];
 
-
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(true);
+
+  useEffect(() => {
+    const fetchShop = async () => {
+      const { data: shop } = await supabaseBrowser
+        .from('shops')
+        .select('onboarding_complete')
+        .eq('slug', 'dull-store')
+        .single();
+      if (shop) {
+        setIsOnboardingComplete(shop.onboarding_complete);
+      }
+    };
+    fetchShop();
+
+    // Subscribe to changes to update sidebar instantly when they go live
+    const channel = supabaseBrowser
+      .channel('sidebar-shop-onboarding')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'shops' },
+        (payload) => {
+          if (payload.new && (payload.new as any).slug === 'dull-store') {
+            setIsOnboardingComplete((payload.new as any).onboarding_complete);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     await supabaseBrowser.auth.signOut();
     router.push('/login');
   };
+
+  const dynamicNavItems = [
+    ...(!isOnboardingComplete ? [{ name: 'Launch Control', href: '/dashboard/launch-control', icon: Sparkles }] : []),
+    ...navItems
+  ];
 
   return (
     <aside className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
@@ -37,7 +74,7 @@ export default function Sidebar() {
         {isCollapsed && <span className="text-2xl font-serif font-bold tracking-tight text-ink w-full text-center">DB</span>}
       </div>
       <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden">
-        {navItems.map((item) => {
+        {dynamicNavItems.map((item) => {
           // Exact match for /dashboard, prefix match for others
           const isActive = item.href === '/dashboard' 
             ? pathname === item.href 

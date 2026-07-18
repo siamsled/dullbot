@@ -7,7 +7,6 @@ import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFace
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { saveBusinessType, saveOnboardingProfileAndTone, completeOnboarding } from '../actions';
 
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
@@ -57,17 +56,6 @@ export default function InboxClient({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
 
-  // Launch Control Checklist Widget States
-  const [showLaunchControl, setShowLaunchControl] = useState(!shop.onboarding_complete);
-  const [activeStep, setActiveStep] = useState<number | null>(null);
-  const [shopName, setShopName] = useState(shop.name || '');
-  const [aiInstructions, setAiInstructions] = useState(shop.ai_instructions || '');
-  const [toneTemplate, setToneTemplate] = useState<'casual' | 'formal' | 'technical' | 'wholesale'>('casual');
-  const [isSavingTone, setIsSavingTone] = useState(false);
-  const [bkashNumber, setBkashNumber] = useState(shop.bkash_number || '');
-  const [paymentMethod, setPaymentMethod] = useState<'none' | 'notification_app' | 'merchant_api'>(shop.payment_verification_method || 'none');
-  const [isSavingPayments, setIsSavingPayments] = useState(false);
-  const [isLaunching, setIsLaunching] = useState(false);
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -393,347 +381,24 @@ export default function InboxClient({
     window.location.reload();
   };
 
-  // Setup verification constants
-  const stepsDone = shop.onboarding_steps_done || [];
-  const isCatalogDone = productCount > 0;
-  const isMetaDone = shop.meta_page_access_token !== null;
-  const isProfileToneDone = stepsDone.includes('profile_tone');
-  const isPaymentsDone = shop.bkash_number !== null && shop.payment_verification_method !== 'none';
-  const isCourierDone = shop.courier_provider !== null;
-
-  const checklistItems = [
-    { id: 1, name: 'Business Classification', isDone: true, type: 'classification' },
-    { id: 2, name: 'Catalog Setup (Add at least 1 product)', isDone: isCatalogDone, type: 'catalog', link: '/dashboard/inventory', desc: 'Add product models, variants, and base stock so DullBot can lookup inventory and suggest products in chat.' },
-    { id: 3, name: 'Connect Facebook Page', isDone: isMetaDone, type: 'meta', link: '/dashboard/settings', desc: 'Hook up page access token so DullBot can receive messages and reply to customer inquiries.' },
-    { id: 4, name: 'Brand Profile & Tone', isDone: isProfileToneDone, type: 'profile_tone', desc: 'Set up your business name, context instructions, and select a predefined Bangla agent persona matching your brand tone.' },
-    { id: 5, name: 'Payments & Android Companion app', isDone: isPaymentsDone, type: 'payments', desc: 'Enter your bKash/Nagad numbers, choose verification mode, and download the notification app to auto-verify payments.' },
-    { id: 6, name: 'Courier Integration', isDone: isCourierDone, type: 'courier', link: '/dashboard/settings', desc: 'Link Steadfast, Pathao, or other courier systems for automated shipment creation on payment verification.' },
-  ];
-
-  const completedStepsCount = checklistItems.filter(item => item.isDone).length;
-  const progressPercent = Math.round((completedStepsCount / checklistItems.length) * 100);
-  const isChecklistComplete = completedStepsCount === checklistItems.length;
-
-  const handleSaveTone = async () => {
-    setIsSavingTone(true);
-    const res = await saveOnboardingProfileAndTone(shop.id, {
-      name: shopName,
-      aiInstructions: aiInstructions,
-      toneTemplate: toneTemplate
-    });
-    if (res.success) {
-      setShop((prev: any) => ({
-        ...prev,
-        name: shopName,
-        ai_instructions: aiInstructions,
-        onboarding_steps_done: [...(prev.onboarding_steps_done || []), 'profile_tone']
-      }));
-      setActiveStep(null);
-    } else {
-      alert(res.error);
-    }
-    setIsSavingTone(false);
-  };
-
-  const handleSavePayments = async () => {
-    setIsSavingPayments(true);
-    const { saveSettings } = await import('../settings/actions');
-    const res = await saveSettings(shop.id, {
-      confirmationTier: 'light',
-      bkashNumber: bkashNumber,
-      agentEnabled: shop.agent_enabled,
-      paymentVerificationMethod: paymentMethod,
-      bkashConfig: {},
-      nagadConfig: {},
-      courierProvider: shop.courier_provider || '',
-      courierConfig: {}
-    });
-
-    if (res.success) {
-      setShop((prev: any) => ({
-        ...prev,
-        bkash_number: bkashNumber,
-        payment_verification_method: paymentMethod,
-        onboarding_steps_done: [...(prev.onboarding_steps_done || []), 'payments']
-      }));
-      setActiveStep(null);
-    } else {
-      alert(res.error);
-    }
-    setIsSavingPayments(false);
-  };
-
-  const handleGoLive = async () => {
-    setIsLaunching(true);
-    const res = await completeOnboarding(shop.id);
-    if (res.success) {
-      setShop((prev: any) => ({
-        ...prev,
-        onboarding_complete: true,
-        agent_enabled: true
-      }));
-      setShowLaunchControl(false);
-    } else {
-      alert(res.error);
-    }
-    setIsLaunching(false);
-  };
-
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] gap-4">
-      {/* Launch Control Panel */}
-      {showLaunchControl && !shop.onboarding_complete && (
-        <div className="bg-fog border border-dove/25 rounded-cards shadow-subtle p-6 relative shrink-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      {/* Launch Control Panel Banner redirect */}
+      {!shop.onboarding_complete && (
+        <div className="bg-apricot-wash border border-rust/10 p-4 rounded-cards flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-rust text-sm">🚀</span>
             <div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-apricot-wash text-rust mb-1.5">
-                <Sparkles className="w-3 h-3 animate-pulse" /> Launch Control
-              </span>
-              <h2 className="text-lg font-serif text-ink tracking-tight font-medium">Autopilot Ignition Checklist</h2>
-              <p className="text-xs text-ash">Complete these steps to unlock AI Autopilot and metrics.</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-[10px] font-semibold text-ash uppercase tracking-wider">Ignition Progress</span>
-                <p className="text-lg font-serif text-ink font-semibold">{progressPercent}%</p>
-              </div>
-              <div className="w-24 bg-white h-2 rounded-full overflow-hidden border border-dove/10">
-                <div 
-                  className="bg-rust h-full transition-all duration-300" 
-                  style={{ width: `${progressPercent}%` }} 
-                />
-              </div>
-              <button 
-                onClick={() => setShowLaunchControl(false)} 
-                className="text-xs text-ash hover:text-ink font-medium px-2 py-1 rounded hover:bg-black/5"
-              >
-                Hide
-              </button>
+              <h3 className="text-xs font-semibold text-ink">Launch Control Required</h3>
+              <p className="text-[10px] text-ash">AI Autopilot is disabled. Please complete the setup steps to activate it.</p>
             </div>
           </div>
-
-          {/* Interactive Steps Horizontal Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {checklistItems.map((item, idx) => {
-              const isExpanded = activeStep === item.id;
-              const hasForm = item.id === 4 || item.id === 5;
-              const isSpotlight = completedStepsCount === idx;
-
-              return (
-                <div 
-                  key={item.id} 
-                  className={`bg-white rounded-xl border p-3.5 transition-all duration-300 ${
-                    item.isDone 
-                      ? 'border-green-200 bg-green-50/20' 
-                      : isSpotlight 
-                        ? 'border-rust ring-1 ring-rust/35 shadow-sm' 
-                        : 'border-dove/20'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="flex items-start gap-2.5">
-                      {item.isDone ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                      ) : (
-                        <Circle className={`w-4 h-4 shrink-0 mt-0.5 ${isSpotlight ? 'text-rust' : 'text-dove'}`} />
-                      )}
-                      <div>
-                        <h3 className={`text-xs font-semibold ${item.isDone ? 'text-ink line-through opacity-70' : 'text-ink'}`}>
-                          {item.name}
-                        </h3>
-                        <p className="text-[10px] text-ash mt-0.5 leading-relaxed">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </div>
-
-                    {!item.isDone && (
-                      <div className="shrink-0">
-                        {hasForm ? (
-                          <button 
-                            onClick={() => setActiveStep(isExpanded ? null : item.id)}
-                            className="p-1 rounded hover:bg-fog text-ash"
-                          >
-                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                          </button>
-                        ) : item.link ? (
-                          <Link href={item.link} className="p-1 text-rust hover:text-ink hover:bg-apricot-wash rounded block">
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expanded Step Form: Brand Profile & Tone */}
-                  {isExpanded && item.id === 4 && (
-                    <div className="mt-3 pt-3 border-t border-dove/10 flex flex-col gap-3">
-                      <div>
-                        <label className="block text-[9px] font-semibold text-ink uppercase tracking-wider mb-1">Business Name</label>
-                        <input 
-                          type="text" 
-                          value={shopName}
-                          onChange={(e) => setShopName(e.target.value)}
-                          className="w-full text-xs border border-dove/25 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-ink font-medium"
-                          placeholder="e.g. Dull Store"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-[9px] font-semibold text-ink uppercase tracking-wider mb-1">Tone Template</label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { id: 'casual', label: 'Casual', desc: 'Bangla bhai style' },
-                            { id: 'formal', label: 'Formal', desc: 'Traditional Rumi Apa' },
-                            { id: 'technical', label: 'Technical', desc: 'Imran explainer' },
-                            { id: 'wholesale', label: 'Wholesale', desc: 'Uncle direct negotiation' }
-                          ].map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => setToneTemplate(t.id as any)}
-                              className={`p-2 rounded-md border text-left flex flex-col justify-between h-14 transition-all ${
-                                toneTemplate === t.id 
-                                  ? 'border-rust bg-apricot-wash/30' 
-                                  : 'border-dove/20 hover:border-ink'
-                              }`}
-                            >
-                              <span className="text-[10px] font-semibold text-ink leading-none">{t.label}</span>
-                              <span className="text-[8px] text-ash truncate leading-none mt-1">{t.desc}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[9px] font-semibold text-ink uppercase tracking-wider mb-1">AI instructions</label>
-                        <textarea 
-                          rows={3}
-                          value={aiInstructions}
-                          onChange={(e) => setAiInstructions(e.target.value)}
-                          className="w-full text-xs border border-dove/25 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-ink"
-                          placeholder="Add instructions..."
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleSaveTone}
-                        disabled={isSavingTone}
-                        className="w-full py-1.5 bg-ink text-pure-white text-[10px] font-medium rounded-md hover:bg-black flex items-center justify-center gap-1"
-                      >
-                        {isSavingTone && <Loader2 className="w-3 h-3 animate-spin" />}
-                        Save Brand Settings
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Expanded Step Form: Payments & Android */}
-                  {isExpanded && item.id === 5 && (
-                    <div className="mt-3 pt-3 border-t border-dove/10 flex flex-col gap-3">
-                      <div>
-                        <label className="block text-[9px] font-semibold text-ink uppercase tracking-wider mb-1">bKash Personal Number</label>
-                        <input 
-                          type="text" 
-                          value={bkashNumber}
-                          onChange={(e) => setBkashNumber(e.target.value)}
-                          className="w-full text-xs border border-dove/25 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-ink font-medium"
-                          placeholder="e.g. 01712345678"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[9px] font-semibold text-ink uppercase tracking-wider mb-1">Verification Mode</label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { id: 'notification_app', label: 'Android Sync App', desc: 'Sync SMS cash-in' },
-                            { id: 'none', label: 'Manual Approval', desc: 'Confirm bank manually' }
-                          ].map((m) => (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => setPaymentMethod(m.id as any)}
-                              className={`p-2 rounded-md border text-left flex flex-col justify-between h-14 transition-all ${
-                                paymentMethod === m.id 
-                                  ? 'border-rust bg-apricot-wash/30' 
-                                  : 'border-dove/20 hover:border-ink'
-                              }`}
-                            >
-                              <span className="text-[10px] font-semibold text-ink leading-none">{m.label}</span>
-                              <span className="text-[8px] text-ash truncate leading-none mt-1">{m.desc}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {paymentMethod === 'notification_app' && (
-                        <div className="p-3 bg-fog rounded-lg border border-dove/10 flex flex-col items-center gap-2">
-                          <div className="text-center">
-                            <p className="text-[10px] font-semibold text-ink flex items-center gap-1 justify-center">
-                              <Smartphone className="w-3.5 h-3.5 text-rust" /> Android Companion App
-                            </p>
-                            <p className="text-[8px] text-ash mt-0.5">Scan to download APK on your phone.</p>
-                          </div>
-                          
-                          <svg className="w-16 h-16 border border-dove/25 p-1 rounded bg-white shadow-sm" viewBox="0 0 100 100" fill="currentColor">
-                            <path d="M5,5 h30 v30 h-30 z M15,15 h10 v10 h-10 z" />
-                            <path d="M65,5 h30 v30 h-30 z M75,15 h10 v10 h-10 z" />
-                            <path d="M5,65 h30 v30 h-30 z M15,75 h10 v10 h-10 z" />
-                            <rect x="45" y="5" width="10" height="10" />
-                            <rect x="55" y="15" width="5" height="10" />
-                            <rect x="45" y="30" width="15" height="5" />
-                            <rect x="5" y="45" width="10" height="10" />
-                            <rect x="20" y="55" width="15" height="5" />
-                            <rect x="40" y="45" width="20" height="20" />
-                            <rect x="65" y="45" width="10" height="10" />
-                            <rect x="80" y="55" width="15" height="5" />
-                            <rect x="45" y="75" width="10" height="15" />
-                            <rect x="65" y="75" width="20" height="10" />
-                            <rect x="65" y="90" width="30" height="5" />
-                          </svg>
-
-                          <a 
-                            href="/android-companion-app.apk" 
-                            download 
-                            className="text-[9px] text-rust hover:text-ink font-semibold underline"
-                          >
-                            Download APK directly
-                          </a>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={handleSavePayments}
-                        disabled={isSavingPayments}
-                        className="w-full py-1.5 bg-ink text-pure-white text-[10px] font-medium rounded-md hover:bg-black flex items-center justify-center gap-1"
-                      >
-                        {isSavingPayments && <Loader2 className="w-3 h-3 animate-spin" />}
-                        Save Payments
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Go Live ignition button */}
-          <div className="mt-4 pt-3 border-t border-dove/15 flex justify-end">
-            <button
-              onClick={handleGoLive}
-              disabled={!isChecklistComplete || isLaunching}
-              className={`px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                isChecklistComplete 
-                  ? 'bg-ink text-pure-white hover:bg-black shadow-sm hover:scale-[1.01]' 
-                  : 'bg-fog text-dove border border-dove/10 cursor-not-allowed'
-              }`}
-            >
-              {isLaunching && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {!isChecklistComplete && <Lock className="w-3.5 h-3.5" />}
-              Ignition: Go Live & Activate Autopilot
-            </button>
-          </div>
+          <Link 
+            href="/dashboard/launch-control" 
+            className="px-4 py-2 bg-ink text-pure-white text-xs font-semibold rounded-buttons hover:bg-black transition-all flex items-center gap-1.5"
+          >
+            Open Launch Control &rarr;
+          </Link>
         </div>
       )}
 
@@ -744,13 +409,10 @@ export default function InboxClient({
           <div className="p-4 border-b border-dove/10 bg-white">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-serif text-ink font-medium">Inbox</h2>
-              {!shop.onboarding_complete && !showLaunchControl && (
-                <button 
-                  onClick={() => setShowLaunchControl(true)} 
-                  className="px-2.5 py-1 bg-apricot-wash text-rust text-[10px] font-bold rounded-full flex items-center gap-1 hover:scale-105 transition-transform shrink-0"
-                >
-                  <Sparkles className="w-3 h-3 animate-pulse" /> Launch Control ({progressPercent}%)
-                </button>
+              {!shop.onboarding_complete && (
+                <span className="px-2.5 py-1 bg-apricot-wash text-rust text-[10px] font-bold rounded-full">
+                  Setup Mode
+                </span>
               )}
             </div>
           <div className="mt-3 relative">
