@@ -6,8 +6,9 @@ import { getConversations } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InboxPage() {
+export default async function InboxPage({ searchParams }: { searchParams: Promise<{ phone?: string }> }) {
   const shopSlug = 'dull-store';
+  const params = await searchParams;
   
   // Get shop details and onboarding config
   const { data: shop } = await supabaseAdmin
@@ -33,7 +34,8 @@ export default async function InboxPage() {
     <InboxClient 
       shop={shop} 
       initialConversations={conversations} 
-      productCount={productCount || 0} 
+      productCount={productCount || 0}
+      initialPhone={params.phone ?? null}
     />
   );
 }

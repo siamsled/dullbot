@@ -110,6 +110,90 @@ export async function dispatchToCourier(orderId: string) {
   }
 }
 
+/**
+ * Dispatches to a specific courier provider, overriding the shop default.
+ */
+export async function dispatchToCourierWithProvider(orderId: string, provider: string) {
+  try {
+    const shopId = await verifyOrderOwnership(orderId);
+
+    // Temporarily write courier_provider to order so triggerCourierShipment picks it up
+    // (triggerCourierShipment reads from shops table, so we pass it via a direct approach)
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (orderErr || !order) throw new Error('Order not found.');
+
+    // Use the courier lib adapter directly with shop config
+    const { data: shop, error: shopErr } = await supabaseAdmin
+      .from('shops')
+      .select('courier_config_encrypted')
+      .eq('id', shopId)
+      .single();
+
+    if (shopErr || !shop) throw new Error('Shop not found.');
+
+    // For manual/none provider: just mark dispatched with a manual tracking note
+    if (provider === 'manual') {
+      const trackingId = `MANUAL-${Date.now()}`;
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          courier_provider: 'manual',
+          courier_tracking_id: trackingId,
+          fulfillment_status: 'dispatched'
+        })
+        .eq('id', orderId);
+
+      await supabaseAdmin
+        .from('order_status_history')
+        .insert({
+          order_id: orderId,
+          status: 'dispatched',
+          note: `Order manually marked as dispatched. Ref: ${trackingId}`
+        });
+
+      return { success: true, trackingId };
+    }
+
+    // Temporarily override courier_provider on shop for this dispatch
+    await supabaseAdmin.from('shops').update({ courier_provider: provider }).eq('id', shopId);
+
+    try {
+      const success = await triggerCourierShipment(orderId, shopId);
+      if (!success) throw new Error(`Courier API (${provider}) returned failure.`);
+
+      await supabaseAdmin
+        .from('orders')
+        .update({ courier_provider: provider, fulfillment_status: 'dispatched' })
+        .eq('id', orderId);
+
+      await supabaseAdmin
+        .from('order_status_history')
+        .insert({
+          order_id: orderId,
+          status: 'dispatched',
+          note: `Order dispatched via ${provider}.`
+        });
+
+      return { success: true };
+    } finally {
+      // Restore original shop courier_provider
+      await supabaseAdmin
+        .from('shops')
+        .update({ courier_provider: order.courier_provider ?? provider })
+        .eq('id', shopId);
+    }
+  } catch (err: any) {
+    console.error('Error dispatching to courier with provider override:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+
 export async function cancelOrder(orderId: string, reason: string) {
   try {
     await verifyOrderOwnership(orderId);

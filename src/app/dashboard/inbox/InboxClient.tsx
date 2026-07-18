@@ -32,15 +32,21 @@ function formatMessageDate(dateString: string) {
 export default function InboxClient({ 
   shop: initialShop, 
   initialConversations,
-  productCount
+  productCount,
+  initialPhone
 }: { 
   shop: any; 
   initialConversations: any[];
   productCount: number;
+  initialPhone?: string | null;
 }) {
   const [shop, setShop] = useState(initialShop);
   const [conversations, setConversations] = useState(initialConversations);
-  const [activeId, setActiveId] = useState<string | null>(conversations[0]?.id || null);
+  // If initialPhone is provided (deep-link from Orders), find the matching conversation
+  const initialId = initialPhone
+    ? (initialConversations.find(c => c.customer_phone === initialPhone)?.id ?? initialConversations[0]?.id ?? null)
+    : (initialConversations[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(initialId);
   const [messages, setMessages] = useState<any[]>([]);
   const [isTakeover, setIsTakeover] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});

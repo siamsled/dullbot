@@ -6,11 +6,12 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { 
   Package, Clock, CheckCircle2, Search, ArrowRight, ShieldAlert,
   AlertTriangle, Filter, ClipboardList, HelpCircle, X, ExternalLink,
-  ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download
+  ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
+  Printer, ChevronDown, Smartphone, ShieldCheck
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  verifyPaymentManually, dispatchToCourier, cancelOrder, 
+  verifyPaymentManually, dispatchToCourier, dispatchToCourierWithProvider, cancelOrder, 
   updateInternalNote, toggleNeedsReview, bulkConfirmPayment, 
   bulkDispatchToCourier 
 } from './actions';
@@ -21,6 +22,7 @@ type LineItem = {
   product_name: string;
   quantity: number;
   unit_price: number;
+  imageUrl: string | null;
 };
 
 type StatusHistory = {
@@ -85,6 +87,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const [isDispatching, setIsDispatching] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  // Courier selector state (per dispatch)
+  const [selectedCourier, setSelectedCourier] = useState<string>('pathao');
 
   const activeOrder = orders.find(o => o.id === activeOrderId);
 
@@ -257,11 +261,66 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const handleDispatch = async () => {
     if (!activeOrderId) return;
     setIsDispatching(true);
-    const res = await dispatchToCourier(activeOrderId);
+    const res = await dispatchToCourierWithProvider(activeOrderId, selectedCourier);
     setIsDispatching(false);
     if (!res.success) {
       alert(`Shipment booking failed: ${res.error}`);
     }
+  };
+
+  // Print receipts for an array of orders
+  const handlePrintReceipts = (targets: Order[]) => {
+    if (targets.length === 0) return;
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Receipts — DullBot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier New', monospace; background: #fff; }
+    .receipt { width: 300px; margin: 20px auto; padding: 20px; border: 1px dashed #ccc; page-break-after: always; }
+    .receipt:last-child { page-break-after: avoid; }
+    .receipt h1 { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 4px; }
+    .receipt .sub { font-size: 10px; text-align: center; color: #666; margin-bottom: 12px; }
+    .divider { border-top: 1px dashed #ccc; margin: 10px 0; }
+    .row { display: flex; justify-content: space-between; font-size: 11px; margin: 3px 0; }
+    .row.bold { font-weight: bold; }
+    .label { color: #555; }
+    .footer { font-size: 9px; text-align: center; color: #999; margin-top: 12px; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>
+  ${targets.map(o => `
+  <div class="receipt">
+    <h1>DullBot Store</h1>
+    <div class="sub">Order Receipt</div>
+    <div class="divider"></div>
+    <div class="row"><span class="label">Order ID</span><span>#${o.id.slice(0,8)}</span></div>
+    <div class="row"><span class="label">Date</span><span>${new Date(o.createdAt).toLocaleDateString('en-GB')}</span></div>
+    <div class="row"><span class="label">Customer</span><span>${o.customerName}</span></div>
+    <div class="row"><span class="label">Phone</span><span>${o.customerPhone}</span></div>
+    <div class="row"><span class="label">Address</span><span style="text-align:right;max-width:150px;">${o.customerAddress}</span></div>
+    <div class="divider"></div>
+    ${o.lineItems.map(li => `<div class="row"><span>${li.product_name} x${li.quantity}</span><span>\u09F3${(li.quantity * li.unit_price).toLocaleString()}</span></div>`).join('')}
+    <div class="divider"></div>
+    <div class="row"><span class="label">Delivery</span><span>\u09F3100</span></div>
+    <div class="row bold"><span>Total</span><span>\u09F3${(o.totalAmount ?? 0).toLocaleString()}</span></div>
+    ${o.paymentTransactionRef ? `<div class="row"><span class="label">TrxID</span><span>${o.paymentTransactionRef}</span></div>` : ''}
+    ${o.courierTrackingId ? `<div class="row"><span class="label">Tracking</span><span>${o.courierTrackingId}</span></div>` : ''}
+    <div class="footer">Thank you for shopping with us!</div>
+  </div>
+  `).join('')}
+</body>
+</html>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
   };
 
   const handleCancel = async () => {
@@ -501,6 +560,16 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               <button
                 onClick={() => {
                   const targetList = orders.filter(o => selectedIds.has(o.id));
+                  handlePrintReceipts(targetList);
+                }}
+                className="px-3.5 py-1.5 bg-pure-white/10 text-white font-semibold rounded-buttons text-xs hover:bg-pure-white/15 transition-colors flex items-center gap-1"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                Print Receipts
+              </button>
+              <button
+                onClick={() => {
+                  const targetList = orders.filter(o => selectedIds.has(o.id));
                   handleExportCSV(targetList);
                 }}
                 className="px-3.5 py-1.5 bg-pure-white/10 text-white font-semibold rounded-buttons text-xs hover:bg-pure-white/15 transition-colors"
@@ -703,7 +772,18 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                   </h3>
                   <div className="bg-fog rounded-inputs p-4 border border-dove/10 space-y-3">
                     {activeOrder.lineItems.map((li) => (
-                      <div key={li.id} className="flex justify-between items-center text-xs">
+                      <div key={li.id} className="flex items-center gap-3 text-xs">
+                        {li.imageUrl ? (
+                          <img
+                            src={li.imageUrl}
+                            alt={li.product_name}
+                            className="w-10 h-10 object-cover rounded-images border border-dove/10"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-white border border-dove/10 rounded-images flex items-center justify-center text-graphite">
+                            <Package className="w-4 h-4" />
+                          </div>
+                        )}
                         <div className="flex-1 pr-4">
                           <p className="font-semibold text-ink leading-tight">{li.product_name}</p>
                           <p className="text-[10px] text-graphite font-mono mt-0.5">Qty {li.quantity} &times; ৳{li.unit_price.toLocaleString()}</p>
@@ -760,9 +840,47 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       </div>
                     </div>
 
+                    {/* SMS-captured bKash TrxIDs from Android Companion */}
+                    {activeOrder.paymentVerifications && activeOrder.paymentVerifications.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-graphite" />
+                          <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider">Captured via Android Companion</span>
+                        </div>
+                        {activeOrder.paymentVerifications.map((pv: any) => (
+                          <div key={pv.id} className={`flex items-center justify-between p-2.5 rounded-inputs text-xs border ${
+                            pv.status === 'confirmed' ? 'bg-green-50 border-green-200' :
+                            pv.status === 'mismatch' ? 'bg-apricot-wash border-rust/20' :
+                            'bg-sky-wash/40 border-dove/20'
+                          }`}>
+                            <div className="space-y-0.5">
+                              <p className="font-mono font-semibold text-ink">{pv.matched_reference || pv.customer_provided_ref || '(no ref)'}</p>
+                              <p className="text-[10px] text-graphite">৳{pv.expected_amount?.toLocaleString()} · {pv.status}</p>
+                            </div>
+                            {pv.status === 'pending' && activeOrder.status !== 'confirmed' && (
+                              <button
+                                onClick={() => {
+                                  setManualTrxRef(pv.matched_reference || pv.customer_provided_ref || '');
+                                }}
+                                className="px-2.5 py-1 bg-ink text-white rounded-buttons text-[10px] font-semibold hover:bg-black transition-colors flex items-center gap-1"
+                              >
+                                <ShieldCheck className="w-3 h-3" /> Use this
+                              </button>
+                            )}
+                            {pv.status === 'confirmed' && (
+                              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {activeOrder.status !== 'confirmed' ? (
                       <div className="pt-2 space-y-2">
                         <span className="text-[10px] font-semibold text-rust uppercase tracking-wider block">Verify Payment Manually</span>
+                        <p className="text-[10px] text-graphite leading-relaxed">
+                          Enter the bKash/Nagad TrxID the customer sent, or click &#8220;Use this&#8221; above if the Android companion already captured it.
+                        </p>
                         <div className="flex gap-2">
                           <input
                             type="text"
@@ -807,14 +925,32 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     </div>
 
                     {activeOrder.status === 'confirmed' && !activeOrder.courierTrackingId && (
-                      <div className="pt-2">
+                      <div className="space-y-2.5 pt-1">
+                        <div>
+                          <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider block mb-1.5">Select Courier</span>
+                          <div className="relative">
+                            <select
+                              value={selectedCourier}
+                              onChange={e => setSelectedCourier(e.target.value)}
+                              className="w-full appearance-none px-3 py-2 pr-8 bg-fog border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all font-semibold text-ink uppercase cursor-pointer"
+                            >
+                              <option value="pathao">Pathao</option>
+                              <option value="steadfast">Steadfast</option>
+                              <option value="redx">RedX</option>
+                              <option value="paperfly">Paperfly</option>
+                              <option value="ecourier">eCourier</option>
+                              <option value="manual">Manual (no API)</option>
+                            </select>
+                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-graphite pointer-events-none" />
+                          </div>
+                        </div>
                         <button
                           onClick={handleDispatch}
                           disabled={isDispatching}
                           className="w-full py-2.5 bg-ink text-white font-semibold rounded-buttons text-xs hover:bg-black disabled:opacity-40 transition-colors shadow-subtle flex items-center justify-center gap-1.5"
                         >
                           {isDispatching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
-                          Dispatch to Courier
+                          Dispatch via {selectedCourier.charAt(0).toUpperCase() + selectedCourier.slice(1)}
                         </button>
                       </div>
                     )}
@@ -878,6 +1014,14 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         }`}
                       >
                         {activeOrder.needsReview ? 'Clear Review Flag' : 'Flag for Review'}
+                      </button>
+                      {/* Print Receipt */}
+                      <button
+                        onClick={() => handlePrintReceipts([activeOrder])}
+                        className="px-4 py-2 border border-dove/30 bg-white text-ink rounded-buttons text-xs font-semibold hover:bg-fog transition-all flex items-center gap-1.5"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Print Receipt
                       </button>
                     </div>
 
