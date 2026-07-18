@@ -87,6 +87,7 @@ export async function handleOrderCreationIntercept(
         status: 'pending_verification',
         delivery_charge_amount: deliveryCharge,
         total_amount: totalAmount,
+        fulfillment_status: 'awaiting_dispatch'
       })
       .select()
       .single();
@@ -95,6 +96,26 @@ export async function handleOrderCreationIntercept(
       console.error('[ORDER INTERCEPT] failed to create order:', orderErr);
       return { cleanedText, orderId: null };
     }
+
+    // Insert line item snapshot
+    await supabaseAdmin
+      .from('order_line_items')
+      .insert({
+        order_id: order.id,
+        product_id: payload.product_id,
+        product_name: product.name,
+        quantity: 1,
+        unit_price: finalPrice
+      });
+
+    // Insert initial status history
+    await supabaseAdmin
+      .from('order_status_history')
+      .insert({
+        order_id: order.id,
+        status: 'pending_verification',
+        note: 'Order registered via AI chatbot conversation.'
+      });
 
     // Attempt to update variant_id or variant_name if columns exist
     // Using a dynamic update statement that ignores columns errors
@@ -107,6 +128,7 @@ export async function handleOrderCreationIntercept(
         variant_name: payload.variant_name
       })
       .eq('id', order.id);
+
 
     // 4. Fetch the shop's preferred payment verification method
     const { data: shop } = await supabaseAdmin
@@ -229,9 +251,22 @@ export async function processPaymentVerification(
         .update({
           status: 'confirmed',
           bkash_transaction_id: extractedRef,
-          confirmed_at: new Date().toISOString()
+          confirmed_at: new Date().toISOString(),
+          payment_method: pv.method,
+          payment_verified_at: new Date().toISOString(),
+          payment_transaction_ref: extractedRef,
+          fulfillment_status: 'awaiting_dispatch'
         })
         .eq('id', order.id);
+
+      // Log verified in status history
+      await supabaseAdmin
+        .from('order_status_history')
+        .insert({
+          order_id: order.id,
+          status: 'confirmed',
+          note: `Payment verified automatically via ${provider.toUpperCase()}. Expected ৳${pv.expected_amount}, matched ৳${verification.amount}. TrxID: ${extractedRef}`
+        });
 
       // Atomically decrement stock
       const { data: stockResult, error: stockErr } = await supabaseAdmin.rpc('decrement_stock', {
@@ -258,6 +293,24 @@ export async function processPaymentVerification(
           customer_provided_ref: extractedRef
         })
         .eq('id', pv.id);
+
+      // Flag order for review due to mismatch
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          needs_review: true,
+          review_reason: 'payment_mismatch'
+        })
+        .eq('id', order.id);
+
+      // Log mismatch in status history
+      await supabaseAdmin
+        .from('order_status_history')
+        .insert({
+          order_id: order.id,
+          status: 'pending_verification',
+          note: `Payment verification mismatch. Expected ৳${pv.expected_amount}, found ৳${verification.amount}. TrxID: ${extractedRef}`
+        });
 
       // Force human takeover
       await supabaseAdmin
@@ -302,6 +355,24 @@ export async function processPaymentVerification(
           customer_provided_ref: extractedRef
         })
         .eq('id', pv.id);
+
+      // Flag order for review due to verification failure
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          needs_review: true,
+          review_reason: 'payment_failed'
+        })
+        .eq('id', order.id);
+
+      // Log failure in status history
+      await supabaseAdmin
+        .from('order_status_history')
+        .insert({
+          order_id: order.id,
+          status: 'pending_verification',
+          note: `Payment verification failed repeatedly. Last reference: ${extractedRef}. Error: ${verification.error}`
+        });
 
       // Force human takeover
       await supabaseAdmin
