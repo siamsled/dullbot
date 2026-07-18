@@ -119,3 +119,35 @@ export async function saveOnboardingProfileAndTone(
   revalidatePath('/dashboard');
   return { success: true };
 }
+
+export async function dismissTour(shopId: string) {
+  const { data: shop, error: getErr } = await supabaseAdmin
+    .from('shops')
+    .select('onboarding_steps_done')
+    .eq('id', shopId)
+    .single();
+
+  if (getErr || !shop) {
+    return { success: false, error: getErr?.message || 'Shop not found' };
+  }
+
+  const stepsDone = shop.onboarding_steps_done || [];
+  if (!stepsDone.includes('tour_dismissed')) {
+    stepsDone.push('tour_dismissed');
+  }
+
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({
+      onboarding_steps_done: stepsDone
+    })
+    .eq('id', shopId);
+
+  if (error) {
+    console.error('Failed to dismiss tour:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}

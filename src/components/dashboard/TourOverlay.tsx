@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight } from 'lucide-react';
+import { dismissTour } from '@/app/dashboard/actions';
 
 const TOUR_DISMISSED_KEY = 'dullbot_tour_dismissed';
 
@@ -51,14 +52,15 @@ export default function TourOverlay({
 
   const stepsDone = shop?.onboarding_steps_done || [];
   const isContextDone = stepsDone.includes('context_form');
+  const isTourDismissedInDb = stepsDone.includes('tour_dismissed');
 
-  // Check localStorage + context form on mount
+  // Check database state + localStorage on mount
   useEffect(() => {
-    const dismissed = localStorage.getItem(TOUR_DISMISSED_KEY);
-    if (!dismissed && !isContextDone) {
+    const localDismissed = localStorage.getItem(TOUR_DISMISSED_KEY);
+    if (!localDismissed && !isTourDismissedInDb && !isContextDone) {
       setIsVisible(true);
     }
-  }, [isContextDone]);
+  }, [isContextDone, isTourDismissedInDb]);
 
   // Dismiss permanently when context form is saved
   useEffect(() => {
@@ -90,10 +92,11 @@ export default function TourOverlay({
     };
   }, [isVisible, updateRect]);
 
-  const handleDismiss = () => {
+  const handleDismiss = async () => {
     localStorage.setItem(TOUR_DISMISSED_KEY, '1');
     setIsVisible(false);
     onDismiss();
+    await dismissTour(shop.id);
   };
 
   const handleAction = () => {
