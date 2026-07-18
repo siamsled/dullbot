@@ -1,19 +1,15 @@
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop } from '@/lib/supabase-admin';
 import SettingsClient from './SettingsClient';
 import { decrypt } from '@/lib/encryption';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
-  const shopSlug = 'dull-store';
-  const { data: shop } = await supabaseAdmin
-    .from('shops')
-    .select('id, meta_page_name, confirmation_tier, bkash_number, agent_enabled, credit_balance, payment_verification_method, bkash_config_encrypted, nagad_config_encrypted, courier_provider, courier_config_encrypted')
-    .eq('slug', shopSlug)
-    .single();
+  const shop = await getCurrentShop();
 
   if (!shop) {
-    return <div>Shop not found.</div>;
+    redirect('/login');
   }
 
   // Decrypt credentials
@@ -25,12 +21,8 @@ export default async function SettingsPage() {
     ...shop,
     bkashConfig,
     nagadConfig,
-    courierConfig
+    courierConfig,
   };
 
-  return (
-    <SettingsClient 
-      shop={cleanShop} 
-    />
-  );
+  return <SettingsClient shop={cleanShop} />;
 }

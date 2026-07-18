@@ -4,18 +4,33 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 import { encrypt } from '@/lib/encryption';
 
-export async function disconnectFacebook(shopSlug: string = 'dull-store') {
+export async function disconnectFacebook(shopId: string) {
   const { error } = await supabaseAdmin
     .from('shops')
     .update({
       meta_page_id: null,
       meta_page_name: null,
-      meta_page_access_token: null
+      meta_page_access_token: null,
     })
-    .eq('slug', shopSlug);
+    .eq('id', shopId);
 
   if (error) {
     console.error('Failed to disconnect Facebook:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  return { success: true };
+}
+
+export async function saveWidgetEnabled(shopId: string, enabled: boolean) {
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({ widget_enabled: enabled })
+    .eq('id', shopId);
+
+  if (error) {
+    console.error('Failed to save widget state:', error);
     return { success: false, error: error.message };
   }
 
@@ -50,7 +65,7 @@ export async function saveSettings(
       bkash_config_encrypted: bkashConfigEncrypted,
       nagad_config_encrypted: nagadConfigEncrypted,
       courier_provider: payload.courierProvider || null,
-      courier_config_encrypted: courierConfigEncrypted
+      courier_config_encrypted: courierConfigEncrypted,
     })
     .eq('id', shopId);
 
@@ -62,4 +77,3 @@ export async function saveSettings(
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
-
