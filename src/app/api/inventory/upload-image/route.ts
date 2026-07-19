@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const BUCKET = 'product-images';
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const ALLOWED_IMAGES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const ALLOWED_VIDEOS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg', 'video/x-matroska', 'video/avi', 'video/mpeg'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,11 +12,17 @@ export async function POST(req: NextRequest) {
     const shopId = formData.get('shopId') as string | null;
 
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: `Invalid file type: ${file.type}. Only images are accepted.` }, { status: 400 });
+
+    const isImage = ALLOWED_IMAGES.includes(file.type);
+    const isVideo = ALLOWED_VIDEOS.includes(file.type);
+
+    if (!isImage && !isVideo) {
+      return NextResponse.json({ error: `Invalid file type: ${file.type}. Only images and videos are accepted.` }, { status: 400 });
     }
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 5MB.` }, { status: 400 });
+
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${isVideo ? '50MB' : '5MB'}.` }, { status: 400 });
     }
 
     const ext = file.name.split('.').pop() ?? 'jpg';

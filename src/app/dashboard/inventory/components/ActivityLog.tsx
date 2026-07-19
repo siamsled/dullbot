@@ -5,7 +5,7 @@ import { Activity, Package, TrendingDown, TrendingUp, Settings2, RotateCcw } fro
 
 type Movement = {
   id: string;
-  change_type: 'order' | 'manual_adjust' | 'restock' | 'import' | 'initial_stock';
+  change_type: 'order' | 'manual_adjust' | 'restock' | 'import' | 'initial_stock' | 'audit';
   quantity_delta: number;
   resulting_stock: number;
   supplier_id?: string | null;
@@ -24,6 +24,7 @@ const TYPE_CONFIG = {
   restock: { label: 'Restock', color: 'text-green-700 bg-green-50', icon: TrendingUp },
   import: { label: 'Import', color: 'text-ink bg-fog', icon: RotateCcw },
   initial_stock: { label: 'Initial Stock', color: 'text-graphite bg-fog', icon: Package },
+  audit: { label: 'Audit', color: 'text-purple-700 bg-purple-50', icon: Activity },
 };
 
 interface Props {
@@ -50,6 +51,7 @@ export default function ActivityLog({ movements: allMovements }: Props) {
     { value: 'manual_adjust', label: 'Manual' },
     { value: 'import', label: 'Imports' },
     { value: 'initial_stock', label: 'Initial' },
+    { value: 'audit', label: 'Audits' },
   ];
 
   return (

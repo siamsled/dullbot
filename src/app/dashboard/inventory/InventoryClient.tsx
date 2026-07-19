@@ -18,7 +18,7 @@ const BarcodeScanner = dynamic(() => import('./components/BarcodeScanner'), { ss
 
 import {
   approveProduct, rejectProduct,
-  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory,
+  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory, getShopMovements,
 } from './actions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ export default function InventoryClient({
   products: initialProducts,
   variants: initialVariants,
   suppliers: initialSuppliers,
-  movements,
+  movements: initialMovements,
   reorderCandidates,
   lowStockProducts,
   inventoryStats,
@@ -98,6 +98,14 @@ export default function InventoryClient({
 }: Props) {
   const [tab, setTab] = useState<Tab>('catalogue');
   const [isPending, startTransition] = useTransition();
+
+  // Movements state
+  const [movements, setMovements] = useState<StockMovement[]>(initialMovements);
+
+  const refreshMovements = async () => {
+    const latest = await getShopMovements(shopId);
+    setMovements(latest as StockMovement[]);
+  };
 
   // Products state (optimistic)
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -299,6 +307,8 @@ export default function InventoryClient({
             onExportCSV={() => {}}
             onOpenImport={() => setShowCSVImport(true)}
             onOpenBarcode={() => setShowBarcode(true)}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
             shopId={shopId}
             websiteUrl={websiteUrl}
           />
@@ -328,6 +338,7 @@ export default function InventoryClient({
           shopId={shopId}
           onClose={() => setSlideOverOpen(false)}
           onSaved={handleProductSaved}
+          onMovementAdded={refreshMovements}
         />
       )}
 
@@ -336,14 +347,7 @@ export default function InventoryClient({
         <BarcodeScanner
           onResult={(text) => {
             setShowBarcode(false);
-            // Populate search — CatalogueTable picks this up via its own state
-            // We trigger a URL-based approach via state lift if needed, but for now
-            // we dispatch to a DOM input
-            const input = document.querySelector<HTMLInputElement>('input[placeholder*="Search"]');
-            if (input) {
-              input.value = text;
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            setSearchQuery(text);
           }}
           onClose={() => setShowBarcode(false)}
         />

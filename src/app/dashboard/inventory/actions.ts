@@ -549,6 +549,78 @@ export async function getReorderCandidates() {
   return candidates.sort((a, b) => (a.daysUntilEmpty ?? 999) - (b.daysUntilEmpty ?? 999));
 }
 
+// ─── Phase 13 Shop Movements & Product Context Media ──────────────────────────────
+
+export async function getShopMovements(shopId?: string | null) {
+  const actualShopId = shopId || (await getShopId());
+  if (!actualShopId) return [];
+
+  const { data } = await supabaseAdmin
+    .from('stock_movements')
+    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, products(name, images), suppliers(name)')
+    .eq('shop_id', actualShopId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  return data ?? [];
+}
+
+export type ProductMediaInput = {
+  url: string;
+  media_type: 'image' | 'video';
+  tags: string[];
+};
+
+export async function getProductMedia(productId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('product_media')
+    .select('id, url, media_type, tags, created_at')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('Error fetching product media:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function saveProductMedia(productId: string, mediaItems: ProductMediaInput[]) {
+  const shopId = await getShopId();
+  if (!shopId) return { error: 'Shop not found' };
+
+  // First, delete existing media for the product
+  const { error: deleteErr } = await supabaseAdmin
+    .from('product_media')
+    .delete()
+    .eq('product_id', productId);
+
+  if (deleteErr) {
+    return { error: deleteErr.message };
+  }
+
+  if (mediaItems.length === 0) {
+    return { success: true };
+  }
+
+  // Insert new media items
+  const rows = mediaItems.map(item => ({
+    product_id: productId,
+    shop_id: shopId,
+    url: item.url,
+    media_type: item.media_type,
+    tags: item.tags,
+  }));
+
+  const { error: insertErr } = await supabaseAdmin
+    .from('product_media')
+    .insert(rows);
+
+  if (insertErr) {
+    return { error: insertErr.message };
+  }
+
+  return { success: true };
+}
+
 // ─── Legacy helpers (kept for compatibility) ────────────────────────────────────
 export async function updateStock(productId: string, stock_quantity: number) {
   await supabaseAdmin
@@ -557,3 +629,4 @@ export async function updateStock(productId: string, stock_quantity: number) {
     .eq('id', productId);
   revalidatePath('/dashboard/inventory');
 }
+

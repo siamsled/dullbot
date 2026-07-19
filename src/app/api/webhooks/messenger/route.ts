@@ -494,12 +494,12 @@ export async function POST(request: Request) {
 
                     // Parse out Markdown images and text bubbles in precise order
                     const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
-                    const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
+                    const markdownImageExtractRegex = /!\[(.*?)\]\((.*?)\)/;
                     
                     const cleanedText = aiResponseText.trim();
                     const chunks = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
                     
-                    const segments: { type: 'text' | 'image', content: string }[] = [];
+                    const segments: { type: 'text' | 'image' | 'video', content: string }[] = [];
                     for (const chunk of chunks) {
                       const parts = chunk.split(markdownImageSplitRegex);
                       for (const part of parts) {
@@ -507,7 +507,8 @@ export async function POST(request: Request) {
                         
                         const imgMatch = part.match(markdownImageExtractRegex);
                         if (imgMatch) {
-                          segments.push({ type: 'image', content: imgMatch[1] });
+                          const type = imgMatch[1] === 'video' ? 'video' : 'image';
+                          segments.push({ type, content: imgMatch[2] });
                         } else {
                           const trimmedText = part.trim();
                           if (trimmedText) {
@@ -586,6 +587,41 @@ export async function POST(request: Request) {
                           } else {
                             const fbImgData = await fbImgRes.json();
                             if (fbImgData.message_id) capturedMids.push(fbImgData.message_id);
+                          }
+                        } else if (segment.type === 'video') {
+                          const fbVidRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              messaging_type: "RESPONSE",
+                              recipient: { id: senderId },
+                              message: {
+                                attachment: {
+                                  type: "video",
+                                  payload: { url: segment.content, is_reusable: true }
+                                }
+                              }
+                            })
+                          });
+                          if (!fbVidRes.ok) {
+                            console.error("Failed to send video attachment to Messenger:", await fbVidRes.json());
+                            // Fallback to sending the URL as text
+                            const fbFallbackRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                messaging_type: "RESPONSE",
+                                recipient: { id: senderId },
+                                message: { text: `[Video]: ${segment.content}` }
+                              })
+                            });
+                            if (fbFallbackRes.ok) {
+                               const fbData = await fbFallbackRes.json();
+                               if (fbData.message_id) capturedMids.push(fbData.message_id);
+                            }
+                          } else {
+                            const fbVidData = await fbVidRes.json();
+                            if (fbVidData.message_id) capturedMids.push(fbVidData.message_id);
                           }
                         }
                       }

@@ -3,11 +3,15 @@
 import { useState, useTransition, useRef, useCallback, useEffect } from 'react';
 import {
   X, Upload, Trash2, GripVertical, Plus, Minus, Loader2,
-  Package, ChevronDown, AlertCircle, RotateCcw, Check
+  Package, ChevronDown, AlertCircle, RotateCcw, Check, ScanLine
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
+
 import {
   addProduct, updateProduct, addVariants, updateVariant, deleteVariant,
-  manualStockAdjust, restockProduct, getStockMovements, type ProductInput, type VariantInput
+  manualStockAdjust, restockProduct, getStockMovements, type ProductInput, type VariantInput,
+  getProductMedia, saveProductMedia,
 } from '../actions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,6 +66,7 @@ interface Props {
   shopId: string;
   onClose: () => void;
   onSaved: (product: Product, isNew: boolean) => void;
+  onMovementAdded?: () => void;
 }
 
 const CATEGORIES_PLACEHOLDER = 'Search or add category…';
@@ -78,6 +83,31 @@ async function uploadImage(file: File, shopId: string): Promise<string> {
   return data.url as string;
 }
 
+// ─── Video duration helper ───────────────────────────────────────────────────
+
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      reject(new Error('Failed to load video metadata'));
+    };
+    video.src = URL.createObjectURL(file);
+  });
+}
+
+export type ContextMediaItem = {
+  id?: string;
+  url: string;
+  media_type: 'image' | 'video';
+  tags: string[];
+  _isNew?: boolean;
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ProductSlideOver({
@@ -89,6 +119,7 @@ export default function ProductSlideOver({
   shopId,
   onClose,
   onSaved,
+  onMovementAdded,
 }: Props) {
   const [isPending, startTransition] = useTransition();
 
@@ -110,6 +141,7 @@ export default function ProductSlideOver({
   const [compareAtPrice, setCompareAtPrice] = useState(product?.compare_at_price?.toString() ?? '');
   const [costPrice, setCostPrice] = useState(product?.cost_price?.toString() ?? '');
   const [sku, setSku] = useState(product?.sku ?? '');
+  const [showSkuScanner, setShowSkuScanner] = useState(false);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
   const [lowStockThreshold, setLowStockThreshold] = useState(product?.low_stock_threshold?.toString() ?? '5');
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
@@ -141,14 +173,24 @@ export default function ProductSlideOver({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [contextMedia, setContextMedia] = useState<ContextMediaItem[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaErrors, setMediaErrors] = useState<string[]>([]);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [mediaDragOver, setMediaDragOver] = useState(false);
   const isScraped = product?.source === 'scraped';
 
-  // Load movements on detail view
+  // Load movements and context media on detail view
   useEffect(() => {
-    if (!isNew && product?.id && !movementsLoaded) {
-      getStockMovements(product.id).then(data => {
-        setMovements(data as StockMovement[]);
-        setMovementsLoaded(true);
+    if (!isNew && product?.id) {
+      if (!movementsLoaded) {
+        getStockMovements(product.id).then(data => {
+          setMovements(data as StockMovement[]);
+          setMovementsLoaded(true);
+        });
+      }
+      getProductMedia(product.id).then(data => {
+        setContextMedia(data as ContextMediaItem[]);
       });
     }
   }, [isNew, product?.id, movementsLoaded]);
@@ -174,6 +216,63 @@ export default function ProductSlideOver({
       setImageErrors(prev => [...prev, err instanceof Error ? err.message : 'Upload failed']);
     } finally {
       setUploadingImages(false);
+    }
+  }, [shopId]);
+
+  // Context Media handling
+  const handleContextMediaFiles = useCallback(async (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const errors: string[] = [];
+    const valid: { file: File; media_type: 'image' | 'video' }[] = [];
+    
+    for (const f of arr) {
+      if (f.type.startsWith('video/')) {
+        if (f.size > 50 * 1024 * 1024) {
+          errors.push(`${f.name}: exceeds 50MB`);
+        } else {
+          try {
+            const duration = await getVideoDuration(f);
+            if (duration > 45) {
+              errors.push(`${f.name}: exceeds 45 seconds (is ${Math.round(duration)}s)`);
+            } else {
+              valid.push({ file: f, media_type: 'video' });
+            }
+          } catch (e) {
+            errors.push(`${f.name}: invalid video format or unable to read duration`);
+          }
+        }
+      } else if (f.type.startsWith('image/')) {
+        if (f.size > 5 * 1024 * 1024) {
+          errors.push(`${f.name}: exceeds 5MB`);
+        } else {
+          valid.push({ file: f, media_type: 'image' });
+        }
+      } else {
+        errors.push(`${f.name}: only images and videos are supported`);
+      }
+    }
+    
+    setMediaErrors(errors);
+    if (!valid.length) return;
+    
+    setUploadingMedia(true);
+    try {
+      const items = await Promise.all(
+        valid.map(async ({ file, media_type }) => {
+          const url = await uploadImage(file, shopId);
+          return {
+            url,
+            media_type,
+            tags: [],
+            _isNew: true,
+          } as ContextMediaItem;
+        })
+      );
+      setContextMedia(prev => [...prev, ...items]);
+    } catch (err) {
+      setMediaErrors(prev => [...prev, err instanceof Error ? err.message : 'Upload failed']);
+    } finally {
+      setUploadingMedia(false);
     }
   }, [shopId]);
 
@@ -247,7 +346,13 @@ export default function ProductSlideOver({
           await addVariants(res.productId, newVariants as VariantInput[]);
         }
 
+        // Save context media
+        if (res?.productId) {
+          await saveProductMedia(res.productId, contextMedia.map(m => ({ url: m.url, media_type: m.media_type, tags: m.tags })));
+        }
+
         onSaved({ id: res?.productId ?? '', ...input, currency: 'BDT', draft: false, is_active: input.is_active ?? true }, true);
+        onMovementAdded?.();
       } else {
         await updateProduct(product!.id, input);
 
@@ -262,7 +367,11 @@ export default function ProductSlideOver({
           }
         }
 
+        // Save context media
+        await saveProductMedia(product!.id, contextMedia.map(m => ({ url: m.url, media_type: m.media_type, tags: m.tags })));
+
         onSaved({ ...product!, ...input }, false);
+        onMovementAdded?.();
       }
     });
   };
@@ -278,6 +387,10 @@ export default function ProductSlideOver({
       if (res?.error) { setAdjustError(res.error); return; }
       setAdjustDelta('');
       setAdjustNote('');
+      if (res && 'resultingStock' in res) {
+        onSaved({ ...product!, stock_quantity: res.resultingStock ?? 0 }, false);
+      }
+      onMovementAdded?.();
       // Refresh movements
       getStockMovements(product!.id).then(data => setMovements(data as StockMovement[]));
     });
@@ -288,7 +401,7 @@ export default function ProductSlideOver({
     const qty = parseInt(restockQty, 10);
     if (isNaN(qty) || qty <= 0) return;
     startTransition(async () => {
-      await restockProduct(
+      const res = await restockProduct(
         product!.id,
         qty,
         restockNote || 'Restock',
@@ -301,6 +414,10 @@ export default function ProductSlideOver({
       setRestockNote('');
       setRestockCost('');
       setRestockSupplierId('');
+      if (res && 'resultingStock' in res) {
+        onSaved({ ...product!, stock_quantity: res.resultingStock ?? 0 }, false);
+      }
+      onMovementAdded?.();
       getStockMovements(product!.id).then(data => setMovements(data as StockMovement[]));
     });
   };
@@ -418,6 +535,104 @@ export default function ProductSlideOver({
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
                       <GripVertical className="w-4 h-4 text-white drop-shadow" />
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── 1.5. Context Media (Phase 13) ───────────────────────── */}
+          <section className="p-6 space-y-4 border-t border-dove/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-medium text-ink uppercase tracking-wider">Context Media</h3>
+                <p className="text-[11px] text-ash mt-0.5">Used by AI to answer query details (e.g. real photos/videos)</p>
+              </div>
+            </div>
+
+            <div
+              onDragOver={e => { e.preventDefault(); setMediaDragOver(true); }}
+              onDragLeave={() => setMediaDragOver(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setMediaDragOver(false);
+                handleContextMediaFiles(e.dataTransfer.files);
+              }}
+              onClick={() => mediaInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-cards p-6 text-center cursor-pointer transition-colors ${
+                mediaDragOver ? 'border-ink bg-fog' : 'border-dove/40 hover:border-ink/30 hover:bg-fog/50'
+              }`}
+            >
+              {uploadingMedia ? (
+                <Loader2 className="w-6 h-6 text-graphite mx-auto animate-spin" />
+              ) : (
+                <>
+                  <Upload className="w-6 h-6 text-dove mx-auto mb-2" />
+                  <p className="text-sm text-ash">Drop files or click to upload</p>
+                  <p className="text-xs text-dove mt-1">PNG, JPG, WEBP (5MB max) · MP4, WEBM (50MB & 45s max)</p>
+                </>
+              )}
+              <input
+                ref={mediaInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={e => { if (e.target.files) handleContextMediaFiles(e.target.files); }}
+              />
+            </div>
+
+            {mediaErrors.length > 0 && (
+              <div className="space-y-1">
+                {mediaErrors.map((err, i) => (
+                  <p key={i} className="flex items-center gap-1.5 text-xs text-rust">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {err}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {contextMedia.length > 0 && (
+              <div className="space-y-3">
+                {contextMedia.map((item, idx) => (
+                  <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group">
+                    <div className="w-16 h-16 shrink-0 relative bg-dove/10 rounded-images overflow-hidden flex items-center justify-center">
+                      {item.media_type === 'video' ? (
+                        <video src={item.url} className="w-full h-full object-cover" muted playsInline />
+                      ) : (
+                        <img src={item.url} alt="Context media" className="w-full h-full object-cover" />
+                      )}
+                      <span className="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] px-1 rounded-tl">
+                        {item.media_type}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-1">
+                      <label className="text-[11px] font-medium text-ash">AI Lookup Tags (comma separated)</label>
+                      <input
+                        type="text"
+                        value={item.tags.join(', ')}
+                        placeholder="e.g. #realpic, model wearing, blue color"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setContextMedia(prev => prev.map((x, i) => {
+                            if (i !== idx) return x;
+                            const newTags = val.split(',').map(t => t.trim()).filter(Boolean);
+                            return { ...x, tags: newTags };
+                          }));
+                        }}
+                        className="w-full bg-white border border-dove/20 rounded-inputs px-3 py-1.5 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setContextMedia(prev => prev.filter((_, i) => i !== idx))}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white border border-dove/20 hover:border-rust/30 text-ash hover:text-rust flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -560,12 +775,22 @@ export default function ProductSlideOver({
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-ash">SKU</label>
-                <input
-                  value={sku}
-                  onChange={e => setSku(e.target.value)}
-                  placeholder="e.g. PROD-001"
-                  className="w-full bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={sku}
+                    onChange={e => setSku(e.target.value)}
+                    placeholder="e.g. PROD-001"
+                    className="flex-1 bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSkuScanner(true)}
+                    className="w-[42px] h-[42px] rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 bg-white transition-colors cursor-pointer shrink-0"
+                    title="Scan Barcode"
+                  >
+                    <ScanLine className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -894,6 +1119,15 @@ export default function ProductSlideOver({
           </div>
         </div>
       </div>
+      {showSkuScanner && (
+        <BarcodeScanner
+          onResult={(text) => {
+            setSku(text);
+            setShowSkuScanner(false);
+          }}
+          onClose={() => setShowSkuScanner(false)}
+        />
+      )}
     </div>
   );
 }

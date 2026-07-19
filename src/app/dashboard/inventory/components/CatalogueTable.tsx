@@ -30,6 +30,8 @@ interface Props {
   onExportCSV: () => void;
   onOpenImport: () => void;
   onOpenBarcode: () => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
   // Website import
   shopId: string;
   websiteUrl: string;
@@ -41,16 +43,16 @@ function exportCatalogueCSV(products: Product[]) {
   const rows = [
     ['Name', 'Description', 'Price', 'Stock', 'SKU', 'Category', 'Status'],
     ...products.map(p => [
-      p.name,
+      p.name ?? '',
       p.description ?? '',
-      p.price.toString(),
-      p.stock_quantity.toString(),
+      p.price != null ? p.price.toString() : '0',
+      p.stock_quantity != null ? p.stock_quantity.toString() : '0',
       p.sku ?? '',
       p.category ?? '',
       p.draft ? 'Draft' : (p.is_active ? 'Live' : 'Hidden'),
     ])
   ];
-  const content = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const content = rows.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -74,10 +76,13 @@ export default function CatalogueTable({
   onExportCSV,
   onOpenImport,
   onOpenBarcode,
+  searchQuery,
+  onSearchQueryChange,
   shopId,
   websiteUrl,
 }: Props) {
-  const [search, setSearch] = useState('');
+  const search = searchQuery;
+  const setSearch = onSearchQueryChange;
   const [filter, setFilter] = useState<FilterChip>('all');
   const [sort, setSort] = useState<SortField>('updated_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');

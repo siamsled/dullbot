@@ -635,6 +635,50 @@ AI APPOINTMENT & QUEUE RULES:
       aiMessage = bookingIntercept.cleanedText;
     }
 
+    // Phase 13 AI Pattern Recognition & Context Media Injection
+    const synonyms = /real|asol|video|model|pore|wear|picture|ছবি|ভিডিও|আসল|পরা|pic|photo/i;
+    if (synonyms.test(text.toLowerCase()) && productsWithId && productsWithId.length > 0) {
+      let targetProduct = productsWithId[0];
+      if (productsWithId.length > 1) {
+        const textLower = text.toLowerCase();
+        const found = productsWithId.find(p => textLower.includes(p.name.toLowerCase()) || (p.sku && textLower.includes(p.sku.toLowerCase())));
+        if (found) {
+          targetProduct = found;
+        }
+      }
+      
+      if (targetProduct) {
+        const { data: mediaItems } = await supabaseAdmin
+          .from('product_media')
+          .select('url, media_type, tags')
+          .eq('product_id', targetProduct.id);
+          
+        if (mediaItems && mediaItems.length > 0) {
+          const isVideoQuery = /video|ভিডিও/i.test(text.toLowerCase());
+          let filteredMedia = mediaItems;
+          if (isVideoQuery) {
+            filteredMedia = mediaItems.filter(m => m.media_type === 'video');
+            if (filteredMedia.length === 0) filteredMedia = mediaItems;
+          } else {
+            const imageMedia = mediaItems.filter(m => m.media_type === 'image');
+            if (imageMedia.length > 0) filteredMedia = imageMedia;
+          }
+          
+          if (filteredMedia.length > 0) {
+            const mediaMarkdown = filteredMedia.map(m => {
+              if (m.media_type === 'video') {
+                return `![video](${m.url})`;
+              } else {
+                return `![image](${m.url})`;
+              }
+            }).join('\n');
+            
+            aiMessage += `\n\n${mediaMarkdown}`;
+          }
+        }
+      }
+    }
+
     // Intercept [JOIN_QUEUE: ...] tag
     if (shop.business_type === 'service') {
       const queueRegex = /\[JOIN_QUEUE:\s*(\{[\s\S]*?\})\]/;

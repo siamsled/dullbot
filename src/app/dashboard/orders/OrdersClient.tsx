@@ -90,6 +90,13 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   // Courier selector state (per dispatch)
   const [selectedCourier, setSelectedCourier] = useState<string>('pathao');
 
+  // Print Manager state
+  const [printModalOrders, setPrintModalOrders] = useState<Order[]>([]);
+  const [printDocType, setPrintDocType] = useState<'receipt' | 'packing_slip' | 'label'>('receipt');
+  const [printCopies, setPrintCopies] = useState(1);
+  const [printPageSize, setPrintPageSize] = useState<'thermal_80mm' | 'a4'>('thermal_80mm');
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+
   const activeOrder = orders.find(o => o.id === activeOrderId);
 
   useEffect(() => {
@@ -268,60 +275,95 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
     }
   };
 
-  // Print receipts for an array of orders
-  const handlePrintReceipts = (targets: Order[]) => {
+  // ── Print Manager ──────────────────────────────────────────────────────────
+  const openPrintManager = (targets: Order[]) => {
     if (targets.length === 0) return;
-    const html = `
-<!DOCTYPE html>
+    setPrintModalOrders(targets);
+    setPrintModalOpen(true);
+  };
+
+  const generatePrintHTML = (targets: Order[], docType: typeof printDocType, copies: number, pageSize: typeof printPageSize) => {
+    const isA4 = pageSize === 'a4';
+    const w = isA4 ? '210mm' : '80mm';
+    const fontSz = isA4 ? '12px' : '10px';
+    const padded = Array.from({ length: copies }, () => targets).flat();
+
+    const docBlocks = padded.map(o => {
+      if (docType === 'receipt') {
+        return `
+<div class="doc">
+  <h1>Order Receipt</h1>
+  <p class="sub">#${o.id.slice(0,8)} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleDateString('en-GB')}</p>
+  <hr/>
+  <div class="row"><span>Customer</span><span>${o.customerName}</span></div>
+  <div class="row"><span>Phone</span><span>${o.customerPhone}</span></div>
+  <div class="row"><span>Address</span><span class="right">${o.customerAddress}</span></div>
+  <hr/>
+  ${o.lineItems.map(li => `<div class="row"><span>${li.product_name} ×${li.quantity}</span><span>৳${(li.quantity * li.unit_price).toLocaleString()}</span></div>`).join('')}
+  <hr/>
+  <div class="row"><span>Delivery</span><span>৳100</span></div>
+  <div class="row total"><span>Total</span><span>৳${(o.totalAmount ?? 0).toLocaleString()}</span></div>
+  ${o.paymentTransactionRef ? `<div class="row"><span>TrxID</span><span>${o.paymentTransactionRef}</span></div>` : ''}
+  ${o.courierTrackingId ? `<div class="row"><span>Tracking (${o.courierProvider ?? ''})</span><span>${o.courierTrackingId}</span></div>` : ''}
+  <p class="footer">Thank you for your order!</p>
+</div>`;
+      }
+      if (docType === 'packing_slip') {
+        return `
+<div class="doc">
+  <h1>Packing Slip</h1>
+  <p class="sub">#${o.id.slice(0,8)}</p>
+  <hr/>
+  <div class="row"><span>Ship To</span><span class="right">${o.customerName}, ${o.customerPhone}<br/>${o.customerAddress}</span></div>
+  <hr/>
+  ${o.lineItems.map(li => `<div class="row"><span>${li.product_name}</span><span>×${li.quantity}</span></div>`).join('')}
+  <hr/>
+  <div class="row"><span>Items</span><span>${o.lineItems.reduce((s,li)=>s+li.quantity,0)}</span></div>
+</div>`;
+      }
+      // label
+      return `
+<div class="doc label-doc">
+  <p class="to-label">SHIP TO:</p>
+  <p class="to-name">${o.customerName}</p>
+  <p class="to-phone">${o.customerPhone}</p>
+  <p class="to-addr">${o.customerAddress}</p>
+  <hr/>
+  <p class="order-ref">#${o.id.slice(0,8)} &nbsp; ${new Date(o.createdAt).toLocaleDateString('en-GB')}</p>
+</div>`;
+    }).join('');
+
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Receipts — DullBot</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Courier New', monospace; background: #fff; }
-    .receipt { width: 300px; margin: 20px auto; padding: 20px; border: 1px dashed #ccc; page-break-after: always; }
-    .receipt:last-child { page-break-after: avoid; }
-    .receipt h1 { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 4px; }
-    .receipt .sub { font-size: 10px; text-align: center; color: #666; margin-bottom: 12px; }
-    .divider { border-top: 1px dashed #ccc; margin: 10px 0; }
-    .row { display: flex; justify-content: space-between; font-size: 11px; margin: 3px 0; }
-    .row.bold { font-weight: bold; }
-    .label { color: #555; }
-    .footer { font-size: 9px; text-align: center; color: #999; margin-top: 12px; }
-    @media print { body { margin: 0; } }
-  </style>
+<meta charset="UTF-8">
+<title>Print — DullBot</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; font-size: ${fontSz}; background: #fff; }
+  .doc { width: ${w}; margin: 0 auto 20px; padding: 14px; border: 1px dashed #bbb; page-break-after: always; }
+  .doc:last-child { page-break-after: avoid; }
+  h1 { font-size: calc(${fontSz} + 2px); text-align: center; margin-bottom: 3px; font-weight: bold; }
+  .sub { font-size: calc(${fontSz} - 1px); text-align: center; color: #666; margin-bottom: 8px; }
+  hr { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
+  .row { display: flex; justify-content: space-between; gap: 4px; margin: 2px 0; }
+  .row .right { text-align: right; }
+  .row.total { font-weight: bold; }
+  .footer { font-size: calc(${fontSz} - 1px); text-align: center; color: #888; margin-top: 10px; }
+  .label-doc { text-align: left; }
+  .to-label { font-size: calc(${fontSz} - 1px); color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+  .to-name { font-size: calc(${fontSz} + 3px); font-weight: bold; }
+  .to-phone { font-size: ${fontSz}; color: #333; }
+  .to-addr { font-size: ${fontSz}; margin-top: 2px; }
+  .order-ref { font-size: calc(${fontSz} - 1px); color: #888; margin-top: 4px; }
+  @media print { body { margin: 0; } @page { size: ${isA4 ? 'A4' : '80mm auto'}; margin: 0; } }
+</style>
 </head>
-<body>
-  ${targets.map(o => `
-  <div class="receipt">
-    <h1>DullBot Store</h1>
-    <div class="sub">Order Receipt</div>
-    <div class="divider"></div>
-    <div class="row"><span class="label">Order ID</span><span>#${o.id.slice(0,8)}</span></div>
-    <div class="row"><span class="label">Date</span><span>${new Date(o.createdAt).toLocaleDateString('en-GB')}</span></div>
-    <div class="row"><span class="label">Customer</span><span>${o.customerName}</span></div>
-    <div class="row"><span class="label">Phone</span><span>${o.customerPhone}</span></div>
-    <div class="row"><span class="label">Address</span><span style="text-align:right;max-width:150px;">${o.customerAddress}</span></div>
-    <div class="divider"></div>
-    ${o.lineItems.map(li => `<div class="row"><span>${li.product_name} x${li.quantity}</span><span>\u09F3${(li.quantity * li.unit_price).toLocaleString()}</span></div>`).join('')}
-    <div class="divider"></div>
-    <div class="row"><span class="label">Delivery</span><span>\u09F3100</span></div>
-    <div class="row bold"><span>Total</span><span>\u09F3${(o.totalAmount ?? 0).toLocaleString()}</span></div>
-    ${o.paymentTransactionRef ? `<div class="row"><span class="label">TrxID</span><span>${o.paymentTransactionRef}</span></div>` : ''}
-    ${o.courierTrackingId ? `<div class="row"><span class="label">Tracking</span><span>${o.courierTrackingId}</span></div>` : ''}
-    <div class="footer">Thank you for shopping with us!</div>
-  </div>
-  `).join('')}
-</body>
+<body>${docBlocks}</body>
 </html>`;
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 400);
   };
+
+  const handlePrintReceipts = (targets: Order[]) => openPrintManager(targets);
 
   const handleCancel = async () => {
     if (!activeOrderId || !cancellationReason.trim()) return;
@@ -1050,6 +1092,132 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                   </div>
                 </div>
 
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── PRINT MANAGER MODAL ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {printModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPrintModalOpen(false)}
+              className="fixed inset-0 z-50 bg-black"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+              className="fixed inset-x-4 top-12 bottom-12 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[820px] z-50 bg-white rounded-cards shadow-2xl flex flex-col overflow-hidden border border-dove/20"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-dove/15 bg-fog/30 shrink-0">
+                <div>
+                  <h2 className="text-base font-serif font-medium text-ink">Print Manager</h2>
+                  <p className="text-[11px] text-ash mt-0.5">
+                    {printModalOrders.length} order{printModalOrders.length !== 1 ? 's' : ''} selected
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPrintModalOpen(false)}
+                  className="p-1.5 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Controls + Preview */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Left: Controls */}
+                <div className="w-56 shrink-0 border-r border-dove/15 p-5 space-y-6 overflow-y-auto">
+
+                  {/* Document Type */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Document Type</label>
+                    {(['receipt', 'packing_slip', 'label'] as const).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setPrintDocType(type)}
+                        className={`w-full text-left px-3 py-2 rounded-inputs text-xs font-medium border transition-all ${
+                          printDocType === type ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-dove/20 hover:bg-fog'
+                        }`}
+                      >
+                        {type === 'receipt' ? '🧾 Receipt' : type === 'packing_slip' ? '📦 Packing Slip' : '🏷 Shipping Label'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Page Size */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Page Size</label>
+                    {(['thermal_80mm', 'a4'] as const).map(size => (
+                      <button
+                        key={size}
+                        onClick={() => setPrintPageSize(size)}
+                        className={`w-full text-left px-3 py-2 rounded-inputs text-xs font-medium border transition-all ${
+                          printPageSize === size ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-dove/20 hover:bg-fog'
+                        }`}
+                      >
+                        {size === 'thermal_80mm' ? '🖨 Thermal (80mm)' : '📄 A4 Paper'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Copies */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Copies per Order</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPrintCopies(c => Math.max(1, c - 1))}
+                        className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-inputs text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                      >
+                        −
+                      </button>
+                      <span className="text-sm font-semibold text-ink w-6 text-center">{printCopies}</span>
+                      <button
+                        onClick={() => setPrintCopies(c => Math.min(10, c + 1))}
+                        className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-inputs text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Print CTA */}
+                  <button
+                    onClick={() => {
+                      const html = generatePrintHTML(printModalOrders, printDocType, printCopies, printPageSize);
+                      const win = window.open('', '_blank');
+                      if (!win) return;
+                      win.document.write(html);
+                      win.document.close();
+                      win.focus();
+                      setTimeout(() => { win.print(); }, 400);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-graphite transition-colors shadow-subtle"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    Print Now
+                  </button>
+                </div>
+
+                {/* Right: Preview iframe */}
+                <div className="flex-1 bg-dove/5 overflow-hidden relative">
+                  <div className="absolute top-2 left-3 text-[10px] text-ash font-medium uppercase tracking-wider">Live Preview</div>
+                  <iframe
+                    key={`${printDocType}-${printCopies}-${printPageSize}`}
+                    srcDoc={generatePrintHTML(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
+                    title="Print Preview"
+                    className="w-full h-full border-none mt-6"
+                    sandbox="allow-same-origin"
+                  />
+                </div>
               </div>
             </motion.div>
           </>
