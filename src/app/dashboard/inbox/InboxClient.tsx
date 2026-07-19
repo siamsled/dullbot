@@ -583,7 +583,25 @@ export default function InboxClient({
             {(['all', 'tickets', 'confirmed', 'test'] as const).map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f)}
+                onClick={() => {
+                  setFilter(f);
+                  const nextFiltered = conversations.filter(conv => {
+                    if (f === 'test') return !!conv.is_test;
+                    if (conv.is_test) return false;
+                    if (f === 'tickets') {
+                      return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
+                    }
+                    if (f === 'confirmed') {
+                      return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
+                    }
+                    return true;
+                  });
+                  if (nextFiltered.length > 0) {
+                    setActiveId(nextFiltered[0].id);
+                  } else {
+                    setActiveId(null);
+                  }
+                }}
                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-md border transition-all whitespace-nowrap ${
                   filter === f
                     ? 'bg-ink text-white border-ink shadow-sm'

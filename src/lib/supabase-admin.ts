@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 // Admin client using service role key, bypassing RLS
 // Use carefully and ONLY in server-side routes/functions
@@ -17,7 +18,7 @@ export const supabaseAdmin = createClient(
   supabaseServiceKey || 'dummy'
 );
 
-export async function getCurrentShop() {
+export const getCurrentShop = cache(async function getCurrentShop() {
   let cookieStore;
   try {
     cookieStore = await cookies();
@@ -92,5 +93,5 @@ export async function getCurrentShop() {
       .single();
     return shop;
   }
-}
+});
 
