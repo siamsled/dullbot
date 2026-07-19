@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Box, Plus, Search, Trash2, Edit2, X, Clock, DollarSign, Loader2, 
@@ -12,7 +12,7 @@ import {
   upsertResource, deleteResource, saveAvailabilityRules,
   addAvailabilityException, deleteAvailabilityException,
   createBooking, cancelBooking, rescheduleBooking, updateBookingStatus,
-  getAvailableSlots
+  getAvailableSlots, joinQueueAction, callNextInQueueAction, getTodayQueueAction
 } from './actions';
 
 interface Service {
@@ -25,6 +25,8 @@ interface Service {
   active: boolean;
   buffer_minutes: number;
   requires_resource_type: string;
+  deposit_required: boolean;
+  deposit_amount: number;
   created_at: string;
 }
 
@@ -96,6 +98,14 @@ export default function ServicesClient({
   const [availabilityExceptions, setAvailabilityExceptions] = useState<AvailabilityException[]>(initialAvailabilityExceptions);
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
 
+  // Waitlist States
+  const [queueEntries, setQueueEntries] = useState<any[]>([]);
+  const [queueResourceFilter, setQueueResourceFilter] = useState<string>('all');
+  const [isAddingQueueGuest, setIsAddingQueueGuest] = useState(false);
+  const [newQueuePhone, setNewQueuePhone] = useState('');
+  const [newQueueName, setNewQueueName] = useState('');
+  const [isCallingNext, setIsCallingNext] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isPending, startTransition] = useTransition();
 
@@ -109,8 +119,51 @@ export default function ServicesClient({
   const [serviceBuffer, setServiceBuffer] = useState('0');
   const [serviceResourceType, setServiceResourceType] = useState('staff');
   const [serviceActive, setServiceActive] = useState(true);
+  const [serviceDepositRequired, setServiceDepositRequired] = useState(false);
+  const [serviceDepositAmount, setServiceDepositAmount] = useState('0');
   const [serviceError, setServiceError] = useState('');
   const [isSavingService, setIsSavingService] = useState(false);
+
+  // Waitlist Handlers
+  const fetchQueue = useCallback(async () => {
+    const res = await getTodayQueueAction(shopId, queueResourceFilter === 'all' ? null : queueResourceFilter);
+    if (res.success && res.data) {
+      setQueueEntries(res.data);
+    }
+  }, [shopId, queueResourceFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      fetchQueue();
+      const interval = setInterval(fetchQueue, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, fetchQueue]);
+
+  const handleCallNext = async () => {
+    setIsCallingNext(true);
+    const res = await callNextInQueueAction(shopId, queueResourceFilter === 'all' ? null : queueResourceFilter);
+    setIsCallingNext(false);
+    if (res.success) {
+      fetchQueue();
+    }
+  };
+
+  const handleAddQueueGuest = async () => {
+    if (!newQueueName.trim() || !newQueuePhone.trim()) return;
+    const res = await joinQueueAction(
+      shopId,
+      queueResourceFilter === 'all' ? null : queueResourceFilter,
+      newQueuePhone.trim(),
+      newQueueName.trim()
+    );
+    if (res.success) {
+      setNewQueueName('');
+      setNewQueuePhone('');
+      setIsAddingQueueGuest(false);
+      fetchQueue();
+    }
+  };
 
   // ─── Resource Form Dialog/Slide-over ─────────────────────────────────────────
   const [resourceSlideOpen, setResourceSlideOpen] = useState(false);
@@ -217,6 +270,8 @@ export default function ServicesClient({
     setServiceBuffer('0');
     setServiceResourceType('staff');
     setServiceActive(true);
+    setServiceDepositRequired(false);
+    setServiceDepositAmount('0');
     setServiceError('');
     setServiceSlideOpen(true);
   };
@@ -230,6 +285,8 @@ export default function ServicesClient({
     setServiceBuffer((service.buffer_minutes || 0).toString());
     setServiceResourceType(service.requires_resource_type || 'staff');
     setServiceActive(service.active);
+    setServiceDepositRequired(service.deposit_required || false);
+    setServiceDepositAmount((service.deposit_amount || 0).toString());
     setServiceError('');
     setServiceSlideOpen(true);
   };
@@ -251,6 +308,8 @@ export default function ServicesClient({
       buffer_minutes: Number(serviceBuffer),
       requires_resource_type: serviceResourceType,
       active: serviceActive,
+      deposit_required: serviceDepositRequired,
+      deposit_amount: Number(serviceDepositAmount),
     });
 
     setIsSavingService(false);
@@ -896,160 +955,290 @@ export default function ServicesClient({
       {/* 3. BOOKINGS TAB (CALENDAR VIEW) */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {activeTab === 'bookings' && (
-        <div className="bg-white rounded-cards border border-dove/20 shadow-subtle overflow-hidden">
-          
-          {calendarView === 'grid' ? (
-            /* Google Calendar style side-by-side columns view */
-            <div className="flex flex-col h-[650px] relative overflow-hidden">
-              
-              {/* Columns Header (Resource Names) */}
-              <div className="flex bg-fog border-b border-dove/20 shrink-0 select-none">
-                {/* Time ruler placeholder column */}
-                <div className="w-16 border-r border-dove/20 shrink-0"></div>
-                {/* Active resources columns */}
-                <div className="flex-1 flex min-w-0 divide-x divide-dove/20">
-                  {resources.filter(r => r.active).map(res => (
-                    <div key={res.id} className="flex-1 min-w-[140px] py-3 text-center flex flex-col justify-center items-center">
-                      <span className="text-xs font-bold text-ink truncate max-w-[90%]">{res.name}</span>
-                      <span className="text-[9px] font-semibold text-ash uppercase tracking-wider mt-0.5">{res.resource_type}</span>
-                    </div>
-                  ))}
-                  {resources.filter(r => r.active).length === 0 && (
-                    <div className="flex-1 py-3 text-center text-xs text-ash italic">No active resources to display.</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Scrollable Hours Ruler & Columns Content */}
-              <div className="flex-1 flex overflow-y-auto relative min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 bg-white rounded-cards border border-dove/20 shadow-subtle overflow-hidden">
+            
+            {calendarView === 'grid' ? (
+              /* Google Calendar style side-by-side columns view */
+              <div className="flex flex-col h-[650px] relative overflow-hidden">
                 
-                {/* Left Time ruler (8 AM to 10 PM) */}
-                <div className="w-16 bg-fog border-r border-dove/20 shrink-0 select-none flex flex-col pt-2 text-[10px] text-ash/80 font-mono text-center divide-y divide-transparent">
-                  {Array.from({ length: 15 }).map((_, idx) => {
-                    const hour = 8 + idx;
-                    const label = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
-                    return (
-                      <div key={idx} className="h-16 flex items-start justify-center pr-1 -mt-2">
-                        <span>{label}</span>
+                {/* Columns Header (Resource Names) */}
+                <div className="flex bg-fog border-b border-dove/20 shrink-0 select-none">
+                  {/* Time ruler placeholder column */}
+                  <div className="w-16 border-r border-dove/20 shrink-0"></div>
+                  {/* Active resources columns */}
+                  <div className="flex-1 flex min-w-0 divide-x divide-dove/20">
+                    {resources.filter(r => r.active).map(res => (
+                      <div key={res.id} className="flex-1 min-w-[140px] py-3 text-center flex flex-col justify-center items-center">
+                        <span className="text-xs font-bold text-ink truncate max-w-[90%]">{res.name}</span>
+                        <span className="text-[9px] font-semibold text-ash uppercase tracking-wider mt-0.5">{res.resource_type}</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                    {resources.filter(r => r.active).length === 0 && (
+                      <div className="flex-1 py-3 text-center text-xs text-ash italic">No active resources to display.</div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Day Columns containing timeline grids and booking cards */}
-                <div className="flex-1 flex min-w-0 divide-x divide-dove/20 relative">
+                {/* Scrollable Hours Ruler & Columns Content */}
+                <div className="flex-1 flex overflow-y-auto relative min-h-0">
                   
-                  {/* Background hour lines */}
-                  <div className="absolute inset-y-0 left-0 right-0 flex flex-col pointer-events-none divide-y divide-dove/10 z-0">
-                    {Array.from({ length: 15 }).map((_, idx) => (
-                      <div key={idx} className="h-16 w-full"></div>
-                    ))}
+                  {/* Left Time ruler (8 AM to 10 PM) */}
+                  <div className="w-16 bg-fog border-r border-dove/20 shrink-0 select-none flex flex-col pt-2 text-[10px] text-ash/80 font-mono text-center divide-y divide-transparent">
+                    {Array.from({ length: 15 }).map((_, idx) => {
+                      const hour = 8 + idx;
+                      const label = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
+                      return (
+                        <div key={idx} className="h-16 flex items-start justify-center pr-1 -mt-2">
+                          <span>{label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {resources.filter(r => r.active).map(res => {
-                    const resBookings = todaysBookings.filter(b => b.resource_id === res.id);
+                  {/* Day Columns containing timeline grids and booking cards */}
+                  <div className="flex-1 flex min-w-0 divide-x divide-dove/20 relative">
                     
-                    return (
-                      <div key={res.id} className="flex-1 min-w-[140px] relative h-[960px] z-10">
-                        
-                        {/* Invisible clickable rows for adding new bookings */}
-                        <div className="absolute inset-0 flex flex-col z-0">
-                          {Array.from({ length: 28 }).map((_, halfHourIdx) => {
-                            const totalMins = 8 * 60 + halfHourIdx * 30;
-                            const h = Math.floor(totalMins / 60);
-                            const m = totalMins % 60;
-                            const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    {/* Background hour lines */}
+                    <div className="absolute inset-y-0 left-0 right-0 flex flex-col pointer-events-none divide-y divide-dove/10 z-0">
+                      {Array.from({ length: 15 }).map((_, idx) => (
+                        <div key={idx} className="h-16 w-full"></div>
+                      ))}
+                    </div>
+
+                    {resources.filter(r => r.active).map(res => {
+                      const resBookings = todaysBookings.filter(b => b.resource_id === res.id);
+                      
+                      return (
+                        <div key={res.id} className="flex-1 min-w-[140px] relative h-[960px] z-10">
+                          
+                          {/* Invisible clickable rows for adding new bookings */}
+                          <div className="absolute inset-0 flex flex-col z-0">
+                            {Array.from({ length: 28 }).map((_, halfHourIdx) => {
+                              const totalMins = 8 * 60 + halfHourIdx * 30;
+                              const h = Math.floor(totalMins / 60);
+                              const m = totalMins % 60;
+                              const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                              
+                              return (
+                                <div
+                                  key={halfHourIdx}
+                                  onClick={() => {
+                                    setSelectedResourceForBooking(res);
+                                    setBookingTime(timeString);
+                                    setBookingServiceId(services[0]?.id || '');
+                                    setBookingModalOpen(true);
+                                  }}
+                                  className="h-8 w-full hover:bg-sky-wash/30 cursor-crosshair border-b border-dashed border-dove/5 transition-colors"
+                                  title={`Book ${res.name} at ${timeString}`}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          {/* Positioned Booking Cards */}
+                          {resBookings.map(booking => {
+                            const layout = getBookingLayout(booking.starts_at, booking.ends_at);
+                            const serviceName = booking.services?.name || 'Service';
                             
                             return (
                               <div
-                                key={halfHourIdx}
-                                onClick={() => {
-                                  setSelectedResourceForBooking(res);
-                                  setBookingTime(timeString);
-                                  setBookingServiceId(services[0]?.id || '');
-                                  setBookingModalOpen(true);
+                                key={booking.id}
+                                style={layout}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDetailBooking(booking);
                                 }}
-                                className="h-8 w-full hover:bg-sky-wash/30 cursor-crosshair border-b border-dashed border-dove/5 transition-colors"
-                                title={`Book ${res.name} at ${timeString}`}
-                              />
-                            );
-                          })}
-                        </div>
-
-                        {/* Positioned Booking Cards */}
-                        {resBookings.map(booking => {
-                          const layout = getBookingLayout(booking.starts_at, booking.ends_at);
-                          const serviceName = booking.services?.name || 'Service';
-                          
-                          return (
-                            <div
-                              key={booking.id}
-                              style={layout}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDetailBooking(booking);
-                              }}
-                              className="absolute left-1 right-1 px-3 py-1.5 rounded-lg border bg-ink text-white hover:bg-black/95 transition-all shadow-sm cursor-pointer z-10 flex flex-col justify-center select-none"
-                            >
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[10px] font-bold truncate leading-tight">
-                                  {booking.customer_name}
-                                </span>
-                                <span className="text-[8px] font-mono shrink-0 font-medium tracking-tight bg-white/10 px-1 rounded">
-                                  {new Date(booking.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                className="absolute left-1 right-1 px-3 py-1.5 rounded-lg border bg-ink text-white hover:bg-black/95 transition-all shadow-sm cursor-pointer z-10 flex flex-col justify-center select-none"
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[10px] font-bold truncate leading-tight">
+                                    {booking.customer_name}
+                                  </span>
+                                  <span className="text-[8px] font-mono shrink-0 font-medium tracking-tight bg-white/10 px-1 rounded">
+                                    {new Date(booking.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <span className="text-[9px] text-white/70 truncate mt-0.5">
+                                  {serviceName} {booking.party_size > 1 ? `(Qty: ${booking.party_size})` : ''}
                                 </span>
                               </div>
-                              <span className="text-[9px] text-white/70 truncate mt-0.5">
-                                {serviceName} {booking.party_size > 1 ? `(Qty: ${booking.party_size})` : ''}
-                              </span>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
 
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                  </div>
+
                 </div>
 
               </div>
-
-            </div>
-          ) : (
-            /* Agenda List View fallback for mobile */
-            <div className="p-6 divide-y divide-dove/10 max-h-[500px] overflow-y-auto">
-              {todaysBookings.map(b => (
-                <div key={b.id} className="py-4 flex justify-between items-center gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-ink">{b.customer_name}</span>
-                      <span className="text-xs text-ash">({b.customer_phone})</span>
+            ) : (
+              /* Agenda List View fallback for mobile */
+              <div className="p-6 divide-y divide-dove/10 max-h-[650px] overflow-y-auto">
+                {todaysBookings.map(b => (
+                  <div key={b.id} className="py-4 flex justify-between items-center gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-ink">{b.customer_name}</span>
+                        <span className="text-xs text-ash">({b.customer_phone})</span>
+                      </div>
+                      <p className="text-xs text-graphite font-semibold">
+                        {b.services?.name} with {b.resources?.name}
+                      </p>
+                      <p className="text-[10px] text-ash font-mono">
+                        {new Date(b.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(b.ends_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
-                    <p className="text-xs text-graphite font-semibold">
-                      {b.services?.name} with {b.resources?.name}
-                    </p>
-                    <p className="text-[10px] text-ash font-mono">
-                      {new Date(b.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(b.ends_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setDetailBooking(b)}
+                        className="px-3 py-1.5 rounded-lg border border-dove/25 hover:bg-fog text-xs font-semibold text-ink transition-colors"
+                      >
+                        Reschedule / Edit
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setDetailBooking(b)}
-                      className="px-3 py-1.5 rounded-lg border border-dove/25 hover:bg-fog text-xs font-semibold text-ink transition-colors"
-                    >
-                      Reschedule / Edit
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
 
-              {todaysBookings.length === 0 && (
-                <div className="py-16 text-center text-ash text-sm">
-                  No appointments confirmed for this date.
+                {todaysBookings.length === 0 && (
+                  <div className="py-16 text-center text-ash text-sm">
+                    No appointments confirmed for this date.
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+          {/* Waitlist Section */}
+          <div className="lg:col-span-1 bg-white rounded-cards border border-dove/20 shadow-subtle p-5 flex flex-col space-y-4 h-[650px]">
+            <div className="flex justify-between items-center pb-2 border-b border-dove/10">
+              <div>
+                <h3 className="text-sm font-bold text-ink flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-graphite" />
+                  Live Waitlist
+                </h3>
+                <p className="text-[10px] text-ash">Today&apos;s active serial queue</p>
+              </div>
+              <button 
+                onClick={fetchQueue}
+                className="p-1.5 hover:bg-fog text-graphite hover:text-ink rounded-lg transition-colors"
+                title="Refresh Queue"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Filter by Resource */}
+            <div>
+              <label className="text-[10px] font-bold text-ink uppercase tracking-wider block mb-1">Queue Resource</label>
+              <select
+                value={queueResourceFilter}
+                onChange={(e) => setQueueResourceFilter(e.target.value)}
+                className="w-full bg-fog border border-transparent rounded-inputs py-2 px-3 text-ink text-xs focus:border-ink focus:ring-0 focus:outline-none"
+              >
+                <option value="all">All Resources</option>
+                {resources.filter(r => r.active).map(res => (
+                  <option key={res.id} value={res.id}>{res.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Active Serving Status Card */}
+            <div className="bg-fog/50 rounded-lg p-4 border border-dove/10 text-center space-y-2">
+              <span className="text-[9px] font-bold text-ash uppercase tracking-wider block">Currently Serving</span>
+              {queueEntries.some(e => e.status === 'being_served') ? (
+                (() => {
+                  const serving = queueEntries.find(e => e.status === 'being_served');
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-ink">{serving.customer_name}</p>
+                      <p className="text-xs text-graphite">Serial #{serving.serial_number}</p>
+                      <p className="text-[10px] text-ash">({serving.customer_phone})</p>
+                    </div>
+                  );
+                })()
+              ) : (
+                <p className="text-xs text-ash italic py-1">No active customer being served</p>
+              )}
+
+              <button
+                onClick={handleCallNext}
+                disabled={isCallingNext}
+                className="w-full mt-2 py-2 px-3 bg-ink hover:bg-black disabled:bg-dove/40 text-white rounded-buttons text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                {isCallingNext ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                Call Next Guest
+              </button>
+            </div>
+
+            {/* Queue List */}
+            <div className="flex-1 flex flex-col min-h-0 space-y-2">
+              <span className="text-[9px] font-bold text-ash uppercase tracking-wider block">Waiting List</span>
+              <div className="flex-1 overflow-y-auto divide-y divide-dove/5 border border-dove/10 rounded-lg bg-fog/20 px-3">
+                {queueEntries.filter(e => e.status === 'waiting').length > 0 ? (
+                  queueEntries.filter(e => e.status === 'waiting').map((entry) => (
+                    <div key={entry.id} className="py-2.5 flex justify-between items-center text-xs">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-ink">#{entry.serial_number}</span>
+                          <span className="font-semibold text-graphite truncate max-w-[100px]">{entry.customer_name}</span>
+                        </div>
+                        <span className="text-[10px] text-ash block">{entry.customer_phone}</span>
+                      </div>
+                      <span className="text-[9px] text-ash font-mono">
+                        {new Date(entry.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-ash italic text-center py-8">No guests currently waiting</p>
+                )}
+              </div>
+            </div>
+
+            {/* Manual Add Form Toggle */}
+            <div className="pt-2 border-t border-dove/10">
+              {isAddingQueueGuest ? (
+                <div className="space-y-3 bg-fog p-3 rounded-lg border border-dove/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-ink uppercase tracking-wider">Add Queue Guest</span>
+                    <button onClick={() => setIsAddingQueueGuest(false)} className="text-ash hover:text-rust text-xs">Cancel</button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Guest Name"
+                    value={newQueueName}
+                    onChange={e => setNewQueueName(e.target.value)}
+                    className="w-full bg-white border border-dove/20 rounded-inputs px-2.5 py-1.5 text-xs text-ink focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Phone (e.g. 01712345678)"
+                    value={newQueuePhone}
+                    onChange={e => setNewQueuePhone(e.target.value)}
+                    className="w-full bg-white border border-dove/20 rounded-inputs px-2.5 py-1.5 text-xs text-ink focus:outline-none"
+                  />
+                  <button
+                    onClick={handleAddQueueGuest}
+                    className="w-full py-1.5 bg-ink text-white hover:bg-black text-xs font-semibold rounded-buttons transition-colors"
+                  >
+                    Confirm Add
+                  </button>
                 </div>
+              ) : (
+                <button
+                  onClick={() => setIsAddingQueueGuest(true)}
+                  className="w-full py-2 bg-fog hover:bg-dove/10 text-graphite rounded-buttons text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Walk-in Guest
+                </button>
               )}
             </div>
-          )}
-
+          </div>
         </div>
       )}
 
@@ -1110,6 +1299,25 @@ export default function ServicesClient({
                         <option value="room">Room / Cabin</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-3 bg-fog rounded-inputs">
+                      <span className="text-xs font-bold text-ink uppercase tracking-wider">Require Deposit</span>
+                      <button
+                        type="button"
+                        onClick={() => setServiceDepositRequired(!serviceDepositRequired)}
+                        className={`relative w-10 h-5.5 rounded-full transition-colors shrink-0 ${serviceDepositRequired ? 'bg-ink' : 'bg-dove/40'}`}
+                      >
+                        <div className={`absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full shadow transition-transform ${serviceDepositRequired ? 'translate-x-5 left-0.5' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                    {serviceDepositRequired && (
+                      <div>
+                        <label className="text-[10px] font-bold text-ink uppercase tracking-wider block mb-1">Deposit Amount (BDT)</label>
+                        <input type="text" value={serviceDepositAmount} onChange={(e) => setServiceDepositAmount(e.target.value)} placeholder="500" className="w-full bg-fog border border-transparent rounded-inputs py-2.5 px-3.5 text-ink text-sm focus:border-ink focus:ring-0 focus:outline-none" />
+                      </div>
+                    )}
                   </div>
 
                   {serviceError && <p className="text-xs text-rust font-semibold">{serviceError}</p>}

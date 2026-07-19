@@ -571,16 +571,33 @@ export async function processIncomingMessage(
   let finalPrompt = systemPrompt;
   if (shop.business_type === 'service') {
     const availabilityBlock = await getUpcoming3DaysAvailability(shop.id, productsWithId);
-    finalPrompt += `\n\nUPCOMING 3 DAYS BOOKING AVAILABILITY (UTC+6/BST Timezone):\n${availabilityBlock}\n
-AI APPOINTMENT BOOKING RULE:
-If the customer wants to schedule or book an appointment:
-1. Propose 2-3 specific available times from the list above in your persona's natural voice (do not just list them).
-2. You must collect:
-   - Customer Name
-   - Customer Phone Number
-3. Once you have both details AND the user confirms their chosen slot, you MUST append this booking tag to the very end of your final response (on a new line):
-   [CREATE_BOOKING: {"service_id": "<SERVICE_UUID>", "starts_at": "<ISO_DATETIME>", "customer_name": "<NAME>", "customer_phone": "<PHONE>", "party_size": 1}]
-   Replace <SERVICE_UUID> with the actual service ID, <ISO_DATETIME> with the starts_at slot (e.g. "2026-07-21T10:00:00.000Z"), and customer details. Keep your response short and append this tag quietly at the end.`;
+    
+    // Fetch today's waitlist details for this customer if they are on it
+    let queueStatusContext = '';
+    try {
+      const { getWaitTimeEstimate } = await import('./waitlist');
+      const waitTimeRes = await getWaitTimeEstimate(shop.id, null, customerPhone);
+      if (waitTimeRes.success && waitTimeRes.serial_number) {
+        queueStatusContext = `\n\nCUSTOMER QUEUE STATUS:\n- The customer has joined today's live waitlist queue.\n- Their serial number: #${waitTimeRes.serial_number}\n- Active position ahead of them: ${waitTimeRes.position} people\n- Estimated wait time: ${waitTimeRes.minutes} minutes\n`;
+      }
+    } catch (e) {
+      console.error('[PROMPT BUILDER] failed to fetch queue estimate:', e);
+    }
+
+    finalPrompt += `\n\nUPCOMING 3 DAYS BOOKING AVAILABILITY (UTC+6/BST Timezone):\n${availabilityBlock}\n${queueStatusContext}
+AI APPOINTMENT & QUEUE RULES:
+1. Booking Appointments:
+   - Propose 2-3 specific available times from the availability list in your persona's natural voice.
+   - You must collect Customer Name and Customer Phone Number.
+   - Once confirmed, append:
+     [CREATE_BOOKING: {"service_id": "<SERVICE_UUID>", "starts_at": "<ISO_DATETIME>", "customer_name": "<NAME>", "customer_phone": "<PHONE>"}]
+   - Note on Deposit: If a service requires a deposit, booking status starts as pending_deposit. Ask the customer to send the deposit via bKash/Nagad to the merchant account and provide the TrxID.
+
+2. Live Queue / Serial Waitlist:
+   - If the customer wants to join the daily queue/waitlist (e.g. "ami serial nite chai"), you must collect Name and Phone. Once confirmed, append this queue tag to the end of your response:
+     [JOIN_QUEUE: {"customer_name": "<NAME>", "customer_phone": "<PHONE>"}]
+   - If they ask about their wait time or queue status (e.g. "amar koto shomoy lagbe?"), refer to the CUSTOMER QUEUE STATUS injected above (e.g. "Your serial number is #X, you have Y people ahead of you, and it will take about Z minutes").
+   - If they ask to join but are already in the queue, inform them politely of their active serial and wait time rather than submitting a duplicate JOIN_QUEUE tag.`;
   }
 
   // 5.5 Check Gemini Prompt Cache
@@ -616,6 +633,26 @@ If the customer wants to schedule or book an appointment:
     if (shop.business_type === 'service') {
       const bookingIntercept = await handleBookingCreationIntercept(conversation.id, shop.id, aiMessage);
       aiMessage = bookingIntercept.cleanedText;
+    }
+
+    // Intercept [JOIN_QUEUE: ...] tag
+    if (shop.business_type === 'service') {
+      const queueRegex = /\[JOIN_QUEUE:\s*(\{[\s\S]*?\})\]/;
+      const queueMatch = aiMessage.match(queueRegex);
+      if (queueMatch) {
+        try {
+          const payload = JSON.parse(queueMatch[1]);
+          const { joinQueue } = await import('./waitlist');
+          const queueRes = await joinQueue(shop.id, null, payload.customer_phone || customerPhone, payload.customer_name);
+          aiMessage = aiMessage.replace(queueRegex, '').trim();
+          if (queueRes.success && queueRes.data) {
+            aiMessage += `\n(আপনার সিরিয়াল নাম্বার: #${queueRes.data.serial_number})`;
+          }
+        } catch (e) {
+          console.error('[QUEUE INTERCEPT] error processing queue join:', e);
+          aiMessage = aiMessage.replace(queueRegex, '').trim();
+        }
+      }
     }
 
     // Persist bot reply

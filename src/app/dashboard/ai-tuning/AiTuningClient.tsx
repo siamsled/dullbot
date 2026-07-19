@@ -25,6 +25,7 @@ type Shop = {
   abusive_block_threshold?: number | null;
   high_value_order_threshold?: number | null;
   off_topic_tolerance?: string | null;
+  deposit_refund_policy?: string | null;
 };
 
 type ExampleReply = { id: string; customer_message: string; ideal_reply: string };
@@ -92,6 +93,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   const [abusiveBlockThreshold, setAbusiveBlockThreshold] = useState(shop.abusive_block_threshold || 3);
   const [highValueOrderThreshold, setHighValueOrderThreshold] = useState(shop.high_value_order_threshold || 0);
   const [offTopicTolerance, setOffTopicTolerance] = useState(shop.off_topic_tolerance || 'strict');
+  const [depositRefundPolicy, setDepositRefundPolicy] = useState(shop.deposit_refund_policy || 'refundable_24h');
   
   const [saved, setSaved] = useState(false);
 
@@ -136,6 +138,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         abusive_block_threshold: abusiveBlockThreshold,
         high_value_order_threshold: highValueOrderThreshold,
         off_topic_tolerance: offTopicTolerance,
+        deposit_refund_policy: depositRefundPolicy,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -479,6 +482,22 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       />
                       <span className="text-sm text-graphite pr-3">BDT</span>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
+                    <div>
+                      <p className="text-sm font-medium text-ink">Deposit Refund Policy</p>
+                      <p className="text-xs text-graphite mt-0.5">Applied when customer cancels deposit-backed booking</p>
+                    </div>
+                    <select
+                      value={depositRefundPolicy}
+                      onChange={e => setDepositRefundPolicy(e.target.value)}
+                      className="bg-fog border border-dove/30 rounded-[12px] px-3 py-2 text-sm text-ink focus:outline-none"
+                    >
+                      <option value="refundable_24h">Refundable up to 24h prior</option>
+                      <option value="non_refundable">Non-refundable deposit</option>
+                      <option value="refundable_anytime">Refundable anytime</option>
+                    </select>
                   </div>
                 </div>
 

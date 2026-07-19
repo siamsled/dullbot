@@ -21,6 +21,7 @@ export async function saveAiTuning(payload: {
   abusive_block_threshold: number;
   high_value_order_threshold: number;
   off_topic_tolerance: string;
+  deposit_refund_policy: string;
 }) {
   const { error } = await supabaseAdmin
     .from('shops')

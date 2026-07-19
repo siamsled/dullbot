@@ -32,7 +32,7 @@ export async function handleBookingCreationIntercept(
     // 1. Fetch service details
     const { data: service } = await supabaseAdmin
       .from('services')
-      .select('id, name, duration_minutes, buffer_minutes, requires_resource_type')
+      .select('id, name, duration_minutes, buffer_minutes, requires_resource_type, deposit_required, deposit_amount')
       .eq('id', payload.service_id)
       .eq('shop_id', shopId)
       .single();
@@ -79,11 +79,19 @@ export async function handleBookingCreationIntercept(
       customer_phone: payload.customer_phone,
       customer_name: payload.customer_name,
       party_size: partySize,
-      starts_at: payload.starts_at
+      starts_at: payload.starts_at,
+      conversation_id: conversationId
     });
 
     if (bookingRes.success && bookingRes.data) {
       console.log(`[BOOKING INTERCEPT] successfully created booking ID: ${bookingRes.data.id}`);
+      
+      if (bookingRes.data.status === 'pending_deposit') {
+        const depositAmount = service.deposit_amount || 0;
+        const depositMsg = `\n\n[পেমেন্ট নির্দেশনাবলী]: এই সার্ভিসটির বুকিং নিশ্চিত করতে ৳${depositAmount} বুকিং ডিপোজিট পাঠাতে হবে। দয়া করে আমাদের bKash/Nagad মার্চেন্ট নম্বরে টাকা পাঠিয়ে Transaction ID (TrxID) অথবা প্রেরক নম্বরের শেষ ৩-৪টি সংখ্যা এখানে মেসেজ করুন।`;
+        return { cleanedText: cleanedText + depositMsg, bookingId: bookingRes.data.id, isOverlap: false };
+      }
+      
       return { cleanedText, bookingId: bookingRes.data.id, isOverlap: false };
     } else if (bookingRes.isOverlap) {
       console.warn(`[BOOKING INTERCEPT] Overlap detected during createBooking database exclusion constraint.`);

@@ -172,20 +172,31 @@ export async function processPaymentVerification(
   shopId: string,
   customerMessage: string
 ): Promise<string | null> {
-  // 1. Fetch pending verifications for this conversation
+  // 1. Fetch pending verifications
   const { data: pendingVerifications } = await supabaseAdmin
     .from('payment_verifications')
-    .select('*, orders!inner(*)')
-    .eq('orders.conversation_id', conversationId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+    .select(`
+      id, method, expected_amount, matched_reference, status, customer_provided_ref, confirmed_at, created_at, order_id, booking_id,
+      orders ( id, conversation_id, shop_id, total_amount, product_id, variant_id ),
+      bookings ( id, conversation_id, shop_id, service_id, starts_at, ends_at, customer_name, customer_phone )
+    `)
+    .eq('status', 'pending');
 
-  if (!pendingVerifications || pendingVerifications.length === 0) {
+  const relevant = (pendingVerifications || []).filter(pv => {
+    const orderObj = pv.orders as any;
+    const bookingObj = pv.bookings as any;
+    const orderMatches = orderObj && (Array.isArray(orderObj) ? orderObj[0]?.conversation_id === conversationId : orderObj.conversation_id === conversationId);
+    const bookingMatches = bookingObj && (Array.isArray(bookingObj) ? bookingObj[0]?.conversation_id === conversationId : bookingObj.conversation_id === conversationId);
+    return orderMatches || bookingMatches;
+  });
+
+  if (relevant.length === 0) {
     return null; // No pending payment check for this conversation
   }
 
-  const pv = pendingVerifications[0];
-  const order = pv.orders;
+  const pv = relevant[0];
+  const order = pv.orders ? (Array.isArray(pv.orders) ? (pv.orders as any)[0] : (pv.orders as any)) : null;
+  const booking = pv.bookings ? (Array.isArray(pv.bookings) ? (pv.bookings as any)[0] : (pv.bookings as any)) : null;
 
   const cleanMsg = customerMessage.trim().toUpperCase();
   
@@ -245,44 +256,66 @@ export async function processPaymentVerification(
         })
         .eq('id', pv.id);
 
-      // Confirm order entry
-      await supabaseAdmin
-        .from('orders')
-        .update({
-          status: 'confirmed',
-          bkash_transaction_id: extractedRef,
-          confirmed_at: new Date().toISOString(),
-          payment_method: pv.method,
-          payment_verified_at: new Date().toISOString(),
-          payment_transaction_ref: extractedRef,
-          fulfillment_status: 'awaiting_dispatch'
-        })
-        .eq('id', order.id);
+      if (order) {
+        // Confirm order entry
+        await supabaseAdmin
+          .from('orders')
+          .update({
+            status: 'confirmed',
+            bkash_transaction_id: extractedRef,
+            confirmed_at: new Date().toISOString(),
+            payment_method: pv.method,
+            payment_verified_at: new Date().toISOString(),
+            payment_transaction_ref: extractedRef,
+            fulfillment_status: 'awaiting_dispatch'
+          })
+          .eq('id', order.id);
 
-      // Log verified in status history
-      await supabaseAdmin
-        .from('order_status_history')
-        .insert({
-          order_id: order.id,
-          status: 'confirmed',
-          note: `Payment verified automatically via ${provider.toUpperCase()}. Expected ৳${pv.expected_amount}, matched ৳${verification.amount}. TrxID: ${extractedRef}`
+        // Log verified in status history
+        await supabaseAdmin
+          .from('order_status_history')
+          .insert({
+            order_id: order.id,
+            status: 'confirmed',
+            note: `Payment verified automatically via ${provider.toUpperCase()}. Expected ৳${pv.expected_amount}, matched ৳${verification.amount}. TrxID: ${extractedRef}`
+          });
+
+        // Atomically decrement stock
+        const { data: stockResult, error: stockErr } = await supabaseAdmin.rpc('decrement_stock', {
+          p_product_id: order.product_id,
+          p_variant_id: order.variant_id || null,
+          p_shop_id: shopId,
+          p_note: `Order ${order.id} verified via ${pv.method}`
         });
+        if (stockErr) {
+          console.error('[PAYMENT VERIFICATION] stock decrement failed:', stockErr);
+        }
 
-      // Atomically decrement stock
-      const { data: stockResult, error: stockErr } = await supabaseAdmin.rpc('decrement_stock', {
-        p_product_id: order.product_id,
-        p_variant_id: order.variant_id || null,
-        p_shop_id: shopId,
-        p_note: `Order ${order.id} verified via ${pv.method}`
-      });
-      if (stockErr) {
-        console.error('[PAYMENT VERIFICATION] stock decrement failed:', stockErr);
+        // Trigger courier shipment booking (Phase 2)
+        await triggerCourierShipment(order.id, shopId);
+
+        return `অনেক ধন্যবাদ! আপনার পেমেন্ট সফলভাবে নিশ্চিত করা হয়েছে। অর্ডারটি কনফার্ম হয়েছে এবং শীঘ্রই ডেলিভারির জন্য পাঠানো হবে।`;
+      } else if (booking) {
+        // Confirm booking entry
+        await supabaseAdmin
+          .from('bookings')
+          .update({
+            status: 'confirmed',
+            deposit_status: 'verified'
+          })
+          .eq('id', booking.id);
+
+        // Log in booking status history
+        await supabaseAdmin
+          .from('booking_status_history')
+          .insert({
+            booking_id: booking.id,
+            status: 'confirmed',
+            note: `Deposit payment verified automatically via ${provider.toUpperCase()}. Expected ৳${pv.expected_amount}, matched ৳${verification.amount}. TrxID: ${extractedRef}`
+          });
+
       }
-
-      // Trigger courier shipment booking (Phase 2)
-      await triggerCourierShipment(order.id, shopId);
-
-      return `অনেক ধন্যবাদ! আপনার পেমেন্ট সফলভাবে নিশ্চিত করা হয়েছে। অর্ডারটি কনফার্ম হয়েছে এবং শীঘ্রই ডেলিভারির জন্য পাঠানো হবে।`;
+      return null;
     } else {
       console.warn(`[PAYMENT VERIFICATION] amount mismatch. Expected: ${pv.expected_amount}, Found: ${verification.amount}`);
       
@@ -294,23 +327,42 @@ export async function processPaymentVerification(
         })
         .eq('id', pv.id);
 
-      // Flag order for review due to mismatch
-      await supabaseAdmin
-        .from('orders')
-        .update({
-          needs_review: true,
-          review_reason: 'payment_mismatch'
-        })
-        .eq('id', order.id);
+      if (order) {
+        // Flag order for review due to mismatch
+        await supabaseAdmin
+          .from('orders')
+          .update({
+            needs_review: true,
+            review_reason: 'payment_mismatch'
+          })
+          .eq('id', order.id);
 
-      // Log mismatch in status history
-      await supabaseAdmin
-        .from('order_status_history')
-        .insert({
-          order_id: order.id,
-          status: 'pending_verification',
-          note: `Payment verification mismatch. Expected ৳${pv.expected_amount}, found ৳${verification.amount}. TrxID: ${extractedRef}`
-        });
+        // Log mismatch in status history
+        await supabaseAdmin
+          .from('order_status_history')
+          .insert({
+            order_id: order.id,
+            status: 'pending_verification',
+            note: `Payment verification mismatch. Expected ৳${pv.expected_amount}, found ৳${verification.amount}. TrxID: ${extractedRef}`
+          });
+      } else if (booking) {
+        // Flag booking deposit status as mismatch
+        await supabaseAdmin
+          .from('bookings')
+          .update({
+            deposit_status: 'mismatch'
+          })
+          .eq('id', booking.id);
+
+        // Log in booking status history
+        await supabaseAdmin
+          .from('booking_status_history')
+          .insert({
+            booking_id: booking.id,
+            status: 'pending_deposit',
+            note: `Deposit verification mismatch. Expected ৳${pv.expected_amount}, found ৳${verification.amount}. TrxID: ${extractedRef}`
+          });
+      }
 
       // Force human takeover
       await supabaseAdmin
@@ -356,23 +408,42 @@ export async function processPaymentVerification(
         })
         .eq('id', pv.id);
 
-      // Flag order for review due to verification failure
-      await supabaseAdmin
-        .from('orders')
-        .update({
-          needs_review: true,
-          review_reason: 'payment_failed'
-        })
-        .eq('id', order.id);
+      if (order) {
+        // Flag order for review due to verification failure
+        await supabaseAdmin
+          .from('orders')
+          .update({
+            needs_review: true,
+            review_reason: 'payment_failed'
+          })
+          .eq('id', order.id);
 
-      // Log failure in status history
-      await supabaseAdmin
-        .from('order_status_history')
-        .insert({
-          order_id: order.id,
-          status: 'pending_verification',
-          note: `Payment verification failed repeatedly. Last reference: ${extractedRef}. Error: ${verification.error}`
-        });
+        // Log failure in status history
+        await supabaseAdmin
+          .from('order_status_history')
+          .insert({
+            order_id: order.id,
+            status: 'pending_verification',
+            note: `Payment verification failed repeatedly. Last reference: ${extractedRef}. Error: ${verification.error}`
+          });
+      } else if (booking) {
+        // Flag booking for review due to verification failure
+        await supabaseAdmin
+          .from('bookings')
+          .update({
+            deposit_status: 'failed'
+          })
+          .eq('id', booking.id);
+
+        // Log failure in booking status history
+        await supabaseAdmin
+          .from('booking_status_history')
+          .insert({
+            booking_id: booking.id,
+            status: 'pending_deposit',
+            note: `Deposit verification failed repeatedly. Last reference: ${extractedRef}. Error: ${verification.error}`
+          });
+      }
 
       // Force human takeover
       await supabaseAdmin

@@ -14,6 +14,8 @@ export async function upsertService(
     active?: boolean;
     buffer_minutes?: number;
     requires_resource_type?: string;
+    deposit_required?: boolean;
+    deposit_amount?: number;
   }
 ) {
   try {
@@ -26,6 +28,8 @@ export async function upsertService(
       active: service.active !== undefined ? service.active : true,
       buffer_minutes: service.buffer_minutes || 0,
       requires_resource_type: service.requires_resource_type || 'staff',
+      deposit_required: service.deposit_required !== undefined ? service.deposit_required : false,
+      deposit_amount: service.deposit_amount || 0,
     };
 
     if (service.id) {
@@ -253,12 +257,13 @@ export async function createBooking(
     customer_name: string;
     party_size?: number;
     starts_at: string;
+    conversation_id?: string;
   }
 ) {
   try {
     const { data: service } = await supabaseAdmin
       .from('services')
-      .select('duration_minutes, buffer_minutes')
+      .select('duration_minutes, buffer_minutes, deposit_required, deposit_amount')
       .eq('id', booking.service_id)
       .eq('shop_id', shopId)
       .single();
@@ -268,6 +273,10 @@ export async function createBooking(
     const totalMinutes = (service.duration_minutes || 60) + (service.buffer_minutes || 0);
     const startsAt = new Date(booking.starts_at);
     const endsAt = new Date(startsAt.getTime() + totalMinutes * 60 * 1000);
+
+    const hasDeposit = service.deposit_required && (service.deposit_amount || 0) > 0;
+    const initialStatus = hasDeposit ? 'pending_deposit' : 'confirmed';
+    const initialDepositStatus = hasDeposit ? 'pending' : 'not_required';
 
     const { data, error } = await supabaseAdmin
       .from('bookings')
@@ -280,7 +289,9 @@ export async function createBooking(
         party_size: booking.party_size || 1,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        status: 'confirmed'
+        status: initialStatus,
+        deposit_status: initialDepositStatus,
+        conversation_id: booking.conversation_id || null
       })
       .select()
       .single();
@@ -290,6 +301,25 @@ export async function createBooking(
         return { success: false, error: 'Overlapping booking: this slot is no longer available.', isOverlap: true };
       }
       return { success: false, error: error.message };
+    }
+
+    // Write to booking_status_history
+    await supabaseAdmin.from('booking_status_history').insert({
+      booking_id: data.id,
+      status: initialStatus,
+      note: hasDeposit 
+        ? `Booking created. Awaiting deposit payment of ৳${service.deposit_amount}.` 
+        : `Booking created and confirmed automatically.`
+    });
+
+    // Create a pending payment verification entry if deposit is required
+    if (hasDeposit) {
+      await supabaseAdmin.from('payment_verifications').insert({
+        booking_id: data.id,
+        method: 'merchant_api',
+        expected_amount: service.deposit_amount,
+        status: 'pending'
+      });
     }
 
     revalidatePath('/dashboard/services');
@@ -302,13 +332,60 @@ export async function createBooking(
 
 export async function cancelBooking(shopId: string, bookingId: string) {
   try {
+    const { data: booking } = await supabaseAdmin
+      .from('bookings')
+      .select('*, services(*), shops(*)')
+      .eq('id', bookingId)
+      .eq('shop_id', shopId)
+      .single();
+
+    if (!booking) return { success: false, error: 'Booking not found.' };
+
+    let newDepositStatus = booking.deposit_status;
+    let refundNote = 'Booking cancelled.';
+
+    if (booking.deposit_status === 'verified') {
+      const policy = booking.shops?.deposit_refund_policy || 'refundable_24h';
+      
+      if (policy === 'refundable_anytime') {
+        newDepositStatus = 'refunded';
+        refundNote = 'Booking cancelled. Deposit marked as refunded (refundable anytime policy).';
+      } else if (policy === 'non_refundable') {
+        newDepositStatus = 'forfeited';
+        refundNote = 'Booking cancelled. Deposit marked as forfeited (non-refundable policy).';
+      } else {
+        // refundable_24h
+        const startsAt = new Date(booking.starts_at);
+        const now = new Date();
+        const diffHours = (startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (diffHours >= 24) {
+          newDepositStatus = 'refunded';
+          refundNote = `Booking cancelled. Deposit marked as refunded (cancelled ${Math.round(diffHours)}h prior, >24h policy).`;
+        } else {
+          newDepositStatus = 'forfeited';
+          refundNote = `Booking cancelled. Deposit marked as forfeited (cancelled ${Math.round(diffHours)}h prior, <24h policy).`;
+        }
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('bookings')
-      .update({ status: 'cancelled' })
+      .update({ 
+        status: 'cancelled',
+        deposit_status: newDepositStatus
+      })
       .eq('id', bookingId)
       .eq('shop_id', shopId);
 
     if (error) return { success: false, error: error.message };
+
+    // Log to booking status history
+    await supabaseAdmin.from('booking_status_history').insert({
+      booking_id: bookingId,
+      status: 'cancelled',
+      note: refundNote
+    });
+
     revalidatePath('/dashboard/services');
     return { success: true };
   } catch (err: any) {
@@ -356,6 +433,13 @@ export async function rescheduleBooking(shopId: string, bookingId: string, start
       return { success: false, error: error.message };
     }
 
+    // Log to status history
+    await supabaseAdmin.from('booking_status_history').insert({
+      booking_id: bookingId,
+      status: 'rescheduled',
+      note: `Appointment rescheduled to start at ${newStart.toISOString()}`
+    });
+
     revalidatePath('/dashboard/services');
     return { success: true };
   } catch (err: any) {
@@ -365,13 +449,47 @@ export async function rescheduleBooking(shopId: string, bookingId: string, start
 
 export async function updateBookingStatus(shopId: string, bookingId: string, status: string) {
   try {
+    const { data: booking } = await supabaseAdmin
+      .from('bookings')
+      .select('deposit_status')
+      .eq('id', bookingId)
+      .eq('shop_id', shopId)
+      .single();
+
+    if (!booking) return { success: false, error: 'Booking not found.' };
+
+    let nextDepositStatus = booking.deposit_status;
+    let note = `Booking status updated to ${status}.`;
+
+    if (status === 'no_show') {
+      if (booking.deposit_status === 'verified') {
+        nextDepositStatus = 'forfeited';
+        note = 'Booking marked as no-show. Deposit automatically forfeited.';
+      } else {
+        note = 'Booking marked as no-show.';
+      }
+    } else if (status === 'completed') {
+      note = 'Booking marked as completed successfully.';
+    }
+
     const { error } = await supabaseAdmin
       .from('bookings')
-      .update({ status })
+      .update({ 
+        status,
+        deposit_status: nextDepositStatus
+      })
       .eq('id', bookingId)
       .eq('shop_id', shopId);
 
     if (error) return { success: false, error: error.message };
+
+    // Log to status history
+    await supabaseAdmin.from('booking_status_history').insert({
+      booking_id: bookingId,
+      status,
+      note
+    });
+
     revalidatePath('/dashboard/services');
     return { success: true };
   } catch (err: any) {
@@ -512,5 +630,57 @@ export async function getAvailableSlots(
   } catch (err: any) {
     console.error('Error calculating available slots:', err);
     return { success: false, error: err.message || 'Failed to calculate slots' };
+  }
+}
+
+export async function joinQueueAction(
+  shopId: string,
+  resourceId: string | null,
+  phone: string,
+  name: string
+) {
+  try {
+    const { joinQueue } = await import('@/lib/waitlist');
+    const res = await joinQueue(shopId, resourceId, phone, name);
+    return res;
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function callNextInQueueAction(shopId: string, resourceId: string | null) {
+  try {
+    const { callNextInQueue } = await import('@/lib/waitlist');
+    const res = await callNextInQueue(shopId, resourceId);
+    return res;
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getTodayQueueAction(shopId: string, resourceId: string | null) {
+  try {
+    const dateStr = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startOfDay = new Date(`${dateStr}T00:00:00+06:00`).toISOString();
+    const endOfDay = new Date(`${dateStr}T23:59:59+06:00`).toISOString();
+
+    let query = supabaseAdmin
+      .from('serial_queue')
+      .select('*')
+      .eq('shop_id', shopId)
+      .gte('joined_at', startOfDay)
+      .lte('joined_at', endOfDay)
+      .order('joined_at', { ascending: true });
+
+    if (resourceId) {
+      query = query.eq('resource_id', resourceId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }
