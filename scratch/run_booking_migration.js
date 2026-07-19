@@ -25,18 +25,21 @@ if (fs.existsSync(envPath)) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function list() {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select('id, customer_phone, channel, meta_name, meta_profile_pic, is_test')
-    .order('last_message_at', { ascending: false });
+const sqlPath = path.join(__dirname, '../supabase/migrations/20260719001000_booking_engine.sql');
+const sql = fs.readFileSync(sqlPath, 'utf8');
 
+async function run() {
+  console.log('Running booking engine migration via exec_sql RPC...');
+  const { data, error } = await supabase.rpc('exec_sql', { sql });
   if (error) {
-    console.error('Error:', error);
+    console.error('Migration execution failed:', error.message);
+    console.log('\n============================================================');
+    console.log('PLEASE APPLY THE SCHEMA MANUALLY via Supabase SQL Editor:');
+    console.log('Use: /Users/shah/Documents/GitHub/dullbot/supabase/migrations/20260719001000_booking_engine.sql');
+    console.log('============================================================\n');
   } else {
-    console.log('Conversations in database:');
-    console.log(JSON.stringify(data, null, 2));
+    console.log('Booking engine migration executed successfully via RPC!');
   }
 }
 
-list();
+run();
