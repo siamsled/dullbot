@@ -319,20 +319,39 @@ export async function generateHandoffSummary(conversationId: string) {
     .map(m => `${m.sender === 'customer' ? 'Customer' : 'Bot/Agent'}: ${m.content}`)
     .join('\n');
 
-  const systemInstruction = `You are a professional customer support assistant.
-Analyze the provided chat history between a customer and the AI bot, and extract a concise handoff summary.
+  const systemInstruction = `You are an expert customer experience manager.
+Analyze the provided chat history between a customer and the AI bot, and extract a highly organized, refined handoff summary.
+Ensure all outputs are polished, structured, and professional (no conversational draft text). 
+
+Use clear bullet points (using the '•' character) separated by newlines to break down multiple intents or facts.
+
 Return ONLY a valid JSON object matching this structure:
 {
-  "wants": "What the customer wants or has asked about (concise, max 2 sentences)",
-  "facts": "Key facts established: customer name, phone, specific product interest, order details mentioned",
-  "flagReason": "Why this was flagged or escalated (complaint, abuse, unsure, discount request, etc.)",
-  "sentiment": "Overall sentiment: frustrated, neutral, positive"
+  "wants": "A bulleted list ('• ...\\n• ...') summarizing what the customer is trying to accomplish or buy, and any questions they asked.",
+  "facts": "A bulleted list ('• Name: ...\\n• Phone: ...\\n• Product: ...') of all verified customer details, delivery address (if mentioned), and exact product/service attributes discussed.",
+  "flagReason": "A highly concise, professional explanation of why the chat is being handed over to a human agent.",
+  "sentiment": "Overall customer sentiment: frustrated, neutral, or positive"
 }
 Ensure there is no extra formatting, markdown wraps, or commentary. Only return the JSON.`;
 
   try {
     const result = await invokeGemini(systemInstruction, `Chat History:\n${chatLogs}`, []);
     if (result && result.success && result.text) {
+      // Bill the Gemini call dynamically to avoid circular dependencies
+      try {
+        const { billGeminiCall } = await import('@/lib/chat-pipeline');
+        await billGeminiCall(
+          conversation.shop_id,
+          conversationId,
+          result.inputTokens ?? 0,
+          result.outputTokens ?? 0,
+          false,
+          false
+        );
+      } catch (be) {
+        console.error('Failed to bill handoff summary:', be);
+      }
+
       let parsedSummary = null;
       try {
         const cleanJson = result.text.replace(/```json/g, '').replace(/```/g, '').trim();

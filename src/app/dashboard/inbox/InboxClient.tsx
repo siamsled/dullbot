@@ -105,7 +105,7 @@ function HandoffSummaryWidget({
         <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-dove/15">
           <div className="space-y-1">
             <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Intent</h4>
-            <p className="text-xs text-ink leading-relaxed font-medium">
+            <p className="text-xs text-ink leading-relaxed whitespace-pre-line font-medium">
               {summary ? summary.wants : isLoading ? 'Generating intent...' : 'No summary available.'}
             </p>
           </div>
