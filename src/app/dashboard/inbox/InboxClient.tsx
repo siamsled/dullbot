@@ -29,6 +29,45 @@ function formatMessageDate(dateString: string) {
   }
 }
 
+function renderOrganizedList(text: string) {
+  if (!text) return null;
+  const lines = text
+    .split(/\n|•/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1 && !text.includes('•')) {
+    return <p className="text-xs text-ink leading-relaxed font-medium">{text}</p>;
+  }
+
+  return (
+    <ul className="space-y-1.5 mt-1 list-none">
+      {lines.map((line, i) => {
+        const colonIdx = line.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 30) {
+          const key = line.substring(0, colonIdx).trim();
+          const value = line.substring(colonIdx + 1).trim();
+          return (
+            <li key={i} className="text-xs text-ink leading-relaxed flex items-start gap-1.5">
+              <span className="text-ash font-bold select-none text-[10px]">•</span>
+              <div>
+                <span className="font-semibold text-graphite">{key}: </span>
+                <span className="text-ink font-medium">{value}</span>
+              </div>
+            </li>
+          );
+        }
+        return (
+          <li key={i} className="text-xs text-ink leading-relaxed flex items-start gap-1.5">
+            <span className="text-ash font-bold select-none text-[10px]">•</span>
+            <span className="text-ink font-medium">{line}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function HandoffSummaryWidget({ 
   conversation, 
   onSummaryUpdated 
@@ -56,7 +95,7 @@ function HandoffSummaryWidget({
   }, [conversation.id]);
 
   const sentimentColors: Record<string, string> = {
-    frustrated: 'bg-red-50 text-red-750 border-red-200 text-xs',
+    frustrated: 'bg-red-50 text-red-755 border-red-200 text-xs',
     neutral: 'bg-blue-50 text-blue-700 border-blue-200 text-xs',
     positive: 'bg-green-50 text-green-700 border-green-200 text-xs',
   };
@@ -84,7 +123,7 @@ function HandoffSummaryWidget({
           </div>
           {!isExpanded && summary && (
             <p className="text-xs text-ash truncate max-w-[200px] sm:max-w-md hidden sm:block">
-              {summary.wants}
+              {summary.wants.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || ''}
             </p>
           )}
         </div>
@@ -102,24 +141,18 @@ function HandoffSummaryWidget({
       </div>
 
       {isExpanded && (
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-dove/15">
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-6 pt-3 border-t border-dove/15">
           <div className="space-y-1">
             <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Intent</h4>
-            <p className="text-xs text-ink leading-relaxed whitespace-pre-line font-medium">
-              {summary ? summary.wants : isLoading ? 'Generating intent...' : 'No summary available.'}
-            </p>
+            {summary ? renderOrganizedList(summary.wants) : isLoading ? <p className="text-xs text-ash italic">Generating intent...</p> : <p className="text-xs text-ash">No summary available.</p>}
           </div>
           <div className="space-y-1">
             <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Established Facts</h4>
-            <p className="text-xs text-ink leading-relaxed whitespace-pre-line font-medium">
-              {summary ? summary.facts : isLoading ? 'Generating facts...' : 'N/A'}
-            </p>
+            {summary ? renderOrganizedList(summary.facts) : isLoading ? <p className="text-xs text-ash italic">Generating facts...</p> : <p className="text-xs text-ash">N/A</p>}
           </div>
           <div className="space-y-1">
             <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Escalation Reason</h4>
-            <p className="text-xs text-rust font-semibold leading-relaxed">
-              {summary ? summary.flagReason : conversation.ticket_reason || 'Manual Human Intervention'}
-            </p>
+            {summary ? renderOrganizedList(summary.flagReason) : <p className="text-xs text-rust font-semibold">{conversation.ticket_reason || 'Manual Human Intervention'}</p>}
           </div>
         </div>
       )}
