@@ -809,16 +809,34 @@ export default function InboxClient({
                               <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
                                 <div 
                                   onClick={() => {
-                                    // Find the original message this is replying to
-                                    const target = [...messages].reverse().find(m => extractReplyContext(m.content).actualContent === quotedText);
+                                    const clean = (s: string) => {
+                                      if (!s) return '';
+                                      let cleaned = s.replace(/^\[Customer is replying[\s\S]*?\]/i, '')
+                                                     .replace(/^\[Replying to[\s\S]*?\]/i, '')
+                                                     .replace(/^IMAGE:/i, '')
+                                                     .replace(/^AUDIO:/i, '')
+                                                     .replace(/^\[Product Image\]/i, '')
+                                                     .replace(/^\[Voice Message\]/i, '');
+                                      return cleaned.replace(/\s+/g, '').toLowerCase().trim();
+                                    };
+
+                                    const quotedCleaned = clean(quotedText || '');
+                                    if (!quotedCleaned) return;
+
+                                    const target = [...messages].reverse().find(m => {
+                                      const originalCleaned = clean(m.content);
+                                      return originalCleaned.includes(quotedCleaned) || quotedCleaned.includes(originalCleaned);
+                                    });
+
                                     if (target) {
                                       const el = document.getElementById(`message-${target.id}`);
                                       if (el) {
                                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        el.style.transition = 'background-color 0.3s ease';
                                         el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
                                         setTimeout(() => {
                                           el.style.backgroundColor = 'transparent';
-                                        }, 1000);
+                                        }, 1200);
                                       }
                                     }
                                   }}

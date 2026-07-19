@@ -2,6 +2,8 @@ import { invokeGemini, createPromptCache, fetchAndCompressImagePart } from './ge
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
 import { handleOrderCreationIntercept, processPaymentVerification } from './order-manager';
+import { handleBookingCreationIntercept } from './booking-manager';
+import { getAvailableSlots } from '../app/dashboard/services/actions';
 import crypto from 'crypto';
 
 // Gemini Flash Lite pricing (USD per million tokens) as of 2025
@@ -318,6 +320,32 @@ async function productPrefilter(
 
 
 
+async function getUpcoming3DaysAvailability(shopId: string, activeServices: any[]) {
+  const dates: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    // BST timezone offset shift
+    const localD = new Date(d.getTime() + 6 * 60 * 60 * 1000);
+    dates.push(localD.toISOString().split('T')[0]);
+  }
+
+  let lines: string[] = [];
+  for (const s of activeServices) {
+    lines.push(`\nService Name: ${s.name} (ID: ${s.id})`);
+    for (const date of dates) {
+      const res = await getAvailableSlots(shopId, s.id, date, 1);
+      if (res.success && res.slots && res.slots.length > 0) {
+        const times = Array.from(new Set(res.slots.map(sl => sl.time))).slice(0, 6);
+        lines.push(`  - ${date}: ${times.join(', ')}`);
+      } else {
+        lines.push(`  - ${date}: Fully booked / No slots`);
+      }
+    }
+  }
+  return lines.join('\n');
+}
+
 export async function processIncomingMessage(
   shopSlug: string,
   customerPhone: string,
@@ -540,11 +568,26 @@ export async function processIncomingMessage(
     activeOrders ?? []
   );
 
+  let finalPrompt = systemPrompt;
+  if (shop.business_type === 'service') {
+    const availabilityBlock = await getUpcoming3DaysAvailability(shop.id, productsWithId);
+    finalPrompt += `\n\nUPCOMING 3 DAYS BOOKING AVAILABILITY (UTC+6/BST Timezone):\n${availabilityBlock}\n
+AI APPOINTMENT BOOKING RULE:
+If the customer wants to schedule or book an appointment:
+1. Propose 2-3 specific available times from the list above in your persona's natural voice (do not just list them).
+2. You must collect:
+   - Customer Name
+   - Customer Phone Number
+3. Once you have both details AND the user confirms their chosen slot, you MUST append this booking tag to the very end of your final response (on a new line):
+   [CREATE_BOOKING: {"service_id": "<SERVICE_UUID>", "starts_at": "<ISO_DATETIME>", "customer_name": "<NAME>", "customer_phone": "<PHONE>", "party_size": 1}]
+   Replace <SERVICE_UUID> with the actual service ID, <ISO_DATETIME> with the starts_at slot (e.g. "2026-07-21T10:00:00.000Z"), and customer details. Keep your response short and append this tag quietly at the end.`;
+  }
+
   // 5.5 Check Gemini Prompt Cache
   let promptCacheRef = shop.prompt_cache_ref;
   if (!promptCacheRef || !shop.prompt_cache_expires_at || new Date(shop.prompt_cache_expires_at) <= new Date()) {
     // Generate new cache
-    const cacheData = await createPromptCache(systemPrompt);
+    const cacheData = await createPromptCache(finalPrompt);
     if (cacheData) {
       promptCacheRef = cacheData.name;
       await supabaseAdmin.from('shops').update({
@@ -560,7 +603,7 @@ export async function processIncomingMessage(
   const history = await getConversationHistory(shop.id, conversation.id, shop.persona_updated_at || shop.tuning_updated_at);
 
   // 7. Call Gemini
-  const response = await invokeGemini(systemPrompt, text, history, promptCacheRef);
+  const response = await invokeGemini(finalPrompt, text, history, promptCacheRef);
 
   if (response.success && response.text) {
     let aiMessage = response.text.trim();
@@ -568,6 +611,12 @@ export async function processIncomingMessage(
     // Intercept [CREATE_ORDER: ...] tag
     const intercept = await handleOrderCreationIntercept(conversation.id, shop.id, aiMessage);
     aiMessage = intercept.cleanedText;
+
+    // Intercept [CREATE_BOOKING: ...] tag
+    if (shop.business_type === 'service') {
+      const bookingIntercept = await handleBookingCreationIntercept(conversation.id, shop.id, aiMessage);
+      aiMessage = bookingIntercept.cleanedText;
+    }
 
     // Persist bot reply
     await persistMessage(conversation.id, 'bot', aiMessage);
