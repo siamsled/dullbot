@@ -187,7 +187,8 @@ export default function InventoryClient({
   const outOfStockCount = products.filter(p => !p.draft && p.stock_quantity === 0).length;
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="flex-1 overflow-y-auto h-full w-full">
+      <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -359,5 +360,6 @@ export default function InventoryClient({
         />
       )}
     </div>
+  </div>
   );
 }

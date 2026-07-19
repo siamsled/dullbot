@@ -182,7 +182,8 @@ export default function SettingsClient({ shop }: { shop: any }) {
 
   /* ─────────────────────────────────────── JSX ────────────────────────────────────── */
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="flex-1 overflow-y-auto h-full w-full">
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
 
       {/* PAGE HEADER */}
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -623,6 +624,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
       </motion.div>
 
     </div>
+  </div>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'crypto';
+import { invokeGemini } from '@/lib/gemini';
 
 export async function getMessages(conversationId: string, before?: string, limit: number = 40) {
   let query = supabaseAdmin
@@ -92,7 +93,11 @@ export async function sendMessage(
 
   await supabaseAdmin
     .from('conversations')
-    .update({ last_message_at: new Date().toISOString() })
+    .update({ 
+      last_message_at: new Date().toISOString(),
+      last_message_content: dbContent,
+      unread_count: 0
+    })
     .eq('id', conversationId);
 
   // 3. Send out to Facebook (Blocking)
@@ -210,6 +215,25 @@ export async function getConversations(shopId: string) {
 }
 
 export async function resolveFacebookProfile(psid: string, shopId: string) {
+  // Check if we already have it in the database
+  const { data: conversation } = await supabaseAdmin
+    .from('conversations')
+    .select('meta_name, meta_profile_pic, meta_checked_at')
+    .eq('shop_id', shopId)
+    .eq('customer_phone', psid)
+    .single();
+
+  const isCacheValid = conversation && conversation.meta_name && conversation.meta_checked_at && (
+    new Date().getTime() - new Date(conversation.meta_checked_at).getTime() < 24 * 60 * 60 * 1000 // 24 hours
+  );
+
+  if (isCacheValid) {
+    return {
+      customer_name: conversation.meta_name || 'Facebook User',
+      profile_pic_url: conversation.meta_profile_pic || undefined
+    };
+  }
+
   const { data: shop } = await supabaseAdmin
     .from('shops')
     .select('meta_page_access_token')
@@ -218,10 +242,25 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
 
   if (shop?.meta_page_access_token) {
     const profile = await getFacebookProfile(psid, shop.meta_page_access_token);
+    
+    // Cache to DB conversations record
+    await supabaseAdmin
+      .from('conversations')
+      .update({
+        meta_name: profile.customer_name,
+        meta_profile_pic: profile.profile_pic_url || null,
+        meta_checked_at: new Date().toISOString()
+      })
+      .eq('shop_id', shopId)
+      .eq('customer_phone', psid);
+
     return profile;
   }
 
-  return { customer_name: 'Facebook User' };
+  return { 
+    customer_name: conversation?.meta_name || 'Facebook User', 
+    profile_pic_url: conversation?.meta_profile_pic || undefined 
+  };
 }
 
 export async function flagCustomerAsFraud(conversationId: string, reason: string) {
@@ -253,6 +292,82 @@ export async function flagCustomerAsFraud(conversationId: string, reason: string
   await toggleTakeover(conversationId, true);
 
   return { success: true };
+}
+
+export async function generateHandoffSummary(conversationId: string) {
+  const { data: conversation } = await supabaseAdmin
+    .from('conversations')
+    .select('customer_phone, shop_id, status, ticket_reason, handoff_summary')
+    .eq('id', conversationId)
+    .single();
+
+  if (!conversation) return { error: 'Conversation not found' };
+
+  const { data: messages } = await supabaseAdmin
+    .from('messages')
+    .select('sender, content, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (!messages || messages.length === 0) {
+    return { error: 'No messages to summarize' };
+  }
+
+  const chatLogs = messages
+    .reverse()
+    .map(m => `${m.sender === 'customer' ? 'Customer' : 'Bot/Agent'}: ${m.content}`)
+    .join('\n');
+
+  const systemInstruction = `You are a professional customer support assistant.
+Analyze the provided chat history between a customer and the AI bot, and extract a concise handoff summary.
+Return ONLY a valid JSON object matching this structure:
+{
+  "wants": "What the customer wants or has asked about (concise, max 2 sentences)",
+  "facts": "Key facts established: customer name, phone, specific product interest, order details mentioned",
+  "flagReason": "Why this was flagged or escalated (complaint, abuse, unsure, discount request, etc.)",
+  "sentiment": "Overall sentiment: frustrated, neutral, positive"
+}
+Ensure there is no extra formatting, markdown wraps, or commentary. Only return the JSON.`;
+
+  try {
+    const result = await invokeGemini(systemInstruction, `Chat History:\n${chatLogs}`, []);
+    if (result && result.success && result.text) {
+      let parsedSummary = null;
+      try {
+        const cleanJson = result.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        parsedSummary = JSON.parse(cleanJson);
+      } catch (pe) {
+        console.error('Failed to parse Gemini summary JSON:', result.text);
+        parsedSummary = {
+          wants: 'Failed to parse AI summary. Review history manually.',
+          facts: 'N/A',
+          flagReason: conversation.ticket_reason || 'Manual human takeover',
+          sentiment: 'Neutral'
+        };
+      }
+
+      await supabaseAdmin
+        .from('conversations')
+        .update({ handoff_summary: parsedSummary })
+        .eq('id', conversationId);
+
+      return { success: true, summary: parsedSummary };
+    }
+  } catch (err: any) {
+    console.error('Gemini handoff summary generation failed:', err);
+    return { error: err.message || 'Gemini error' };
+  }
+
+  return { error: 'Failed to generate summary' };
+}
+
+export async function markAsRead(conversationId: string) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ unread_count: 0 })
+    .eq('id', conversationId);
+  return !error;
 }
 
 

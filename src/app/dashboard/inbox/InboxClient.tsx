@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud } from './actions';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit } from 'lucide-react';
+import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -27,6 +27,104 @@ function formatMessageDate(dateString: string) {
   } else {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
+}
+
+function HandoffSummaryWidget({ 
+  conversation, 
+  onSummaryUpdated 
+}: { 
+  conversation: any; 
+  onSummaryUpdated: (summary: any) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const summary = conversation.handoff_summary;
+
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    const res = await generateHandoffSummary(conversation.id);
+    setIsLoading(false);
+    if (res && res.success && res.summary) {
+      onSummaryUpdated(res.summary);
+    }
+  };
+
+  useEffect(() => {
+    if (!summary && conversation.id) {
+      handleGenerate();
+    }
+  }, [conversation.id]);
+
+  const sentimentColors: Record<string, string> = {
+    frustrated: 'bg-red-50 text-red-750 border-red-200 text-xs',
+    neutral: 'bg-blue-50 text-blue-700 border-blue-200 text-xs',
+    positive: 'bg-green-50 text-green-700 border-green-200 text-xs',
+  };
+
+  const currentSentiment = (summary?.sentiment || 'neutral').toLowerCase();
+  const sentimentClass = sentimentColors[currentSentiment] || sentimentColors.neutral;
+
+  return (
+    <div className="bg-fog/60 border-b border-dove/10 px-6 py-2.5 shrink-0 transition-all">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 bg-white rounded border border-dove/15 text-graphite hover:text-ink cursor-pointer flex items-center justify-center shadow-sm"
+          >
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          <div className="flex items-center gap-2" onClick={() => setIsExpanded(!isExpanded)}>
+            <span className="text-xs font-bold text-ink uppercase tracking-wider cursor-pointer">AI Handoff Summary</span>
+            {summary && (
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${sentimentClass} cursor-pointer`}>
+                {summary.sentiment}
+              </span>
+            )}
+          </div>
+          {!isExpanded && summary && (
+            <p className="text-xs text-ash truncate max-w-[200px] sm:max-w-md hidden sm:block">
+              {summary.wants}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white hover:bg-dove/10 border border-dove/20 text-graphite hover:text-ink text-[11px] font-semibold transition-all disabled:opacity-50 shadow-sm"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Summarizing...' : 'Regenerate'}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-dove/15">
+          <div className="space-y-1">
+            <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Intent</h4>
+            <p className="text-xs text-ink leading-relaxed font-medium">
+              {summary ? summary.wants : isLoading ? 'Generating intent...' : 'No summary available.'}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Established Facts</h4>
+            <p className="text-xs text-ink leading-relaxed whitespace-pre-line font-medium">
+              {summary ? summary.facts : isLoading ? 'Generating facts...' : 'N/A'}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-[10px] font-bold text-ash uppercase tracking-wider">Escalation Reason</h4>
+            <p className="text-xs text-rust font-semibold leading-relaxed">
+              {summary ? summary.flagReason : conversation.ticket_reason || 'Manual Human Intervention'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function InboxClient({ 
@@ -54,7 +152,8 @@ export default function InboxClient({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed'>('all');
+  const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed' | 'test'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
 
@@ -130,6 +229,10 @@ export default function InboxClient({
   // 1. Initial Load of Messages on Conversation switch
   useEffect(() => {
     if (!activeId) return;
+
+    // Reset unread locally and in database
+    markAsRead(activeId);
+    setConversations(prev => prev.map(c => c.id === activeId ? { ...c, unread_count: 0 } : c));
 
     const cached = messageCacheRef.current[activeId];
     if (cached) {
@@ -211,6 +314,11 @@ export default function InboxClient({
         },
         (payload) => {
           const newMsg = payload.new;
+          
+          // Reset unread count locally and in database
+          markAsRead(activeId);
+          setConversations(prev => prev.map(c => c.id === activeId ? { ...c, unread_count: 0 } : c));
+
           setMessages(prev => {
             // Check if duplicate
             if (prev.some((m: any) => m.id === newMsg.id)) return prev;
@@ -255,6 +363,10 @@ export default function InboxClient({
         (payload) => {
           const updatedConv = payload.new as any;
           setConversations(prev => {
+            // Keep local unread_count as 0 if this conversation is active
+            if (updatedConv.id === activeId) {
+              updatedConv.unread_count = 0;
+            }
             const exists = prev.some(c => c.id === updatedConv.id);
             let nextList = [];
             if (exists) {
@@ -272,7 +384,7 @@ export default function InboxClient({
     return () => {
       supabaseBrowser.removeChannel(channel);
     };
-  }, [shop.id]);
+  }, [shop.id, activeId]);
 
   // Scroll bottom on new message insertion if user was already at bottom
   useEffect(() => {
@@ -297,16 +409,6 @@ export default function InboxClient({
     lastMsgCountRef.current = messages.length;
     setTimeout(handleScroll, 100);
   }, [messages]);
-
-  // Virtualization constants (estimated average heights)
-  const containerHeight = 600;
-  const estimatedHeight = 85;
-  const visibleCount = Math.ceil(containerHeight / estimatedHeight);
-  const startIndex = Math.max(0, Math.floor(scrollTop / estimatedHeight) - 8);
-  const endIndex = Math.min(messages.length, startIndex + visibleCount + 16);
-
-  const paddingTop = startIndex * estimatedHeight;
-  const paddingBottom = Math.max(0, (messages.length - endIndex) * estimatedHeight);
 
   const handleSend = async (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => {
     if (!text.trim() && !mediaUrl) return;
@@ -396,7 +498,7 @@ export default function InboxClient({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] gap-4">
+    <div className="flex flex-col h-full gap-4 p-6 overflow-hidden">
       {/* Launch Control Panel Banner redirect */}
       {!hardRequirementsMet && !isBannerDismissed && (
         <div className="bg-apricot-wash border border-rust/10 p-4 rounded-cards flex items-center justify-between shrink-0">
@@ -438,22 +540,24 @@ export default function InboxClient({
             <input 
               type="text" 
               placeholder="Search conversations..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-fog rounded-inputs text-sm text-ink border-transparent focus:border-dove focus:ring-0 transition-colors"
             />
           </div>
           {/* Filter Toggles */}
-          <div className="flex gap-1.5 mt-3">
-            {(['all', 'tickets', 'confirmed'] as const).map((f) => (
+          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+            {(['all', 'tickets', 'confirmed', 'test'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 py-1.5 text-[11px] font-medium rounded-md border transition-all ${
+                className={`px-3 py-1.5 text-[11px] font-semibold rounded-md border transition-all whitespace-nowrap ${
                   filter === f
                     ? 'bg-ink text-white border-ink shadow-sm'
                     : 'bg-white text-ash border-dove/20 hover:bg-dove/10 hover:text-ink'
                 }`}
               >
-                {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : 'Orders'}
+                {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : f === 'confirmed' ? 'Orders' : 'Test Data'}
               </button>
             ))}
           </div>
@@ -461,12 +565,37 @@ export default function InboxClient({
         <div className="flex-1 overflow-y-auto">
           {(() => {
             const filteredConversations = conversations.filter(conv => {
+              // 1. Separate test and real conversations
+              if (filter === 'test') {
+                if (!conv.is_test) return false;
+              } else {
+                if (conv.is_test) return false;
+              }
+
+              // 2. Tab filter
               if (filter === 'tickets') {
-                return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure';
+                const isTicket = conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
+                if (!isTicket) return false;
               }
               if (filter === 'confirmed') {
-                return conv.orders?.some((o: any) => o.status === 'confirmed');
+                const hasConfirmedOrder = conv.orders?.some((o: any) => o.status === 'confirmed');
+                if (!hasConfirmedOrder) return false;
               }
+
+              // 3. Search query (scans name, phone, last message preview, and loaded message contents)
+              if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase();
+                const nameMatch = (profiles[conv.customer_phone]?.customer_name || '').toLowerCase().includes(query) ||
+                                  conv.customer_phone.toLowerCase().includes(query);
+                
+                const snippetMatch = (conv.last_message_content || '').toLowerCase().includes(query);
+
+                const cachedMsgs = messageCacheRef.current[conv.id]?.msgs || [];
+                const messageMatch = cachedMsgs.some((m: any) => m.content.toLowerCase().includes(query));
+
+                if (!nameMatch && !snippetMatch && !messageMatch) return false;
+              }
+
               return true;
             });
 
@@ -474,56 +603,82 @@ export default function InboxClient({
               return <div className="p-8 text-center text-ash text-sm">No conversations found.</div>;
             }
 
-            return filteredConversations.map(conv => (
-              <button
-                key={conv.id}
-                onClick={() => setActiveId(conv.id)}
-                className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 ${
-                  activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
-                }`}
-              >
-                <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
-                  {profiles[conv.customer_phone]?.profile_pic_url ? (
-                    <img src={profiles[conv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <p className="text-sm font-medium text-ink truncate">{profiles[conv.customer_phone]?.customer_name || conv.customer_phone}</p>
-                    <p className="text-xs text-ash">{formatMessageDate(conv.last_message_at)}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {conv.status === 'human_takeover' ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-apricot-wash text-rust">
-                        <UserCog className="w-3 h-3" /> Human
-                      </span>
+            return filteredConversations.map(conv => {
+              const hasUnread = conv.unread_count > 0 && conv.id !== activeId;
+              const snippet = conv.last_message_content || '';
+              
+              let previewText = 'No messages';
+              if (snippet) {
+                if (snippet.startsWith('IMAGE:')) previewText = '📷 Photo';
+                else if (snippet.startsWith('AUDIO:')) previewText = '🎵 Voice message';
+                else previewText = snippet;
+              }
+
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => setActiveId(conv.id)}
+                  className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${
+                    activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
+                    {profiles[conv.customer_phone]?.profile_pic_url ? (
+                      <img src={profiles[conv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-wash text-blue-600">
-                        <Bot className="w-3 h-3" /> Bot
-                      </span>
+                      (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
                     )}
-                    {conv.ticket_reason === 'complaint' && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">
-                        <AlertTriangle className="w-2.5 h-2.5" /> Complaint
-                      </span>
-                    )}
-                    {conv.ticket_reason === 'unsure' && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
-                        <ShieldAlert className="w-2.5 h-2.5" /> Unsure
-                      </span>
-                    )}
-                    {conv.orders?.some((o: any) => o.status === 'confirmed') && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">
-                        <ShieldCheck className="w-2.5 h-2.5" /> Order
-                      </span>
-                    )}
-                    <p className="text-xs text-ash truncate">Active on {conv.channel}</p>
                   </div>
-                </div>
-              </button>
-            ));
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <p className={`text-sm font-semibold truncate ${hasUnread ? 'text-ink font-bold' : 'text-graphite'}`}>
+                        {profiles[conv.customer_phone]?.customer_name || conv.customer_phone}
+                      </p>
+                      <p className="text-[10px] text-ash shrink-0">{formatMessageDate(conv.last_message_at)}</p>
+                    </div>
+
+                    {/* Snippet Preview */}
+                    <p className={`text-xs truncate mb-2 max-w-[90%] ${hasUnread ? 'text-ink font-semibold' : 'text-ash'}`}>
+                      {previewText}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {conv.status === 'human_takeover' ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-apricot-wash text-rust border border-rust/10">
+                          <UserCog className="w-2.5 h-2.5" /> Human
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-wash text-blue-600 border border-blue-150">
+                          <Bot className="w-2.5 h-2.5" /> Bot
+                        </span>
+                      )}
+                      {conv.ticket_reason === 'complaint' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
+                          <AlertTriangle className="w-2.5 h-2.5" /> Complaint
+                        </span>
+                      )}
+                      {conv.ticket_reason === 'unsure' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-100 text-yellow-750 border border-yellow-250">
+                          <ShieldAlert className="w-2.5 h-2.5" /> Unsure
+                        </span>
+                      )}
+                      {conv.orders?.some((o: any) => o.status === 'confirmed') && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-150 text-green-700 border border-green-200">
+                          <ShieldCheck className="w-2.5 h-2.5" /> Order
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Unread Badge indicator */}
+                  {hasUnread && (
+                    <span className="absolute right-4 bottom-4 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                      {conv.unread_count}
+                    </span>
+                  )}
+                </button>
+              );
+            });
           })()}
         </div>
       </div>
@@ -584,6 +739,16 @@ export default function InboxClient({
             </div>
           )}
 
+          {/* Handoff Summary Card Widget */}
+          {activeConv && (isTakeover || activeConv.ticket_reason) && (
+            <HandoffSummaryWidget 
+              conversation={activeConv} 
+              onSummaryUpdated={(updatedSummary) => {
+                setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, handoff_summary: updatedSummary } : c));
+              }}
+            />
+          )}
+
           {/* Messages */}
           <div 
             ref={scrollContainerRef}
@@ -598,9 +763,8 @@ export default function InboxClient({
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
             ) : (
-              <div style={{ paddingTop: `${paddingTop}px`, paddingBottom: `${paddingBottom}px`, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {messages.slice(startIndex, endIndex).map((msg, sliceIdx) => {
-                  const idx = startIndex + sliceIdx;
+              <div className="flex flex-col gap-6">
+                {messages.map((msg, idx) => {
                   const isCustomer = msg.sender === 'customer';
                   const isHumanAgent = msg.sender === 'human_agent';
                   const isLastMsg = idx === messages.length - 1;

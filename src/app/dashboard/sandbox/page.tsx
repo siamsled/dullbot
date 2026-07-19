@@ -101,7 +101,7 @@ export default function SandboxPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    <div className="max-w-4xl mx-auto flex flex-col h-full py-6 overflow-hidden">
       {/* Header Config Section */}
       <div className="bg-white p-4 border border-gray-200 rounded-t-lg flex flex-wrap gap-4 items-center justify-between shadow-sm">
         <div>

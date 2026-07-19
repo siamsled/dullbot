@@ -66,7 +66,8 @@ export default function AnalyticsClient({
   const maxPeak = Math.max(...peakTimes.flatMap(row => row), 1);
 
   return (
-    <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="flex-1 overflow-y-auto h-full w-full">
+      <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
 
       {/* HEADER & DATE RANGE FILTER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -351,5 +352,6 @@ export default function AnalyticsClient({
       </div>
 
     </div>
+  </div>
   );
 }

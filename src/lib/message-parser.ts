@@ -1,27 +1,49 @@
 export function parseMessageSegments(content: string): { type: 'text' | 'image' | 'audio', content: string }[] {
   if (!content) return [];
-  if (content.startsWith('IMAGE:')) return [{ type: 'image', content: content.substring(6) }];
-  if (content.startsWith('AUDIO:')) return [{ type: 'audio', content: content.substring(6) }];
+  
+  let cleaned = content.trim();
+  
+  if (cleaned.startsWith('IMAGE:')) {
+    return [{ type: 'image', content: cleaned.substring(6).trim() }];
+  }
+  if (cleaned.startsWith('AUDIO:')) {
+    return [{ type: 'audio', content: cleaned.substring(6).trim() }];
+  }
+  
+  cleaned = cleaned.replace(/^\[Product Image\]\s*/i, '');
+  cleaned = cleaned.replace(/^\[Voice Message\]\s*/i, '');
 
+  const segments: { type: 'text' | 'image' | 'audio', content: string }[] = [];
+  
   const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
   const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
+
+  const chunks = cleaned.split('|||').map(s => s.trim()).filter(Boolean);
   
-  const cleanedText = content.trim();
-  const chunks = cleanedText ? cleanedText.split('|||').map(s => s.trim()).filter(Boolean) : [];
-  
-  const segments: { type: 'text' | 'image' | 'audio', content: string }[] = [];
   for (const chunk of chunks) {
-    const parts = chunk.split(markdownImageSplitRegex);
-    for (const part of parts) {
-      if (!part) continue;
-      
-      const imgMatch = part.match(markdownImageExtractRegex);
-      if (imgMatch) {
-        segments.push({ type: 'image', content: imgMatch[1] });
-      } else {
-        const trimmedText = part.trim();
-        if (trimmedText) {
-          segments.push({ type: 'text', content: trimmedText });
+    const isRawImageUrl = /https?:\/\/[^\s]+?\.(png|jpg|jpeg|gif|webp)(\?[^\s]*)?$/i.test(chunk);
+    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg|webm)(\?[^\s]*)?$/i.test(chunk);
+
+    if (isRawImageUrl) {
+      segments.push({ type: 'image', content: chunk });
+    } else if (isRawAudioUrl) {
+      segments.push({ type: 'audio', content: chunk });
+    } else {
+      const parts = chunk.split(markdownImageSplitRegex);
+      for (const part of parts) {
+        if (!part) continue;
+        
+        const imgMatch = part.match(markdownImageExtractRegex);
+        if (imgMatch) {
+          segments.push({ type: 'image', content: imgMatch[1] });
+        } else {
+          const trimmedText = part.trim();
+          if (trimmedText) {
+            const cleanPart = trimmedText.replace(/^\[Product Image\]\s*/i, '').replace(/^\[Voice Message\]\s*/i, '').trim();
+            if (cleanPart) {
+              segments.push({ type: 'text', content: cleanPart });
+            }
+          }
         }
       }
     }

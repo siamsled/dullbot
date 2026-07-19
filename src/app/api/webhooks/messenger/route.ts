@@ -632,10 +632,24 @@ export async function POST(request: Request) {
                 }
               }
 
-              // Update last_message_at
+              // Update last_message_at, snippet, and unread_count
+              const { data: latestMsg } = await supabaseAdmin
+                .from('messages')
+                .select('content')
+                .eq('conversation_id', conversation.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              const snippet = latestMsg?.content || dbContent;
+
               await supabaseAdmin
                 .from('conversations')
-                .update({ last_message_at: new Date().toISOString() })
+                .update({ 
+                  last_message_at: new Date().toISOString(),
+                  last_message_content: snippet,
+                  unread_count: (conversation.unread_count || 0) + 1
+                })
                 .eq('id', conversation.id);
                 
               } finally {

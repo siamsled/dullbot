@@ -62,7 +62,8 @@ export default async function CreditsPage() {
   const isCritical = lastTopup && shop.credit_balance <= lastTopup.credits_granted * 0.05;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="flex-1 overflow-y-auto h-full w-full">
+      <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-10">
         <h1 className="text-4xl font-serif text-ink tracking-tight mb-3">Credits</h1>
         <p className="text-ash text-lg">Your AI usage balance and history.</p>
@@ -174,5 +175,6 @@ export default async function CreditsPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

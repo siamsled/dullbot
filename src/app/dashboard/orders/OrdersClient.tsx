@@ -423,7 +423,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 relative">
+    <div className="flex-1 overflow-y-auto h-full w-full">
+      <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 relative">
 
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -1056,5 +1057,6 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
       </AnimatePresence>
 
     </div>
+  </div>
   );
 }
