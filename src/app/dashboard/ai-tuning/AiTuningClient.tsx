@@ -134,6 +134,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     depositRefundPolicy !== savedState.depositRefundPolicy;
 
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Examples
   const [examples, setExamples] = useState(initialExamples);
@@ -160,44 +161,51 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   useEffect(() => { setChatHistory([]); }, [personaId]);
 
   const handleSave = () => {
+    setSaveError(null);
     startTransition(async () => {
-      const result = await saveAiTuning({
-        persona_id: personaId,
-        persona_custom_name: null,
-        disclosure_mode: disclosureMode,
-        max_discount_pct: maxDiscount,
-        auto_escalate_on_complaint: autoEscalate,
-        confidence_fallback: confidenceFallback,
-        ai_instructions: aiInstructions.trim() || null,
-        allow_discounts: allowDiscounts,
-        escalation_severity: escalationSeverity,
-        handle_audio: handleAudio,
-        abusive_handling_mode: abusiveHandlingMode,
-        abusive_block_threshold: abusiveBlockThreshold,
-        high_value_order_threshold: highValueOrderThreshold,
-        off_topic_tolerance: offTopicTolerance,
-        deposit_refund_policy: depositRefundPolicy,
-      });
-      if (result.success) {
-        // Update saved snapshots so dirty flag resets
-        setSavedPersonaId(personaId);
-        setSavedState({
-          disclosureMode,
-          maxDiscount,
-          autoEscalate,
-          confidenceFallback,
-          aiInstructions: aiInstructions.trim(),
-          allowDiscounts,
-          escalationSeverity,
-          handleAudio,
-          abusiveHandlingMode,
-          abusiveBlockThreshold,
-          highValueOrderThreshold,
-          offTopicTolerance,
-          depositRefundPolicy,
+      try {
+        const result = await saveAiTuning({
+          persona_id: personaId,
+          persona_custom_name: null,
+          disclosure_mode: disclosureMode,
+          max_discount_pct: maxDiscount,
+          auto_escalate_on_complaint: autoEscalate,
+          confidence_fallback: confidenceFallback,
+          ai_instructions: aiInstructions.trim() || null,
+          allow_discounts: allowDiscounts,
+          escalation_severity: escalationSeverity,
+          handle_audio: handleAudio,
+          abusive_handling_mode: abusiveHandlingMode,
+          abusive_block_threshold: abusiveBlockThreshold,
+          high_value_order_threshold: highValueOrderThreshold,
+          off_topic_tolerance: offTopicTolerance,
+          deposit_refund_policy: depositRefundPolicy,
         });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        if (result.success) {
+          // Update saved snapshots so dirty flag resets
+          setSavedPersonaId(personaId);
+          setSavedState({
+            disclosureMode,
+            maxDiscount,
+            autoEscalate,
+            confidenceFallback,
+            aiInstructions: aiInstructions.trim(),
+            allowDiscounts,
+            escalationSeverity,
+            handleAudio,
+            abusiveHandlingMode,
+            abusiveBlockThreshold,
+            highValueOrderThreshold,
+            offTopicTolerance,
+            depositRefundPolicy,
+          });
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2500);
+        } else {
+          setSaveError(result.error || 'Failed to save changes.');
+        }
+      } catch (err: any) {
+        setSaveError(err.message || 'An unexpected error occurred while saving.');
       }
     });
   };
@@ -317,7 +325,12 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         </div>
 
         <div className="border-t border-dove/20 px-4 py-4 space-y-2">
-          {isDirty && !saved && (
+          {saveError && (
+            <p className="text-[11px] text-center text-red-500 font-medium bg-red-50 border border-red-200/40 rounded-lg p-2">
+              {saveError}
+            </p>
+          )}
+          {isDirty && !saved && !saveError && (
             <p className="text-[11px] text-center text-amber-600 font-medium">
               Unsaved changes
             </p>

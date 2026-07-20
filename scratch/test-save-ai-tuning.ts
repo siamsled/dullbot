@@ -32,7 +32,7 @@ async function testSaveAiTuning() {
     }
 
     const newPersonaId = personas.find(p => p.id !== currentPersonaId)?.id || personas[0].id;
-    console.log(`Attempting to change persona to ID: ${newPersonaId} (Name: ${personas.find(p => p.id === newPersonaId)?.name})");
+    console.log(`Attempting to change persona to ID: ${newPersonaId} (Name: ${personas.find(p => p.id === newPersonaId)?.name})`);
 
   // Construct payload with existing settings but new persona_id
   const payload = {

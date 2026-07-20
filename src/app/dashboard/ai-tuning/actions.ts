@@ -23,21 +23,38 @@ export async function saveAiTuning(payload: {
   off_topic_tolerance: string;
   deposit_refund_policy: string;
 }) {
+  // Fetch sample record to determine actual columns present in the database table
+  const { data: sampleShop, error: fetchError } = await supabaseAdmin
+    .from('shops')
+    .select('*')
+    .eq('slug', SHOP_SLUG)
+    .single();
+
+  if (fetchError || !sampleShop) {
+    return { success: false, error: fetchError?.message || 'Failed to fetch shop settings schema.' };
+  }
+
+  const updateData: Record<string, any> = {
+    tuning_updated_at: new Date().toISOString(),
+    persona_updated_at: new Date().toISOString(),
+    prompt_cache_ref: null
+  };
+
+  const validColumns = Object.keys(sampleShop);
+  for (const key of Object.keys(payload)) {
+    if (validColumns.includes(key)) {
+      updateData[key] = (payload as any)[key];
+    }
+  }
+
   const { error } = await supabaseAdmin
     .from('shops')
-    .update({ 
-      ...payload, 
-      tuning_updated_at: new Date().toISOString(),
-      persona_updated_at: new Date().toISOString(),
-      prompt_cache_ref: null 
-    })
+    .update(updateData)
     .eq('slug', SHOP_SLUG);
 
   if (error) return { success: false, error: error.message };
-  const { data: shop } = await supabaseAdmin.from('shops').select('id').eq('slug', SHOP_SLUG).single();
-  if (shop) {
-    await supabaseAdmin.from('response_cache').delete().eq('shop_id', shop.id);
-  }
+  
+  await supabaseAdmin.from('response_cache').delete().eq('shop_id', sampleShop.id);
 
   revalidatePath('/dashboard/ai-tuning');
   return { success: true };
