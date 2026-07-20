@@ -55,7 +55,8 @@ export function buildSystemPrompt(
   persona: AgentPersona | null,
   products: ProductRow[],
   exampleReplies: { customer_message: string; ideal_reply: string }[] = [],
-  activeOrders: any[] = []
+  activeOrders: any[] = [],
+  productMedia: any[] = []
 ): string {
   const shopName = shop.name ?? 'this shop';
 
@@ -111,6 +112,8 @@ export function buildSystemPrompt(
   // Image Instructions
   const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own line. CRITICAL: If the customer ALREADY sent an image to ask about it, DO NOT send that same image back. If the customer sends an image BUT DOES NOT ask a question, DO NOT write a long paragraph guessing what they want. Just ask a very brief question like "কী জানতে চাচ্ছেন?" or "Which detail do you need?" (max 4-5 words).';
   
+  const realMediaLine = 'REAL PICS / VIDEOS RULE: If the customer explicitly asks for a "real picture", "real photo", "video", "in-hand pic", or "live video" (e.g., asking "real pic ache?", "video dekhan", "real video den"), check the AVAILABLE CONTEXT MEDIA list below. If there is a matching file for the product they are interested in, you MUST output its markdown tag: use `![image](url)` for photos or `![video](url)` for videos. Put each markdown tag on its own line. If no context media is available, politely say that you do not have a real photo or video right now.';
+
   const naturalLanguageLine = 'CRITICAL: Never start your sentences with "আরে" (Arey) or "নমস্কার" (Namaskar). Avoid awkward literal English-to-Bengali translations that sound unnatural to a native speaker (e.g., instead of "দেখতে কি ভালো লাগবে?", use conversational, authentic Bengali like "ওটা দেখবেন কি?" or "দেখতে চান?"). Speak exactly like a native Bangladeshi shopkeeper: warm, natural, and fluid.';
 
   const handleAudio = shop.handle_audio ?? true;
@@ -151,6 +154,16 @@ Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODU
   const productSection = shop.business_type === 'service'
     ? buildServiceSection(products)
     : buildProductSection(products);
+
+  let mediaSection = '';
+  if (productMedia && productMedia.length > 0) {
+    const mediaLines = productMedia.map(m => {
+      const typeStr = m.media_type === 'video' ? 'Real video' : 'Real photo';
+      const tagsStr = (m.tags && m.tags.length > 0) ? `Tags: ${m.tags.join(', ')}` : 'No tags';
+      return `  • [Product ID: ${m.product_id}] ${typeStr} (${tagsStr}) — URL: ${m.url}`;
+    });
+    mediaSection = `\n\nAVAILABLE CONTEXT MEDIA (REAL PHOTOS & VIDEOS):\nUse these URLs exactly when a customer asks for a real photo, video, or proof of a product:\n${mediaLines.join('\n')}`;
+  }
 
   // Few-shot examples
   const examplesSection = exampleReplies.length > 0
@@ -194,6 +207,7 @@ GUARDRAILS & RULES:
 - ${brevityLine}
 - ${multiBubbleLine}
 - ${imageLine}
+- ${realMediaLine}
 - ${naturalLanguageLine}
 ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 - ${offTopicLine}
@@ -202,7 +216,7 @@ ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 ${orderTakingLine}
 ${orderHistorySection}
 ${customInstructionsSection}
-${productSection}${examplesSection}`;
+${productSection}${mediaSection}${examplesSection}`;
 }
 
 function buildServiceSection(services: ProductRow[]): string {

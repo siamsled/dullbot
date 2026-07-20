@@ -25,18 +25,19 @@ if (fs.existsSync(envPath)) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function list() {
+async function listMessages() {
   const { data, error } = await supabase
-    .from('conversations')
-    .select('id, customer_phone, channel, meta_name, meta_profile_pic, is_test')
-    .order('last_message_at', { ascending: false });
+    .from('messages')
+    .select('id, sender, content, fb_message_ids, created_at')
+    .eq('conversation_id', 'f8b18b05-a382-4c8a-bdfd-7b4909fff979')
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Error:', error);
   } else {
-    console.log('Conversations in database:');
+    console.log('Messages in conversation:');
     console.log(JSON.stringify(data, null, 2));
   }
 }
 
-list();
+listMessages();

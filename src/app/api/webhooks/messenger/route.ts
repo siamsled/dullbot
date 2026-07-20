@@ -314,6 +314,11 @@ export async function POST(request: Request) {
                   .eq('draft', false)
                   .gt('stock_quantity', 0);
 
+                 const { data: productMedia } = await supabaseAdmin
+                   .from('product_media')
+                   .select('product_id, url, media_type, tags')
+                   .eq('shop_id', shop.id);
+
                 const { data: exampleReplies } = await supabaseAdmin
                   .from('example_replies')
                   .select('customer_message, ideal_reply')
@@ -369,7 +374,7 @@ export async function POST(request: Request) {
                   .eq('conversation_id', conversation.id)
                   .order('created_at', { ascending: false });
 
-                let systemPrompt = buildSystemPrompt(shopWithInstructions, persona, products || [], exampleReplies || [], activeOrders || []);
+                let systemPrompt = buildSystemPrompt(shopWithInstructions, persona, products || [], exampleReplies || [], activeOrders || [], productMedia || []);
 
                 // Customer context
                 systemPrompt += `\n\nCUSTOMER DETAILS:
