@@ -108,6 +108,39 @@ export type ContextMediaItem = {
   _isNew?: boolean;
 };
 
+function TagsInput({ 
+  initialValue, 
+  onChange 
+}: { 
+  initialValue: string[]; 
+  onChange: (tags: string[]) => void 
+}) {
+  const [text, setText] = useState(initialValue.join(', '));
+
+  useEffect(() => {
+    const joined = initialValue.join(', ');
+    if (joined !== text.split(',').map(t => t.trim()).filter(Boolean).join(', ')) {
+      setText(joined);
+    }
+  }, [initialValue]);
+
+  const handleChange = (val: string) => {
+    setText(val);
+    const parsed = val.split(',').map(t => t.trim()).filter(Boolean);
+    onChange(parsed);
+  };
+
+  return (
+    <input
+      type="text"
+      value={text}
+      placeholder="e.g. #realpic, model wearing, blue color"
+      onChange={(e) => handleChange(e.target.value)}
+      className="w-full bg-white border border-dove/20 rounded-inputs px-3 py-1.5 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
+    />
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ProductSlideOver({
@@ -599,7 +632,7 @@ export default function ProductSlideOver({
                   <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group">
                     <div className="w-16 h-16 shrink-0 relative bg-dove/10 rounded-images overflow-hidden flex items-center justify-center">
                       {item.media_type === 'video' ? (
-                        <video src={item.url} className="w-full h-full object-cover" muted playsInline />
+                        <video src={`${item.url}#t=0.1`} className="w-full h-full object-cover" muted playsInline preload="metadata" />
                       ) : (
                         <img src={item.url} alt="Context media" className="w-full h-full object-cover" />
                       )}
@@ -610,19 +643,14 @@ export default function ProductSlideOver({
 
                     <div className="flex-1 space-y-1">
                       <label className="text-[11px] font-medium text-ash">AI Lookup Tags (comma separated)</label>
-                      <input
-                        type="text"
-                        value={item.tags.join(', ')}
-                        placeholder="e.g. #realpic, model wearing, blue color"
-                        onChange={(e) => {
-                          const val = e.target.value;
+                      <TagsInput
+                        initialValue={item.tags}
+                        onChange={(newTags) => {
                           setContextMedia(prev => prev.map((x, i) => {
                             if (i !== idx) return x;
-                            const newTags = val.split(',').map(t => t.trim()).filter(Boolean);
                             return { ...x, tags: newTags };
                           }));
                         }}
-                        className="w-full bg-white border border-dove/20 rounded-inputs px-3 py-1.5 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
                       />
                     </div>
 
