@@ -79,6 +79,10 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   const [personaId, setPersonaId] = useState(
     shop.persona_id || (personas.length > 0 ? personas[0].id : '')
   );
+  // Track what is actually saved in DB (for visual diff)
+  const [savedPersonaId, setSavedPersonaId] = useState(
+    shop.persona_id || (personas.length > 0 ? personas[0].id : '')
+  );
 
   // Guardrail settings
   const [disclosureMode, setDisclosureMode] = useState(shop.disclosure_mode || 'reactive_honest');
@@ -94,7 +98,41 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
   const [highValueOrderThreshold, setHighValueOrderThreshold] = useState(shop.high_value_order_threshold || 0);
   const [offTopicTolerance, setOffTopicTolerance] = useState(shop.off_topic_tolerance || 'strict');
   const [depositRefundPolicy, setDepositRefundPolicy] = useState(shop.deposit_refund_policy || 'refundable_24h');
-  
+
+  // Snapshot of saved guardrail values for dirty checking
+  const [savedState, setSavedState] = useState({
+    disclosureMode: shop.disclosure_mode || 'reactive_honest',
+    maxDiscount: shop.max_discount_pct || 0,
+    autoEscalate: shop.auto_escalate_on_complaint ?? true,
+    confidenceFallback: shop.confidence_fallback || 'say_checking',
+    aiInstructions: shop.ai_instructions || '',
+    allowDiscounts: shop.allow_discounts ?? false,
+    escalationSeverity: shop.escalation_severity || 'serious_complaints',
+    handleAudio: shop.handle_audio ?? true,
+    abusiveHandlingMode: shop.abusive_handling_mode || 'polite',
+    abusiveBlockThreshold: shop.abusive_block_threshold || 3,
+    highValueOrderThreshold: shop.high_value_order_threshold || 0,
+    offTopicTolerance: shop.off_topic_tolerance || 'strict',
+    depositRefundPolicy: shop.deposit_refund_policy || 'refundable_24h',
+  });
+
+  // Dirty detection — true when anything differs from last save
+  const isDirty =
+    personaId !== savedPersonaId ||
+    disclosureMode !== savedState.disclosureMode ||
+    maxDiscount !== savedState.maxDiscount ||
+    autoEscalate !== savedState.autoEscalate ||
+    confidenceFallback !== savedState.confidenceFallback ||
+    (aiInstructions || '').trim() !== (savedState.aiInstructions || '').trim() ||
+    allowDiscounts !== savedState.allowDiscounts ||
+    escalationSeverity !== savedState.escalationSeverity ||
+    handleAudio !== savedState.handleAudio ||
+    abusiveHandlingMode !== savedState.abusiveHandlingMode ||
+    abusiveBlockThreshold !== savedState.abusiveBlockThreshold ||
+    highValueOrderThreshold !== savedState.highValueOrderThreshold ||
+    offTopicTolerance !== savedState.offTopicTolerance ||
+    depositRefundPolicy !== savedState.depositRefundPolicy;
+
   const [saved, setSaved] = useState(false);
 
   // Examples
@@ -123,7 +161,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
 
   const handleSave = () => {
     startTransition(async () => {
-      await saveAiTuning({
+      const result = await saveAiTuning({
         persona_id: personaId,
         persona_custom_name: null,
         disclosure_mode: disclosureMode,
@@ -140,8 +178,27 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         off_topic_tolerance: offTopicTolerance,
         deposit_refund_policy: depositRefundPolicy,
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (result.success) {
+        // Update saved snapshots so dirty flag resets
+        setSavedPersonaId(personaId);
+        setSavedState({
+          disclosureMode,
+          maxDiscount,
+          autoEscalate,
+          confidenceFallback,
+          aiInstructions: aiInstructions.trim(),
+          allowDiscounts,
+          escalationSeverity,
+          handleAudio,
+          abusiveHandlingMode,
+          abusiveBlockThreshold,
+          highValueOrderThreshold,
+          offTopicTolerance,
+          depositRefundPolicy,
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
     });
   };
 
@@ -209,37 +266,47 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
 
         <div className="overflow-y-auto py-3 px-3 space-y-1">
           {personas.map(p => {
-            const isActive = p.id === personaId;
+            const isSelected = p.id === personaId;
+            const isSaved = p.id === savedPersonaId;
             return (
               <button
                 key={p.id}
                 onClick={() => setPersonaId(p.id)}
-                className={`w-full text-left px-3 py-3.5 rounded-[16px] transition-all group ${
-                  isActive
+                className={`w-full text-left px-3 py-3.5 rounded-[16px] transition-all group relative ${
+                  isSelected
                     ? 'bg-ink text-white shadow-md'
-                    : 'hover:bg-fog text-ink'
+                    : isSaved
+                      ? 'bg-fog ring-1 ring-ink/20 text-ink'
+                      : 'hover:bg-fog text-ink'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-[13px] font-semibold leading-tight ${isActive ? 'text-white' : 'text-ink'}`}>
+                  <span className={`text-[13px] font-semibold leading-tight ${isSelected ? 'text-white' : 'text-ink'}`}>
                     {p.name}
                   </span>
-                  {isActive
-                    ? <Check className="w-3.5 h-3.5 text-white/70 shrink-0" />
-                    : <ChevronRight className="w-3.5 h-3.5 text-dove group-hover:text-graphite shrink-0" />
-                  }
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isSaved && !isSelected && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-ink text-white font-semibold tracking-wide uppercase leading-none">
+                        Live
+                      </span>
+                    )}
+                    {isSelected
+                      ? <Check className="w-3.5 h-3.5 text-white/70" />
+                      : <ChevronRight className="w-3.5 h-3.5 text-dove group-hover:text-graphite" />
+                    }
+                  </div>
                 </div>
-                <p className={`text-[11px] leading-snug ${isActive ? 'text-white/65' : 'text-graphite'}`}>
+                <p className={`text-[11px] leading-snug ${isSelected ? 'text-white/65' : 'text-graphite'}`}>
                   {p.tagline}
                 </p>
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    isActive ? 'bg-white/15 text-white/80' : 'bg-apricot-wash text-rust'
+                    isSelected ? 'bg-white/15 text-white/80' : 'bg-apricot-wash text-rust'
                   }`}>
                     {JOB_FUNCTION_LABELS[p.job_function] ?? p.job_function}
                   </span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    isActive ? 'bg-white/15 text-white/80' : 'bg-sky-wash text-blue-700'
+                    isSelected ? 'bg-white/15 text-white/80' : 'bg-sky-wash text-blue-700'
                   }`}>
                     {LANGUAGE_STYLE_LABELS[p.language_style] ?? p.language_style}
                   </span>
@@ -249,13 +316,31 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
           })}
         </div>
 
-        <div className="h-24 border-t border-dove/20 flex flex-col justify-center px-4">
+        <div className="border-t border-dove/20 px-4 py-4 space-y-2">
+          {isDirty && !saved && (
+            <p className="text-[11px] text-center text-amber-600 font-medium">
+              Unsaved changes
+            </p>
+          )}
           <button
             onClick={handleSave}
-            disabled={isPending}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-ink text-white text-sm font-medium hover:bg-black transition-all disabled:opacity-50 active:scale-95"
+            disabled={isPending || (!isDirty && !saved)}
+            className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full text-sm font-medium transition-all active:scale-95 ${
+              saved
+                ? 'bg-emerald-500 text-white'
+                : isDirty
+                  ? 'bg-ink text-white hover:bg-black shadow-md'
+                  : 'bg-fog text-dove cursor-not-allowed'
+            }`}
           >
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <><Check className="w-4 h-4" />Saved!</> : 'Save Changes'}
+            {isPending
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
+              : saved
+                ? <><Check className="w-4 h-4" />Saved! 🎉</>
+                : isDirty
+                  ? 'Save Changes'
+                  : <><Check className="w-4 h-4" />Up to date</>
+            }
           </button>
         </div>
       </aside>
