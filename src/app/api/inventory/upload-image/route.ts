@@ -30,10 +30,12 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    const uploadContentType = isVideo ? 'image/jpeg' : file.type;
+
     const { error } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(filename, buffer, {
-        contentType: file.type,
+        contentType: uploadContentType,
         upsert: false,
       });
 
