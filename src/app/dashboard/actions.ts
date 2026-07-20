@@ -165,6 +165,30 @@ export async function dismissTour(shopId: string) {
   return { success: true };
 }
 
+export async function getShopPersonaDetails() {
+  try {
+    const { data: shop, error } = await supabaseAdmin
+      .from("shops")
+      .select("id, name, persona_id, persona_updated_at")
+      .eq("name", "Dull Store")
+      .single();
+
+    if (error) {
+      console.error("Error fetching shop persona details:", error);
+      return { success: false, error: error.message };
+    }
+
+    if (shop) {
+      return { success: true, shop };
+    } else {
+      return { success: false, error: "Shop 'Dull Store' not found." };
+    }
+  } catch (err: any) {
+    console.error("Unhandled error in getShopPersonaDetails:", err);
+    return { success: false, error: err.message || "An unexpected error occurred." };
+  }
+}
+
 export async function fetchDashboardStats(
   shopId: string,
   rangeType: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom',
