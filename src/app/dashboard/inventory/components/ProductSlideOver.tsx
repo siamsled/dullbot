@@ -202,7 +202,7 @@ export default function ProductSlideOver({
     const valid: File[] = [];
     for (const f of arr) {
       if (!f.type.startsWith('image/')) errors.push(`${f.name}: not an image`);
-      else if (f.size > 5 * 1024 * 1024) errors.push(`${f.name}: exceeds 5MB`);
+      else if (f.size > 10 * 1024 * 1024) errors.push(`${f.name}: exceeds 10MB`);
       else valid.push(f);
     }
     setImageErrors(errors);
@@ -227,13 +227,13 @@ export default function ProductSlideOver({
     
     for (const f of arr) {
       if (f.type.startsWith('video/')) {
-        if (f.size > 50 * 1024 * 1024) {
-          errors.push(`${f.name}: exceeds 50MB`);
+        if (f.size > 25 * 1024 * 1024) {
+          errors.push(`${f.name}: exceeds 25MB`);
         } else {
           try {
             const duration = await getVideoDuration(f);
-            if (duration > 45) {
-              errors.push(`${f.name}: exceeds 45 seconds (is ${Math.round(duration)}s)`);
+            if (duration > 60) {
+              errors.push(`${f.name}: exceeds 60 seconds (is ${Math.round(duration)}s)`);
             } else {
               valid.push({ file: f, media_type: 'video' });
             }
@@ -242,8 +242,8 @@ export default function ProductSlideOver({
           }
         }
       } else if (f.type.startsWith('image/')) {
-        if (f.size > 5 * 1024 * 1024) {
-          errors.push(`${f.name}: exceeds 5MB`);
+        if (f.size > 10 * 1024 * 1024) {
+          errors.push(`${f.name}: exceeds 10MB`);
         } else {
           valid.push({ file: f, media_type: 'image' });
         }
@@ -487,7 +487,7 @@ export default function ProductSlideOver({
                 <>
                   <Upload className="w-6 h-6 text-dove mx-auto mb-2" />
                   <p className="text-sm text-ash">Drop images or click to upload</p>
-                  <p className="text-xs text-dove mt-1">PNG, JPG, WEBP · 5MB max per image</p>
+                  <p className="text-xs text-dove mt-1">PNG, JPG, WEBP · 10MB max per image</p>
                 </>
               )}
               <input
@@ -569,7 +569,7 @@ export default function ProductSlideOver({
                 <>
                   <Upload className="w-6 h-6 text-dove mx-auto mb-2" />
                   <p className="text-sm text-ash">Drop files or click to upload</p>
-                  <p className="text-xs text-dove mt-1">PNG, JPG, WEBP (5MB max) · MP4, WEBM (50MB & 45s max)</p>
+                  <p className="text-xs text-dove mt-1">PNG, JPG, WEBP (10MB max) · MP4, WEBM (25MB & 60s max)</p>
                 </>
               )}
               <input

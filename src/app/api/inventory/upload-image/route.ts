@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import sharp from 'sharp';
 
 const BUCKET = 'product-images';
 const ALLOWED_IMAGES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
@@ -20,17 +21,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Invalid file type: ${file.type}. Only images and videos are accepted.` }, { status: 400 });
     }
 
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    const maxSize = isVideo ? 25 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json({ error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${isVideo ? '50MB' : '5MB'}.` }, { status: 400 });
+      return NextResponse.json({ error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${isVideo ? '25MB' : '10MB'}.` }, { status: 400 });
     }
 
-    const ext = file.name.split('.').pop() ?? 'jpg';
+    let buffer = Buffer.from(await file.arrayBuffer());
+    let uploadContentType = isVideo ? 'image/jpeg' : file.type;
+    let ext = file.name.split('.').pop() ?? 'jpg';
+
+    if (isImage) {
+      try {
+        const pipeline = sharp(buffer);
+        const metadata = await pipeline.metadata();
+        
+        if (metadata.width && metadata.width > 1920) {
+          pipeline.resize({ width: 1920, fit: 'inside', withoutEnlargement: true });
+        }
+        
+        buffer = await pipeline
+          .webp({ quality: 85 })
+          .toBuffer();
+          
+        uploadContentType = 'image/webp';
+        ext = 'webp';
+      } catch (sharpError) {
+        console.error('Sharp compression failed, uploading raw image:', sharpError);
+      }
+    }
+
     const filename = `${shopId ?? 'global'}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const uploadContentType = isVideo ? 'image/jpeg' : file.type;
 
     const { error } = await supabaseAdmin.storage
       .from(BUCKET)
