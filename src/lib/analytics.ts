@@ -66,26 +66,112 @@ export interface ShopStats {
   lowStockProducts: number;
 }
 
-function buildDailySeries<T extends { created_at: string }>(
+function buildCustomSeries<T extends { created_at: string }>(
   rows: T[] | null,
+  startStr: string,
+  endStr: string,
+  rangeType: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom',
   getValue: (row: T) => number
 ): number[] {
-  const series = new Array(7).fill(0);
-  const now = toDhakaDate(new Date().toISOString());
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  const diffTime = end.getTime() - start.getTime();
+
+  if (rangeType === 'daily') {
+    const series = new Array(24).fill(0);
+    for (const row of rows ?? []) {
+      const d = new Date(row.created_at);
+      const diffHours = Math.floor((end.getTime() - d.getTime()) / (60 * 60 * 1000));
+      const idx = 23 - diffHours;
+      if (idx >= 0 && idx < 24) {
+        series[idx] += getValue(row);
+      }
+    }
+    return series;
+  }
+  
+  if (rangeType === 'yearly') {
+    const series = new Array(12).fill(0);
+    for (const row of rows ?? []) {
+      const d = new Date(row.created_at);
+      const diffMonths = (end.getFullYear() - d.getFullYear()) * 12 + (end.getMonth() - d.getMonth());
+      const idx = 11 - diffMonths;
+      if (idx >= 0 && idx < 12) {
+        series[idx] += getValue(row);
+      }
+    }
+    return series;
+  }
+
+  const diffDays = Math.ceil(diffTime / (24 * 60 * 60 * 1000)) || 1;
+  const series = new Array(diffDays).fill(0);
   for (const row of rows ?? []) {
-    const d = toDhakaDate(row.created_at);
-    const diffDays = Math.floor((now.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-    const idx = 6 - diffDays;
-    if (idx >= 0 && idx < 7) {
+    const d = new Date(row.created_at);
+    const diff = Math.floor((end.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
+    const idx = (diffDays - 1) - diff;
+    if (idx >= 0 && idx < diffDays) {
       series[idx] += getValue(row);
     }
   }
   return series;
 }
 
-export async function getShopStats(shopId: string): Promise<ShopStats> {
-  const days7 = nDaysAgo(7);
-  const days14 = nDaysAgo(14);
+export async function getShopStats(
+  shopId: string,
+  rangeType: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' = 'weekly',
+  customStart?: string,
+  customEnd?: string
+): Promise<ShopStats> {
+  let startStr: string;
+  let endStr: string;
+  let prevStartStr: string;
+  let prevEndStr: string;
+  
+  const now = new Date();
+  
+  if (rangeType === 'daily') {
+    const todayStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    startStr = todayStart.toISOString();
+    endStr = now.toISOString();
+    
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    prevStartStr = yesterdayStart.toISOString();
+    prevEndStr = todayStart.toISOString();
+  } else if (rangeType === 'monthly') {
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    startStr = start.toISOString();
+    endStr = now.toISOString();
+    
+    const prevStart = new Date(start.getTime() - 30 * 24 * 60 * 60 * 1000);
+    prevStartStr = prevStart.toISOString();
+    prevEndStr = start.toISOString();
+  } else if (rangeType === 'yearly') {
+    const start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    startStr = start.toISOString();
+    endStr = now.toISOString();
+    
+    const prevStart = new Date(start.getTime() - 365 * 24 * 60 * 60 * 1000);
+    prevStartStr = prevStart.toISOString();
+    prevEndStr = start.toISOString();
+  } else if (rangeType === 'custom' && customStart && customEnd) {
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+    startStr = start.toISOString();
+    endStr = end.toISOString();
+    
+    const diff = end.getTime() - start.getTime();
+    const prevStart = new Date(start.getTime() - diff);
+    prevStartStr = prevStart.toISOString();
+    prevEndStr = start.toISOString();
+  } else {
+    const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    startStr = start.toISOString();
+    endStr = now.toISOString();
+    
+    const prevStart = new Date(start.getTime() - 7 * 24 * 60 * 60 * 1000);
+    prevStartStr = prevStart.toISOString();
+    prevEndStr = start.toISOString();
+  }
 
   const [
     { data: orders7 },
@@ -95,25 +181,25 @@ export async function getShopStats(shopId: string): Promise<ShopStats> {
     { data: pendingOrders },
     { data: lowStock },
   ] = await Promise.all([
-    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id').eq('shop_id', shopId).gte('created_at', days7).order('created_at'),
-    supabaseAdmin.from('orders').select('created_at, total_amount, status').eq('shop_id', shopId).gte('created_at', days14).lt('created_at', days7).order('created_at'),
-    supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', days7).order('created_at'),
-    supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', days14).lt('created_at', days7).order('created_at'),
+    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
+    supabaseAdmin.from('orders').select('created_at, total_amount, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
+    supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
+    supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
     supabaseAdmin.from('orders').select('id').eq('shop_id', shopId).in('status', ['pending_verification','confirmed']),
     supabaseAdmin.from('products').select('id').eq('shop_id', shopId).lt('stock_quantity', 5),
   ]);
 
-  const revenueSeries = buildDailySeries(orders7 ?? [], (o: any) => Number(o.total_amount ?? 0));
+  const revenueSeries = buildCustomSeries(orders7 ?? [], startStr, endStr, rangeType, (o: any) => Number(o.total_amount ?? 0));
   const revenueTotal = revenueSeries.reduce((a, b) => a + b, 0);
   const revenuePrev = (orders14 ?? []).reduce((s: number, o: any) => s + Number(o.total_amount ?? 0), 0);
   const revenueDelta = revenuePrev > 0 ? Math.round(((revenueTotal - revenuePrev) / revenuePrev) * 100) : 0;
 
-  const ordersSeries = buildDailySeries(orders7 ?? [], () => 1);
+  const ordersSeries = buildCustomSeries(orders7 ?? [], startStr, endStr, rangeType, () => 1);
   const ordersTotal = (orders7 ?? []).length;
   const ordersPrev = (orders14 ?? []).length;
   const ordersDelta = ordersPrev > 0 ? Math.round(((ordersTotal - ordersPrev) / ordersPrev) * 100) : 0;
 
-  const convSeries = buildDailySeries(convs7 ?? [], () => 1);
+  const convSeries = buildCustomSeries(convs7 ?? [], startStr, endStr, rangeType, () => 1);
   const convsTotal = (convs7 ?? []).length;
   const convsPrev = (convs14 ?? []).length;
   const convDelta = convsPrev > 0 ? Math.round(((convsTotal - convsPrev) / convsPrev) * 100) : 0;
@@ -121,8 +207,11 @@ export async function getShopStats(shopId: string): Promise<ShopStats> {
   const aiHandled = (convs7 ?? []).filter((c: any) => c.status !== 'human_takeover').length;
   const humanEsc = (convs7 ?? []).filter((c: any) => c.status === 'human_takeover').length;
   const autopilotRate = convsTotal > 0 ? Math.round((aiHandled / convsTotal) * 100) : 0;
-  const autopilotSeries = buildDailySeries(
+  const autopilotSeries = buildCustomSeries(
     (convs7 ?? []).filter((c: any) => c.status !== 'human_takeover'),
+    startStr,
+    endStr,
+    rangeType,
     () => 1
   );
 
@@ -132,7 +221,6 @@ export async function getShopStats(shopId: string): Promise<ShopStats> {
   const funnelConfirmed = (orders7 ?? []).filter((o: any) => ['confirmed','fulfilled'].includes(o.status)).length;
   const funnelFulfilled = (orders7 ?? []).filter((o: any) => o.status === 'fulfilled').length;
 
-  // Payment mismatches in last 7 days
   const orderIds7 = (orders7 ?? []).map((o: any) => o.id);
   let paymentMismatches = 0;
   if (orderIds7.length > 0) {

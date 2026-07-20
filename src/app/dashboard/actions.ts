@@ -164,3 +164,19 @@ export async function dismissTour(shopId: string) {
   revalidatePath('/dashboard');
   return { success: true };
 }
+
+export async function fetchDashboardStats(
+  shopId: string,
+  rangeType: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom',
+  customStart?: string,
+  customEnd?: string
+) {
+  try {
+    const { getShopStats } = await import('@/lib/analytics');
+    const stats = await getShopStats(shopId, rangeType, customStart, customEnd);
+    return { success: true, stats };
+  } catch (err: any) {
+    console.error('Failed to fetch dashboard stats:', err);
+    return { success: false, error: err.message || 'Failed to load stats' };
+  }
+}

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-import { saveBusinessType } from './actions';
+import { saveBusinessType, fetchDashboardStats } from './actions';
 import { ShopStats } from '@/lib/analytics';
 
 const BANNER_DISMISSED_KEY = 'dullbot_setup_banner_dismissed';
@@ -26,6 +26,25 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const [shop, setShop] = useState(initialShop);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isNudgeDismissed, setIsNudgeDismissed] = useState(false);
+
+  // Dynamic range / calendar stats (Daily, Weekly, Monthly, Yearly, Custom)
+  const [rangeType, setRangeType] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'>('weekly');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [currentStats, setCurrentStats] = useState<ShopStats>(stats);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  useEffect(() => {
+    if (rangeType === 'custom' && (!customStart || !customEnd)) return;
+    
+    setLoadingStats(true);
+    fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined).then(res => {
+      setLoadingStats(false);
+      if (res.success && res.stats) {
+        setCurrentStats(res.stats);
+      }
+    });
+  }, [rangeType, customStart, customEnd, shop.id]);
 
   useEffect(() => {
     setIsBannerDismissed(localStorage.getItem(BANNER_DISMISSED_KEY) === '1');
@@ -78,10 +97,10 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
 
   // 1. Weekly rotating Insight Callout
   const getInsightCallout = () => {
-    if (stats.revenueTotal > 5000) {
+    if (currentStats.revenueTotal > 5000) {
       return "Peak order window identified: Thursday afternoon saw a 40% surge in confirmed orders.";
     }
-    if (stats.autopilotRate > 85) {
+    if (currentStats.autopilotRate > 85) {
       return "AI Autopilot conversion is highly stable, handling over 85% of all traffic without human intervention.";
     }
     return "Dhaka district is currently your highest performing region by customer conversation rate.";
@@ -157,7 +176,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
     );
   };
 
-  const hasNeedsAttention = stats.pendingOrders > 0 || stats.paymentMismatches > 0 || stats.lowStockProducts > 0;
+  const hasNeedsAttention = currentStats.pendingOrders > 0 || currentStats.paymentMismatches > 0 || currentStats.lowStockProducts > 0;
 
   return (
     <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
@@ -200,11 +219,59 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-end justify-between"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4"
         >
           <div>
             <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Overview</h1>
-            <p className="text-ash text-sm">Here's what DullBot has been up to today.</p>
+            <p className="text-ash text-sm">Here's what DullBot has been up to.</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-cards border border-dove/10 shadow-subtle relative">
+            {loadingStats && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-cards z-10">
+                <span className="text-[10px] font-bold text-ink uppercase tracking-wider animate-pulse">Loading...</span>
+              </div>
+            )}
+            
+            <div className="flex items-center rounded-inputs bg-fog p-0.5 border border-dove/10">
+              {[
+                { key: 'daily', label: 'Daily' },
+                { key: 'weekly', label: 'Weekly' },
+                { key: 'monthly', label: 'Monthly' },
+                { key: 'yearly', label: 'Yearly' },
+                { key: 'custom', label: 'Custom' }
+              ].map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => setRangeType(opt.key as any)}
+                  className={`px-3 py-1.5 rounded-inputs text-xs font-medium transition-all ${
+                    rangeType === opt.key 
+                      ? 'bg-white text-ink shadow-subtle border border-dove/10 font-semibold' 
+                      : 'text-ash hover:text-ink border border-transparent'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {rangeType === 'custom' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={e => setCustomStart(e.target.value)}
+                  className="bg-fog border border-dove/20 rounded-inputs px-2.5 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                />
+                <span className="text-xs text-ash">to</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={e => setCustomEnd(e.target.value)}
+                  className="bg-fog border border-dove/20 rounded-inputs px-2.5 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                />
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -216,7 +283,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         >
           <Sparkles className="w-4 h-4 text-rust shrink-0" />
           <p className="text-xs font-semibold text-ink leading-relaxed">
-            <span className="text-rust">Weekly Insight:</span> {getInsightCallout()}
+            <span className="text-rust">Insight:</span> {getInsightCallout()}
           </p>
         </motion.div>
       </div>
@@ -281,10 +348,10 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
       >
         {[
-          { label: 'Revenue (7d)', value: `৳${stats.revenueTotal.toLocaleString()}`, series: stats.revenueSeries, delta: stats.revenueDelta, sub: 'vs last week', icon: Package },
-          { label: 'Orders Captured', value: stats.ordersTotal, series: stats.ordersSeries, delta: stats.ordersDelta, sub: 'vs last week', icon: Package },
-          { label: 'Conversations', value: stats.convsTotal, series: stats.convSeries, delta: stats.convDelta, sub: 'vs last week', icon: MessageSquareText },
-          { label: 'AI Autopilot Rate', value: `${stats.autopilotRate}%`, series: stats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity }
+          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs previous period', icon: Package },
+          { label: 'Orders Captured', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs previous period', icon: Package },
+          { label: 'Conversations', value: currentStats.convsTotal, series: currentStats.convSeries, delta: currentStats.convDelta, sub: 'vs previous period', icon: MessageSquareText },
+          { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity }
         ].map((tile, idx) => (
           <motion.div
             key={idx}
@@ -321,14 +388,14 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         <div className="lg:col-span-2 bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-semibold text-ink mb-1">Customer Journey Funnel</h3>
-            <p className="text-xs text-ash mb-6">Drop-off rates across communication and checkout stages (last 7d)</p>
+            <p className="text-xs text-ash mb-6">Drop-off rates across communication and checkout stages</p>
 
             <div className="space-y-4">
               {[
-                { name: 'Conversations received', count: stats.funnelConversations, percent: 100 },
-                { name: 'Reached order intent',   count: stats.funnelOrderIntent,   percent: stats.funnelConversations > 0 ? Math.round((stats.funnelOrderIntent / stats.funnelConversations) * 100) : 0 },
-                { name: 'Order confirmed',        count: stats.funnelConfirmed,     percent: stats.funnelOrderIntent > 0 ? Math.round((stats.funnelConfirmed / stats.funnelOrderIntent) * 100) : 0 },
-                { name: 'Fulfilled',              count: stats.funnelFulfilled,     percent: stats.funnelConfirmed > 0 ? Math.round((stats.funnelFulfilled / stats.funnelConfirmed) * 100) : 0 },
+                { name: 'Conversations received', count: currentStats.funnelConversations, percent: 100 },
+                { name: 'Reached order intent',   count: currentStats.funnelOrderIntent,   percent: currentStats.funnelConversations > 0 ? Math.round((currentStats.funnelOrderIntent / currentStats.funnelConversations) * 100) : 0 },
+                { name: 'Order confirmed',        count: currentStats.funnelConfirmed,     percent: currentStats.funnelOrderIntent > 0 ? Math.round((currentStats.funnelConfirmed / currentStats.funnelOrderIntent) * 100) : 0 },
+                { name: 'Fulfilled',              count: currentStats.funnelFulfilled,     percent: currentStats.funnelConfirmed > 0 ? Math.round((currentStats.funnelFulfilled / currentStats.funnelConfirmed) * 100) : 0 },
               ].map((step, idx) => (
                 <div key={idx} className="space-y-1.5">
                   <div className="flex justify-between text-xs font-semibold text-ink">
@@ -351,7 +418,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-semibold text-ink mb-1">AI Resolution Split</h3>
-            <p className="text-xs text-ash mb-6">Autopilot vs human hand-offs (last 7d)</p>
+            <p className="text-xs text-ash mb-6">Autopilot vs human hand-offs</p>
 
             <div className="flex flex-col items-center justify-center space-y-4">
               <div className="w-32 h-32 relative">
@@ -359,8 +426,8 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                   <PieChart>
                     <Pie
                       data={[
-                        { name: 'Resolved by AI', value: stats.aiResolved },
-                        { name: 'Human Escalations', value: stats.humanEscalated }
+                        { name: 'Resolved by AI', value: currentStats.aiResolved },
+                        { name: 'Human Escalations', value: currentStats.humanEscalated }
                       ]}
                       innerRadius={36}
                       outerRadius={48}
@@ -373,7 +440,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-lg font-bold text-ink leading-none">{stats.autopilotRate}%</span>
+                  <span className="text-lg font-bold text-ink leading-none">{currentStats.autopilotRate}%</span>
                   <span className="text-[9px] text-ash font-bold mt-0.5">Autopilot</span>
                 </div>
               </div>
@@ -385,14 +452,14 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                     <span className="w-2.5 h-2.5 rounded-full bg-ink" />
                     <span className="text-ink font-semibold">Autopilot Resolved</span>
                   </div>
-                  <span className="font-semibold text-ink font-mono">{stats.aiResolved}</span>
+                  <span className="font-semibold text-ink font-mono">{currentStats.aiResolved}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-apricot-wash border border-rust/10" />
                     <span className="text-ash font-semibold">Human Takeover</span>
                   </div>
-                  <span className="font-semibold text-ash font-mono">{stats.humanEscalated}</span>
+                  <span className="font-semibold text-ash font-mono">{currentStats.humanEscalated}</span>
                 </div>
               </div>
             </div>
@@ -408,33 +475,33 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
             <h3 className="text-sm font-semibold text-ink">Needs Attention</h3>
           </div>
           <div className="flex flex-col divide-y divide-dove/10">
-            {stats.pendingOrders > 0 && (
+            {currentStats.pendingOrders > 0 && (
               <div className="flex justify-between items-center py-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
-                  <span className="text-xs text-ink font-semibold">{stats.pendingOrders} order{stats.pendingOrders > 1 ? 's' : ''} pending confirmation</span>
+                  <span className="text-xs text-ink font-semibold">{currentStats.pendingOrders} order{currentStats.pendingOrders > 1 ? 's' : ''} pending confirmation</span>
                 </div>
                 <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Confirm orders <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
             )}
-            {stats.paymentMismatches > 0 && (
+            {currentStats.paymentMismatches > 0 && (
               <div className="flex justify-between items-center py-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
-                  <span className="text-xs text-ink font-semibold">{stats.paymentMismatches} payment mismatch{stats.paymentMismatches > 1 ? 'es' : ''} detected</span>
+                  <span className="text-xs text-ink font-semibold">{currentStats.paymentMismatches} payment mismatch{currentStats.paymentMismatches > 1 ? 'es' : ''} detected</span>
                 </div>
                 <Link href="/dashboard/orders" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Review payments <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
             )}
-            {stats.lowStockProducts > 0 && (
+            {currentStats.lowStockProducts > 0 && (
               <div className="flex justify-between items-center py-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-rust animate-pulse" />
-                  <span className="text-xs text-ink font-semibold">{stats.lowStockProducts} product{stats.lowStockProducts > 1 ? 's are' : ' is'} low on stock</span>
+                  <span className="text-xs text-ink font-semibold">{currentStats.lowStockProducts} product{currentStats.lowStockProducts > 1 ? 's are' : ' is'} low on stock</span>
                 </div>
                 <Link href="/dashboard/inventory" className="text-[10px] font-bold text-rust hover:underline flex items-center gap-0.5 uppercase tracking-wider">
                   Update inventory <ChevronRight className="w-3 h-3" />
