@@ -6,6 +6,16 @@ import { invokeGemini } from '@/lib/gemini';
 
 const SHOP_SLUG = 'dull-store';
 
+import fs from 'fs';
+import path from 'path';
+
+function logDebug(msg: string) {
+  try {
+    const logFile = path.join(process.cwd(), 'save_debug.log');
+    fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch {}
+}
+
 export async function saveAiTuning(payload: {
   persona_id: string;
   persona_custom_name: string | null;
@@ -23,41 +33,64 @@ export async function saveAiTuning(payload: {
   off_topic_tolerance: string;
   deposit_refund_policy: string;
 }) {
-  // Fetch sample record to determine actual columns present in the database table
-  const { data: sampleShop, error: fetchError } = await supabaseAdmin
-    .from('shops')
-    .select('*')
-    .eq('slug', SHOP_SLUG)
-    .single();
+  logDebug('saveAiTuning started');
+  logDebug(`Payload keys: ${Object.keys(payload).join(', ')}`);
 
-  if (fetchError || !sampleShop) {
-    return { success: false, error: fetchError?.message || 'Failed to fetch shop settings schema.' };
-  }
+  try {
+    logDebug('Fetching sample shop settings schema...');
+    const { data: sampleShop, error: fetchError } = await supabaseAdmin
+      .from('shops')
+      .select('*')
+      .eq('slug', SHOP_SLUG)
+      .single();
 
-  const updateData: Record<string, any> = {
-    tuning_updated_at: new Date().toISOString(),
-    persona_updated_at: new Date().toISOString(),
-    prompt_cache_ref: null
-  };
-
-  const validColumns = Object.keys(sampleShop);
-  for (const key of Object.keys(payload)) {
-    if (validColumns.includes(key)) {
-      updateData[key] = (payload as any)[key];
+    if (fetchError || !sampleShop) {
+      logDebug(`Fetch schema error: ${fetchError?.message}`);
+      return { success: false, error: fetchError?.message || 'Failed to fetch shop settings schema.' };
     }
+
+    logDebug(`Shop ID fetched: ${sampleShop.id}`);
+
+    const updateData: Record<string, any> = {
+      tuning_updated_at: new Date().toISOString(),
+      persona_updated_at: new Date().toISOString(),
+      prompt_cache_ref: null
+    };
+
+    const validColumns = Object.keys(sampleShop);
+    for (const key of Object.keys(payload)) {
+      if (validColumns.includes(key) && key !== 'tuning_updated_at' && key !== 'persona_updated_at' && key !== 'prompt_cache_ref') {
+        updateData[key] = (payload as any)[key];
+      }
+    }
+
+    logDebug(`Updating shop table with keys: ${Object.keys(updateData).join(', ')}`);
+    
+    const { error } = await supabaseAdmin
+      .from('shops')
+      .update(updateData)
+      .eq('slug', SHOP_SLUG);
+
+    if (error) {
+      logDebug(`Supabase update error: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+
+    logDebug('Clearing response cache...');
+    const { error: cacheError } = await supabaseAdmin.from('response_cache').delete().eq('shop_id', sampleShop.id);
+    if (cacheError) {
+      logDebug(`Cache clear error (ignored): ${cacheError.message}`);
+    }
+
+    logDebug('Revalidating path /dashboard/ai-tuning...');
+    revalidatePath('/dashboard/ai-tuning');
+    
+    logDebug('saveAiTuning completed successfully');
+    return { success: true };
+  } catch (err: any) {
+    logDebug(`Unexpected exception: ${err.stack || err.message}`);
+    return { success: false, error: err.message || 'Unexpected internal server error.' };
   }
-
-  const { error } = await supabaseAdmin
-    .from('shops')
-    .update(updateData)
-    .eq('slug', SHOP_SLUG);
-
-  if (error) return { success: false, error: error.message };
-  
-  await supabaseAdmin.from('response_cache').delete().eq('shop_id', sampleShop.id);
-
-  revalidatePath('/dashboard/ai-tuning');
-  return { success: true };
 }
 
 export async function addExampleReply(shopId: string, customerMessage: string, idealReply: string) {

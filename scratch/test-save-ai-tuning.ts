@@ -7,8 +7,8 @@ async function testSaveAiTuning() {
     // Get shop ID for 'Dull Store'
     const { data: shopData, error: shopError } = await supabaseAdmin
         .from("shops")
-        .select("id, name, persona_id, persona_custom_name, disclosure_mode, max_discount_pct, auto_escalate_on_complaint, confidence_fallback, ai_instructions, allow_discounts, escalation_severity, handle_audio, abusive_handling_mode, abusive_block_threshold, high_value_order_threshold, off_topic_tolerance, deposit_refund_policy")
-        .eq("name", "Dull Store")
+        .select("*")
+        .eq("name", "Jacket Shaket ")
         .single();
 
     if (shopError || !shopData) {
