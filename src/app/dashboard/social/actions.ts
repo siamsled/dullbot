@@ -1,18 +1,9 @@
 'use server';
 
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { supabaseAdmin, getCurrentShop } from '@/lib/supabase-admin';
 
 async function getShopId(): Promise<string | null> {
-  const supabaseUser = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookies().getAll() } }
-  );
-  const { data: { user } } = await supabaseUser.auth.getUser();
-  if (!user) return null;
-  const { data: shop } = await supabaseAdmin.from('shops').select('id').eq('owner_id', user.id).single();
+  const shop = await getCurrentShop();
   return shop?.id ?? null;
 }
 
