@@ -1,4 +1,4 @@
-export function parseMessageSegments(content: string): { type: 'text' | 'image' | 'audio', content: string }[] {
+export function parseMessageSegments(content: string): { type: 'text' | 'image' | 'audio' | 'video', content: string }[] {
   if (!content) return [];
   
   let cleaned = content.trim();
@@ -9,22 +9,28 @@ export function parseMessageSegments(content: string): { type: 'text' | 'image' 
   if (cleaned.startsWith('AUDIO:')) {
     return [{ type: 'audio', content: cleaned.substring(6).trim() }];
   }
+  if (cleaned.startsWith('VIDEO:')) {
+    return [{ type: 'video', content: cleaned.substring(6).trim() }];
+  }
   
   cleaned = cleaned.replace(/^\[Product Image\]\s*/i, '');
   cleaned = cleaned.replace(/^\[Voice Message\]\s*/i, '');
 
-  const segments: { type: 'text' | 'image' | 'audio', content: string }[] = [];
+  const segments: { type: 'text' | 'image' | 'audio' | 'video', content: string }[] = [];
   
-  const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
+  const markdownImageSplitRegex = /(!\\[.*?\\]\\(.*?\\))/g;
   const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
 
   const chunks = cleaned.split('|||').map(s => s.trim()).filter(Boolean);
   
   for (const chunk of chunks) {
     const isRawImageUrl = /https?:\/\/[^\s]+?\.(png|jpg|jpeg|gif|webp)(\?[^\s]*)?$/i.test(chunk);
-    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg|webm)(\?[^\s]*)?$/i.test(chunk);
+    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg)(\?[^\s]*)?$/i.test(chunk);
+    const isRawVideoUrl = /https?:\/\/[^\s]+?\.(mp4|mov|avi|mkv|webm)(\?[^\s]*)?$/i.test(chunk);
 
-    if (isRawImageUrl) {
+    if (isRawVideoUrl) {
+      segments.push({ type: 'video', content: chunk });
+    } else if (isRawImageUrl) {
       segments.push({ type: 'image', content: chunk });
     } else if (isRawAudioUrl) {
       segments.push({ type: 'audio', content: chunk });
@@ -35,11 +41,19 @@ export function parseMessageSegments(content: string): { type: 'text' | 'image' 
         
         const imgMatch = part.match(markdownImageExtractRegex);
         if (imgMatch) {
-          segments.push({ type: 'image', content: imgMatch[1] });
+          const url = imgMatch[1];
+          if (/\.(mp4|mov|avi|mkv)$/i.test(url)) {
+            segments.push({ type: 'video', content: url });
+          } else {
+            segments.push({ type: 'image', content: url });
+          }
         } else {
           const trimmedText = part.trim();
           if (trimmedText) {
-            const cleanPart = trimmedText.replace(/^\[Product Image\]\s*/i, '').replace(/^\[Voice Message\]\s*/i, '').trim();
+            const cleanPart = trimmedText
+              .replace(/^\[Product Image\]\s*/i, '')
+              .replace(/^\[Voice Message\]\s*/i, '')
+              .trim();
             if (cleanPart) {
               segments.push({ type: 'text', content: cleanPart });
             }

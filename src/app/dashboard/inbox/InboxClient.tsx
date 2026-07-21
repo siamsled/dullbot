@@ -1053,22 +1053,31 @@ export default function InboxClient({
                               const isFirst = sIdx === 0 && !quotedText;
                               return (
                                 <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                                  <div className={`px-4 py-2 text-[15px] ${isCustomer
-                                    ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
-                                    : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
-                                    }`}>
-                                    {segment.type === 'image' ? (
-                                      <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
-                                        <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
-                                      </a>
-                                    ) : segment.type === 'audio' ? (
-                                      <div className="py-1">
-                                        <audio src={segment.content} controls className="max-w-full" />
-                                      </div>
-                                    ) : (
-                                      segment.content
-                                    )}
-                                  </div>
+                                  {segment.type === 'image' ? (
+                                    <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-xs rounded-2xl overflow-hidden">
+                                      <img src={segment.content} alt="Attachment" className="max-h-64 w-auto object-cover hover:opacity-95 transition-opacity duration-200" />
+                                    </a>
+                                  ) : segment.type === 'video' ? (
+                                    <div className="max-w-xs rounded-2xl overflow-hidden bg-black">
+                                      <video
+                                        src={segment.content}
+                                        controls
+                                        className="max-h-64 w-full object-contain"
+                                        preload="metadata"
+                                      />
+                                    </div>
+                                  ) : segment.type === 'audio' ? (
+                                    <div className={`px-4 py-2 rounded-2xl ${isCustomer ? 'bg-[#E4E6EB]' : 'bg-[#0084FF]'}`}>
+                                      <audio src={segment.content} controls className="max-w-full" />
+                                    </div>
+                                  ) : (
+                                    <div className={`px-4 py-2 text-[15px] ${isCustomer
+                                      ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                      : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
+                                      }`}>
+                                      {segment.content}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -1211,184 +1220,181 @@ export default function InboxClient({
 
         {/* Customer Context Sidebar */}
         {activeId && activeConv && showSidebar && (
-          <div className="w-80 shrink-0 min-w-[280px] border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-dove/10">
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wider mb-4">Customer Context</h3>
+          <div className="w-72 shrink-0 border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              <h3 className="text-xs font-bold text-ink uppercase tracking-widest">Customer Context</h3>
 
-              <div className="space-y-6">
-
-                {/* Customer Tags */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Tags</label>
-                    <Tag className="w-3 h-3 text-ash" />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    {(activeConv.tags || []).map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-ink text-white"
-                      >
-                        {tag}
-                        <button
-                          onClick={async () => {
-                            const newTags = (activeConv.tags || []).filter((t: string) => t !== tag);
-                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
-                            await updateCustomerTags(activeId, newTags);
-                          }}
-                          className="p-0.5 rounded-full hover:bg-white/20"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                    <div className="relative">
+              {/* Customer Tags */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Tags</label>
+                  <Tag className="w-3 h-3 text-ash" />
+                </div>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {(activeConv.tags || []).map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-ink text-white"
+                    >
+                      {tag}
                       <button
-                        onClick={() => setShowTagPicker(showTagPicker === 'customer' ? null : 'customer')}
-                        className="px-2 py-1 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-ink hover:text-ink transition-all"
+                        onClick={async () => {
+                          const newTags = (activeConv.tags || []).filter((t: string) => t !== tag);
+                          setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
+                          await updateCustomerTags(activeId, newTags);
+                        }}
+                        className="p-0.5 rounded-full hover:bg-white/20"
                       >
-                        + Add
+                        <X className="w-2.5 h-2.5" />
                       </button>
-                      {showTagPicker === 'customer' && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
-                          <div className="absolute left-0 mt-1 w-36 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
-                            {['VIP', 'Returning', 'Complaint', 'Spam'].filter(t => !(activeConv.tags || []).includes(t)).map(tag => (
-                              <button
-                                key={tag}
-                                onClick={async () => {
-                                  const newTags = [...(activeConv.tags || []), tag];
-                                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
-                                  await updateCustomerTags(activeId, newTags);
-                                  setShowTagPicker(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
-                              >
-                                {tag}
-                              </button>
-                            ))}
-                            {['VIP', 'Returning', 'Complaint', 'Spam'].every(t => (activeConv.tags || []).includes(t)) && (
-                              <p className="px-3 py-2 text-xs text-ash italic">All tags applied</p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    </span>
+                  ))}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTagPicker(showTagPicker === 'customer' ? null : 'customer')}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-ink hover:text-ink transition-all"
+                    >
+                      + Add
+                    </button>
+                    {showTagPicker === 'customer' && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
+                        <div className="absolute left-0 mt-1 w-36 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                          {['VIP', 'Returning', 'Complaint', 'Spam'].filter(t => !(activeConv.tags || []).includes(t)).map(tag => (
+                            <button
+                              key={tag}
+                              onClick={async () => {
+                                const newTags = [...(activeConv.tags || []), tag];
+                                setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
+                                await updateCustomerTags(activeId, newTags);
+                                setShowTagPicker(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          {['VIP', 'Returning', 'Complaint', 'Spam'].every(t => (activeConv.tags || []).includes(t)) && (
+                            <p className="px-3 py-2 text-xs text-ash italic">All tags applied</p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Conversation Tags */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Conversation Tags</label>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    {(activeConv.conv_tags || []).map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700"
-                      >
-                        {tag}
-                        <button
-                          onClick={async () => {
-                            const newTags = (activeConv.conv_tags || []).filter((t: string) => t !== tag);
-                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
-                            await updateConversationTags(activeId, newTags);
-                          }}
-                          className="p-0.5 rounded-full hover:bg-blue-200"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                    <div className="relative">
+              {/* Conversation Tags */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Conversation Tags</label>
+                </div>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {(activeConv.conv_tags || []).map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700"
+                    >
+                      {tag}
                       <button
-                        onClick={() => setShowTagPicker(showTagPicker === 'conv' ? null : 'conv')}
-                        className="px-2 py-1 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-blue-400 hover:text-blue-600 transition-all"
+                        onClick={async () => {
+                          const newTags = (activeConv.conv_tags || []).filter((t: string) => t !== tag);
+                          setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
+                          await updateConversationTags(activeId, newTags);
+                        }}
+                        className="p-0.5 rounded-full hover:bg-blue-200"
                       >
-                        + Add
+                        <X className="w-2.5 h-2.5" />
                       </button>
-                      {showTagPicker === 'conv' && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
-                          <div className="absolute left-0 mt-1 w-44 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
-                            {['Needs restock info', 'Escalated', 'Pending Payment', 'Order Issue', 'Callback'].filter(t => !(activeConv.conv_tags || []).includes(t)).map(tag => (
-                              <button
-                                key={tag}
-                                onClick={async () => {
-                                  const newTags = [...(activeConv.conv_tags || []), tag];
-                                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
-                                  await updateConversationTags(activeId, newTags);
-                                  setShowTagPicker(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
-                              >
-                                {tag}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    </span>
+                  ))}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTagPicker(showTagPicker === 'conv' ? null : 'conv')}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-blue-400 hover:text-blue-600 transition-all"
+                    >
+                      + Add
+                    </button>
+                    {showTagPicker === 'conv' && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
+                        <div className="absolute left-0 mt-1 w-44 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                          {['Needs restock info', 'Escalated', 'Pending Payment', 'Order Issue', 'Callback'].filter(t => !(activeConv.conv_tags || []).includes(t)).map(tag => (
+                            <button
+                              key={tag}
+                              onClick={async () => {
+                                const newTags = [...(activeConv.conv_tags || []), tag];
+                                setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
+                                await updateConversationTags(activeId, newTags);
+                                setShowTagPicker(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Order History Summary */}
-                <div>
-                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Order History</label>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="bg-fog p-3 rounded-xl border border-dove/5">
-                      <p className="text-[10px] text-ash font-medium mb-1">Total Orders</p>
-                      <p className="text-sm font-bold text-ink">{orderHistory.orders.length}</p>
-                    </div>
-                    <div className="bg-fog p-3 rounded-xl border border-dove/5">
-                      <p className="text-[10px] text-ash font-medium mb-1">Total Spend</p>
-                      <p className="text-sm font-bold text-ink">৳{orderHistory.totalSpend.toLocaleString()}</p>
-                    </div>
+              {/* Order History */}
+              <div>
+                <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1.5">Order History</label>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="bg-fog p-2.5 rounded-lg">
+                    <p className="text-[10px] text-ash font-medium mb-0.5">Orders</p>
+                    <p className="text-sm font-bold text-ink">{orderHistory.orders.length}</p>
                   </div>
-                  {orderHistory.orders.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] text-ash font-bold uppercase tracking-wider">Most Recent</p>
-                      <div className="flex items-center justify-between p-2 bg-white border border-dove/10 rounded-lg text-xs shadow-sm">
-                        <span className="font-medium text-graphite">#{orderHistory.orders[0].id.substring(0, 8)}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${orderHistory.orders[0].status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                          {orderHistory.orders[0].status}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="bg-fog p-2.5 rounded-lg">
+                    <p className="text-[10px] text-ash font-medium mb-0.5">Total Spend</p>
+                    <p className="text-sm font-bold text-ink">৳{orderHistory.totalSpend.toLocaleString()}</p>
+                  </div>
                 </div>
+                {orderHistory.orders.length > 0 && (
+                  <div className="flex items-center justify-between p-2 bg-fog rounded-lg text-xs">
+                    <span className="font-medium text-graphite">#{orderHistory.orders[0].id.substring(0, 8)}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                      orderHistory.orders[0].status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {orderHistory.orders[0].status}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-                {/* Internal Notes */}
-                <div>
-                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Internal Notes</label>
-                  <textarea
-                    className="w-full bg-fog border border-dove/10 rounded-xl p-3 text-xs text-ink focus:border-dove focus:ring-0 min-h-[100px] resize-none"
-                    placeholder="Private notes for the team..."
-                    value={activeConv.internal_notes || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, internal_notes: val } : c));
-                    }}
-                    onBlur={async (e) => {
-                      await updateInternalNotes(activeId, e.target.value);
-                    }}
-                  />
-                  <p className="text-[9px] text-ash mt-1 italic">Never shared with the customer.</p>
-                </div>
+              {/* Internal Notes */}
+              <div>
+                <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1.5">Internal Notes</label>
+                <textarea
+                  className="w-full bg-fog border-0 rounded-xl p-3 text-xs text-ink focus:ring-1 focus:ring-dove/30 min-h-[80px] resize-none"
+                  placeholder="Private notes for the team..."
+                  value={activeConv.internal_notes || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setConversations(prev => prev.map(c => c.id === activeId ? { ...c, internal_notes: val } : c));
+                  }}
+                  onBlur={async (e) => {
+                    await updateInternalNotes(activeId, e.target.value);
+                  }}
+                />
+                <p className="text-[9px] text-ash mt-1 italic">Never shared with the customer.</p>
               </div>
             </div>
 
-            <div className="mt-auto p-6 bg-fog/30 border-t border-dove/10">
+            {/* Sticky footer */}
+            <div className="shrink-0 p-3 border-t border-dove/10 bg-white">
               <button
                 onClick={async () => {
                   setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));
                   await resolveConversation(activeId);
                 }}
-                className="w-full py-2.5 bg-white border border-dove/20 text-graphite hover:text-ink hover:border-ink rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                className="w-full py-2 bg-fog hover:bg-dove/20 border border-dove/20 text-graphite hover:text-ink rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
               >
-                <CheckCircle2 className="w-4 h-4" /> Mark as Resolved
+                <CheckCircle2 className="w-3.5 h-3.5" /> Mark as Resolved
               </button>
             </div>
           </div>
