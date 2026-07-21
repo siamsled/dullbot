@@ -790,17 +790,17 @@ export default function InboxClient({
         {activeId ? (
           <div className="flex-1 flex flex-col bg-pure-white relative min-h-0">
             {/* Chat Header */}
-            <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
+            <div className="border-b border-dove/20 flex items-center justify-between px-4 py-3 bg-white shrink-0 gap-3 min-w-0">
               {/* Identity Zone */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <button
                   onClick={() => setShowSidebar(!showSidebar)}
-                  className={`p-2 rounded-lg transition-colors ${showSidebar ? 'bg-dove/10 text-ink' : 'text-ash hover:bg-dove/10'}`}
+                  className={`p-1.5 rounded-lg transition-colors shrink-0 ${showSidebar ? 'bg-dove/10 text-ink' : 'text-ash hover:bg-dove/10'}`}
                   title="Toggle customer panel"
                 >
                   <ArrowRight className={`w-4 h-4 transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden shrink-0">
+                <div className="w-8 h-8 rounded-full bg-dove/20 flex items-center justify-center text-ink text-xs font-semibold overflow-hidden shrink-0">
                   {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
                     <img
                       src={profiles[activeConv.customer_phone].profile_pic_url}
@@ -812,78 +812,70 @@ export default function InboxClient({
                     (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
                   )}
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-ink">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-sm font-semibold text-ink truncate max-w-[140px]">
                       {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
                     </h3>
                     {activeConv && (
-                      <span className="text-[10px] font-bold text-ash bg-fog px-1.5 py-0.5 rounded border border-dove/10 flex items-center gap-1">
-                        <Clock className="w-2.5 h-2.5" />
-                        waiting {formatWaitingTime(activeConv.last_message_at)}
+                      <span className="text-[9px] font-bold text-ash bg-fog px-1.5 py-0.5 rounded border border-dove/10 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                        <Clock className="w-2 h-2" />
+                        {formatWaitingTime(activeConv.last_message_at)}
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-ash capitalize">via {activeConv?.channel}</p>
+                  <p className="text-[10px] text-ash capitalize leading-none mt-0.5">via {activeConv?.channel}</p>
                 </div>
               </div>
 
               {/* Actions Zone */}
-              <div className="flex items-center gap-3">
-                {/* Primary Actions */}
-                <div className="flex items-center gap-2">
-                  {/* Assignment */}
-                  {activeConv && (
-                    activeConv.assigned_to_id
-                      ? (
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-fog border border-dove/20 rounded-lg text-[11px] font-semibold text-graphite">
-                          <User className="w-3 h-3" />
-                          {activeConv.assigned_to_id === currentUser?.id ? 'Assigned to you' : 'Assigned to agent'}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={async () => {
-                            const uid = currentUser?.id || 'me';
-                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: uid } : c));
-                            await assignConversation(activeId!, uid);
-                          }}
-                          className="px-3 py-1.5 bg-ink text-white text-[11px] font-bold rounded-lg hover:bg-black transition-colors flex items-center gap-1.5"
-                        >
-                          <User className="w-3 h-3" /> Assign to me
-                        </button>
-                      )
-                  )}
-                  {/* Mark Resolved */}
-                  {activeConv && (activeConv.status === 'human_takeover' || activeConv.ticket_reason) && (
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Assignment */}
+                {activeConv && (
+                  activeConv.assigned_to_id ? (
+                    <span className="flex items-center gap-1 px-2 py-1 bg-fog border border-dove/20 rounded-lg text-[10px] font-semibold text-graphite whitespace-nowrap">
+                      <User className="w-3 h-3 shrink-0" />
+                      {activeConv.assigned_to_id === currentUser?.id ? 'You' : 'Agent'}
+                    </span>
+                  ) : (
                     <button
                       onClick={async () => {
-                        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));
-                        await resolveConversation(activeId!);
+                        const uid = currentUser?.id || 'me';
+                        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: uid } : c));
+                        await assignConversation(activeId!, uid);
                       }}
-                      className="px-3 py-1.5 bg-white border border-dove/20 text-graphite hover:text-ink rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5"
+                      className="px-2.5 py-1 bg-ink text-white text-[10px] font-bold rounded-lg hover:bg-black transition-colors flex items-center gap-1 whitespace-nowrap"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Mark Resolved
+                      <User className="w-3 h-3" /> Claim
                     </button>
-                  )}
-                </div>
+                  )
+                )}
 
-                <div className="w-px h-6 bg-dove/20"></div>
-
-                {/* Autopilot Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider">Autopilot</span>
+                {/* Mark Resolved */}
+                {activeConv && (activeConv.status === 'human_takeover' || activeConv.ticket_reason) && (
                   <button
-                    onClick={handleToggle}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                    onClick={async () => {
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));
+                      await resolveConversation(activeId!);
+                    }}
+                    className="px-2.5 py-1 bg-white border border-dove/20 text-graphite hover:text-ink rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 whitespace-nowrap"
                   >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${!isTakeover ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Resolve
                   </button>
-                  <span className={`text-[10px] font-bold ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
-                    {!isTakeover ? 'ON' : 'OFF'}
-                  </span>
-                </div>
+                )}
 
-                {/* Overflow Kebab Menu */}
+                <div className="w-px h-5 bg-dove/20 mx-0.5"></div>
+
+                {/* Autopilot Toggle — compact, no text labels */}
+                <button
+                  onClick={handleToggle}
+                  title={!isTakeover ? 'Autopilot ON — click to pause' : 'Autopilot OFF — click to resume'}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${!isTakeover ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+                </button>
+
+                {/* Overflow Kebab */}
                 <div className="relative">
                   <button
                     onClick={() => setShowHeaderMenu(v => !v)}
