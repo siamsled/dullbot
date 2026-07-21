@@ -81,6 +81,36 @@ function renderOrganizedList(text: string) {
   );
 }
 
+function SmartVideoPlayer({ src }: { src: string }) {
+  const [mode, setMode] = useState<'loading' | 'video' | 'audio'>('loading');
+
+  return (
+    <div className={`max-w-xs rounded-2xl overflow-hidden ${mode === 'audio' ? '' : 'bg-black'}`}>
+      <video
+        src={src}
+        preload="metadata"
+        className={mode === 'video' ? 'max-h-64 w-full object-contain' : 'hidden'}
+        controls={mode === 'video'}
+        onLoadedMetadata={(e) => {
+          const v = e.target as HTMLVideoElement;
+          setMode(v.videoHeight > 0 && v.videoWidth > 0 ? 'video' : 'audio');
+        }}
+        onError={() => setMode('audio')}
+      />
+      {mode === 'audio' && (
+        <div className="px-3 py-2 bg-[#E4E6EB] rounded-2xl">
+          <audio src={src} controls className="w-full max-w-full" />
+        </div>
+      )}
+      {mode === 'loading' && (
+        <div className="flex items-center justify-center h-12 text-ash text-xs bg-black rounded-2xl">
+          <span className="animate-pulse">Loading media...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HandoffSummaryCard({
   conversation,
   onSummaryUpdated
@@ -1056,14 +1086,7 @@ export default function InboxClient({
                                       <img src={segment.content} alt="Attachment" className="max-h-64 w-auto object-cover hover:opacity-95 transition-opacity duration-200" />
                                     </a>
                                   ) : segment.type === 'video' ? (
-                                    <div className="max-w-xs rounded-2xl overflow-hidden bg-black">
-                                      <video
-                                        src={segment.content}
-                                        controls
-                                        className="max-h-64 w-full object-contain"
-                                        preload="metadata"
-                                      />
-                                    </div>
+                                    <SmartVideoPlayer src={segment.content} />
                                   ) : segment.type === 'audio' ? (
                                     <div className={`px-4 py-2 rounded-2xl ${isCustomer ? 'bg-[#E4E6EB]' : 'bg-[#0084FF]'}`}>
                                       <audio src={segment.content} controls className="max-w-full" />
