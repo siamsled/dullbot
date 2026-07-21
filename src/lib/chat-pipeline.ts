@@ -177,11 +177,11 @@ async function persistMessage(conversationId: string, sender: 'customer' | 'bot'
 
 export async function billGeminiCall(
   shopId: string,
-  conversationId: string,
-  inputTokens: number,
-  outputTokens: number,
-  cacheHit: boolean,
-  prefilterHit: boolean
+  conversationId: string | null = null,
+  inputTokens: number = 0,
+  outputTokens: number = 0,
+  cacheHit: boolean = false,
+  prefilterHit: boolean = false
 ) {
   const pricing = await getPricingConfig();
 

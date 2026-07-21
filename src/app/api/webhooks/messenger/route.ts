@@ -797,7 +797,14 @@ Rules:
         contents: [{ role: 'user', parts: [{ text: `Comment: "${commentText}"` }] }],
       });
       replyText = result.response.text().trim();
-      await billGeminiCall(shop.id);
+      await billGeminiCall(
+        shop.id,
+        null,
+        result.response.usageMetadata?.promptTokenCount || 0,
+        result.response.usageMetadata?.candidatesTokenCount || 0,
+        false,
+        false
+      );
     }
 
     // ── Store comment record ─────────────────────────────────────────────────

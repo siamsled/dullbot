@@ -195,7 +195,14 @@ export async function POST(request: Request) {
           const chat = model.startChat({ history: historyParts });
           const result = await chat.sendMessage(dbContent);
           const aiReply = result.response.text().trim();
-          await billGeminiCall(shop.id);
+          await billGeminiCall(
+            shop.id,
+            conversation.id,
+            result.response.usageMetadata?.promptTokenCount || 0,
+            result.response.usageMetadata?.candidatesTokenCount || 0,
+            false,
+            false
+          );
 
           // Store bot message
           await supabaseAdmin.from('messages').insert({
