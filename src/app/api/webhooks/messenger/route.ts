@@ -5,8 +5,9 @@ import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { billGeminiCall } from '@/lib/chat-pipeline';
 import { invokeGemini, fetchAndCompressImagePart } from '@/lib/gemini';
 import { handleOrderCreationIntercept, processPaymentVerification } from '@/lib/order-manager';
-import { sendMetaMessage } from '@/lib/meta-api';
+import { sendMetaMessage, replyToComment, sendPrivateReply, deleteComment } from '@/lib/meta-api';
 import sharp from 'sharp';
+
 
 function getRepliedSegment(content: string, fbMessageIds: string[] | null, replyToMid: string): string {
   if (!fbMessageIds || !fbMessageIds.includes(replyToMid)) {
@@ -66,7 +67,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (body.object === 'page') {
+    // Accept both 'page' (Messenger + Facebook feed) and 'instagram' (Instagram DM) objects
+    if (body.object === 'page' || body.object === 'instagram') {
+      const incomingChannel: 'messenger' | 'instagram' = body.object === 'instagram' ? 'instagram' : 'messenger';
+
       for (const entry of body.entry) {
         const pageId = entry.id;
 
@@ -114,7 +118,7 @@ export async function POST(request: Request) {
                   .insert({
                     shop_id: shop.id,
                     customer_phone: senderId,
-                    channel: 'messenger',
+                    channel: incomingChannel,
                     status: 'bot_active'
                   })
                   .select()
@@ -617,8 +621,17 @@ export async function POST(request: Request) {
             }
           }
         }
+        // ── Feed / Comment events ──────────────────────────────────────────
+        if (entry.changes) {
+          for (const change of entry.changes) {
+            if (change.field === 'feed' && change.value?.item === 'comment' && change.value?.verb === 'add') {
+              await handleCommentEvent(shop, change.value);
+            }
+          }
+        }
       }
       return new NextResponse('EVENT_RECEIVED', { status: 200 });
+
     } else {
       return new NextResponse('Not Found', { status: 404 });
     }
@@ -645,3 +658,188 @@ function isEscalationResponse(text: string): boolean {
     lower.includes('হস্তান্তর')
   );
 }
+
+// ── Normalise comment text for deduplication ───────────────────────────────
+function normalizeCommentText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '').trim();
+}
+
+// ── Comment automation handler (Phase 3-5) ────────────────────────────────
+async function handleCommentEvent(shop: any, value: any) {
+  try {
+    const postId: string = value.post_id || value.parent_id;
+    const commentId: string = value.comment_id;
+    const commentText: string = value.message || '';
+    const commenterPsid: string | null = value.sender?.id || null;
+    const commentCreatedAt = new Date((value.created_time || 0) * 1000);
+
+    if (!postId || !commentId || !commentText.trim()) return;
+
+    // Look up automation config for this post
+    const { data: automation } = await supabaseAdmin
+      .from('post_automations')
+      .select('*, products:product_ids')
+      .eq('shop_id', shop.id)
+      .eq('post_id', postId)
+      .single();
+
+    if (!automation) return; // No automation configured for this post
+
+    const pageAccessToken: string = shop.meta_page_access_token;
+    if (!pageAccessToken) return;
+
+    // ── Idempotency: skip if we already processed this comment ────────────
+    const { data: existingComment } = await supabaseAdmin
+      .from('post_comments')
+      .select('id, private_reply_sent, deleted_at')
+      .eq('comment_id', commentId)
+      .maybeSingle();
+
+    if (existingComment?.deleted_at) return; // already deleted
+
+    // ── Delete negative comments (Phase 5) ─────────────────────────────────
+    if (automation.delete_negative && automation.delete_examples?.length > 0) {
+      const examples = (automation.delete_examples as string[]).join('\n- ');
+      const deletePrompt = `You are a content moderation classifier for a business page.
+
+Example comments that SHOULD be deleted (spam, abuse, harassment):
+- ${examples}
+
+New comment to evaluate: "${commentText}"
+
+Respond ONLY with a JSON object: { "delete": true/false, "confidence": 0.0-1.0 }
+A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
+
+      const genAIForDelete = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+      const deleteModel = genAIForDelete.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const deleteResult = await deleteModel.generateContent(deletePrompt);
+      const deleteRaw = deleteResult.response.text().trim();
+
+      try {
+        const jsonMatch = deleteRaw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.delete === true && (parsed.confidence || 0) >= 0.85) {
+            await deleteComment(commentId, pageAccessToken);
+            await supabaseAdmin.from('post_comments').upsert({
+              shop_id: shop.id,
+              post_id: postId,
+              comment_id: commentId,
+              commenter_psid: commenterPsid,
+              comment_text: commentText,
+              comment_text_normalized: normalizeCommentText(commentText),
+              deleted_at: new Date().toISOString(),
+            }, { onConflict: 'comment_id' });
+            return; // deleted — no need to reply
+          }
+        }
+      } catch {
+        // JSON parse failed — leave comment alone
+      }
+    }
+
+    if (!automation.reply_as_comment && !automation.send_as_messenger) return;
+
+    // ── Deduplication ────────────────────────────────────────────────────────
+    const normalized = normalizeCommentText(commentText);
+    const dedupeWindow = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 hour
+    const { data: duplicate } = await supabaseAdmin
+      .from('post_comments')
+      .select('reply_text')
+      .eq('post_id', postId)
+      .eq('comment_text_normalized', normalized)
+      .gte('created_at', dedupeWindow)
+      .not('reply_text', 'is', null)
+      .maybeSingle();
+
+    let replyText: string;
+
+    if (duplicate?.reply_text) {
+      // Serve cached reply — no model call
+      replyText = duplicate.reply_text;
+    } else {
+      // ── Build AI reply prompt ─────────────────────────────────────────────
+      // Fetch attached products if any
+      let productContext = '';
+      if (automation.product_ids?.length > 0) {
+        const { data: products } = await supabaseAdmin
+          .from('products')
+          .select('name, price, currency')
+          .in('id', automation.product_ids)
+          .eq('is_active', true);
+        if (products?.length) {
+          productContext = `\n\nAttached products for this post:\n${products.map(p => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}`).join('\n')}`;
+        }
+      }
+
+      // SYSTEM GUARDRAIL — non-overridable
+      const guardrail = `CRITICAL RULE (non-negotiable, overrides all other instructions):
+Public comment replies must NEVER contain order details, payment status, transaction references, or any customer-specific personal information. If a reply would require any of that, end with "Please check your inbox for details 🙏" instead.`;
+
+      const systemPrompt = `You are a helpful customer service assistant replying to a public comment on a Facebook/Instagram post.
+
+${guardrail}
+
+Owner instructions for this post:
+${automation.instructions || 'Be helpful, friendly, and concise. Respond in the language of the comment.'}
+${productContext}
+
+Rules:
+- Keep public replies SHORT (1-3 sentences max)
+- Be warm and on-brand
+- If the comment is a price inquiry ("pp", "price", "koto", "daam koto" etc.), give the price if you know it from the attached products, or ask them to DM
+- Do not include any personal data in the public reply`;
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent({
+        systemInstruction: systemPrompt,
+        contents: [{ role: 'user', parts: [{ text: `Comment: "${commentText}"` }] }],
+      });
+      replyText = result.response.text().trim();
+      await billGeminiCall(shop.id);
+    }
+
+    // ── Store comment record ─────────────────────────────────────────────────
+    await supabaseAdmin.from('post_comments').upsert({
+      shop_id: shop.id,
+      post_id: postId,
+      comment_id: commentId,
+      commenter_psid: commenterPsid,
+      comment_text: commentText,
+      comment_text_normalized: normalized,
+      reply_text: replyText,
+      replied_at: automation.reply_as_comment ? new Date().toISOString() : null,
+    }, { onConflict: 'comment_id' });
+
+    // ── Post public comment reply (Phase 3) ──────────────────────────────────
+    if (automation.reply_as_comment) {
+      await replyToComment(commentId, replyText, pageAccessToken);
+    }
+
+    // ── Send private Messenger reply (Phase 4) ────────────────────────────
+    if (automation.send_as_messenger && commenterPsid) {
+      const alreadySent = existingComment?.private_reply_sent;
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const withinWindow = commentCreatedAt > sevenDaysAgo;
+
+      if (!alreadySent && withinWindow) {
+        // For private reply, we can be more specific (product prices, DM-appropriate detail)
+        const privateReplyText = replyText.includes('check your inbox')
+          ? `Hi! Thanks for your comment. ${replyText.replace('Please check your inbox for details 🙏', '')} We sent you more details here in your inbox!`
+          : replyText;
+
+        const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
+        if (prResult.success) {
+          await supabaseAdmin
+            .from('post_comments')
+            .update({ private_reply_sent: true, private_reply_sent_at: new Date().toISOString() })
+            .eq('comment_id', commentId);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[handleCommentEvent] Error processing comment:', err);
+  }
+}
+
