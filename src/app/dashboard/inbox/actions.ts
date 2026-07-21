@@ -211,6 +211,38 @@ export async function getConversations(shopId: string) {
     return [];
   }
 
+  // Heal / Backfill missing last_message_content and last_message_at
+  for (const conv of conversations) {
+    if (!conv.last_message_content) {
+      const { data: latest } = await supabaseAdmin
+        .from('messages')
+        .select('content, created_at')
+        .eq('conversation_id', conv.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latest) {
+        conv.last_message_content = latest.content;
+        conv.last_message_at = latest.created_at;
+
+        // Perform deferred update to persist the healed values in the database
+        supabaseAdmin
+          .from('conversations')
+          .update({
+            last_message_content: latest.content,
+            last_message_at: latest.created_at
+          })
+          .eq('id', conv.id)
+          .then(({ error: healErr }) => {
+            if (healErr) {
+              console.error(`Failed to heal conversation ${conv.id}:`, healErr.message);
+            }
+          });
+      }
+    }
+  }
+
   return conversations;
 }
 

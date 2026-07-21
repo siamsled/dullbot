@@ -205,6 +205,16 @@ export default function InboxClient({
   const [showSidebar, setShowSidebar] = useState(true);
   const [orderHistory, setOrderHistory] = useState<{ orders: any[], totalSpend: number }>({ orders: [], totalSpend: 0 });
   const [quickReplies, setQuickReplies] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [showTagPicker, setShowTagPicker] = useState<'customer' | 'conv' | null>(null);
+
+  useEffect(() => {
+    supabaseBrowser.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUser(data.user);
+    });
+  }, []);
 
   // Hard Requirements Check
   const stepsDone = shop.onboarding_steps_done || [];
@@ -261,7 +271,7 @@ export default function InboxClient({
 
   useEffect(() => {
     conversations.forEach(async (conv) => {
-      if (conv.channel === 'messenger' && /^\d+$/.test(conv.customer_phone) && !profiles[conv.customer_phone]) {
+      if ((conv.channel === 'messenger' || conv.channel === 'instagram') && /^\d+$/.test(conv.customer_phone) && !profiles[conv.customer_phone]) {
         const profile = await resolveFacebookProfile(conv.customer_phone, shop.id);
         setProfiles(prev => ({
           ...prev,
@@ -269,7 +279,7 @@ export default function InboxClient({
         }));
       }
     });
-  }, [conversations]);
+  }, [conversations, shop.id]);
 
   const lastMsgCountRef = useRef(0);
   const isFirstLoadRef = useRef(true);
@@ -493,6 +503,13 @@ export default function InboxClient({
     setMessages(prev => [...prev, newMsg]);
     const replyMid = replyingTo?.mid;
     setReplyingTo(null);
+
+    // Auto-assign to current agent when manually sending in takeover mode
+    if (isTakeover && currentUser && activeConv && !activeConv.assigned_to_id) {
+      const uid = currentUser.id;
+      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: uid } : c));
+      assignConversation(activeId, uid);
+    }
 
     try {
       const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
@@ -774,22 +791,22 @@ export default function InboxClient({
           <div className="flex-1 flex flex-col bg-pure-white relative min-h-0">
             {/* Chat Header */}
             <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
+              {/* Identity Zone */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowSidebar(!showSidebar)}
                   className={`p-2 rounded-lg transition-colors ${showSidebar ? 'bg-dove/10 text-ink' : 'text-ash hover:bg-dove/10'}`}
+                  title="Toggle customer panel"
                 >
                   <ArrowRight className={`w-4 h-4 transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden shrink-0">
                   {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
                     <img
                       src={profiles[activeConv.customer_phone].profile_pic_url}
                       alt=""
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
                     (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
@@ -797,7 +814,7 @@ export default function InboxClient({
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-medium text-ink">
+                    <h3 className="text-sm font-semibold text-ink">
                       {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
                     </h3>
                     {activeConv && (
@@ -807,63 +824,87 @@ export default function InboxClient({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-ash capitalize">via {activeConv?.channel}</p>
+                  <p className="text-[11px] text-ash capitalize">via {activeConv?.channel}</p>
                 </div>
               </div>
 
+              {/* Actions Zone */}
               <div className="flex items-center gap-3">
-                {activeConv && !activeConv.assigned_to_id && (
-                  <button
-                    onClick={async () => {
-                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: 'me' } : c));
-                      await assignConversation(activeId!, 'me');
-                    }}
-                    className="px-3 py-1.5 bg-ink text-white text-[11px] font-bold rounded-lg hover:bg-black transition-colors"
-                  >
-                    Assign to me
-                  </button>
-                )}
-                {activeConv && (activeConv.status === 'human_takeover' || activeConv.ticket_reason) && (
-                  <button
-                    onClick={async () => {
-                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null } : c));
-                      await resolveConversation(activeId!);
-                    }}
-                    className="px-3 py-1.5 bg-white border border-dove/20 text-graphite hover:text-ink rounded-lg text-[11px] font-bold transition-all"
-                  >
-                    Mark Resolved
-                  </button>
-                )}
-                <div className="w-px h-6 bg-dove/20 mx-1"></div>
-                <button
-                  onClick={handleFlagFraud}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
-                  title="Flag as Fraud (Blocks AI replies)"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  Block
-                </button>
+                {/* Primary Actions */}
+                <div className="flex items-center gap-2">
+                  {/* Assignment */}
+                  {activeConv && (
+                    activeConv.assigned_to_id
+                      ? (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-fog border border-dove/20 rounded-lg text-[11px] font-semibold text-graphite">
+                          <User className="w-3 h-3" />
+                          {activeConv.assigned_to_id === currentUser?.id ? 'Assigned to you' : 'Assigned to agent'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            const uid = currentUser?.id || 'me';
+                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: uid } : c));
+                            await assignConversation(activeId!, uid);
+                          }}
+                          className="px-3 py-1.5 bg-ink text-white text-[11px] font-bold rounded-lg hover:bg-black transition-colors flex items-center gap-1.5"
+                        >
+                          <User className="w-3 h-3" /> Assign to me
+                        </button>
+                      )
+                  )}
+                  {/* Mark Resolved */}
+                  {activeConv && (activeConv.status === 'human_takeover' || activeConv.ticket_reason) && (
+                    <button
+                      onClick={async () => {
+                        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));
+                        await resolveConversation(activeId!);
+                      }}
+                      className="px-3 py-1.5 bg-white border border-dove/20 text-graphite hover:text-ink rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Mark Resolved
+                    </button>
+                  )}
+                </div>
+
                 <div className="w-px h-6 bg-dove/20"></div>
-                <button
-                  onClick={handleFlagFraud}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
-                  title="Flag as Fraud (Blocks AI replies)"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  Block
-                </button>
-                <div className="w-px h-6 bg-dove/20"></div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-ash mr-2">DullBot Status:</span>
+
+                {/* Autopilot Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider">Autopilot</span>
                   <button
                     onClick={handleToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isTakeover ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${!isTakeover ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
                   </button>
-                  <span className={`text-xs font-medium ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
-                    {!isTakeover ? 'Active' : 'Paused'}
+                  <span className={`text-[10px] font-bold ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
+                    {!isTakeover ? 'ON' : 'OFF'}
                   </span>
+                </div>
+
+                {/* Overflow Kebab Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowHeaderMenu(v => !v)}
+                    className="p-1.5 rounded-lg hover:bg-dove/10 text-graphite transition-colors"
+                    title="More actions"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {showHeaderMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowHeaderMenu(false)} />
+                      <div className="absolute right-0 mt-1 w-44 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                        <button
+                          onClick={() => { setShowHeaderMenu(false); handleFlagFraud(); }}
+                          className="w-full text-left px-3 py-2 text-xs text-rust hover:bg-red-50 flex items-center gap-2 font-medium"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5" /> Block Customer
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1106,9 +1147,7 @@ export default function InboxClient({
                     <span className="text-[10px] font-bold uppercase tracking-wider">AI Suggested Reply</span>
                   </div>
                   <button
-                    onClick={() => {
-                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, suggested_reply: null } : c));
-                    }}
+                    onClick={() => setConversations(prev => prev.map(c => c.id === activeId ? { ...c, suggested_reply: null } : c))}
                     className="text-ash hover:text-ink"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -1117,12 +1156,19 @@ export default function InboxClient({
                 <p className="text-xs text-ink mb-3 leading-relaxed">{activeConv.suggested_reply}</p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleSend(activeConv.suggested_reply!)}
+                    onClick={() => {
+                      handleSend(activeConv.suggested_reply!);
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, suggested_reply: null } : c));
+                    }}
                     className="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5"
                   >
                     <Send className="w-3 h-3" /> Send as-is
                   </button>
                   <button
+                    onClick={() => {
+                      setInputValue(activeConv.suggested_reply || '');
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, suggested_reply: null } : c));
+                    }}
                     className="px-3 py-1.5 bg-white border border-blue-200 text-blue-600 text-[11px] font-bold rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     Edit first
@@ -1154,6 +1200,8 @@ export default function InboxClient({
                 shopId={shop.id}
                 replyingTo={replyingTo}
                 onCancelReply={() => setReplyingTo(null)}
+                inputValue={inputValue}
+                onInputValueChange={setInputValue}
               />
               {!isTakeover && (
                 <p className="text-[10px] text-rust mt-1 px-4 pb-2">
@@ -1171,32 +1219,11 @@ export default function InboxClient({
 
         {/* Customer Context Sidebar */}
         {activeId && activeConv && showSidebar && (
-          <div className="w-80 border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+          <div className="w-80 shrink-0 min-w-[280px] border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
             <div className="p-6 border-b border-dove/10">
               <h3 className="text-sm font-bold text-ink uppercase tracking-wider mb-4">Customer Context</h3>
 
               <div className="space-y-6">
-                {/* Assignment */}
-                <div>
-                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Assigned To</label>
-                  <div className="flex items-center gap-2 p-2 bg-fog rounded-lg border border-dove/10">
-                    <div className="w-6 h-6 rounded-full bg-dove/30 flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-ash" />
-                    </div>
-                    <select
-                      className="bg-transparent border-none text-xs text-ink focus:ring-0 flex-1 py-0 cursor-pointer"
-                      value={activeConv.assigned_to_id || ''}
-                      onChange={async (e) => {
-                        const val = e.target.value || null;
-                        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: val } : c));
-                        await assignConversation(activeId, val);
-                      }}
-                    >
-                      <option value="">Unassigned</option>
-                      <option value="me">Assigned to Me</option>
-                    </select>
-                  </div>
-                </div>
 
                 {/* Customer Tags */}
                 <div>
@@ -1204,28 +1231,113 @@ export default function InboxClient({
                     <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Tags</label>
                     <Tag className="w-3 h-3 text-ash" />
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {['VIP', 'Returning', 'Complaint', 'Spam'].map(tag => {
-                      const isActive = (activeConv.tags || []).includes(tag);
-                      return (
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {(activeConv.tags || []).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-ink text-white"
+                      >
+                        {tag}
                         <button
-                          key={tag}
                           onClick={async () => {
-                            const newTags = isActive
-                              ? (activeConv.tags || []).filter((t: string) => t !== tag)
-                              : [...(activeConv.tags || []), tag];
+                            const newTags = (activeConv.tags || []).filter((t: string) => t !== tag);
                             setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
                             await updateCustomerTags(activeId, newTags);
                           }}
-                          className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${isActive
-                            ? 'bg-ink text-white border-ink'
-                            : 'bg-white text-ash border-dove/20 hover:border-dove'
-                            }`}
+                          className="p-0.5 rounded-full hover:bg-white/20"
                         >
-                          {tag}
+                          <X className="w-2.5 h-2.5" />
                         </button>
-                      );
-                    })}
+                      </span>
+                    ))}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowTagPicker(showTagPicker === 'customer' ? null : 'customer')}
+                        className="px-2 py-1 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-ink hover:text-ink transition-all"
+                      >
+                        + Add
+                      </button>
+                      {showTagPicker === 'customer' && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
+                          <div className="absolute left-0 mt-1 w-36 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                            {['VIP', 'Returning', 'Complaint', 'Spam'].filter(t => !(activeConv.tags || []).includes(t)).map(tag => (
+                              <button
+                                key={tag}
+                                onClick={async () => {
+                                  const newTags = [...(activeConv.tags || []), tag];
+                                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
+                                  await updateCustomerTags(activeId, newTags);
+                                  setShowTagPicker(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                            {['VIP', 'Returning', 'Complaint', 'Spam'].every(t => (activeConv.tags || []).includes(t)) && (
+                              <p className="px-3 py-2 text-xs text-ash italic">All tags applied</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversation Tags */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Conversation Tags</label>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {(activeConv.conv_tags || []).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700"
+                      >
+                        {tag}
+                        <button
+                          onClick={async () => {
+                            const newTags = (activeConv.conv_tags || []).filter((t: string) => t !== tag);
+                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
+                            await updateConversationTags(activeId, newTags);
+                          }}
+                          className="p-0.5 rounded-full hover:bg-blue-200"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowTagPicker(showTagPicker === 'conv' ? null : 'conv')}
+                        className="px-2 py-1 rounded-full text-[10px] font-bold border border-dashed border-dove/40 text-ash hover:border-blue-400 hover:text-blue-600 transition-all"
+                      >
+                        + Add
+                      </button>
+                      {showTagPicker === 'conv' && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
+                          <div className="absolute left-0 mt-1 w-44 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                            {['Needs restock info', 'Escalated', 'Pending Payment', 'Order Issue', 'Callback'].filter(t => !(activeConv.conv_tags || []).includes(t)).map(tag => (
+                              <button
+                                key={tag}
+                                onClick={async () => {
+                                  const newTags = [...(activeConv.conv_tags || []), tag];
+                                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, conv_tags: newTags } : c));
+                                  await updateConversationTags(activeId, newTags);
+                                  setShowTagPicker(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-graphite hover:bg-fog font-medium"
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1279,7 +1391,7 @@ export default function InboxClient({
             <div className="mt-auto p-6 bg-fog/30 border-t border-dove/10">
               <button
                 onClick={async () => {
-                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null } : c));
+                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));
                   await resolveConversation(activeId);
                 }}
                 className="w-full py-2.5 bg-white border border-dove/20 text-graphite hover:text-ink hover:border-ink rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"

@@ -17,9 +17,21 @@ interface MessengerInputProps {
   shopId: string;
   replyingTo?: { id: string; text: string; mid?: string } | null;
   onCancelReply?: () => void;
+  inputValue?: string;
+  onInputValueChange?: (value: string) => void;
 }
 
-export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', isTakeover, shopId, replyingTo, onCancelReply }: MessengerInputProps) {
+export default function MessengerInput({ 
+  onSend, 
+  disabled, 
+  placeholder = 'Aa', 
+  isTakeover, 
+  shopId, 
+  replyingTo, 
+  onCancelReply,
+  inputValue,
+  onInputValueChange
+}: MessengerInputProps) {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -29,6 +41,12 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputValue !== undefined) {
+      setText(inputValue);
+    }
+  }, [inputValue]);
 
   useEffect(() => {
     if (replyingTo) {
@@ -50,6 +68,7 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
     if (text.trim()) {
       onSend(text.trim());
       setText('');
+      onInputValueChange?.('');
     }
   };
 
@@ -144,7 +163,9 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
   };
 
   const handleEmoji = () => {
-    setText(prev => prev + '😀');
+    const val = text + '😀';
+    setText(val);
+    onInputValueChange?.(val);
   };
 
   const formatTime = (seconds: number) => {
@@ -253,7 +274,10 @@ export default function MessengerInput({ onSend, disabled, placeholder = 'Aa', i
               ref={inputRef}
               type="text"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                onInputValueChange?.(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder={placeholderText}
