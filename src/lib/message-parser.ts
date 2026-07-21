@@ -25,8 +25,8 @@ export function parseMessageSegments(content: string): { type: 'text' | 'image' 
   
   for (const chunk of chunks) {
     const isRawImageUrl = /https?:\/\/[^\s]+?\.(png|jpg|jpeg|gif|webp)(\?[^\s]*)?$/i.test(chunk);
-    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg)(\?[^\s]*)?$/i.test(chunk);
-    const isRawVideoUrl = /https?:\/\/[^\s]+?\.(mp4|mov|avi|mkv|webm)(\?[^\s]*)?$/i.test(chunk);
+    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg|webm)(\?[^\s]*)?$/i.test(chunk);
+    const isRawVideoUrl = /https?:\/\/[^\s]+?\.(mp4|mov|avi|mkv)(\?[^\s]*)?$/i.test(chunk);
 
     if (isRawVideoUrl) {
       segments.push({ type: 'video', content: chunk });
