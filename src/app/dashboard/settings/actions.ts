@@ -74,6 +74,10 @@ export async function saveSettings(
     return { success: false, error: shopErr.message };
   }
 
+  revalidatePath('/dashboard/settings');
+  return { success: true };
+}
+
 export async function saveWhatsAppConfig(
   shopId: string,
   payload: { wabaId: string; phoneId: string; token: string }
