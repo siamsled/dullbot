@@ -152,20 +152,6 @@ export async function POST(request: Request) {
             continue;
           }
 
-          // Order creation intercept
-          const orderResult = await handleOrderCreationIntercept(conversation.id, shop.id, dbContent);
-          if (orderResult?.handled) {
-            if (orderResult.reply) {
-              await supabaseAdmin.from('messages').insert({
-                conversation_id: conversation.id,
-                sender: 'bot',
-                content: orderResult.reply,
-              });
-              await sendWhatsAppMessage(fromPhone, orderResult.reply, shop.id);
-            }
-            continue;
-          }
-
           // Build conversation history
           const { data: rawHistory } = await supabaseAdmin
             .from('messages')
@@ -194,7 +180,12 @@ export async function POST(request: Request) {
 
           const chat = model.startChat({ history: historyParts });
           const result = await chat.sendMessage(dbContent);
-          const aiReply = result.response.text().trim();
+          let aiReply = result.response.text().trim();
+
+          // Order creation intercept
+          const intercept = await handleOrderCreationIntercept(conversation.id, shop.id, aiReply);
+          aiReply = intercept.cleanedText;
+
           await billGeminiCall(
             shop.id,
             conversation.id,
