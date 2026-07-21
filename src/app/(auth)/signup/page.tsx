@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { Check, ArrowRight, Loader2, Zap, TrendingUp, Rocket } from 'lucide-react';
+import { Check, ArrowRight, Zap, TrendingUp, Rocket } from 'lucide-react';
 
 const PLANS = [
   {
@@ -40,13 +39,8 @@ const PLANS = [
 ];
 
 export default function SignupPage() {
-  const router = useRouter();
   const [step, setStep] = useState<'plan' | 'account'>('plan');
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1].id);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [shopName, setShopName] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleGoogle = async () => {
@@ -57,42 +51,6 @@ export default function SignupPage() {
     });
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    const slug = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Math.random().toString(36).slice(2, 6);
-
-    try {
-      const { data: authData, error: authErr } = await supabaseBrowser.auth.signUp({ email, password });
-      if (authErr || !authData.user) {
-        setError(authErr?.message || 'Signup failed.');
-        setLoading(false);
-        return;
-      }
-
-      // Create shop row
-      const { error: shopErr } = await supabaseBrowser.from('shops').insert({
-        owner_id: authData.user.id,
-        name: shopName,
-        slug,
-        credit_balance: 0,
-      });
-
-      if (shopErr) {
-        setError('Account created but shop setup failed. Contact support.');
-        setLoading(false);
-        return;
-      }
-
-      router.push('/dashboard?onboarding=true');
-    } catch (err: any) {
-      console.error('Signup error:', err);
-      setError(err?.message || 'Connection failed. Please check your internet connection or disable any blocker blocking supabase.co.');
-      setLoading(false);
-    }
-  };
 
   const plan = PLANS.find(p => p.id === selectedPlan)!;
 
@@ -178,7 +136,7 @@ export default function SignupPage() {
             <button
               onClick={handleGoogle}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-inputs border border-dove/30 bg-white hover:bg-fog text-ink text-sm font-medium transition-colors mb-6 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-inputs border border-dove/30 bg-white hover:bg-fog text-ink text-sm font-medium transition-colors disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -188,55 +146,6 @@ export default function SignupPage() {
               </svg>
               Continue with Google
             </button>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-dove/20" />
-              </div>
-              <div className="relative flex justify-center text-xs text-ash bg-white px-2">or email</div>
-            </div>
-
-            <form onSubmit={handleSignup} className="space-y-4">
-              <input
-                type="text"
-                value={shopName}
-                onChange={e => setShopName(e.target.value)}
-                placeholder="Shop name (e.g. Dull Store)"
-                required
-                className="w-full bg-fog border border-transparent rounded-inputs px-4 py-3 text-sm text-ink focus:border-ink/20 focus:ring-0 focus:outline-none transition-all placeholder:text-dove"
-              />
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-                className="w-full bg-fog border border-transparent rounded-inputs px-4 py-3 text-sm text-ink focus:border-ink/20 focus:ring-0 focus:outline-none transition-all placeholder:text-dove"
-              />
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Password (min 8 characters)"
-                minLength={8}
-                required
-                className="w-full bg-fog border border-transparent rounded-inputs px-4 py-3 text-sm text-ink focus:border-ink/20 focus:ring-0 focus:outline-none transition-all placeholder:text-dove"
-              />
-
-              {error && (
-                <p className="text-xs text-rust bg-apricot-wash px-3 py-2 rounded-lg">{error}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || !shopName.trim()}
-                className="w-full flex items-center justify-center gap-2 bg-ink text-white rounded-buttons py-3 text-sm font-medium hover:bg-black transition-colors disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                  <>Create workspace <ArrowRight className="w-4 h-4" /></>
-                )}
-              </button>
-            </form>
           </div>
         )}
       </div>
