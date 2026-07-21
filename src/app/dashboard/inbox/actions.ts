@@ -468,7 +468,14 @@ export async function resolveConversation(conversationId: string) {
 export async function getCustomerOrderHistory(shopId: string, customerPhone: string) {
   const { data, error } = await supabaseAdmin
     .from('orders')
-    .select('id, status, total_amount, created_at')
+    .select(`
+      id, status, total_amount, created_at,
+      customer_name, customer_phone, customer_address,
+      order_items (
+        id, product_name, quantity, unit_price,
+        products ( image_url )
+      )
+    `)
     .eq('shop_id', shopId)
     .eq('customer_phone', customerPhone)
     .order('created_at', { ascending: false });

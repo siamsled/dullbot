@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit, Package } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
@@ -82,40 +82,41 @@ function renderOrganizedList(text: string) {
 }
 
 function SmartVideoPlayer({ src }: { src: string }) {
-  const [mode, setMode] = useState<'loading' | 'video' | 'audio'>('loading');
+  const [isAudioOnly, setIsAudioOnly] = useState(false);
+
+  if (isAudioOnly) {
+    return (
+      <div className="px-3 py-2 bg-[#E4E6EB] rounded-2xl max-w-xs">
+        <audio src={src} controls className="w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className={`max-w-xs rounded-2xl overflow-hidden ${mode === 'audio' ? '' : 'bg-black'}`}>
+    <div className="max-w-xs rounded-2xl overflow-hidden bg-black">
       <video
         src={src}
+        controls
         preload="metadata"
-        className={mode === 'video' ? 'max-h-64 w-full object-contain' : 'hidden'}
-        controls={mode === 'video'}
+        className="max-h-64 w-full object-contain"
         onLoadedMetadata={(e) => {
           const v = e.target as HTMLVideoElement;
-          setMode(v.videoHeight > 0 && v.videoWidth > 0 ? 'video' : 'audio');
+          // videoHeight === 0 means audio-only container (Facebook voice notes are audio/mp4)
+          if (v.videoHeight === 0) setIsAudioOnly(true);
         }}
-        onError={() => setMode('audio')}
+        onError={() => setIsAudioOnly(true)}
       />
-      {mode === 'audio' && (
-        <div className="px-3 py-2 bg-[#E4E6EB] rounded-2xl">
-          <audio src={src} controls className="w-full max-w-full" />
-        </div>
-      )}
-      {mode === 'loading' && (
-        <div className="flex items-center justify-center h-12 text-ash text-xs bg-black rounded-2xl">
-          <span className="animate-pulse">Loading media...</span>
-        </div>
-      )}
     </div>
   );
 }
 
 function HandoffSummaryCard({
   conversation,
+  orderHistory,
   onSummaryUpdated
 }: {
   conversation: any;
+  orderHistory: { orders: any[]; totalSpend: number };
   onSummaryUpdated: (summary: any) => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -145,6 +146,22 @@ function HandoffSummaryCard({
   const sentiment = (summary?.sentiment || 'neutral').toLowerCase();
   const { cls: sentimentCls, label: sentimentLabel } = sentimentConfig[sentiment] || sentimentConfig.neutral;
 
+  // Extract customer details from most recent order
+  const latestOrder = orderHistory.orders[0];
+  const phone = latestOrder?.customer_phone || conversation.customer_phone || null;
+  const address = latestOrder?.customer_address || null;
+
+  // Collect all unique product thumbnails across line items
+  const productItems: { name: string; imageUrl: string | null }[] = [];
+  for (const order of orderHistory.orders) {
+    for (const item of (order.order_items || [])) {
+      const imageUrl = item.products?.image_url || null;
+      if (!productItems.find(p => p.name === item.product_name)) {
+        productItems.push({ name: item.product_name, imageUrl });
+      }
+    }
+  }
+
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
       {/* Header */}
@@ -171,19 +188,57 @@ function HandoffSummaryCard({
       </div>
 
       {/* Content */}
-      <div className="px-3 py-2.5 space-y-2">
+      <div className="px-3 py-2.5 space-y-2.5">
+        {/* Customer contact row */}
+        {(phone || address) && (
+          <div className="bg-white/70 rounded-lg px-2.5 py-2 space-y-1 border border-amber-100">
+            {phone && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider w-12 shrink-0">Phone</span>
+                <span className="text-[11px] text-ink font-mono">{phone}</span>
+              </div>
+            )}
+            {address && (
+              <div className="flex items-start gap-1.5">
+                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider w-12 shrink-0 mt-0.5">Address</span>
+                <span className="text-[11px] text-ink leading-relaxed">{address}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Product thumbnails */}
+        {productItems.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">Products ordered</p>
+            <div className="flex flex-col gap-1.5">
+              {productItems.slice(0, 3).map((p, i) => (
+                <div key={i} className="flex items-center gap-2 bg-white/70 rounded-lg px-2 py-1.5 border border-amber-100">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="w-8 h-8 object-cover rounded-md shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 bg-amber-100 rounded-md shrink-0 flex items-center justify-center">
+                      <Package className="w-4 h-4 text-amber-400" />
+                    </div>
+                  )}
+                  <span className="text-[11px] text-ink font-medium leading-tight line-clamp-2">{p.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AI Summary sections */}
         {isLoading && !summary ? (
           <p className="text-[11px] text-amber-700 italic">Generating briefing...</p>
         ) : summary ? (
           <>
-            {/* Intent */}
             <div>
               <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Customer wants</p>
               <p className="text-[11px] text-ink leading-relaxed">
                 {summary.wants?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || '—'}
               </p>
             </div>
-            {/* Facts */}
             {summary.facts && (
               <div>
                 <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Key facts</p>
@@ -192,7 +247,6 @@ function HandoffSummaryCard({
                 </p>
               </div>
             )}
-            {/* Escalation */}
             {(summary.flagReason || conversation.ticket_reason) && (
               <div>
                 <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Escalation</p>
@@ -1250,6 +1304,7 @@ export default function InboxClient({
               {(isTakeover || activeConv.ticket_reason) && (
                 <HandoffSummaryCard
                   conversation={activeConv}
+                  orderHistory={orderHistory}
                   onSummaryUpdated={(updatedSummary) => {
                     setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, handoff_summary: updatedSummary } : c));
                   }}
