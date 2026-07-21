@@ -97,6 +97,13 @@ export async function handleOrderCreationIntercept(
       return { cleanedText, orderId: null };
     }
 
+    // Insert System Marker for AI Tool Call
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      sender: 'system',
+      content: `DullBot AI created order for ${product.name} (৳${totalAmount})`
+    });
+
     // Insert line item snapshot
     await supabaseAdmin
       .from('order_line_items')
@@ -137,8 +144,8 @@ export async function handleOrderCreationIntercept(
       .eq('id', shopId)
       .single();
 
-    const verificationMethod = shop?.payment_verification_method === 'merchant_api' 
-      ? 'merchant_api' 
+    const verificationMethod = shop?.payment_verification_method === 'merchant_api'
+      ? 'merchant_api'
       : (shop?.payment_verification_method === 'notification_app' ? 'notification_app' : 'merchant_api');
 
     // 5. Create payment verification entry
@@ -199,7 +206,7 @@ export async function processPaymentVerification(
   const booking = pv.bookings ? (Array.isArray(pv.bookings) ? (pv.bookings as any)[0] : (pv.bookings as any)) : null;
 
   const cleanMsg = customerMessage.trim().toUpperCase();
-  
+
   // Regex to match TrxID or phone digits
   const trxRegex = /\b(TEST_[A-Z0-9_]+|[A-Z0-9]{8,10})\b/i;
   const digitsRegex = /\b\d{3,4}\b/;
@@ -294,6 +301,13 @@ export async function processPaymentVerification(
         // Trigger courier shipment booking (Phase 2)
         await triggerCourierShipment(order.id, shopId);
 
+        // Insert System Marker for AI Tool Call
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversationId,
+          sender: 'system',
+          content: `DullBot AI verified payment and confirmed order #${order.id.substring(0, 8)}`
+        });
+
         return `অনেক ধন্যবাদ! আপনার পেমেন্ট সফলভাবে নিশ্চিত করা হয়েছে। অর্ডারটি কনফার্ম হয়েছে এবং শীঘ্রই ডেলিভারির জন্য পাঠানো হবে।`;
       } else if (booking) {
         // Confirm booking entry
@@ -318,7 +332,7 @@ export async function processPaymentVerification(
       return null;
     } else {
       console.warn(`[PAYMENT VERIFICATION] amount mismatch. Expected: ${pv.expected_amount}, Found: ${verification.amount}`);
-      
+
       await supabaseAdmin
         .from('payment_verifications')
         .update({

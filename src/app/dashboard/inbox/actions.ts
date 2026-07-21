@@ -22,16 +22,16 @@ export async function getMessages(conversationId: string, before?: string, limit
     console.error('Error fetching messages:', error);
     return [];
   }
-  
+
   // Return in chronological order
   return (data || []).reverse();
 }
 
 export async function sendMessage(
-  conversationId: string, 
-  content: string, 
-  replyToMid?: string, 
-  mediaUrl?: string, 
+  conversationId: string,
+  content: string,
+  replyToMid?: string,
+  mediaUrl?: string,
   mediaType?: 'image' | 'audio'
 ) {
   // 1. Fetch conversation and shop details to get the access token and customer ID
@@ -62,14 +62,14 @@ export async function sendMessage(
   if (mediaUrl) {
     dbContent = mediaType === 'image' ? `IMAGE:${mediaUrl}` : `AUDIO:${mediaUrl}`;
   }
-  
+
   if (replyToMid) {
     const { data: repliedMsg } = await supabaseAdmin
       .from('messages')
       .select('content')
       .contains('fb_message_ids', [replyToMid])
       .single();
-      
+
     if (repliedMsg) {
       dbContent = `[Replying to: "${repliedMsg.content}"] ${dbContent}`;
     }
@@ -93,7 +93,7 @@ export async function sendMessage(
 
   await supabaseAdmin
     .from('conversations')
-    .update({ 
+    .update({
       last_message_at: new Date().toISOString(),
       last_message_content: dbContent,
       unread_count: 0
@@ -139,14 +139,14 @@ export async function sendMessage(
     await supabaseAdmin.from('messages').delete().eq('id', data.id);
     return { error: errData.error?.message || 'Facebook API Error' };
   }
-  
+
   let fbData: any = {};
   try {
     fbData = await fbRes.json();
   } catch (e) {
     console.error('Failed to parse Facebook success response');
   }
-  
+
   if (fbData.message_id && data) {
     await supabaseAdmin
       .from('messages')
@@ -167,7 +167,7 @@ export async function toggleTakeover(conversationId: string, isTakeover: boolean
     .from('conversations')
     .update(updateData)
     .eq('id', conversationId);
-    
+
   return !error;
 }
 
@@ -177,7 +177,7 @@ async function getFacebookProfile(psid: string, accessToken: string) {
   if (facebookProfileCache.has(psid)) {
     return facebookProfileCache.get(psid)!;
   }
-  
+
   try {
     const res = await fetch(`https://graph.facebook.com/v19.0/${psid}?fields=first_name,last_name,profile_pic&access_token=${accessToken}`);
     if (res.ok) {
@@ -195,7 +195,7 @@ async function getFacebookProfile(psid: string, accessToken: string) {
   } catch (err) {
     console.error("Error fetching FB profile:", err);
   }
-  
+
   return { customer_name: 'Facebook User' };
 }
 
@@ -242,7 +242,7 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
 
   if (shop?.meta_page_access_token) {
     const profile = await getFacebookProfile(psid, shop.meta_page_access_token);
-    
+
     // Cache to DB conversations record
     await supabaseAdmin
       .from('conversations')
@@ -257,9 +257,9 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
     return profile;
   }
 
-  return { 
-    customer_name: conversation?.meta_name || 'Facebook User', 
-    profile_pic_url: conversation?.meta_profile_pic || undefined 
+  return {
+    customer_name: conversation?.meta_name || 'Facebook User',
+    profile_pic_url: conversation?.meta_profile_pic || undefined
   };
 }
 
@@ -387,6 +387,74 @@ export async function markAsRead(conversationId: string) {
     .update({ unread_count: 0 })
     .eq('id', conversationId);
   return !error;
+}
+
+export async function updateInternalNotes(conversationId: string, notes: string) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ internal_notes: notes })
+    .eq('id', conversationId);
+  return !error;
+}
+
+export async function updateCustomerTags(conversationId: string, tags: string[]) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ tags })
+    .eq('id', conversationId);
+  return !error;
+}
+
+export async function updateConversationTags(conversationId: string, tags: string[]) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ conv_tags: tags })
+    .eq('id', conversationId);
+  return !error;
+}
+
+export async function assignConversation(conversationId: string, userId: string | null) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ assigned_to_id: userId })
+    .eq('id', conversationId);
+  return !error;
+}
+
+export async function resolveConversation(conversationId: string) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({
+      status: 'bot_active',
+      ticket_reason: null,
+      resolved_at: new Date().toISOString()
+    })
+    .eq('id', conversationId);
+  return !error;
+}
+
+export async function getCustomerOrderHistory(shopId: string, customerPhone: string) {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('id, status, total_amount, created_at')
+    .eq('shop_id', shopId)
+    .eq('customer_phone', customerPhone)
+    .order('created_at', { ascending: false });
+
+  if (error) return { orders: [], totalSpend: 0 };
+
+  const totalSpend = data.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+  return { orders: data, totalSpend };
+}
+
+export async function getQuickReplies(shopId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('quick_replies')
+    .select('*')
+    .eq('shop_id', shopId)
+    .not('trigger_pattern', 'eq', '__ai_instructions__');
+
+  return data || [];
 }
 
 

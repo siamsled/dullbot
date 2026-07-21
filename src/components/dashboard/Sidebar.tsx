@@ -12,6 +12,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [shop, setShop] = useState<any>(initialShop || null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (initialShop) {
@@ -51,6 +52,37 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       supabaseBrowser.removeChannel(channel);
     };
   }, [initialShop, shop?.id]);
+
+  useEffect(() => {
+    if (!shop?.id) return;
+
+    const fetchUnread = async () => {
+      const { data } = await supabaseBrowser
+        .from('conversations')
+        .select('unread_count')
+        .eq('shop_id', shop.id);
+
+      const count = (data || []).reduce((acc, c) => acc + (c.unread_count || 0), 0);
+      setUnreadCount(count);
+    };
+
+    fetchUnread();
+
+    const channel = supabaseBrowser
+      .channel('sidebar-unread-count')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations', filter: `shop_id=eq.${shop.id}` },
+        () => {
+          fetchUnread();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+    };
+  }, [shop?.id]);
 
   const handleSignOut = async () => {
     await supabaseBrowser.auth.signOut();
@@ -100,44 +132,48 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       </div>
       <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden">
         {navItems.map((item) => {
-          const isActive = item.href === '/dashboard' 
-            ? pathname === item.href 
+          const isActive = item.href === '/dashboard'
+            ? pathname === item.href
             : pathname.startsWith(item.href);
-            
+
           const Icon = item.icon;
           return (
-            <Link 
-              key={item.name} 
-              href={item.href} 
+            <Link
+              key={item.name}
+              href={item.href}
               id={item.id}
               title={isCollapsed ? item.name : undefined}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors ${
-                isActive 
-                  ? 'bg-white text-ink shadow-subtle border border-dove/10' 
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative ${isActive
+                  ? 'bg-white text-ink shadow-subtle border border-dove/10'
                   : 'text-ash hover:text-ink hover:bg-dove/10 border border-transparent'
-              } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                } ${isCollapsed ? 'justify-center px-2' : ''}`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-graphite'}`} />
               {!isCollapsed && <span className="truncate">{item.name}</span>}
+              {item.id === 'nav-inbox' && unreadCount > 0 && (
+                <span className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-4'} flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white`}>
+                  {unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
-      
+
       <div className="border-t border-dove/10 flex flex-col justify-center p-4 gap-4">
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="flex items-center justify-center w-full p-2 text-ash hover:text-ink hover:bg-dove/10 rounded-lg transition-colors"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          <svg 
-            viewBox="0 0 24 24" 
-            width="18" 
-            height="18" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeLinecap="round" 
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            stroke="currentColor"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
             strokeLinejoin="round"
             className={`transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
           >
@@ -167,7 +203,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             </>
           )}
         </div>
-        
+
         {isCollapsed && (
           <button
             onClick={handleSignOut}

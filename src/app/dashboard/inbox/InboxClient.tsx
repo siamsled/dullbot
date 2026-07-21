@@ -3,21 +3,34 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead } from './actions';
+import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
+function formatWaitingTime(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h`;
+  return `${Math.floor(diffHours / 24)}d`;
+}
+
 function formatMessageDate(dateString: string) {
   const date = new Date(dateString);
   const now = new Date();
-  
+
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  
+
   const diffTime = today.getTime() - msgDate.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } else if (diffDays === 1) {
@@ -68,11 +81,11 @@ function renderOrganizedList(text: string) {
   );
 }
 
-function HandoffSummaryWidget({ 
-  conversation, 
-  onSummaryUpdated 
-}: { 
-  conversation: any; 
+function HandoffSummaryWidget({
+  conversation,
+  onSummaryUpdated
+}: {
+  conversation: any;
   onSummaryUpdated: (summary: any) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -107,7 +120,7 @@ function HandoffSummaryWidget({
     <div className="bg-fog/60 border-b border-dove/10 px-6 py-2.5 shrink-0 transition-all">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1 bg-white rounded border border-dove/15 text-graphite hover:text-ink cursor-pointer flex items-center justify-center shadow-sm"
           >
@@ -160,13 +173,13 @@ function HandoffSummaryWidget({
   );
 }
 
-export default function InboxClient({ 
-  shop: initialShop, 
+export default function InboxClient({
+  shop: initialShop,
   initialConversations,
   productCount,
   initialPhone
-}: { 
-  shop: any; 
+}: {
+  shop: any;
   initialConversations: any[];
   productCount: number;
   initialPhone?: string | null;
@@ -189,6 +202,9 @@ export default function InboxClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [orderHistory, setOrderHistory] = useState<{ orders: any[], totalSpend: number }>({ orders: [], totalSpend: 0 });
+  const [quickReplies, setQuickReplies] = useState<any[]>([]);
 
   // Hard Requirements Check
   const stepsDone = shop.onboarding_steps_done || [];
@@ -266,6 +282,12 @@ export default function InboxClient({
     // Reset unread locally and in database
     markAsRead(activeId);
     setConversations(prev => prev.map(c => c.id === activeId ? { ...c, unread_count: 0 } : c));
+
+    const activeConv = conversations.find(c => c.id === activeId);
+    if (activeConv) {
+      getCustomerOrderHistory(shop.id, activeConv.customer_phone).then(setOrderHistory);
+    }
+    getQuickReplies(shop.id).then(setQuickReplies);
 
     const cached = messageCacheRef.current[activeId];
     if (cached) {
@@ -347,7 +369,7 @@ export default function InboxClient({
         },
         (payload) => {
           const newMsg = payload.new;
-          
+
           // Reset unread count locally and in database
           markAsRead(activeId);
           setConversations(prev => prev.map(c => c.id === activeId ? { ...c, unread_count: 0 } : c));
@@ -438,7 +460,7 @@ export default function InboxClient({
         }
       }
     }
-    
+
     lastMsgCountRef.current = messages.length;
     setTimeout(handleScroll, 100);
   }, [messages]);
@@ -446,32 +468,32 @@ export default function InboxClient({
   const handleSend = async (text: string, mediaUrl?: string, mediaType?: 'image' | 'audio') => {
     if (!text.trim() && !mediaUrl) return;
     if (!activeId) return;
-    
+
     // Create an optimistic message object.
     let displayContent = text;
     if (mediaUrl) {
       displayContent = mediaType === 'image' ? `IMAGE:${mediaUrl}` : `AUDIO:${mediaUrl}`;
     }
-    
+
     // Prefix with reply text so UI updates optimistically like it will when saved
     if (replyingTo) {
       displayContent = `[Replying to: "${replyingTo.text}"] ${displayContent}`;
     }
 
     const tempId = `temp-${Date.now()}`;
-    const newMsg = { 
+    const newMsg = {
       id: tempId,
       tempId,
-      sender: 'human_agent', 
-      content: displayContent, 
+      sender: 'human_agent',
+      content: displayContent,
       created_at: new Date().toISOString(),
       isOptimistic: true
     };
-    
+
     setMessages(prev => [...prev, newMsg]);
     const replyMid = replyingTo?.mid;
     setReplyingTo(null);
-    
+
     try {
       const result = await sendMessage(activeId, text, replyMid, mediaUrl, mediaType);
       if (!result || result.error) {
@@ -504,19 +526,19 @@ export default function InboxClient({
 
   const handleToggle = async () => {
     if (!activeId) return;
-    
+
     const targetId = activeId;
     const newStatus = !isTakeover;
     setIsTakeover(newStatus);
-    
+
     pendingTogglesRef.current.add(targetId);
-    
-    setConversations(prev => prev.map(c => 
+
+    setConversations(prev => prev.map(c =>
       c.id === targetId ? { ...c, status: newStatus ? 'human_takeover' : 'bot_active' } : c
     ));
-    
+
     await toggleTakeover(targetId, newStatus);
-    
+
     setTimeout(() => {
       pendingTogglesRef.current.delete(targetId);
     }, 2000);
@@ -546,7 +568,7 @@ export default function InboxClient({
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsBannerDismissed(true)}
             className="p-1.5 text-rust/70 hover:text-rust hover:bg-white/50 rounded-lg transition-colors"
           >
@@ -568,458 +590,706 @@ export default function InboxClient({
                 </span>
               )}
             </div>
-          <div className="mt-3 relative">
-            <Search className="w-4 h-4 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="Search conversations..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-fog rounded-inputs text-sm text-ink border-transparent focus:border-dove focus:ring-0 transition-colors"
-            />
+            <div className="mt-3 relative">
+              <Search className="w-4 h-4 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-fog rounded-inputs text-sm text-ink border-transparent focus:border-dove focus:ring-0 transition-colors"
+              />
+            </div>
+            {/* Filter Toggles */}
+            <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+              {(['all', 'tickets', 'confirmed', 'test'] as const)
+                .filter(f => f !== 'test' || process.env.NODE_ENV === 'development')
+                .map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setFilter(f);
+                      const nextFiltered = conversations.filter(conv => {
+                        if (f === 'test') return !!conv.is_test;
+                        if (conv.is_test) return false;
+                        if (f === 'tickets') {
+                          return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
+                        }
+                        if (f === 'confirmed') {
+                          return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
+                        }
+                        return true;
+                      });
+                      if (nextFiltered.length > 0 && !nextFiltered.some(c => c.id === activeId)) {
+                        setActiveId(nextFiltered[0].id);
+                      } else if (nextFiltered.length === 0) {
+                        setActiveId(null);
+                      }
+                    }}
+                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-md border transition-all whitespace-nowrap ${filter === f
+                      ? 'bg-ink text-white border-ink shadow-sm'
+                      : 'bg-white text-ash border-dove/20 hover:bg-dove/10 hover:text-ink'
+                      }`}
+                  >
+                    {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : f === 'confirmed' ? 'Orders' : 'Test Data'}
+                  </button>
+                ))}
+            </div>
           </div>
-          {/* Filter Toggles */}
-          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
-            {(['all', 'tickets', 'confirmed', 'test'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => {
-                  setFilter(f);
-                  const nextFiltered = conversations.filter(conv => {
-                    if (f === 'test') return !!conv.is_test;
-                    if (conv.is_test) return false;
-                    if (f === 'tickets') {
-                      return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
-                    }
-                    if (f === 'confirmed') {
-                      return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
-                    }
-                    return true;
-                  });
-                  if (nextFiltered.length > 0) {
-                    setActiveId(nextFiltered[0].id);
-                  } else {
-                    setActiveId(null);
-                  }
-                }}
-                className={`px-3 py-1.5 text-[11px] font-semibold rounded-md border transition-all whitespace-nowrap ${
-                  filter === f
-                    ? 'bg-ink text-white border-ink shadow-sm'
-                    : 'bg-white text-ash border-dove/20 hover:bg-dove/10 hover:text-ink'
-                }`}
-              >
-                {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : f === 'confirmed' ? 'Orders' : 'Test Data'}
-              </button>
-            ))}
+          <div className="flex-1 overflow-y-auto">
+            {(() => {
+              const filteredConversations = conversations.filter(conv => {
+                // 1. Separate test and real conversations
+                if (filter === 'test') {
+                  if (!conv.is_test) return false;
+                } else {
+                  if (conv.is_test) return false;
+                }
+
+                // 2. Tab filter
+                if (filter === 'tickets') {
+                  const isTicket = conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
+                  if (!isTicket) return false;
+                }
+                if (filter === 'confirmed') {
+                  const hasConfirmedOrder = conv.orders?.some((o: any) => o.status === 'confirmed');
+                  if (!hasConfirmedOrder) return false;
+                }
+
+                // 3. Search query (scans name, phone, last message preview, and loaded message contents)
+                if (searchQuery.trim()) {
+                  const query = searchQuery.toLowerCase();
+                  const nameMatch = (profiles[conv.customer_phone]?.customer_name || '').toLowerCase().includes(query) ||
+                    conv.customer_phone.toLowerCase().includes(query);
+
+                  const snippetMatch = (conv.last_message_content || '').toLowerCase().includes(query);
+
+                  const cachedMsgs = messageCacheRef.current[conv.id]?.msgs || [];
+                  const messageMatch = cachedMsgs.some((m: any) => m.content.toLowerCase().includes(query));
+
+                  if (!nameMatch && !snippetMatch && !messageMatch) return false;
+                }
+
+                return true;
+              });
+
+              if (filteredConversations.length === 0) {
+                return <div className="p-8 text-center text-ash text-sm">No conversations found.</div>;
+              }
+
+              return filteredConversations.map(conv => {
+                const hasUnread = conv.unread_count > 0 && conv.id !== activeId;
+                const snippet = conv.last_message_content || '';
+                const isAssignedToMe = activeConv?.assigned_to_id === 'me' && conv.id === activeId;
+
+                let previewText = 'No messages';
+                if (snippet) {
+                  if (snippet.startsWith('IMAGE:')) previewText = '📷 Photo';
+                  else if (snippet.startsWith('AUDIO:')) previewText = '🎵 Voice message';
+                  else previewText = snippet;
+                }
+
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => setActiveId(conv.id)}
+                    className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
+                      }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
+                      {conv.channel === 'whatsapp' ? (
+                        (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                      ) : profiles[conv.customer_phone]?.profile_pic_url ? (
+                        <img
+                          src={profiles[conv.customer_phone].profile_pic_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {hasUnread && <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                          <p className={`text-sm truncate ${hasUnread ? 'text-ink font-bold' : 'text-graphite font-semibold'}`}>
+                            {profiles[conv.customer_phone]?.customer_name || conv.customer_phone}
+                          </p>
+                        </div>
+                        <p className="text-[10px] text-ash shrink-0">{formatMessageDate(conv.last_message_at)}</p>
+                      </div>
+
+                      {/* Snippet Preview */}
+                      <p className={`text-xs truncate mb-2 max-w-[90%] ${hasUnread ? 'text-ink font-semibold' : 'text-ash'}`}>
+                        {previewText}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {conv.status === 'human_takeover' ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-apricot-wash text-rust border border-rust/10">
+                            <UserCog className="w-2.5 h-2.5" /> Human
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-wash text-blue-600 border border-blue-150">
+                            <Bot className="w-2.5 h-2.5" /> Bot
+                          </span>
+                        )}
+                        {conv.ticket_reason === 'complaint' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
+                            <AlertTriangle className="w-2.5 h-2.5" /> Complaint
+                          </span>
+                        )}
+                        {conv.ticket_reason === 'unsure' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-100 text-yellow-750 border border-yellow-250">
+                            <ShieldAlert className="w-2.5 h-2.5" /> Unsure
+                          </span>
+                        )}
+                        {conv.orders?.some((o: any) => o.status === 'confirmed') && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-150 text-green-700 border border-green-200">
+                            <ShieldCheck className="w-2.5 h-2.5" /> Order
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Unread Badge indicator */}
+                    {hasUnread && (
+                      <span className="absolute right-4 bottom-4 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                        {conv.unread_count}
+                      </span>
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {(() => {
-            const filteredConversations = conversations.filter(conv => {
-              // 1. Separate test and real conversations
-              if (filter === 'test') {
-                if (!conv.is_test) return false;
-              } else {
-                if (conv.is_test) return false;
-              }
 
-              // 2. Tab filter
-              if (filter === 'tickets') {
-                const isTicket = conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
-                if (!isTicket) return false;
-              }
-              if (filter === 'confirmed') {
-                const hasConfirmedOrder = conv.orders?.some((o: any) => o.status === 'confirmed');
-                if (!hasConfirmedOrder) return false;
-              }
-
-              // 3. Search query (scans name, phone, last message preview, and loaded message contents)
-              if (searchQuery.trim()) {
-                const query = searchQuery.toLowerCase();
-                const nameMatch = (profiles[conv.customer_phone]?.customer_name || '').toLowerCase().includes(query) ||
-                                  conv.customer_phone.toLowerCase().includes(query);
-                
-                const snippetMatch = (conv.last_message_content || '').toLowerCase().includes(query);
-
-                const cachedMsgs = messageCacheRef.current[conv.id]?.msgs || [];
-                const messageMatch = cachedMsgs.some((m: any) => m.content.toLowerCase().includes(query));
-
-                if (!nameMatch && !snippetMatch && !messageMatch) return false;
-              }
-
-              return true;
-            });
-
-            if (filteredConversations.length === 0) {
-              return <div className="p-8 text-center text-ash text-sm">No conversations found.</div>;
-            }
-
-            return filteredConversations.map(conv => {
-              const hasUnread = conv.unread_count > 0 && conv.id !== activeId;
-              const snippet = conv.last_message_content || '';
-              
-              let previewText = 'No messages';
-              if (snippet) {
-                if (snippet.startsWith('IMAGE:')) previewText = '📷 Photo';
-                else if (snippet.startsWith('AUDIO:')) previewText = '🎵 Voice message';
-                else previewText = snippet;
-              }
-
-              return (
+        {/* Chat Window */}
+        {activeId ? (
+          <div className="flex-1 flex flex-col bg-pure-white relative min-h-0">
+            {/* Chat Header */}
+            <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
+              <div className="flex items-center gap-3">
                 <button
-                  key={conv.id}
-                  onClick={() => setActiveId(conv.id)}
-                  className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${
-                    activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
-                  }`}
+                  onClick={() => setShowSidebar(!showSidebar)}
+                  className={`p-2 rounded-lg transition-colors ${showSidebar ? 'bg-dove/10 text-ink' : 'text-ash hover:bg-dove/10'}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
-                    {profiles[conv.customer_phone]?.profile_pic_url ? (
-                      <img src={profiles[conv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                  <ArrowRight className={`w-4 h-4 transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
+                </button>
+                <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
+                  {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
+                    <img
+                      src={profiles[activeConv.customer_phone].profile_pic_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-ink">
+                      {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
+                    </h3>
+                    {activeConv && (
+                      <span className="text-[10px] font-bold text-ash bg-fog px-1.5 py-0.5 rounded border border-dove/10 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5" />
+                        waiting {formatWaitingTime(activeConv.last_message_at)}
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-1">
-                      <p className={`text-sm font-semibold truncate ${hasUnread ? 'text-ink font-bold' : 'text-graphite'}`}>
-                        {profiles[conv.customer_phone]?.customer_name || conv.customer_phone}
-                      </p>
-                      <p className="text-[10px] text-ash shrink-0">{formatMessageDate(conv.last_message_at)}</p>
-                    </div>
-
-                    {/* Snippet Preview */}
-                    <p className={`text-xs truncate mb-2 max-w-[90%] ${hasUnread ? 'text-ink font-semibold' : 'text-ash'}`}>
-                      {previewText}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {conv.status === 'human_takeover' ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-apricot-wash text-rust border border-rust/10">
-                          <UserCog className="w-2.5 h-2.5" /> Human
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-wash text-blue-600 border border-blue-150">
-                          <Bot className="w-2.5 h-2.5" /> Bot
-                        </span>
-                      )}
-                      {conv.ticket_reason === 'complaint' && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-2.5 h-2.5" /> Complaint
-                        </span>
-                      )}
-                      {conv.ticket_reason === 'unsure' && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-100 text-yellow-750 border border-yellow-250">
-                          <ShieldAlert className="w-2.5 h-2.5" /> Unsure
-                        </span>
-                      )}
-                      {conv.orders?.some((o: any) => o.status === 'confirmed') && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-150 text-green-700 border border-green-200">
-                          <ShieldCheck className="w-2.5 h-2.5" /> Order
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Unread Badge indicator */}
-                  {hasUnread && (
-                    <span className="absolute right-4 bottom-4 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
-                      {conv.unread_count}
-                    </span>
-                  )}
-                </button>
-              );
-            });
-          })()}
-        </div>
-      </div>
-
-      {/* Chat Window */}
-      {activeId ? (
-        <div className="flex-1 flex flex-col bg-pure-white relative min-h-0">
-          {/* Chat Header */}
-          <div className="h-16 border-b border-dove/20 flex items-center justify-between px-6 bg-white shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
-                {activeConv && profiles[activeConv.customer_phone]?.profile_pic_url ? (
-                  <img src={profiles[activeConv.customer_phone].profile_pic_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
-                )}
+                  <p className="text-xs text-ash capitalize">via {activeConv?.channel}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-ink">
-                  {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
-                </h3>
-                <p className="text-xs text-ash capitalize">via {activeConv?.channel}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleFlagFraud}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
-                title="Flag as Fraud (Blocks AI replies)"
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-                Block
-              </button>
-              <div className="w-px h-6 bg-dove/20"></div>
+
               <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-ash mr-2">DullBot Status:</span>
-                <button 
-                  onClick={handleToggle}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                {activeConv && !activeConv.assigned_to_id && (
+                  <button
+                    onClick={async () => {
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: 'me' } : c));
+                      await assignConversation(activeId!, 'me');
+                    }}
+                    className="px-3 py-1.5 bg-ink text-white text-[11px] font-bold rounded-lg hover:bg-black transition-colors"
+                  >
+                    Assign to me
+                  </button>
+                )}
+                {activeConv && (activeConv.status === 'human_takeover' || activeConv.ticket_reason) && (
+                  <button
+                    onClick={async () => {
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null } : c));
+                      await resolveConversation(activeId!);
+                    }}
+                    className="px-3 py-1.5 bg-white border border-dove/20 text-graphite hover:text-ink rounded-lg text-[11px] font-bold transition-all"
+                  >
+                    Mark Resolved
+                  </button>
+                )}
+                <div className="w-px h-6 bg-dove/20 mx-1"></div>
+                <button
+                  onClick={handleFlagFraud}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
+                  title="Flag as Fraud (Blocks AI replies)"
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isTakeover ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Block
                 </button>
-                <span className={`text-xs font-medium ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
-                  {!isTakeover ? 'Active' : 'Paused'}
-                </span>
+                <div className="w-px h-6 bg-dove/20"></div>
+                <button
+                  onClick={handleFlagFraud}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-apricot-wash text-rust hover:bg-rust hover:text-white transition-colors text-xs font-medium"
+                  title="Flag as Fraud (Blocks AI replies)"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Block
+                </button>
+                <div className="w-px h-6 bg-dove/20"></div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-ash mr-2">DullBot Status:</span>
+                  <button
+                    onClick={handleToggle}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${!isTakeover ? 'bg-green-500' : 'bg-dove'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!isTakeover ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                  <span className={`text-xs font-medium ${!isTakeover ? 'text-green-600' : 'text-ash'}`}>
+                    {!isTakeover ? 'Active' : 'Paused'}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Takeover Warning Banner */}
-          {isTakeover && (
-            <div className="bg-apricot-wash px-4 py-2 flex items-center gap-2 border-b border-rust/10 shrink-0">
-              <AlertTriangle className="w-4 h-4 text-rust" />
-              <p className="text-xs font-medium text-rust">
-                DullBot is paused. You are currently chatting as a human agent. Toggle the switch above to re-enable AI.
-              </p>
-            </div>
-          )}
-
-          {/* Handoff Summary Card Widget */}
-          {activeConv && (isTakeover || activeConv.ticket_reason) && (
-            <HandoffSummaryWidget 
-              conversation={activeConv} 
-              onSummaryUpdated={(updatedSummary) => {
-                setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, handoff_summary: updatedSummary } : c));
-              }}
-            />
-          )}
-
-          {/* Messages */}
-          <div 
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-6 relative"
-          >
-            {isLoadingMore && (
-              <div className="flex justify-center py-2 text-ash text-xs items-center gap-1.5 absolute top-2 left-1/2 -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full shadow-sm border border-dove/20 backdrop-blur-sm z-10">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+            {/* Takeover Warning Banner */}
+            {isTakeover && (
+              <div className="bg-apricot-wash px-4 py-2 flex items-center gap-2 border-b border-rust/10 shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rust" />
+                <p className="text-xs font-medium text-rust">
+                  DullBot is paused. You are currently chatting as a human agent. Toggle the switch above to re-enable AI.
+                </p>
               </div>
             )}
-            {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {messages.map((msg, idx) => {
-                  const isCustomer = msg.sender === 'customer';
-                  const isHumanAgent = msg.sender === 'human_agent';
-                  const isLastMsg = idx === messages.length - 1;
-                  
-                  const { quotedText, actualContent } = extractReplyContext(msg.content);
-                  const segments = parseMessageSegments(actualContent);
-                  
-                  return (
-                    <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                      {/* Reply Button (Hover) - Right side for customer, left for agent */}
-                      {!isCustomer && (
-                        <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
-                          <button 
-                            onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
-                            className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
-                            title="Reply to this message"
-                          >
-                            <Reply className="w-4 h-4" />
-                          </button>
+
+            {/* Handoff Summary Card Widget */}
+            {activeConv && (isTakeover || activeConv.ticket_reason) && (
+              <HandoffSummaryWidget
+                conversation={activeConv}
+                onSummaryUpdated={(updatedSummary) => {
+                  setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, handoff_summary: updatedSummary } : c));
+                }}
+              />
+            )}
+
+            {/* Messages */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-6 relative"
+            >
+              {isLoadingMore && (
+                <div className="flex justify-center py-2 text-ash text-xs items-center gap-1.5 absolute top-2 left-1/2 -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full shadow-sm border border-dove/20 backdrop-blur-sm z-10">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+                </div>
+              )}
+              {messages.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {messages.map((msg, idx) => {
+                    const isCustomer = msg.sender === 'customer';
+                    const isHumanAgent = msg.sender === 'human_agent';
+                    const isSystem = msg.sender === 'system';
+                    const isLastMsg = idx === messages.length - 1;
+
+                    const { quotedText, actualContent } = extractReplyContext(msg.content);
+                    const segments = parseMessageSegments(actualContent);
+
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="flex justify-center my-2">
+                          <div className="bg-fog border border-dove/10 px-4 py-1.5 rounded-full shadow-sm">
+                            <p className="text-[10px] font-bold text-ash uppercase tracking-widest flex items-center gap-2">
+                              <BrainCircuit className="w-3 h-3" />
+                              {msg.content}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                      
-                      <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
-                        <div className="flex items-center gap-1.5 mb-1 mx-1">
-                          {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
-                          {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
-                          <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                            {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
-                          </span>
-                          <span className="text-[10px] text-ash">
-                            {formatMessageDate(msg.created_at)}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-1 w-full mt-1">
-                          
-                          {quotedText && (() => {
-                            const quotedSegments = parseMessageSegments(quotedText);
-                            const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
-                            const firstTextSegment = quotedSegments.find(s => s.type === 'text');
-                            
-                            return (
-                              <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
-                                <div 
-                                  onClick={() => {
-                                    const clean = (s: string) => {
-                                      if (!s) return '';
-                                      let cleaned = s.replace(/^\[Customer is replying[\s\S]*?\]/i, '')
-                                                     .replace(/^\[Replying to[\s\S]*?\]/i, '')
-                                                     .replace(/^IMAGE:/i, '')
-                                                     .replace(/^AUDIO:/i, '')
-                                                     .replace(/^\[Product Image\]/i, '')
-                                                     .replace(/^\[Voice Message\]/i, '');
-                                      return cleaned.replace(/\s+/g, '').toLowerCase().trim();
-                                    };
+                      );
+                    }
 
-                                    const quotedCleaned = clean(quotedText || '');
-                                    if (!quotedCleaned) return;
+                    return (
+                      <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                        {/* Reply Button (Hover) - Right side for customer, left for agent */}
+                        {!isCustomer && (
+                          <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pr-2 pb-5">
+                            <button
+                              onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                              className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                              title="Reply to this message"
+                            >
+                              <Reply className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
 
-                                    const target = [...messages].reverse().find(m => {
-                                      const originalCleaned = clean(m.content);
-                                      return originalCleaned.includes(quotedCleaned) || quotedCleaned.includes(originalCleaned);
-                                    });
+                        <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
+                          <div className="flex items-center gap-1.5 mb-1 mx-1">
+                            {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
+                            {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
+                            <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
+                              {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
+                            </span>
+                            <span className="text-[10px] text-ash">
+                              {formatMessageDate(msg.created_at)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-1 w-full mt-1">
 
-                                    if (target) {
-                                      const el = document.getElementById(`message-${target.id}`);
-                                      if (el) {
-                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        el.style.transition = 'background-color 0.3s ease';
-                                        el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
-                                        setTimeout(() => {
-                                          el.style.backgroundColor = 'transparent';
-                                        }, 1200);
+                            {quotedText && (() => {
+                              const quotedSegments = parseMessageSegments(quotedText);
+                              const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
+                              const firstTextSegment = quotedSegments.find(s => s.type === 'text');
+
+                              return (
+                                <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
+                                  <div
+                                    onClick={() => {
+                                      const clean = (s: string) => {
+                                        if (!s) return '';
+                                        let cleaned = s.replace(/^\[Customer is replying[\s\S]*?\]/i, '')
+                                          .replace(/^\[Replying to[\s\S]*?\]/i, '')
+                                          .replace(/^IMAGE:/i, '')
+                                          .replace(/^AUDIO:/i, '')
+                                          .replace(/^\[Product Image\]/i, '')
+                                          .replace(/^\[Voice Message\]/i, '');
+                                        return cleaned.replace(/\s+/g, '').toLowerCase().trim();
+                                      };
+
+                                      const quotedCleaned = clean(quotedText || '');
+                                      if (!quotedCleaned) return;
+
+                                      const target = [...messages].reverse().find(m => {
+                                        const originalCleaned = clean(m.content);
+                                        return originalCleaned.includes(quotedCleaned) || quotedCleaned.includes(originalCleaned);
+                                      });
+
+                                      if (target) {
+                                        const el = document.getElementById(`message-${target.id}`);
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          el.style.transition = 'background-color 0.3s ease';
+                                          el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
+                                          setTimeout(() => {
+                                            el.style.backgroundColor = 'transparent';
+                                          }, 1200);
+                                        }
                                       }
-                                    }
-                                  }}
-                                  className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${
-                                    isCustomer 
-                                      ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]' 
+                                    }}
+                                    className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${isCustomer
+                                      ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]'
                                       : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
-                                  }`}
-                                >
-                                  <Reply className="w-3 h-3 shrink-0" />
-                                  {quotedImageSegment && (
-                                    <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
-                                      <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
-                                    </div>
-                                  )}
-                                  {firstTextSegment ? (
-                                    <span className="truncate max-w-[150px] italic">
-                                      {firstTextSegment.content}
-                                    </span>
-                                  ) : quotedImageSegment ? (
-                                    <span className="italic">Photo</span>
-                                  ) : null}
+                                      }`}
+                                  >
+                                    <Reply className="w-3 h-3 shrink-0" />
+                                    {quotedImageSegment && (
+                                      <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
+                                        <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
+                                      </div>
+                                    )}
+                                    {firstTextSegment ? (
+                                      <span className="truncate max-w-[150px] italic">
+                                        {firstTextSegment.content}
+                                      </span>
+                                    ) : quotedImageSegment ? (
+                                      <span className="italic">Photo</span>
+                                    ) : null}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })()}
-  
-                          {segments.map((segment, sIdx) => {
-                            const isFirst = sIdx === 0 && !quotedText;
-                            return (
-                              <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                                <div className={`px-4 py-2 text-[15px] ${
-                                  isCustomer 
+                              );
+                            })()}
+
+                            {segments.map((segment, sIdx) => {
+                              const isFirst = sIdx === 0 && !quotedText;
+                              return (
+                                <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                                  <div className={`px-4 py-2 text-[15px] ${isCustomer
                                     ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
                                     : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
-                                }`}>
-                                  {segment.type === 'image' ? (
-                                    <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
-                                      <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
-                                    </a>
-                                  ) : segment.type === 'audio' ? (
-                                    <div className="py-1">
-                                      <audio src={segment.content} controls className="max-w-full" />
-                                    </div>
-                                  ) : (
-                                    segment.content
-                                  )}
+                                    }`}>
+                                    {segment.type === 'image' ? (
+                                      <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-sm rounded-lg overflow-hidden border border-dove/10">
+                                        <img src={segment.content} alt="Attachment" className="max-h-60 w-auto object-contain hover:scale-105 transition-transform duration-200" />
+                                      </a>
+                                    ) : segment.type === 'audio' ? (
+                                      <div className="py-1">
+                                        <audio src={segment.content} controls className="max-w-full" />
+                                      </div>
+                                    ) : (
+                                      segment.content
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
+
+                          {/* Sent status check */}
+                          {!isCustomer && (
+                            <div className="text-[10px] text-ash/80 mt-1 mx-1 select-none font-medium">
+                              {msg.isOptimistic ? (
+                                <span className="italic text-ash/60">Sending...</span>
+                              ) : (
+                                isLastMsg && <span>Sent</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        
-                        {/* Sent status check */}
-                        {!isCustomer && (
-                          <div className="text-[10px] text-ash/80 mt-1 mx-1 select-none font-medium">
-                            {msg.isOptimistic ? (
-                              <span className="italic text-ash/60">Sending...</span>
-                            ) : (
-                              isLastMsg && <span>Sent</span>
-                            )}
+
+                        {/* Reply Button (Hover) - Left side for customer */}
+                        {isCustomer && (
+                          <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pl-2 pb-5">
+                            <button
+                              onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
+                              className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
+                              title="Reply to this message"
+                            >
+                              <Reply className="w-4 h-4 scale-x-[-1]" />
+                            </button>
                           </div>
                         )}
                       </div>
-  
-                      {/* Reply Button (Hover) - Left side for customer */}
-                      {isCustomer && (
-                        <div className="flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity pl-2 pb-5">
-                          <button 
-                            onClick={() => setReplyingTo({ id: msg.id, text: actualContent, mid: msg.fb_message_ids?.[0] })}
-                            className="p-1.5 rounded-full hover:bg-black/5 text-ash hover:text-ink transition-colors"
-                            title="Reply to this message"
-                          >
-                            <Reply className="w-4 h-4 scale-x-[-1]" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Floating scroll buttons */}
+            <div className="absolute top-20 right-6 flex gap-2 z-10">
+              {showScrollTop && (
+                <button
+                  type="button"
+                  onClick={scrollToTop}
+                  className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
+                  title="Scroll to beginning of conversation"
+                >
+                  <ArrowUp className="w-5 h-5" />
+                </button>
+              )}
+              {showScrollBottom && (
+                <button
+                  type="button"
+                  onClick={scrollToBottom}
+                  className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
+                  title="Scroll to latest messages"
+                >
+                  <ArrowDown className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Suggested Reply */}
+            {activeConv?.suggested_reply && isTakeover && (
+              <div className="mx-6 mb-2 p-3 bg-sky-wash border border-blue-150 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">AI Suggested Reply</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, suggested_reply: null } : c));
+                    }}
+                    className="text-ash hover:text-ink"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-ink mb-3 leading-relaxed">{activeConv.suggested_reply}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSend(activeConv.suggested_reply!)}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+                  >
+                    <Send className="w-3 h-3" /> Send as-is
+                  </button>
+                  <button
+                    className="px-3 py-1.5 bg-white border border-blue-200 text-blue-600 text-[11px] font-bold rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    Edit first
+                  </button>
+                </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Floating scroll buttons */}
-          <div className="absolute top-20 right-6 flex gap-2 z-10">
-            {showScrollTop && (
-              <button
-                type="button"
-                onClick={scrollToTop}
-                className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
-                title="Scroll to beginning of conversation"
-              >
-                <ArrowUp className="w-5 h-5" />
-              </button>
+            {/* Quick Reply Chips */}
+            {isTakeover && quickReplies.length > 0 && (
+              <div className="px-6 mb-2 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {quickReplies.map((qr: any) => (
+                  <button
+                    key={qr.id}
+                    onClick={() => handleSend(qr.response_text)}
+                    className="px-3 py-1.5 bg-white border border-dove/20 text-graphite text-[11px] font-medium rounded-full hover:border-ink hover:text-ink transition-all whitespace-nowrap"
+                  >
+                    {qr.trigger_pattern}
+                  </button>
+                ))}
+              </div>
             )}
-            {showScrollBottom && (
-              <button
-                type="button"
-                onClick={scrollToBottom}
-                className="p-2.5 bg-white/40 hover:bg-white/80 text-ink/80 hover:text-ink rounded-full shadow-sm border border-dove/20 backdrop-blur-sm transition-all transform hover:scale-105 flex items-center justify-center"
-                title="Scroll to latest messages"
-              >
-                <ArrowDown className="w-5 h-5" />
-              </button>
-            )}
-          </div>
 
-          {/* Message Input */}
-          <div className="shrink-0">
-            <MessengerInput 
-              onSend={handleSend}
-              isTakeover={isTakeover}
-              shopId={shop.id}
-              replyingTo={replyingTo}
-              onCancelReply={() => setReplyingTo(null)}
-            />
-            {!isTakeover && (
-              <p className="text-[10px] text-rust mt-1 px-4 pb-2">
-                Note: Sending a message will not automatically pause the bot unless you toggle Human Takeover.
-              </p>
-            )}
+            {/* Message Input */}
+            <div className="shrink-0">
+              <MessengerInput
+                onSend={handleSend}
+                isTakeover={isTakeover}
+                shopId={shop.id}
+                replyingTo={replyingTo}
+                onCancelReply={() => setReplyingTo(null)}
+              />
+              {!isTakeover && (
+                <p className="text-[10px] text-rust mt-1 px-4 pb-2">
+                  Note: Sending a message will not automatically pause the bot unless you toggle Human Takeover.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center bg-pure-white text-ash">
-          <MessageSquareText className="w-12 h-12 mb-4 text-dove" />
-          <p>Select a conversation to start chatting</p>
-        </div>
-      )}
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center bg-pure-white text-ash">
+            <MessageSquareText className="w-12 h-12 mb-4 text-dove" />
+            <p>Select a conversation to start chatting</p>
+          </div>
+        )}
+
+        {/* Customer Context Sidebar */}
+        {activeId && activeConv && showSidebar && (
+          <div className="w-80 border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-dove/10">
+              <h3 className="text-sm font-bold text-ink uppercase tracking-wider mb-4">Customer Context</h3>
+
+              <div className="space-y-6">
+                {/* Assignment */}
+                <div>
+                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Assigned To</label>
+                  <div className="flex items-center gap-2 p-2 bg-fog rounded-lg border border-dove/10">
+                    <div className="w-6 h-6 rounded-full bg-dove/30 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-ash" />
+                    </div>
+                    <select
+                      className="bg-transparent border-none text-xs text-ink focus:ring-0 flex-1 py-0 cursor-pointer"
+                      value={activeConv.assigned_to_id || ''}
+                      onChange={async (e) => {
+                        const val = e.target.value || null;
+                        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, assigned_to_id: val } : c));
+                        await assignConversation(activeId, val);
+                      }}
+                    >
+                      <option value="">Unassigned</option>
+                      <option value="me">Assigned to Me</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Customer Tags */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-bold text-ash uppercase tracking-wider">Customer Tags</label>
+                    <Tag className="w-3 h-3 text-ash" />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['VIP', 'Returning', 'Complaint', 'Spam'].map(tag => {
+                      const isActive = (activeConv.tags || []).includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          onClick={async () => {
+                            const newTags = isActive
+                              ? (activeConv.tags || []).filter((t: string) => t !== tag)
+                              : [...(activeConv.tags || []), tag];
+                            setConversations(prev => prev.map(c => c.id === activeId ? { ...c, tags: newTags } : c));
+                            await updateCustomerTags(activeId, newTags);
+                          }}
+                          className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${isActive
+                            ? 'bg-ink text-white border-ink'
+                            : 'bg-white text-ash border-dove/20 hover:border-dove'
+                            }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Order History Summary */}
+                <div>
+                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Order History</label>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-fog p-3 rounded-xl border border-dove/5">
+                      <p className="text-[10px] text-ash font-medium mb-1">Total Orders</p>
+                      <p className="text-sm font-bold text-ink">{orderHistory.orders.length}</p>
+                    </div>
+                    <div className="bg-fog p-3 rounded-xl border border-dove/5">
+                      <p className="text-[10px] text-ash font-medium mb-1">Total Spend</p>
+                      <p className="text-sm font-bold text-ink">৳{orderHistory.totalSpend.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {orderHistory.orders.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-ash font-bold uppercase tracking-wider">Most Recent</p>
+                      <div className="flex items-center justify-between p-2 bg-white border border-dove/10 rounded-lg text-xs shadow-sm">
+                        <span className="font-medium text-graphite">#{orderHistory.orders[0].id.substring(0, 8)}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${orderHistory.orders[0].status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          {orderHistory.orders[0].status}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Internal Notes */}
+                <div>
+                  <label className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-2">Internal Notes</label>
+                  <textarea
+                    className="w-full bg-fog border border-dove/10 rounded-xl p-3 text-xs text-ink focus:border-dove focus:ring-0 min-h-[100px] resize-none"
+                    placeholder="Private notes for the team..."
+                    value={activeConv.internal_notes || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConversations(prev => prev.map(c => c.id === activeId ? { ...c, internal_notes: val } : c));
+                    }}
+                    onBlur={async (e) => {
+                      await updateInternalNotes(activeId, e.target.value);
+                    }}
+                  />
+                  <p className="text-[9px] text-ash mt-1 italic">Never shared with the customer.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-auto p-6 bg-fog/30 border-t border-dove/10">
+              <button
+                onClick={async () => {
+                  setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null } : c));
+                  await resolveConversation(activeId);
+                }}
+                className="w-full py-2.5 bg-white border border-dove/20 text-graphite hover:text-ink hover:border-ink rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Mark as Resolved
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }
