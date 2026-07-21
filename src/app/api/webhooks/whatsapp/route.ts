@@ -168,9 +168,47 @@ export async function POST(request: Request) {
             parts: [{ text: m.content }],
           }));
 
-          // Build system prompt
-          const systemPrompt = await buildSystemPrompt(shop, []);
+          // Fetch data for prompt builder
+          const { data: products } = await supabaseAdmin
+            .from('products')
+            .select('id, name, description, price, stock_quantity, currency, image_url')
+            .eq('shop_id', shop.id)
+            .eq('is_active', true)
+            .eq('draft', false)
+            .gt('stock_quantity', 0);
 
+          const { data: productMedia } = await supabaseAdmin
+            .from('product_media')
+            .select('product_id, url, media_type, tags')
+            .eq('shop_id', shop.id);
+
+          const { data: exampleReplies } = await supabaseAdmin
+            .from('example_replies')
+            .select('customer_message, ideal_reply')
+            .eq('shop_id', shop.id)
+            .limit(10);
+
+          let persona = null;
+          if (shop.persona_id) {
+            const { data: pData } = await supabaseAdmin
+              .from('agent_personas')
+              .select('*')
+              .eq('id', shop.persona_id)
+              .single();
+            if (pData) {
+              if (shop.persona_custom_name) pData.name = shop.persona_custom_name;
+              persona = pData;
+            }
+          }
+
+          const { data: activeOrders } = await supabaseAdmin
+            .from('orders')
+            .select('*, products(price)')
+            .eq('conversation_id', conversation.id)
+            .order('created_at', { ascending: false });
+
+          // Build system prompt
+          const systemPrompt = buildSystemPrompt(shop, persona, products || [], exampleReplies || [], activeOrders || [], productMedia || []);
           // Generate AI response
           const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
           const model = genAI.getGenerativeModel({
