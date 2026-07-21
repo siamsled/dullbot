@@ -74,6 +74,24 @@ export async function saveSettings(
     return { success: false, error: shopErr.message };
   }
 
+export async function saveWhatsAppConfig(
+  shopId: string,
+  payload: { wabaId: string; phoneId: string; token: string }
+) {
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({
+      whatsapp_business_account_id: payload.wabaId || null,
+      whatsapp_phone_number_id: payload.phoneId || null,
+      whatsapp_access_token: payload.token || null,
+    })
+    .eq('id', shopId);
+
+  if (error) {
+    console.error('Failed to update WhatsApp config:', error);
+    return { success: false, error: error.message };
+  }
+
   revalidatePath('/dashboard/settings');
   return { success: true };
 }

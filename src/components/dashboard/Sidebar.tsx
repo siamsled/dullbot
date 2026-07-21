@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 
@@ -109,6 +109,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
     { name: 'Complaints', href: '/dashboard/complaints', icon: AlertTriangle, id: 'nav-complaints' },
     { name: 'AI Tuning', href: '/dashboard/ai-tuning', icon: Sliders, id: 'nav-tuning' },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart, id: 'nav-analytics' },
+    { name: 'Social', href: '/dashboard/social', icon: Megaphone, id: 'nav-social' },
     { name: 'Credits', href: '/dashboard/credits', icon: Zap, id: 'nav-credits' },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings, id: 'nav-settings' },
     { name: 'Playground', href: '/dashboard/sandbox', icon: Sparkles, id: 'nav-sandbox' },

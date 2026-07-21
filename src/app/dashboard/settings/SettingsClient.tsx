@@ -9,7 +9,7 @@ import {
   MessageSquare, Check, Copy, ChevronDown, Pencil, Sparkles,
   BookOpen, Palette, Truck,
 } from 'lucide-react';
-import { disconnectFacebook, saveSettings, saveWidgetEnabled } from './actions';
+import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 
 /* ─── constants ─────────────────────────────────────────── */
@@ -82,6 +82,13 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [nagadMerchantId, setNagadMerchantId] = useState(shop?.nagadConfig?.merchant_id ?? '');
   const [nagadPrivateKey,  setNagadPrivateKey]  = useState(shop?.nagadConfig?.private_key  ?? '');
   const [nagadPublicKey,   setNagadPublicKey]   = useState(shop?.nagadConfig?.public_key   ?? '');
+  
+  /* whatsapp */
+  const [waWabaId, setWaWabaId] = useState(shop?.whatsapp_business_account_id ?? '');
+  const [waPhoneId, setWaPhoneId] = useState(shop?.whatsapp_phone_number_id ?? '');
+  const [waToken, setWaToken] = useState(shop?.whatsapp_access_token ?? '');
+  const [isWaSaving, startWaSave] = useTransition();
+
 
   /* courier */
   const [courierProvider,    setCourierProvider]    = useState(shop?.courier_provider ?? 'none');
@@ -126,9 +133,19 @@ export default function SettingsClient({ shop }: { shop: any }) {
 
   /* ── handlers ── */
   const handleDisconnect = () => {
-    if (confirm('Disconnect your Facebook Page? This will pause AI replies.')) {
+    if (confirm('Disconnect your Facebook Page? This will pause AI replies on Messenger and Instagram.')) {
       startTransition(async () => { await disconnectFacebook(shop.id); });
     }
+  };
+
+  const handleSaveWhatsApp = () => {
+    startWaSave(async () => {
+      await saveWhatsAppConfig(shop.id, {
+        wabaId: waWabaId.trim(),
+        phoneId: waPhoneId.trim(),
+        token: waToken.trim()
+      });
+    });
   };
 
   const handleWidgetToggle = (next: boolean) => {
@@ -354,14 +371,44 @@ export default function SettingsClient({ shop }: { shop: any }) {
           </SettingsCard>
 
           {/* WhatsApp */}
-          <SettingsCard className="min-h-[160px]">
+          <SettingsCard className="min-h-[160px] md:col-span-2 lg:col-span-1">
             <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center mb-3 flex-shrink-0">
               <Smartphone className="w-5 h-5 text-green-600" />
             </div>
             <p className="text-sm font-semibold text-ink mb-1">WhatsApp</p>
-            <div className="mt-auto pt-3">
-              <ComingSoonBadge />
-              <p className="text-[10px] text-ash mt-2 leading-relaxed">WhatsApp Business API integration coming soon.</p>
+            <div className="mt-auto pt-3 flex flex-col gap-2">
+              <StatusBadge connected={!!shop?.whatsapp_business_account_id} />
+              
+              <div className="space-y-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="WhatsApp Business Account ID"
+                  value={waWabaId}
+                  onChange={e => setWaWabaId(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-fog border border-dove/20 rounded text-[11px] focus:outline-none focus:border-ink transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone Number ID"
+                  value={waPhoneId}
+                  onChange={e => setWaPhoneId(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-fog border border-dove/20 rounded text-[11px] focus:outline-none focus:border-ink transition-colors"
+                />
+                <input
+                  type="password"
+                  placeholder="System User Access Token"
+                  value={waToken}
+                  onChange={e => setWaToken(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-fog border border-dove/20 rounded text-[11px] focus:outline-none focus:border-ink transition-colors"
+                />
+                <button
+                  onClick={handleSaveWhatsApp}
+                  disabled={isWaSaving}
+                  className="w-full px-3 py-1.5 bg-ink text-white rounded text-[11px] font-semibold hover:bg-black transition-colors disabled:opacity-50 mt-1"
+                >
+                  {isWaSaving ? 'Saving…' : 'Save Config'}
+                </button>
+              </div>
             </div>
           </SettingsCard>
 
@@ -371,9 +418,17 @@ export default function SettingsClient({ shop }: { shop: any }) {
               <AtSign className="w-5 h-5 text-pink-600" />
             </div>
             <p className="text-sm font-semibold text-ink mb-1">Instagram</p>
-            <div className="mt-auto pt-3">
-              <ComingSoonBadge />
-              <p className="text-[10px] text-ash mt-2 leading-relaxed">Connect via Meta Business Suite — launching soon.</p>
+            <div className="mt-auto pt-3 flex flex-col gap-2">
+              <StatusBadge connected={!!shop?.meta_page_name} />
+              {shop?.meta_page_name ? (
+                <p className="text-[10px] text-ash mt-1 leading-relaxed">
+                  Instagram DMs are handled automatically via your connected Facebook Page webhook. Make sure Instagram DM access is allowed in Meta Business Suite.
+                </p>
+              ) : (
+                <p className="text-[10px] text-ash mt-1 leading-relaxed">
+                  Connect your Facebook Page first to enable Instagram DMs.
+                </p>
+              )}
             </div>
           </SettingsCard>
 
