@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Check, ArrowRight, Zap, TrendingUp, Rocket } from 'lucide-react';
@@ -42,6 +42,22 @@ export default function SignupPage() {
   const [step, setStep] = useState<'plan' | 'account'>('plan');
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1].id);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        window.location.href = `/dashboard?plan=${selectedPlan}`;
+      }
+    });
+
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        window.location.href = `/dashboard?plan=${selectedPlan}`;
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [selectedPlan]);
 
   const handleGoogle = async () => {
     setLoading(true);

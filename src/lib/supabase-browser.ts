@@ -37,13 +37,15 @@ export const supabaseBrowser = createClient(
           if (typeof window === 'undefined') return;
           // Save to cookie (max age 7 days)
           const maxAge = 60 * 60 * 24 * 7;
-          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+          const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
           localStorage.setItem(key, value);
         },
         removeItem: (key) => {
           if (typeof window === 'undefined') return;
           // Clear cookie
-          document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax; Secure`;
+          const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+          document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax${isSecure}`;
           localStorage.removeItem(key);
         }
       }
