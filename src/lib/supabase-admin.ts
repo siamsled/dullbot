@@ -75,6 +75,20 @@ export const getCurrentShop = cache(async function getCurrentShop() {
       .single();
       
     if (!shop) {
+      // Auto-create isolated shop for this logged-in user
+      const userSlug = `store-${user.id.slice(0, 8)}`;
+      const { data: newShop } = await supabaseAdmin
+        .from('shops')
+        .insert({
+          owner_id: user.id,
+          name: user.user_metadata?.full_name ? `${user.user_metadata.full_name}'s Store` : 'My Store',
+          slug: userSlug,
+        })
+        .select('*')
+        .single();
+
+      if (newShop) return newShop;
+
       const { data: seedShop } = await supabaseAdmin
         .from('shops')
         .select('*')

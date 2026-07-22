@@ -1,17 +1,11 @@
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
 import InventoryClient from './InventoryClient';
 
-const SHOP_SLUG = 'dull-store';
-
 export default async function InventoryPage() {
-  // ── Resolve shop ──────────────────────────────────────────────────────────
-  const { data: shop } = await supabaseAdmin
-    .from('shops')
-    .select('id, website_url')
-    .eq('slug', SHOP_SLUG)
-    .single();
+  // ── Resolve shop for logged-in user ───────────────────────────────────────
+  const shop = await getCurrentShop();
 
-  if (!shop) return <div className="p-8 text-ash">Shop not found.</div>;
+  if (!shop) return <div className="p-8 text-ash">Shop not found. Please log in.</div>;
 
   // ── Products (all: draft + live) ──────────────────────────────────────────
   const { data: allProducts } = await supabaseAdmin

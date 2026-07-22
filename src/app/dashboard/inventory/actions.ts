@@ -1,18 +1,12 @@
 'use server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
-
-const SHOP_SLUG = 'dull-store';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
 async function getShopId(): Promise<string | null> {
-  const { data } = await supabaseAdmin
-    .from('shops')
-    .select('id')
-    .eq('slug', SHOP_SLUG)
-    .single();
-  return data?.id ?? null;
+  const shop = await getCurrentShop();
+  return shop?.id ?? null;
 }
 
 function revalidate() {
