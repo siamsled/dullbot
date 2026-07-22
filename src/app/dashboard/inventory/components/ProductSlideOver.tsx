@@ -397,8 +397,10 @@ export default function ProductSlideOver({
       const totalVariantStock = activeVariantsList.reduce((s, v) => s + (v.stock || 0), 0);
       const hasVariants = activeVariantsList.length > 0;
 
+      // Filter out temporary local blob: URLs before saving to DB
+      const validImages = images.filter(i => i.url && !i.url.startsWith('blob:'));
       const productImagesData: { url: string; variant_id?: string | null; position: number }[] = [];
-      images.forEach((imgItem, idx) => {
+      validImages.forEach((imgItem, idx) => {
         productImagesData.push({ url: imgItem.url, variant_id: null, position: idx });
       });
 
@@ -412,7 +414,7 @@ export default function ProductSlideOver({
         sku: sku.trim() || null,
         category: category.trim() || null,
         tags: tags.length ? tags : null,
-        images: images.map(i => i.url),
+        images: validImages.map(i => i.url),
         product_images_data: productImagesData,
         low_stock_threshold: parseInt(lowStockThreshold, 10) || 5,
         default_supplier_id: defaultSupplierId || null,

@@ -570,7 +570,8 @@ export default function CatalogueTable({
                 const isOutOfStock = !variantInfo && p.stock_quantity === 0;
                 const needsReorder = reorderIds.has(p.id);
                 const isSelected = selected.has(p.id);
-                const primaryImage = getPrimaryImageUrl((p as any).product_images) || p.images?.[0];
+                const rawImage = getPrimaryImageUrl((p as any).product_images) || p.images?.[0];
+                const primaryImage = rawImage && !rawImage.startsWith('blob:') ? rawImage : null;
 
                 return (
                   <tr
@@ -599,7 +600,15 @@ export default function CatalogueTable({
                       <div className="w-10 h-10 rounded-images bg-fog flex items-center justify-center overflow-hidden shrink-0">
                         {primaryImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={primaryImage} alt={p.name} className="w-full h-full object-cover" />
+                          <img
+                            src={primaryImage}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
                         ) : (
                           <Package className="w-5 h-5 text-dove" />
                         )}
