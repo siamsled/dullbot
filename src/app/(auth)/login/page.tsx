@@ -10,17 +10,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check initial session or URL hash auth response
-    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+    const handleSession = (session: any) => {
       if (session) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'dummy';
+        const key = `sb-${projectRef}-auth-token`;
+        const maxAge = 60 * 60 * 24 * 7;
+        const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = `${key}=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
         window.location.href = '/dashboard';
       }
+    };
+
+    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session);
     });
 
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        window.location.href = '/dashboard';
-      }
+      handleSession(session);
     });
 
     return () => subscription.unsubscribe();
