@@ -45,6 +45,7 @@ export type Variant = {
   price_override?: number | null;
   stock: number;
   image_url?: string | null;
+  displayUrl?: string | null;
 };
 
 type StockMovement = {
@@ -1065,19 +1066,23 @@ export default function ProductSlideOver({
                   onChange={async (e) => {
                     if (e.target.files && e.target.files[0] && variantImageTarget) {
                       const file = e.target.files[0];
+                      const targetId = variantImageTarget;
+                      const blobUrl = URL.createObjectURL(file);
+                      setVariants(prev => prev.map(x => x.id === targetId ? { ...x, image_url: blobUrl, displayUrl: blobUrl } : x));
+                      setVariantImageTarget(null);
+
                       const formData = new FormData();
                       formData.append('file', file);
+                      formData.append('shopId', shopId);
                       try {
                         const res = await fetch('/api/inventory/upload-image', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.url) {
-                          const targetId = variantImageTarget;
-                          setVariants(prev => prev.map(x => x.id === targetId ? { ...x, image_url: data.url } : x));
+                          setVariants(prev => prev.map(x => x.id === targetId ? { ...x, image_url: data.url, displayUrl: blobUrl } : x));
                         }
                       } catch (err) {
                         console.error('Variant image upload failed:', err);
                       }
-                      setVariantImageTarget(null);
                     }
                   }}
                 />
@@ -1089,14 +1094,14 @@ export default function ProductSlideOver({
                       {v.image_url ? (
                         <div className="relative w-8 h-8 rounded-inputs overflow-hidden border border-dove/20 shrink-0 group/vimg cursor-pointer">
                           <img
-                            src={v.image_url}
+                            src={v.displayUrl || v.image_url}
                             alt={v.name}
                             className="w-full h-full object-cover"
-                            onClick={() => setPreviewMedia({ url: v.image_url!, type: 'image', title: `Variant Photo: ${v.name}` })}
+                            onClick={() => setPreviewMedia({ url: v.displayUrl || v.image_url!, type: 'image', title: `Variant Photo: ${v.name}` })}
                           />
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: null } : x)); }}
+                            onClick={(e) => { e.stopPropagation(); setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: null, displayUrl: null } : x)); }}
                             className="absolute inset-0 bg-black/60 opacity-0 group-hover/vimg:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
                             title="Remove Variant Image"
                           >
@@ -1126,7 +1131,7 @@ export default function ProductSlideOver({
                                         key={srcUrl || iIdx}
                                         type="button"
                                         onClick={() => {
-                                          setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: imgItem.url } : x));
+                                          setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: imgItem.url, displayUrl: imgItem.displayUrl } : x));
                                           setVariantImageTarget(null);
                                         }}
                                         className="w-9 h-9 rounded overflow-hidden border border-dove/10 hover:border-ink transition-all cursor-pointer"
