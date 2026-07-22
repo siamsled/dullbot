@@ -171,7 +171,7 @@ export async function POST(request: Request) {
           // Fetch data for prompt builder
           const { data: products } = await supabaseAdmin
             .from('products')
-            .select('id, name, description, price, stock_quantity, currency, image_url')
+            .select('id, name, description, price, stock_quantity, currency, image_url, product_images(url, position, variant_id)')
             .eq('shop_id', shop.id)
             .eq('is_active', true)
             .eq('draft', false)

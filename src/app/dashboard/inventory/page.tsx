@@ -18,9 +18,10 @@ export default async function InventoryPage() {
     .from('products')
     .select(`
       id, name, description, price, compare_at_price, cost_price,
-      currency, stock_quantity, sku, category, tags, images,
+      currency, stock_quantity, sku, category, tags,
       low_stock_threshold, default_supplier_id, is_active, draft,
-      source, updated_at
+      source, updated_at,
+      product_images(id, variant_id, url, position)
     `)
     .eq('shop_id', shop.id)
     .order('updated_at', { ascending: false });
@@ -88,7 +89,7 @@ export default async function InventoryPage() {
           id: p.id,
           name: p.name,
           stock,
-          images: p.images ?? [],
+          images: (p.product_images ?? []).filter(i => !i.variant_id).map(i => i.url),
           dailyVelocity: Math.round(dailyVelocity * 10) / 10,
           daysUntilEmpty: isFinite(daysUntilEmpty) ? Math.round(daysUntilEmpty) : null,
           suggestedReorderQty: Math.max(0, Math.ceil(sold30d - stock)),

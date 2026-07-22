@@ -1,4 +1,5 @@
 import { invokeGemini, createPromptCache, fetchAndCompressImagePart } from './gemini';
+import { getPrimaryImageUrl } from './product-images';
 import { supabaseAdmin } from './supabase-admin';
 import { buildSystemPrompt } from './prompt-builder';
 import { handleOrderCreationIntercept, processPaymentVerification } from './order-manager';
@@ -478,7 +479,7 @@ export async function processIncomingMessage(
     
     let productQuery = supabaseAdmin
       .from('products')
-      .select('id, name, description, price, stock_quantity, currency, sku, image_url')
+      .select('id, name, description, price, stock_quantity, currency, sku, image_url, product_images(url, position, variant_id)')
       .eq('shop_id', shop.id)
       .eq('is_active', true)
       .eq('draft', false)
@@ -498,7 +499,7 @@ export async function processIncomingMessage(
     if (productsWithId.length === 0 && keywords.length > 0) {
       const { data: fallbackProducts } = await supabaseAdmin
         .from('products')
-        .select('id, name, description, price, stock_quantity, currency, sku, image_url')
+        .select('id, name, description, price, stock_quantity, currency, sku, image_url, product_images(url, position, variant_id)')
         .eq('shop_id', shop.id)
         .eq('is_active', true)
         .eq('draft', false)
@@ -507,19 +508,29 @@ export async function processIncomingMessage(
       productsWithId = fallbackProducts || [];
     }
 
-    let variantsByProduct: Record<string, { name: string; sku?: string | null; price_override?: number | null; stock: number }[]> = {};
+    let variantsByProduct: Record<string, { id: string; name: string; sku?: string | null; price_override?: number | null; stock: number; image_url?: string | null }[]> = {};
 
     if (productsWithId && productsWithId.length > 0) {
       const ids = productsWithId.map(p => p.id);
       const { data: allVariants } = await supabaseAdmin
         .from('product_variants')
-        .select('product_id, name, sku, price_override, stock')
+        .select('id, product_id, name, sku, price_override, stock')
         .in('product_id', ids)
         .gt('stock', 0);
 
+      for (const p of productsWithId) {
+        const primaryUrl = getPrimaryImageUrl(p.product_images);
+        if (primaryUrl) p.image_url = primaryUrl;
+      }
+
       for (const v of allVariants ?? []) {
         if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-        variantsByProduct[v.product_id].push(v);
+        const parentProd = productsWithId.find(p => p.id === v.product_id);
+        const variantImgUrl = getPrimaryImageUrl(parentProd?.product_images, v.id);
+        variantsByProduct[v.product_id].push({
+          ...v,
+          image_url: variantImgUrl ?? null,
+        });
       }
     }
 

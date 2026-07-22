@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { saveProductImages } from '@/app/dashboard/inventory/actions';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -143,10 +144,15 @@ export async function POST(request: Request) {
 
         const existingId = existingMap.get(title.toLowerCase());
         
+        let targetId = existingId;
         if (existingId) {
           await supabaseAdmin.from('products').update(payload).eq('id', existingId);
         } else {
-          await supabaseAdmin.from('products').insert(payload);
+          const { data: created } = await supabaseAdmin.from('products').insert(payload).select('id').single();
+          targetId = created?.id;
+        }
+        if (targetId && images.length > 0) {
+          await saveProductImages(targetId, images.map((url, idx) => ({ url, variant_id: null, position: idx })));
         }
         importedCount++;
       }

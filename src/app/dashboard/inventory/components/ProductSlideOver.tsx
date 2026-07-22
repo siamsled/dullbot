@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useCallback, useEffect } from 'react';
 import {
   X, Upload, Trash2, GripVertical, Plus, Minus, Loader2,
-  Package, ChevronDown, AlertCircle, RotateCcw, Check, ScanLine
+  Package, ChevronDown, AlertCircle, RotateCcw, Check, ScanLine, Play, Image as ImageIcon
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
@@ -44,6 +44,7 @@ export type Variant = {
   sku?: string | null;
   price_override?: number | null;
   stock: number;
+  image_url?: string | null;
 };
 
 type StockMovement = {
@@ -115,14 +116,7 @@ function TagsInput({
   initialValue: string[]; 
   onChange: (tags: string[]) => void 
 }) {
-  const [text, setText] = useState(initialValue.join(', '));
-
-  useEffect(() => {
-    const joined = initialValue.join(', ');
-    if (joined !== text.split(',').map(t => t.trim()).filter(Boolean).join(', ')) {
-      setText(joined);
-    }
-  }, [initialValue]);
+  const [text, setText] = useState(() => initialValue.join(', '));
 
   const handleChange = (val: string) => {
     setText(val);
@@ -136,7 +130,7 @@ function TagsInput({
       value={text}
       placeholder="e.g. #realpic, model wearing, blue color"
       onChange={(e) => handleChange(e.target.value)}
-      className="w-full bg-white border border-dove/20 rounded-inputs px-3 py-1.5 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
+      className="w-full bg-white border border-dove/20 rounded-inputs px-3 py-1.5 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove relative z-10"
     />
   );
 }
@@ -175,13 +169,23 @@ export default function ProductSlideOver({
   const [costPrice, setCostPrice] = useState(product?.cost_price?.toString() ?? '');
   const [sku, setSku] = useState(product?.sku ?? '');
   const [scanningTarget, setScanningTarget] = useState<'main' | string | null>(null);
+  const [variantImageTarget, setVariantImageTarget] = useState<string | null>(null);
+  const variantFileInputRef = useRef<HTMLInputElement>(null);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
   const [lowStockThreshold, setLowStockThreshold] = useState(product?.low_stock_threshold?.toString() ?? '5');
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
 
   // Variants
-  const [variants, setVariants] = useState<(Variant & { _isNew?: boolean; _deleted?: boolean })[]>(initialVariants);
+  const [variants, setVariants] = useState<(Variant & { _isNew?: boolean; _deleted?: boolean })[]>(() => {
+    return (initialVariants ?? []).map(v => {
+      const variantImg = (product as any)?.product_images?.find((i: any) => i.variant_id === v.id);
+      return {
+        ...v,
+        image_url: variantImg?.url ?? v.image_url ?? null,
+      };
+    });
+  });
   const [showVariantBuilder, setShowVariantBuilder] = useState(initialVariants.length > 0);
   const [variantOptionName, setVariantOptionName] = useState('');
   const [variantOptionValues, setVariantOptionValues] = useState('');
@@ -349,10 +353,16 @@ export default function ProductSlideOver({
     if (!validate()) return;
 
     startTransition(async () => {
-      const totalVariantStock = variants.filter(v => !v._deleted).reduce((s, v) => s + (v.stock || 0), 0);
-      const hasVariants = variants.filter(v => !v._deleted).length > 0;
+      const activeVariantsList = variants.filter(v => !v._deleted);
+      const totalVariantStock = activeVariantsList.reduce((s, v) => s + (v.stock || 0), 0);
+      const hasVariants = activeVariantsList.length > 0;
 
-      const input: ProductInput = {
+      const productImagesData: { url: string; variant_id?: string | null; position: number }[] = [];
+      images.forEach((url, idx) => {
+        productImagesData.push({ url, variant_id: null, position: idx });
+      });
+
+      const input: any = {
         name: name.trim(),
         description: description.trim() || undefined,
         price: parseFloat(price),
@@ -363,6 +373,7 @@ export default function ProductSlideOver({
         category: category.trim() || null,
         tags: tags.length ? tags : null,
         images: images.length ? images : null,
+        product_images_data: productImagesData,
         low_stock_threshold: parseInt(lowStockThreshold, 10) || 5,
         default_supplier_id: defaultSupplierId || null,
         is_active: isActive,
@@ -374,7 +385,7 @@ export default function ProductSlideOver({
         if (res?.error) { setErrors({ _form: res.error }); return; }
 
         // Add variants if any
-        const newVariants = variants.filter(v => v._isNew);
+        const newVariants = variants.filter(v => v._isNew && !v._deleted);
         if (newVariants.length && res?.productId) {
           await addVariants(res.productId, newVariants as VariantInput[]);
         }
@@ -629,14 +640,19 @@ export default function ProductSlideOver({
             {contextMedia.length > 0 && (
               <div className="space-y-3">
                 {contextMedia.map((item, idx) => (
-                  <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group">
-                    <div className="w-16 h-16 shrink-0 relative bg-dove/10 rounded-images overflow-hidden flex items-center justify-center">
+                  <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group items-center">
+                    <div className="w-16 h-16 shrink-0 relative bg-black/5 rounded-images overflow-hidden flex items-center justify-center border border-dove/20">
                       {item.media_type === 'video' ? (
-                        <video src={`${item.url}#t=0.1`} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                          <video src={`${item.url}#t=0.1`} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <Play className="w-5 h-5 text-white fill-white drop-shadow" />
+                          </div>
+                        </div>
                       ) : (
                         <img src={item.url} alt="Context media" className="w-full h-full object-cover" />
                       )}
-                      <span className="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] px-1 rounded-tl">
+                      <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-medium px-1 rounded">
                         {item.media_type}
                       </span>
                     </div>
@@ -657,9 +673,10 @@ export default function ProductSlideOver({
                     <button
                       type="button"
                       onClick={() => setContextMedia(prev => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white border border-dove/20 hover:border-rust/30 text-ash hover:text-rust flex items-center justify-center transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-full bg-white border border-dove/20 hover:border-rust/30 text-ash hover:text-rust flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      title="Remove Media"
                     >
-                      <X className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -933,8 +950,98 @@ export default function ProductSlideOver({
 
             {activeVariants.length > 0 && (
               <div className="space-y-2">
+                <input
+                  ref={variantFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    if (e.target.files && e.target.files[0] && variantImageTarget) {
+                      const file = e.target.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      try {
+                        const res = await fetch('/api/inventory/upload-image', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.url) {
+                          const targetId = variantImageTarget;
+                          setVariants(prev => prev.map(x => x.id === targetId ? { ...x, image_url: data.url } : x));
+                        }
+                      } catch (err) {
+                        console.error('Variant image upload failed:', err);
+                      }
+                      setVariantImageTarget(null);
+                    }
+                  }}
+                />
+
                 {activeVariants.map((v, idx) => (
                   <div key={v.id} className="flex gap-2 items-center">
+                    {/* Variant Image Slot */}
+                    <div className="relative flex items-center shrink-0">
+                      {v.image_url ? (
+                        <div className="relative w-8 h-8 rounded-inputs overflow-hidden border border-dove/20 shrink-0 group/vimg">
+                          <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: null } : x))}
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover/vimg:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
+                            title="Remove Variant Image"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setVariantImageTarget(variantImageTarget === v.id ? null : v.id)}
+                            className="w-8 h-8 rounded-inputs border border-dashed border-dove/30 hover:border-ink/30 flex items-center justify-center text-ash hover:text-ink transition-colors cursor-pointer shrink-0 bg-fog"
+                            title="Attach Variant Image"
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" />
+                          </button>
+
+                          {variantImageTarget === v.id && (
+                            <div className="absolute z-30 left-0 top-9 w-48 bg-white border border-dove/20 rounded-cards shadow-dropdown p-2 space-y-2">
+                              <p className="text-[10px] font-medium text-ash uppercase tracking-wider px-1">Pick from Product Photos</p>
+                              {images.length > 0 ? (
+                                <div className="grid grid-cols-4 gap-1">
+                                  {images.map(imgUrl => (
+                                    <button
+                                      key={imgUrl}
+                                      type="button"
+                                      onClick={() => {
+                                        setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: imgUrl } : x));
+                                        setVariantImageTarget(null);
+                                      }}
+                                      className="w-9 h-9 rounded overflow-hidden border border-dove/10 hover:border-ink transition-all cursor-pointer"
+                                    >
+                                      <img src={imgUrl} alt="Product photo" className="w-full h-full object-cover" />
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-dove px-1">No product photos uploaded yet.</p>
+                              )}
+
+                              <div className="pt-1 border-t border-dove/10">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    variantFileInputRef.current?.click();
+                                  }}
+                                  className="w-full py-1 text-xs text-center text-ink bg-fog hover:bg-dove/10 rounded font-medium transition-colors cursor-pointer"
+                                >
+                                  + Upload New Photo
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex-1 grid grid-cols-3 gap-2">
                       <input
                         value={v.name}

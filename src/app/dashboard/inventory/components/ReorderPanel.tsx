@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Zap, TrendingDown, Loader2 } from 'lucide-react';
 import { restockProduct } from '../actions';
+import { getPrimaryImageUrl } from '@/lib/product-images';
 
 type Candidate = {
   id: string;
@@ -86,9 +87,9 @@ export default function ReorderPanel({ candidates, suppliers, onRestocked }: Pro
               <div className="flex items-start gap-4">
                 {/* Thumbnail */}
                 <div className="w-12 h-12 rounded-images bg-fog flex items-center justify-center shrink-0 overflow-hidden">
-                  {c.images?.[0] ? (
+                  {getPrimaryImageUrl((c as any).product_images) || c.images?.[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.images[0]} alt={c.name} className="w-full h-full object-cover" />
+                    <img src={getPrimaryImageUrl((c as any).product_images) || c.images[0]} alt={c.name} className="w-full h-full object-cover" />
                   ) : (
                     <TrendingDown className="w-5 h-5 text-dove" />
                   )}

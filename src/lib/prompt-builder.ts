@@ -253,7 +253,8 @@ function buildProductSection(products: ProductRow[]): string {
       for (const v of p.variants) {
         const effectivePrice = v.price_override ?? p.price;
         const stockStr = v.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK';
-        lines.push(`      – ${v.name}: ${effectivePrice} ${currency} (${stockStr})${v.sku ? ` [SKU: ${v.sku}]` : ''}`);
+        const variantImgStr = (v as any).image_url ? ` (Variant Image URL: ${(v as any).image_url})` : '';
+        lines.push(`      – ${v.name}: ${effectivePrice} ${currency} (${stockStr})${v.sku ? ` [SKU: ${v.sku}]` : ''}${variantImgStr}`);
       }
     } else {
       // Simple product — single stock level

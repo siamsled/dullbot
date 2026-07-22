@@ -83,14 +83,31 @@ export type ProductInput = {
   source?: 'manual' | 'scraped';
 };
 
-export async function addProduct(data: ProductInput) {
+export async function saveProductImages(
+  productId: string,
+  images: { url: string; variant_id?: string | null; position: number }[]
+) {
+  await supabaseAdmin.from('product_images').delete().eq('product_id', productId);
+  if (!images.length) return;
+  const rows = images.map((img, idx) => ({
+    product_id: productId,
+    variant_id: img.variant_id ?? null,
+    url: img.url,
+    position: img.position ?? idx,
+  }));
+  await supabaseAdmin.from('product_images').insert(rows);
+}
+
+export async function addProduct(data: ProductInput & { product_images_data?: { url: string; variant_id?: string | null; position: number }[] }) {
   const shopId = await getShopId();
   if (!shopId) return { error: 'Shop not found' };
+
+  const { images, product_images_data, ...productFields } = data;
 
   const { data: product, error } = await supabaseAdmin
     .from('products')
     .insert({
-      ...data,
+      ...productFields,
       shop_id: shopId,
       source: data.source ?? 'manual',
       draft: data.draft ?? false,
@@ -101,6 +118,13 @@ export async function addProduct(data: ProductInput) {
     .single();
 
   if (error || !product) return { error: error?.message ?? 'Insert failed' };
+
+  // Save product_images if provided
+  if (product_images_data && product_images_data.length > 0) {
+    await saveProductImages(product.id, product_images_data);
+  } else if (images && images.length > 0) {
+    await saveProductImages(product.id, images.map((url, idx) => ({ url, variant_id: null, position: idx })));
+  }
 
   // Write initial_stock movement if stock > 0
   if ((data.stock_quantity ?? 0) > 0) {
@@ -118,11 +142,23 @@ export async function addProduct(data: ProductInput) {
   return { success: true, productId: product.id };
 }
 
-export async function updateProduct(productId: string, data: Partial<ProductInput>) {
+export async function updateProduct(
+  productId: string, 
+  data: Partial<ProductInput> & { product_images_data?: { url: string; variant_id?: string | null; position: number }[] }
+) {
+  const { images, product_images_data, ...productFields } = data;
+
   await supabaseAdmin
     .from('products')
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...productFields, updated_at: new Date().toISOString() })
     .eq('id', productId);
+
+  if (product_images_data !== undefined) {
+    await saveProductImages(productId, product_images_data);
+  } else if (images !== undefined) {
+    await saveProductImages(productId, (images ?? []).map((url, idx) => ({ url, variant_id: null, position: idx })));
+  }
+
   revalidate();
   return { success: true };
 }
@@ -521,7 +557,7 @@ export async function getReorderCandidates() {
   // Fetch all live products
   const { data: products } = await supabaseAdmin
     .from('products')
-    .select('id, name, stock_quantity, low_stock_threshold, images')
+    .select('id, name, stock_quantity, low_stock_threshold, product_images(url, position, variant_id)')
     .eq('shop_id', shopId)
     .eq('is_active', true)
     .eq('draft', false);
@@ -538,7 +574,8 @@ export async function getReorderCandidates() {
         id: p.id,
         name: p.name,
         stock: p.stock_quantity ?? 0,
-        images: p.images ?? [],
+        images: (p.product_images ?? []).filter(i => !i.variant_id).map(i => i.url),
+        product_images: p.product_images ?? [],
         dailyVelocity: Math.round(dailyVelocity * 10) / 10,
         daysUntilEmpty: isFinite(daysUntilEmpty) ? Math.round(daysUntilEmpty) : null,
         suggestedReorderQty: suggestedQty,
@@ -557,7 +594,7 @@ export async function getShopMovements(shopId?: string | null) {
 
   const { data } = await supabaseAdmin
     .from('stock_movements')
-    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, products(name, images), suppliers(name)')
+    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, products(name, product_images(url)), suppliers(name)')
     .eq('shop_id', actualShopId)
     .order('created_at', { ascending: false })
     .limit(100);

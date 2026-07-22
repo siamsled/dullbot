@@ -1,5 +1,7 @@
 'use client';
 
+import { getPrimaryImageUrl } from '@/lib/product-images';
+
 import { useState, useMemo, useCallback } from 'react';
 import {
   Search, ScanLine, Package, Globe, Loader2, AlertTriangle,
@@ -568,7 +570,7 @@ export default function CatalogueTable({
                 const isOutOfStock = !variantInfo && p.stock_quantity === 0;
                 const needsReorder = reorderIds.has(p.id);
                 const isSelected = selected.has(p.id);
-                const primaryImage = p.images?.[0];
+                const primaryImage = getPrimaryImageUrl((p as any).product_images) || p.images?.[0];
 
                 return (
                   <tr
