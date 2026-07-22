@@ -247,9 +247,21 @@ export default function ProductSlideOver({
     if (!valid.length) return;
 
     setUploadingImages(true);
+    const localPreviews = valid.map(f => URL.createObjectURL(f));
+    setImages(prev => [...prev, ...localPreviews]);
+
     try {
-      const urls = await Promise.all(valid.map(f => uploadImage(f, shopId)));
-      setImages(prev => [...prev, ...urls]);
+      const remoteUrls = await Promise.all(valid.map(f => uploadImage(f, shopId)));
+      setImages(prev => {
+        const next = [...prev];
+        localPreviews.forEach((localUrl, i) => {
+          const index = next.indexOf(localUrl);
+          if (index !== -1 && remoteUrls[i]) {
+            next[index] = remoteUrls[i];
+          }
+        });
+        return next;
+      });
     } catch (err) {
       setImageErrors(prev => [...prev, err instanceof Error ? err.message : 'Upload failed']);
     } finally {
@@ -294,19 +306,26 @@ export default function ProductSlideOver({
     if (!valid.length) return;
     
     setUploadingMedia(true);
+    const localItems: ContextMediaItem[] = valid.map(({ file, media_type }) => ({
+      url: URL.createObjectURL(file),
+      media_type,
+      tags: [],
+      _isNew: true,
+    }));
+    setContextMedia(prev => [...prev, ...localItems]);
+
     try {
-      const items = await Promise.all(
-        valid.map(async ({ file, media_type }) => {
-          const url = await uploadImage(file, shopId);
-          return {
-            url,
-            media_type,
-            tags: [],
-            _isNew: true,
-          } as ContextMediaItem;
-        })
-      );
-      setContextMedia(prev => [...prev, ...items]);
+      const remoteUrls = await Promise.all(valid.map(({ file }) => uploadImage(file, shopId)));
+      setContextMedia(prev => {
+        const next = [...prev];
+        localItems.forEach((localItem, i) => {
+          const index = next.findIndex(x => x.url === localItem.url);
+          if (index !== -1 && remoteUrls[i]) {
+            next[index] = { ...next[index], url: remoteUrls[i] };
+          }
+        });
+        return next;
+      });
     } catch (err) {
       setMediaErrors(prev => [...prev, err instanceof Error ? err.message : 'Upload failed']);
     } finally {
@@ -477,8 +496,61 @@ export default function ProductSlideOver({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
-      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {/* Backdrop & Left Canvas Preview Area */}
+      <div
+        className="flex-1 bg-black/50 backdrop-blur-sm relative flex flex-col items-center justify-center p-6 transition-all duration-200"
+        onClick={() => {
+          if (previewMedia) setPreviewMedia(null);
+          else onClose();
+        }}
+      >
+        {previewMedia ? (
+          <div
+            className="relative max-w-full max-h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="relative bg-ink/90 border border-white/15 rounded-cards shadow-2xl overflow-hidden p-3 flex flex-col items-center max-w-[90%] max-h-[85vh]">
+              {/* Header bar */}
+              <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-white">
+                <span className="text-xs font-medium truncate flex items-center gap-2">
+                  {previewMedia.type === 'video' ? <Play className="w-4 h-4 text-sky-wash" /> : <ImageIcon className="w-4 h-4 text-sky-wash" />}
+                  {previewMedia.title || 'Media Preview'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMedia(null)}
+                  className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Preview Media Container */}
+              <div className="flex-1 flex items-center justify-center overflow-hidden">
+                {previewMedia.type === 'video' ? (
+                  <video
+                    src={previewMedia.url}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-h-[75vh] max-w-full rounded object-contain"
+                  />
+                ) : (
+                  <img
+                    src={previewMedia.url}
+                    alt="Large preview"
+                    className="max-h-[75vh] max-w-full rounded object-contain"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-white/40 text-xs select-none pointer-events-none hidden md:block">
+            Click outside to close
+          </div>
+        )}
+      </div>
 
       {/* Panel */}
       <div className="w-full max-w-2xl bg-white shadow-subtle overflow-y-auto flex flex-col">
@@ -1287,53 +1359,6 @@ export default function ProductSlideOver({
           }}
           onClose={() => setScanningTarget(null)}
         />
-      )}
-
-      {/* ── Media Lightbox Preview Modal ── */}
-      {previewMedia && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
-          onClick={() => setPreviewMedia(null)}
-        >
-          <div
-            className="relative max-w-4xl max-h-[90vh] bg-ink rounded-cards shadow-2xl overflow-hidden border border-white/10 flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-black/40">
-              <p className="text-xs font-medium text-white flex items-center gap-2">
-                {previewMedia.type === 'video' ? <Play className="w-4 h-4 text-sky-wash" /> : <ImageIcon className="w-4 h-4 text-sky-wash" />}
-                {previewMedia.title || 'Media Preview'}
-              </p>
-              <button
-                type="button"
-                onClick={() => setPreviewMedia(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Media Content */}
-            <div className="p-4 flex items-center justify-center bg-black/90 min-h-[300px] min-w-[300px] overflow-auto">
-              {previewMedia.type === 'video' ? (
-                <video
-                  src={previewMedia.url}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="max-h-[75vh] max-w-full rounded shadow-2xl"
-                />
-              ) : (
-                <img
-                  src={previewMedia.url}
-                  alt="Preview"
-                  className="max-h-[75vh] max-w-full object-contain rounded shadow-2xl"
-                />
-              )}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
