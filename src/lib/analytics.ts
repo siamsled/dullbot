@@ -22,17 +22,7 @@ function nDaysAgo(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-const BD_DISTRICTS = [
-  'Dhaka','Chittagong','Sylhet','Rajshahi','Khulna','Barishal','Rangpur','Mymensingh',
-  'Gazipur','Narayanganj','Cumilla','Narsingdi','Tangail','Faridpur','Jessore','Bogura',
-  'Jamalpur','Dinajpur','Pabna','Sirajganj','Natore','Satkhira','Bagerhat','Noakhali',
-  'Feni','Brahmanbaria','Cox\'s Bazar','Bandarban','Rangamati','Khagrachhari',
-  'Manikganj','Munshiganj','Shariatpur','Madaripur','Gopalganj','Kishorganj',
-  'Netrokona','Sherpur','Habiganj','Moulvibazar','Sunamganj','Rajbari',
-  'Magura','Chuadanga','Jhenaidah','Meherpur','Kushtia','Narail','Pirojpur',
-  'Jhalokati','Barguna','Bhola','Patuakhali','Lakshmipur','Chandpur',
-  'Panchagarh','Thakurgaon','Nilphamari','Lalmonirhat','Kurigram','Gaibandha',
-];
+import { BD_DISTRICTS } from './districts';
 
 export function extractDistrict(address: string): string | null {
   if (!address) return null;

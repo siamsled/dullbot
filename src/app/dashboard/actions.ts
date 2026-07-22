@@ -52,19 +52,19 @@ export async function saveOnboardingProfileAndTone(
     deliveryAreas: string;
     businessOverview: string;
     aiInstructions?: string;
-    toneTemplate: 'casual' | 'formal' | 'technical' | 'wholesale';
+    toneTemplate: 'casual' | 'warm' | 'technical' | 'direct' | 'formal' | 'wholesale';
   }
 ) {
   try {
-    // Resolve Persona matching the tone template
+    // Resolve Persona matching the tone/vibe template
     let personaQuery = supabaseAdmin.from('agent_personas').select('id');
     if (payload.toneTemplate === 'casual') {
       personaQuery = personaQuery.ilike('name', '%Shuvo%');
-    } else if (payload.toneTemplate === 'formal') {
+    } else if (payload.toneTemplate === 'warm' || payload.toneTemplate === 'formal') {
       personaQuery = personaQuery.ilike('name', '%Rumi%');
     } else if (payload.toneTemplate === 'technical') {
       personaQuery = personaQuery.ilike('name', '%Imran%');
-    } else if (payload.toneTemplate === 'wholesale') {
+    } else if (payload.toneTemplate === 'direct' || payload.toneTemplate === 'wholesale') {
       personaQuery = personaQuery.ilike('name', '%Biplob%');
     }
 
@@ -112,6 +112,7 @@ export async function saveOnboardingProfileAndTone(
         business_overview: payload.businessOverview,
         ...(payload.aiInstructions !== undefined ? { ai_instructions: payload.aiInstructions } : {}),
         persona_id: persona?.id || null,
+        tone_template: payload.toneTemplate,
         onboarding_steps_done: stepsDone,
         // Unlock if hard requirements met
         ...(hardRequirementsMet && !shop.onboarding_complete ? { agent_enabled: true, onboarding_complete: true } : {})

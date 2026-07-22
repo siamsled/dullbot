@@ -22,6 +22,7 @@ type Shop = {
   escalation_severity?: string | null;
   handle_audio?: boolean | null;
   abusive_handling_mode?: string | null;
+  tone_template?: string | null;
   abusive_block_threshold?: number | null;
   high_value_order_threshold?: number | null;
   off_topic_tolerance?: string | null;
@@ -295,9 +296,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                     {p.name}
                   </span>
                   <div className="flex items-center gap-1 shrink-0">
-                    {isSaved && !isSelected && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-ink text-white font-semibold tracking-wide uppercase leading-none">
-                        Live
+                    {isSaved && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold tracking-wide leading-none ${
+                        isSelected ? 'bg-apricot-wash text-rust' : 'bg-ink text-white'
+                      }`}>
+                        {shop?.tone_template ? 'Selected during onboarding' : 'Live'}
                       </span>
                     )}
                     {isSelected
