@@ -17,13 +17,7 @@ export function proxy(request: NextRequest) {
 
   // Read Supabase session token from cookie
   // Supabase stores the session as sb-<ref>-auth-token
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-  const cookieName = projectRef ? `sb-${projectRef}-auth-token` : null;
-
-  const hasSession = cookieName
-    ? request.cookies.has(cookieName)
-    : false;
+  const hasSession = request.cookies.getAll().some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
 
   if (!hasSession) {
     const loginUrl = new URL('/login', request.url);
