@@ -172,6 +172,7 @@ export default function ProductSlideOver({
 
   const [price, setPrice] = useState(product?.price?.toString() ?? '');
   const [compareAtPrice, setCompareAtPrice] = useState(product?.compare_at_price?.toString() ?? '');
+  const [costPrice, setCostPrice] = useState(product?.cost_price?.toString() ?? '');
   const [sku, setSku] = useState(product?.sku ?? '');
   const [scanningTarget, setScanningTarget] = useState<'main' | string | null>(null);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
