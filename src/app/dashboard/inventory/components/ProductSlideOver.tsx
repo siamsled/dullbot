@@ -173,8 +173,7 @@ export default function ProductSlideOver({
   const [price, setPrice] = useState(product?.price?.toString() ?? '');
   const [compareAtPrice, setCompareAtPrice] = useState(product?.compare_at_price?.toString() ?? '');
   const [costPrice, setCostPrice] = useState(product?.cost_price?.toString() ?? '');
-  const [sku, setSku] = useState(product?.sku ?? '');
-  const [showSkuScanner, setShowSkuScanner] = useState(false);
+  const [scanningTarget, setScanningTarget] = useState<'main' | string | null>(null);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
   const [lowStockThreshold, setLowStockThreshold] = useState(product?.low_stock_threshold?.toString() ?? '5');
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
@@ -812,7 +811,7 @@ export default function ProductSlideOver({
                   />
                   <button
                     type="button"
-                    onClick={() => setShowSkuScanner(true)}
+                    onClick={() => setScanningTarget('main')}
                     className="w-[42px] h-[42px] rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 bg-white transition-colors cursor-pointer shrink-0"
                     title="Scan Barcode"
                   >
@@ -942,12 +941,22 @@ export default function ProductSlideOver({
                         placeholder="Variant name"
                         className="bg-fog border border-transparent rounded-inputs px-3 py-2 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
                       />
-                      <input
-                        value={v.sku ?? ''}
-                        onChange={e => setVariants(prev => prev.map((x, i) => i === variants.indexOf(v) ? { ...x, sku: e.target.value } : x))}
-                        placeholder="SKU"
-                        className="bg-fog border border-transparent rounded-inputs px-3 py-2 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
-                      />
+                      <div className="relative flex items-center">
+                        <input
+                          value={v.sku ?? ''}
+                          onChange={e => setVariants(prev => prev.map((x, i) => i === variants.indexOf(v) ? { ...x, sku: e.target.value } : x))}
+                          placeholder="SKU"
+                          className="w-full bg-fog border border-transparent rounded-inputs pl-3 pr-7 py-2 text-xs text-ink focus:border-ink/20 focus:outline-none placeholder:text-dove"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setScanningTarget(v.id)}
+                          className="absolute right-1.5 p-1 text-dove hover:text-ink transition-colors cursor-pointer"
+                          title="Scan Barcode for SKU"
+                        >
+                          <ScanLine className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <input
                         type="number"
                         min="0"
@@ -1147,13 +1156,17 @@ export default function ProductSlideOver({
           </div>
         </div>
       </div>
-      {showSkuScanner && (
+      {scanningTarget && (
         <BarcodeScanner
           onResult={(text) => {
-            setSku(text);
-            setShowSkuScanner(false);
+            if (scanningTarget === 'main') {
+              setSku(text);
+            } else {
+              setVariants(prev => prev.map(x => x.id === scanningTarget ? { ...x, sku: text } : x));
+            }
+            setScanningTarget(null);
           }}
-          onClose={() => setShowSkuScanner(false)}
+          onClose={() => setScanningTarget(null)}
         />
       )}
     </div>
