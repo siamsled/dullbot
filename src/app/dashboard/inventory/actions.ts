@@ -102,12 +102,14 @@ export async function addProduct(data: ProductInput & { product_images_data?: { 
   const shopId = await getShopId();
   if (!shopId) return { error: 'Shop not found' };
 
-  const { images, product_images_data, ...productFields } = data;
+  const { product_images_data, ...productFields } = data;
+  const cleanImages = (data.images ?? []).filter(u => u && !u.startsWith('blob:'));
 
   const { data: product, error } = await supabaseAdmin
     .from('products')
     .insert({
       ...productFields,
+      images: cleanImages.length ? cleanImages : null,
       shop_id: shopId,
       source: data.source ?? 'manual',
       draft: data.draft ?? false,
@@ -119,11 +121,11 @@ export async function addProduct(data: ProductInput & { product_images_data?: { 
 
   if (error || !product) return { error: error?.message ?? 'Insert failed' };
 
-  // Save product_images if provided
+  // Save product_images table rows
   if (product_images_data && product_images_data.length > 0) {
     await saveProductImages(product.id, product_images_data);
-  } else if (images && images.length > 0) {
-    await saveProductImages(product.id, images.map((url, idx) => ({ url, variant_id: null, position: idx })));
+  } else if (cleanImages.length > 0) {
+    await saveProductImages(product.id, cleanImages.map((url, idx) => ({ url, variant_id: null, position: idx })));
   }
 
   // Write initial_stock movement if stock > 0
@@ -146,17 +148,24 @@ export async function updateProduct(
   productId: string, 
   data: Partial<ProductInput> & { product_images_data?: { url: string; variant_id?: string | null; position: number }[] }
 ) {
-  const { images, product_images_data, ...productFields } = data;
+  const { product_images_data, ...productFields } = data;
+  const cleanImages = data.images !== undefined
+    ? (data.images ?? []).filter(u => u && !u.startsWith('blob:'))
+    : undefined;
 
   await supabaseAdmin
     .from('products')
-    .update({ ...productFields, updated_at: new Date().toISOString() })
+    .update({
+      ...productFields,
+      ...(cleanImages !== undefined ? { images: cleanImages.length ? cleanImages : null } : {}),
+      updated_at: new Date().toISOString()
+    })
     .eq('id', productId);
 
   if (product_images_data !== undefined) {
     await saveProductImages(productId, product_images_data);
-  } else if (images !== undefined) {
-    await saveProductImages(productId, (images ?? []).map((url, idx) => ({ url, variant_id: null, position: idx })));
+  } else if (cleanImages !== undefined) {
+    await saveProductImages(productId, cleanImages.map((url, idx) => ({ url, variant_id: null, position: idx })));
   }
 
   revalidate();

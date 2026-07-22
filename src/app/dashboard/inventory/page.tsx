@@ -18,7 +18,7 @@ export default async function InventoryPage() {
     .from('products')
     .select(`
       id, name, description, price, compare_at_price, cost_price,
-      currency, stock_quantity, sku, category, tags,
+      currency, stock_quantity, sku, category, tags, images,
       low_stock_threshold, default_supplier_id, is_active, draft,
       source, updated_at,
       product_images(id, variant_id, url, position)
