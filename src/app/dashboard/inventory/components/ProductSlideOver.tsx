@@ -427,9 +427,16 @@ export default function ProductSlideOver({
         if (res?.error) { setErrors({ _form: res.error }); return; }
 
         // Add variants if any
-        const newVariants = variants.filter(v => v._isNew && !v._deleted);
-        if (newVariants.length && res?.productId) {
-          await addVariants(res.productId, newVariants as VariantInput[]);
+        const activeVariants = variants.filter(v => !v._deleted);
+        if (activeVariants.length && res?.productId) {
+          const variantInputs: VariantInput[] = activeVariants.map(v => ({
+            name: v.name,
+            sku: v.sku,
+            price_override: v.price_override,
+            stock: v.stock || 0,
+            image_url: v.image_url,
+          }));
+          await addVariants(res.productId, variantInputs);
         }
 
         // Save context media
@@ -444,11 +451,23 @@ export default function ProductSlideOver({
 
         // Handle variant changes
         for (const v of variants) {
-          if (v._isNew && !v._deleted) {
-            await addVariants(product!.id, [v as VariantInput]);
-          } else if (!v._isNew && !v._deleted) {
-            await updateVariant(v.id, { name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock });
-          } else if (v._deleted && !v._isNew) {
+          if ((v._isNew || v.id.startsWith('new-')) && !v._deleted) {
+            await addVariants(product!.id, [{
+              name: v.name,
+              sku: v.sku,
+              price_override: v.price_override,
+              stock: v.stock || 0,
+              image_url: v.image_url,
+            }]);
+          } else if (!v._isNew && !v.id.startsWith('new-') && !v._deleted) {
+            await updateVariant(v.id, {
+              name: v.name,
+              sku: v.sku,
+              price_override: v.price_override,
+              stock: v.stock || 0,
+              image_url: v.image_url && !v.image_url.startsWith('blob:') ? v.image_url : null,
+            });
+          } else if (v._deleted && !v._isNew && !v.id.startsWith('new-')) {
             await deleteVariant(v.id);
           }
         }

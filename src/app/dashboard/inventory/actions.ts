@@ -201,19 +201,32 @@ export type VariantInput = {
   sku?: string | null;
   price_override?: number | null;
   stock: number;
+  image_url?: string | null;
 };
 
 export async function addVariants(productId: string, variants: VariantInput[]) {
   const shopId = await getShopId();
   if (!shopId) return { error: 'Shop not found' };
 
-  const rows = variants.map(v => ({ ...v, product_id: productId, shop_id: shopId }));
+  const rows = variants.map(v => ({
+    product_id: productId,
+    shop_id: shopId,
+    name: v.name.trim(),
+    sku: v.sku?.trim() || null,
+    price_override: v.price_override ?? null,
+    stock: typeof v.stock === 'number' ? v.stock : 0,
+    image_url: v.image_url && !v.image_url.startsWith('blob:') ? v.image_url : null,
+  }));
+
   const { data: inserted, error } = await supabaseAdmin
     .from('product_variants')
     .insert(rows)
     .select('id, stock');
 
-  if (error) return { error: error.message };
+  if (error) {
+    console.error('Error inserting product_variants:', error);
+    return { error: error.message };
+  }
 
   // Write initial_stock movements for variants with stock
   const movements = (inserted ?? [])
@@ -229,7 +242,8 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
     }));
 
   if (movements.length) {
-    await supabaseAdmin.from('stock_movements').insert(movements);
+    const { error: mErr } = await supabaseAdmin.from('stock_movements').insert(movements);
+    if (mErr) console.warn('Stock movement log warning:', mErr.message);
   }
 
   revalidate();
