@@ -104,6 +104,7 @@ function getVideoDuration(file: File): Promise<number> {
 export type ContextMediaItem = {
   id?: string;
   url: string;
+  displayUrl?: string;
   media_type: 'image' | 'video';
   tags: string[];
   _isNew?: boolean;
@@ -151,7 +152,18 @@ export default function ProductSlideOver({
   const [isPending, startTransition] = useTransition();
 
   // Form state
-  const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [images, setImages] = useState<{ url: string; displayUrl: string }[]>(() => {
+    let initialUrls: string[] = [];
+    if ((product as any)?.product_images && (product as any).product_images.length > 0) {
+      initialUrls = (product as any).product_images
+        .filter((i: any) => !i.variant_id)
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((i: any) => i.url);
+    } else {
+      initialUrls = product?.images ?? [];
+    }
+    return initialUrls.map(u => ({ url: u, displayUrl: u }));
+  });
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageErrors, setImageErrors] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -247,17 +259,20 @@ export default function ProductSlideOver({
     if (!valid.length) return;
 
     setUploadingImages(true);
-    const localPreviews = valid.map(f => URL.createObjectURL(f));
-    setImages(prev => [...prev, ...localPreviews]);
+    const localItems = valid.map(f => {
+      const blobUrl = URL.createObjectURL(f);
+      return { url: blobUrl, displayUrl: blobUrl };
+    });
+    setImages(prev => [...prev, ...localItems]);
 
     try {
       const remoteUrls = await Promise.all(valid.map(f => uploadImage(f, shopId)));
       setImages(prev => {
         const next = [...prev];
-        localPreviews.forEach((localUrl, i) => {
-          const index = next.indexOf(localUrl);
+        localItems.forEach((localItem, i) => {
+          const index = next.findIndex(x => x.displayUrl === localItem.displayUrl);
           if (index !== -1 && remoteUrls[i]) {
-            next[index] = remoteUrls[i];
+            next[index] = { url: remoteUrls[i], displayUrl: localItem.displayUrl };
           }
         });
         return next;
@@ -306,12 +321,16 @@ export default function ProductSlideOver({
     if (!valid.length) return;
     
     setUploadingMedia(true);
-    const localItems: ContextMediaItem[] = valid.map(({ file, media_type }) => ({
-      url: URL.createObjectURL(file),
-      media_type,
-      tags: [],
-      _isNew: true,
-    }));
+    const localItems: ContextMediaItem[] = valid.map(({ file, media_type }) => {
+      const blobUrl = URL.createObjectURL(file);
+      return {
+        url: blobUrl,
+        displayUrl: blobUrl,
+        media_type,
+        tags: [],
+        _isNew: true,
+      };
+    });
     setContextMedia(prev => [...prev, ...localItems]);
 
     try {
@@ -319,7 +338,7 @@ export default function ProductSlideOver({
       setContextMedia(prev => {
         const next = [...prev];
         localItems.forEach((localItem, i) => {
-          const index = next.findIndex(x => x.url === localItem.url);
+          const index = next.findIndex(x => x.displayUrl === localItem.displayUrl);
           if (index !== -1 && remoteUrls[i]) {
             next[index] = { ...next[index], url: remoteUrls[i] };
           }
@@ -378,8 +397,8 @@ export default function ProductSlideOver({
       const hasVariants = activeVariantsList.length > 0;
 
       const productImagesData: { url: string; variant_id?: string | null; position: number }[] = [];
-      images.forEach((url, idx) => {
-        productImagesData.push({ url, variant_id: null, position: idx });
+      images.forEach((imgItem, idx) => {
+        productImagesData.push({ url: imgItem.url, variant_id: null, position: idx });
       });
 
       const input: any = {
@@ -392,7 +411,7 @@ export default function ProductSlideOver({
         sku: sku.trim() || null,
         category: category.trim() || null,
         tags: tags.length ? tags : null,
-        images: images.length ? images : null,
+        images: images.map(i => i.url),
         product_images_data: productImagesData,
         low_stock_threshold: parseInt(lowStockThreshold, 10) || 5,
         default_supplier_id: defaultSupplierId || null,
@@ -630,31 +649,38 @@ export default function ProductSlideOver({
 
             {images.length > 0 && (
               <div className="flex flex-wrap gap-3">
-                {images.map((url, idx) => (
-                  <div key={url} className="relative group cursor-pointer" onClick={() => setPreviewMedia({ url, type: 'image', title: `Product Photo ${idx + 1}` })}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={url}
-                      alt={`Product ${idx + 1}`}
-                      className="w-20 h-20 object-cover rounded-images border border-dove/20 shadow-sm hover:opacity-90 transition-opacity"
-                    />
-                    {idx === 0 && (
-                      <span className="absolute top-1 left-1 bg-ink text-white text-[10px] px-1.5 py-0.5 rounded-tags">
-                        Primary
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setImages(prev => prev.filter((_, i) => i !== idx)); }}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white hidden group-hover:flex items-center justify-center cursor-pointer"
+                {images.map((imgItem, idx) => {
+                  const srcUrl = imgItem.displayUrl || imgItem.url;
+                  return (
+                    <div
+                      key={srcUrl}
+                      className="relative group cursor-pointer"
+                      onClick={() => setPreviewMedia({ url: srcUrl, type: 'image', title: `Product Photo ${idx + 1}` })}
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
-                      <GripVertical className="w-4 h-4 text-white drop-shadow" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={srcUrl}
+                        alt={`Product ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded-images border border-dove/20 shadow-sm hover:opacity-90 transition-opacity"
+                      />
+                      {idx === 0 && (
+                        <span className="absolute top-1 left-1 bg-ink text-white text-[10px] px-1.5 py-0.5 rounded-tags">
+                          Primary
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setImages(prev => prev.filter((_, i) => i !== idx)); }}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white hidden group-hover:flex items-center justify-center cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+                        <GripVertical className="w-4 h-4 text-white drop-shadow" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -713,51 +739,54 @@ export default function ProductSlideOver({
 
             {contextMedia.length > 0 && (
               <div className="space-y-3">
-                {contextMedia.map((item, idx) => (
-                  <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group items-center">
-                    <div
-                      className="w-16 h-16 shrink-0 relative bg-black/5 rounded-images overflow-hidden flex items-center justify-center border border-dove/20 cursor-pointer group/thumb hover:ring-2 hover:ring-ink/20 transition-all"
-                      onClick={() => setPreviewMedia({ url: item.url, type: item.media_type, title: `Context Media (${item.media_type})` })}
-                      title="Click to preview full size"
-                    >
-                      {item.media_type === 'video' ? (
-                        <div className="relative w-full h-full bg-black flex items-center justify-center">
-                          <video src={`${item.url}#t=0.1`} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <Play className="w-5 h-5 text-white fill-white drop-shadow" />
+                {contextMedia.map((item, idx) => {
+                  const mediaUrl = item.displayUrl || item.url;
+                  return (
+                    <div key={item.url || idx} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group items-center">
+                      <div
+                        className="w-16 h-16 shrink-0 relative bg-black/5 rounded-images overflow-hidden flex items-center justify-center border border-dove/20 cursor-pointer group/thumb hover:ring-2 hover:ring-ink/20 transition-all"
+                        onClick={() => setPreviewMedia({ url: mediaUrl, type: item.media_type, title: `Context Media (${item.media_type})` })}
+                        title="Click to preview full size"
+                      >
+                        {item.media_type === 'video' ? (
+                          <div className="relative w-full h-full bg-black flex items-center justify-center">
+                            <video src={`${mediaUrl}#t=0.1`} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <Play className="w-5 h-5 text-white fill-white drop-shadow" />
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <img src={item.url} alt="Context media" className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" />
-                      )}
-                      <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-medium px-1 rounded">
-                        {item.media_type}
-                      </span>
-                    </div>
+                        ) : (
+                          <img src={mediaUrl} alt="Context media" className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" />
+                        )}
+                        <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-medium px-1 rounded">
+                          {item.media_type}
+                        </span>
+                      </div>
 
-                    <div className="flex-1 space-y-1">
-                      <label className="text-[11px] font-medium text-ash">AI Lookup Tags (comma separated)</label>
-                      <TagsInput
-                        initialValue={item.tags}
-                        onChange={(newTags) => {
-                          setContextMedia(prev => prev.map((x, i) => {
-                            if (i !== idx) return x;
-                            return { ...x, tags: newTags };
-                          }));
-                        }}
-                      />
-                    </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="text-[11px] font-medium text-ash">AI Lookup Tags (comma separated)</label>
+                        <TagsInput
+                          initialValue={item.tags}
+                          onChange={(newTags) => {
+                            setContextMedia(prev => prev.map((x, i) => {
+                              if (i !== idx) return x;
+                              return { ...x, tags: newTags };
+                            }));
+                          }}
+                        />
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setContextMedia(prev => prev.filter((_, i) => i !== idx))}
-                      className="w-8 h-8 rounded-full bg-white border border-dove/20 hover:border-rust/30 text-ash hover:text-rust flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                      title="Remove Media"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        type="button"
+                        onClick={() => setContextMedia(prev => prev.filter((_, i) => i !== idx))}
+                        className="w-8 h-8 rounded-full bg-white border border-dove/20 hover:border-rust/30 text-ash hover:text-rust flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Remove Media"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1090,19 +1119,22 @@ export default function ProductSlideOver({
                               <p className="text-[10px] font-medium text-ash uppercase tracking-wider px-1">Pick from Product Photos</p>
                               {images.length > 0 ? (
                                 <div className="grid grid-cols-4 gap-1">
-                                  {images.map(imgUrl => (
-                                    <button
-                                      key={imgUrl}
-                                      type="button"
-                                      onClick={() => {
-                                        setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: imgUrl } : x));
-                                        setVariantImageTarget(null);
-                                      }}
-                                      className="w-9 h-9 rounded overflow-hidden border border-dove/10 hover:border-ink transition-all cursor-pointer"
-                                    >
-                                      <img src={imgUrl} alt="Product photo" className="w-full h-full object-cover" />
-                                    </button>
-                                  ))}
+                                  {images.map((imgItem, iIdx) => {
+                                    const srcUrl = imgItem.displayUrl || imgItem.url;
+                                    return (
+                                      <button
+                                        key={srcUrl || iIdx}
+                                        type="button"
+                                        onClick={() => {
+                                          setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: imgItem.url } : x));
+                                          setVariantImageTarget(null);
+                                        }}
+                                        className="w-9 h-9 rounded overflow-hidden border border-dove/10 hover:border-ink transition-all cursor-pointer"
+                                      >
+                                        <img src={srcUrl} alt="Product photo" className="w-full h-full object-cover" />
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <p className="text-xs text-dove px-1">No product photos uploaded yet.</p>
