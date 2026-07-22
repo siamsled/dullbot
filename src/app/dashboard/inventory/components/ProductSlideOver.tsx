@@ -170,6 +170,7 @@ export default function ProductSlideOver({
   const [sku, setSku] = useState(product?.sku ?? '');
   const [scanningTarget, setScanningTarget] = useState<'main' | string | null>(null);
   const [variantImageTarget, setVariantImageTarget] = useState<string | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video'; title?: string } | null>(null);
   const variantFileInputRef = useRef<HTMLInputElement>(null);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
   const [lowStockThreshold, setLowStockThreshold] = useState(product?.low_stock_threshold?.toString() ?? '5');
@@ -558,12 +559,12 @@ export default function ProductSlideOver({
             {images.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {images.map((url, idx) => (
-                  <div key={url} className="relative group">
+                  <div key={url} className="relative group cursor-pointer" onClick={() => setPreviewMedia({ url, type: 'image', title: `Product Photo ${idx + 1}` })}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
                       alt={`Product ${idx + 1}`}
-                      className="w-20 h-20 object-cover rounded-images border border-dove/10"
+                      className="w-20 h-20 object-cover rounded-images border border-dove/20 shadow-sm hover:opacity-90 transition-opacity"
                     />
                     {idx === 0 && (
                       <span className="absolute top-1 left-1 bg-ink text-white text-[10px] px-1.5 py-0.5 rounded-tags">
@@ -571,8 +572,9 @@ export default function ProductSlideOver({
                       </span>
                     )}
                     <button
-                      onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white hidden group-hover:flex items-center justify-center"
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setImages(prev => prev.filter((_, i) => i !== idx)); }}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white hidden group-hover:flex items-center justify-center cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -641,7 +643,11 @@ export default function ProductSlideOver({
               <div className="space-y-3">
                 {contextMedia.map((item, idx) => (
                   <div key={item.url} className="flex gap-4 p-3 bg-fog rounded-cards border border-dove/10 relative group items-center">
-                    <div className="w-16 h-16 shrink-0 relative bg-black/5 rounded-images overflow-hidden flex items-center justify-center border border-dove/20">
+                    <div
+                      className="w-16 h-16 shrink-0 relative bg-black/5 rounded-images overflow-hidden flex items-center justify-center border border-dove/20 cursor-pointer group/thumb hover:ring-2 hover:ring-ink/20 transition-all"
+                      onClick={() => setPreviewMedia({ url: item.url, type: item.media_type, title: `Context Media (${item.media_type})` })}
+                      title="Click to preview full size"
+                    >
                       {item.media_type === 'video' ? (
                         <div className="relative w-full h-full bg-black flex items-center justify-center">
                           <video src={`${item.url}#t=0.1`} className="w-full h-full object-cover opacity-80" muted playsInline preload="metadata" />
@@ -650,7 +656,7 @@ export default function ProductSlideOver({
                           </div>
                         </div>
                       ) : (
-                        <img src={item.url} alt="Context media" className="w-full h-full object-cover" />
+                        <img src={item.url} alt="Context media" className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" />
                       )}
                       <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-medium px-1 rounded">
                         {item.media_type}
@@ -980,11 +986,16 @@ export default function ProductSlideOver({
                     {/* Variant Image Slot */}
                     <div className="relative flex items-center shrink-0">
                       {v.image_url ? (
-                        <div className="relative w-8 h-8 rounded-inputs overflow-hidden border border-dove/20 shrink-0 group/vimg">
-                          <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                        <div className="relative w-8 h-8 rounded-inputs overflow-hidden border border-dove/20 shrink-0 group/vimg cursor-pointer">
+                          <img
+                            src={v.image_url}
+                            alt={v.name}
+                            className="w-full h-full object-cover"
+                            onClick={() => setPreviewMedia({ url: v.image_url!, type: 'image', title: `Variant Photo: ${v.name}` })}
+                          />
                           <button
                             type="button"
-                            onClick={() => setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: null } : x))}
+                            onClick={(e) => { e.stopPropagation(); setVariants(prev => prev.map(x => x.id === v.id ? { ...x, image_url: null } : x)); }}
                             className="absolute inset-0 bg-black/60 opacity-0 group-hover/vimg:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
                             title="Remove Variant Image"
                           >
@@ -1276,6 +1287,53 @@ export default function ProductSlideOver({
           }}
           onClose={() => setScanningTarget(null)}
         />
+      )}
+
+      {/* ── Media Lightbox Preview Modal ── */}
+      {previewMedia && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-ink rounded-cards shadow-2xl overflow-hidden border border-white/10 flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-black/40">
+              <p className="text-xs font-medium text-white flex items-center gap-2">
+                {previewMedia.type === 'video' ? <Play className="w-4 h-4 text-sky-wash" /> : <ImageIcon className="w-4 h-4 text-sky-wash" />}
+                {previewMedia.title || 'Media Preview'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewMedia(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Media Content */}
+            <div className="p-4 flex items-center justify-center bg-black/90 min-h-[300px] min-w-[300px] overflow-auto">
+              {previewMedia.type === 'video' ? (
+                <video
+                  src={previewMedia.url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-h-[75vh] max-w-full rounded shadow-2xl"
+                />
+              ) : (
+                <img
+                  src={previewMedia.url}
+                  alt="Preview"
+                  className="max-h-[75vh] max-w-full object-contain rounded shadow-2xl"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

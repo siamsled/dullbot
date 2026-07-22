@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     }
 
     let buffer = Buffer.from(await file.arrayBuffer());
-    let uploadContentType = isVideo ? 'image/jpeg' : file.type;
-    let ext = file.name.split('.').pop() ?? 'jpg';
+    let uploadContentType = file.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+    let ext = file.name.split('.').pop() ?? (isVideo ? 'mp4' : 'jpg');
 
     if (isImage) {
       try {
@@ -47,7 +47,10 @@ export async function POST(req: NextRequest) {
         ext = 'webp';
       } catch (sharpError) {
         console.error('Sharp compression failed, uploading raw image:', sharpError);
+        uploadContentType = file.type || 'image/jpeg';
       }
+    } else if (isVideo) {
+      uploadContentType = file.type || 'video/mp4';
     }
 
     const filename = `${shopId ?? 'global'}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
