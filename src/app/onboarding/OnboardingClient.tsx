@@ -251,28 +251,24 @@ export default function OnboardingClient({ shop }: { shop: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-fog flex flex-col items-center justify-center p-4 sm:p-8 select-none font-sans">
+    <div className="min-h-screen bg-fog flex flex-col items-center justify-start sm:justify-center py-6 px-4 select-none font-sans">
       {/* Outer Card Container */}
-      <div className="max-w-[800px] w-full bg-white rounded-cards shadow-subtle border border-dove/15 p-6 sm:p-10 flex flex-col">
+      <div className="max-w-[760px] w-full bg-white rounded-cards shadow-subtle border border-dove/15 p-6 sm:p-8 flex flex-col my-auto">
         
-        {/* Header Branding & Animated Mark (Part 5) */}
-        <div className="flex flex-col items-center text-center mb-8 border-b border-dove/10 pb-6">
-          <div className="relative flex items-center justify-center mb-3">
-            <div className="absolute w-12 h-12 rounded-full bg-rust/15 animate-ping opacity-75" />
-            <div className="relative w-10 h-10 rounded-full bg-apricot-wash flex items-center justify-center border border-rust/20 text-rust">
-              <Sparkles className="w-5 h-5" />
-            </div>
+        {/* Header Branding (Clean & Compact) */}
+        <div className="flex flex-col items-center text-center mb-5 border-b border-dove/10 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="font-serif text-2xl sm:text-3xl tracking-tight text-ink font-light">
+              dull<span className="font-normal font-sans text-lg sm:text-xl text-ash">bot.</span>
+            </span>
+            <span className="w-2 h-2 rounded-full bg-rust animate-pulse" />
           </div>
+          <p className="text-[11px] sm:text-xs text-ash mt-0.5">Configure your shop assistant</p>
 
-          <span className="font-serif text-3xl tracking-tight text-ink font-light">
-            dull<span className="font-normal font-sans text-xl text-ash">bot.</span>
-          </span>
-          <p className="text-xs text-ash mt-1">Configure your automated shop assistant</p>
-
-          {/* Bold 2-Segment Progress Bar (Part 5) */}
-          <div className="w-full max-w-xs flex gap-2 mt-6">
-            <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step === 'classification' || step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
-            <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
+          {/* Sleek 2-Segment Progress Bar */}
+          <div className="w-full max-w-xs flex gap-2 mt-3">
+            <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step === 'classification' || step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
+            <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
           </div>
         </div>
 
@@ -363,7 +359,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
               transition={{ duration: 0.2 }}
               className="flex flex-col"
             >
-              <div className="mb-4">
+              <div className="mb-2">
                 <button 
                   onClick={() => setStep('classification')} 
                   className="inline-flex items-center gap-1.5 text-xs text-rust hover:underline font-medium"
@@ -372,18 +368,18 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                 </button>
               </div>
 
-              {/* Oversized Serif Headline (Part 5) */}
-              <h1 className="font-serif text-3xl sm:text-4xl text-ink font-light leading-tight mb-2 tracking-tight">
+              {/* Serif Headline */}
+              <h1 className="font-serif text-2xl sm:text-3xl text-ink font-light leading-tight mb-1 tracking-tight">
                 Tell us about your business
               </h1>
-              <p className="text-xs text-ash mb-8">
+              <p className="text-xs text-ash mb-4">
                 Provide details about your brand and select your AI agent&apos;s tone of voice.
               </p>
 
-              <form onSubmit={handleSaveContext} className="flex flex-col gap-6">
+              <form onSubmit={handleSaveContext} className="flex flex-col gap-4">
                 
                 {/* Business Overview */}
-                <div className="bg-fog/50 p-5 rounded-cards border border-dove/15">
+                <div className="bg-fog/50 p-4 rounded-cards border border-dove/15">
                   <label className="block text-xs font-semibold text-ink mb-1.5">
                     Business Overview *
                   </label>
