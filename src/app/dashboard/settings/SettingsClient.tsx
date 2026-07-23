@@ -361,7 +361,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
                 </>
               ) : (
                 <Link
-                  href="/api/auth/facebook/login"
+                  href={`/api/auth/facebook/login?shopId=${shop.id}`}
                   className="text-[11px] font-semibold text-ink border border-dove/30 hover:border-ink rounded-lg px-3 py-1.5 text-center transition-colors"
                 >
                   Connect
