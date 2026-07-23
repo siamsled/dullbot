@@ -1,12 +1,17 @@
+const fs = require('fs');
 
+const oldOnboarding = fs.readFileSync('scratch/old_onboarding.tsx', 'utf-8');
+
+// I will output a fully merged OnboardingClient.tsx
+const newOnboarding = `
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
-  Sparkles, ArrowRight, ArrowLeft, X, Palette, Globe, Smartphone, AlertCircle,
-  Loader2, ShoppingBag, Calendar, Building2, Check, Search, Plus, Clock, MapPin
+  Loader2, ShoppingBag, Calendar, Building2, Check, Search, Plus, Clock, MapPin, 
+  Sparkles, ArrowRight, ArrowLeft, X, Palette, Facebook, Instagram, MessageCircle, AlertCircle
 } from 'lucide-react';
 import UiverseGridBackground from '@/components/ui/UiverseGridBackground';
 import UiverseInput from '@/components/ui/UiverseInput';
@@ -115,22 +120,22 @@ export default function OnboardingClient({ shop }: { shop: any }) {
         setImportedProductsCount(res.importedProducts || 0);
         
         // Pre-fill fields
-        setShopName(res.profile?.name || '');
-        setCategory(res.profile?.category || '');
-        setCategorySearch(res.profile?.category || '');
-        setBusinessType(res.profile?.business_type || 'retail');
-        setBusinessOverview(res.profile?.business_overview || '');
-        setVibe(res.profile?.tone_template || 'casual');
+        setShopName(res.profile.name || '');
+        setCategory(res.profile.category || '');
+        setCategorySearch(res.profile.category || '');
+        setBusinessType(res.profile.business_type || 'retail');
+        setBusinessOverview(res.profile.business_overview || '');
+        setVibe(res.profile.tone_template || 'casual');
         
-        if (OPERATING_HOUR_PRESETS.includes(res.profile?.operating_hours)) {
-          setOperatingPreset(res.profile?.operating_hours);
-        } else if (res.profile?.operating_hours) {
+        if (OPERATING_HOUR_PRESETS.includes(res.profile.operating_hours)) {
+          setOperatingPreset(res.profile.operating_hours);
+        } else if (res.profile.operating_hours) {
           setOperatingPreset('custom');
           // simple parsing attempt could go here
         }
         
-        if (['Nationwide', 'Dhaka Only'].includes(res.profile?.delivery_areas)) {
-          setDeliveryPreset(res.profile?.delivery_areas);
+        if (['Nationwide', 'Dhaka Only'].includes(res.profile.delivery_areas)) {
+          setDeliveryPreset(res.profile.delivery_areas);
         }
 
         setStep('review');
@@ -189,7 +194,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
     }
 
     let finalHours = operatingPreset;
-    if (operatingPreset === 'custom') finalHours = `${customStartTime} - ${customEndTime}`;
+    if (operatingPreset === 'custom') finalHours = \`\${customStartTime} - \${customEndTime}\`;
 
     let finalDelivery = deliveryPreset;
     if (deliveryPreset === 'custom') finalDelivery = selectedDistricts.length > 0 ? selectedDistricts.join(', ') : 'Nationwide';
@@ -265,8 +270,8 @@ export default function OnboardingClient({ shop }: { shop: any }) {
           
           {(step === 'classification' || step === 'context') && (
             <div className="w-full max-w-xs flex gap-2 mt-3">
-              <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step === 'classification' || step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
-              <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step === 'context' ? 'bg-rust' : 'bg-dove/20'}`} />
+              <div className={\`h-1 flex-1 rounded-full transition-colors duration-300 \${step === 'classification' || step === 'context' ? 'bg-rust' : 'bg-dove/20'}\`} />
+              <div className={\`h-1 flex-1 rounded-full transition-colors duration-300 \${step === 'context' ? 'bg-rust' : 'bg-dove/20'}\`} />
             </div>
           )}
         </div>
@@ -288,10 +293,10 @@ export default function OnboardingClient({ shop }: { shop: any }) {
               </p>
               
               <div className="space-y-4 max-w-md mx-auto w-full">
-                <a href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`} className="group w-full flex items-center justify-between p-5 bg-white rounded-2xl border-2 border-rust shadow-sm hover:shadow-xl transition-all">
+                <a href={\`/api/auth/facebook/login?shopId=\${shop.id}&source=onboarding\`} className="group w-full flex items-center justify-between p-5 bg-white rounded-2xl border-2 border-rust shadow-sm hover:shadow-xl transition-all">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                      <Globe size={20} />
+                      <Facebook size={20} />
                     </div>
                     <div className="text-left">
                       <h3 className="font-semibold text-ink">Connect Facebook Page</h3>
@@ -304,7 +309,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                 <div className="w-full flex items-center justify-between p-5 bg-fog/50 rounded-2xl border-2 border-transparent opacity-75 cursor-not-allowed">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center">
-                      <Globe size={20} />
+                      <Instagram size={20} />
                     </div>
                     <div className="text-left">
                       <h3 className="font-semibold text-ink">Connect Instagram</h3>
@@ -316,7 +321,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                 <div className="w-full flex items-center justify-between p-5 bg-fog/50 rounded-2xl border-2 border-transparent opacity-75 cursor-not-allowed">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
-                      <Smartphone size={20} />
+                      <MessageCircle size={20} />
                     </div>
                     <div className="text-left">
                       <h3 className="font-semibold text-ink">Connect WhatsApp</h3>
@@ -379,9 +384,9 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectType(item.id)}
-                        className={`p-3 rounded-lg border text-left flex items-center justify-between transition-all ${
+                        className={\`p-3 rounded-lg border text-left flex items-center justify-between transition-all \${
                           businessType === item.id ? 'border-rust bg-apricot-wash/60 shadow-subtle' : 'border-dove/20 bg-white hover:bg-fog/60'
-                        }`}
+                        }\`}
                       >
                         <span className="font-semibold text-xs text-ink">{item.title}</span>
                         {businessType === item.id && <Check className="w-3 h-3 text-rust" />}
@@ -447,9 +452,9 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                         key={v.id}
                         type="button"
                         onClick={() => setVibe(v.id as any)}
-                        className={`p-3 rounded-inputs border text-left transition-all ${
+                        className={\`p-3 rounded-inputs border text-left transition-all \${
                           vibe === v.id ? 'border-rust bg-apricot-wash/60' : 'border-dove/20 bg-white'
-                        }`}
+                        }\`}
                       >
                         <div className="flex justify-between">
                           <span className="text-xs font-bold text-ink">{v.label}</span>
@@ -482,9 +487,9 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                   const Icon = item.icon;
                   const isSelected = businessType === item.id;
                   return (
-                    <button key={item.id} disabled={isLoading} onClick={() => handleSelectType(item.id)} className={`p-6 rounded-cards border text-left flex flex-col justify-between transition-all duration-200 group relative ${isSelected ? 'border-2 border-rust bg-apricot-wash/60 scale-[1.02]' : 'border-dove/20 bg-white hover:bg-fog/60 hover:-translate-y-1'}`}>
+                    <button key={item.id} disabled={isLoading} onClick={() => handleSelectType(item.id)} className={\`p-6 rounded-cards border text-left flex flex-col justify-between transition-all duration-200 group relative \${isSelected ? 'border-2 border-rust bg-apricot-wash/60 scale-[1.02]' : 'border-dove/20 bg-white hover:bg-fog/60 hover:-translate-y-1'}\`}>
                       <div>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${isSelected ? 'bg-rust text-white' : 'bg-fog text-rust'}`}><Icon className="w-5 h-5" /></div>
+                        <div className={\`w-10 h-10 rounded-full flex items-center justify-center mb-4 \${isSelected ? 'bg-rust text-white' : 'bg-fog text-rust'}\`}><Icon className="w-5 h-5" /></div>
                         <h3 className="font-semibold text-sm text-ink mb-1.5">{item.title}</h3>
                         <p className="text-xs text-ash leading-relaxed">{item.desc}</p>
                       </div>
@@ -519,7 +524,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                     {isCategoryOpen && (
                       <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-dove/20 rounded-inputs shadow-subtle max-h-48 overflow-y-auto p-1">
                         {filteredCategories.map((catItem) => (
-                          <button key={catItem} type="button" onClick={() => { setCategory(catItem); setCategorySearch(catItem); setIsCategoryOpen(false); }} className={`w-full text-left px-3 py-1.5 text-xs rounded flex items-center justify-between ${category === catItem ? 'text-rust bg-apricot-wash/30' : 'text-ink'}`}>
+                          <button key={catItem} type="button" onClick={() => { setCategory(catItem); setCategorySearch(catItem); setIsCategoryOpen(false); }} className={\`w-full text-left px-3 py-1.5 text-xs rounded flex items-center justify-between \${category === catItem ? 'text-rust bg-apricot-wash/30' : 'text-ink'}\`}>
                             <span>{catItem}</span>{category === catItem && <Check className="w-3 h-3 text-rust" />}
                           </button>
                         ))}
@@ -530,16 +535,16 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                     <label className="block text-xs font-semibold text-ink mb-1 flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-rust" /> Operating Hours</label>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {OPERATING_HOUR_PRESETS.map((preset) => (
-                        <button key={preset} type="button" onClick={() => setOperatingPreset(preset)} className={`px-2.5 py-1 text-[11px] rounded-full border ${operatingPreset === preset ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}`}>{preset}</button>
+                        <button key={preset} type="button" onClick={() => setOperatingPreset(preset)} className={\`px-2.5 py-1 text-[11px] rounded-full border \${operatingPreset === preset ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}\`}>{preset}</button>
                       ))}
-                      <button type="button" onClick={() => setOperatingPreset('custom')} className={`px-2.5 py-1 text-[11px] rounded-full border ${operatingPreset === 'custom' ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}`}>Custom Range...</button>
+                      <button type="button" onClick={() => setOperatingPreset('custom')} className={\`px-2.5 py-1 text-[11px] rounded-full border \${operatingPreset === 'custom' ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}\`}>Custom Range...</button>
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-ink mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-rust" /> Delivery Areas</label>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {['Nationwide', 'Dhaka Only'].map((preset) => (
-                        <button key={preset} type="button" onClick={() => setDeliveryPreset(preset)} className={`px-2.5 py-1 text-[11px] rounded-full border ${deliveryPreset === preset ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}`}>{preset}</button>
+                        <button key={preset} type="button" onClick={() => setDeliveryPreset(preset)} className={\`px-2.5 py-1 text-[11px] rounded-full border \${deliveryPreset === preset ? 'border-rust bg-apricot-wash text-rust' : 'border-dove/25 bg-white text-ash'}\`}>{preset}</button>
                       ))}
                     </div>
                   </div>
@@ -547,7 +552,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                 <div className="bg-fog/40 p-5 rounded-cards border border-dove/15">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {VIBE_OPTIONS.map((v) => (
-                      <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3.5 rounded-inputs border text-left ${vibe === v.id ? 'border-2 border-rust bg-apricot-wash/60' : 'border-dove/20 bg-white'}`}>
+                      <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={\`p-3.5 rounded-inputs border text-left \${vibe === v.id ? 'border-2 border-rust bg-apricot-wash/60' : 'border-dove/20 bg-white'}\`}>
                         <div className="flex items-center justify-between mb-1"><span className="text-xs font-bold text-ink">{v.label}</span></div>
                         <span className="text-[11px] text-ash">{v.desc}</span>
                       </button>
@@ -567,3 +572,6 @@ export default function OnboardingClient({ shop }: { shop: any }) {
     </UiverseGridBackground>
   );
 }
+`;
+
+fs.writeFileSync('src/app/onboarding/OnboardingClient.tsx', newOnboarding);
