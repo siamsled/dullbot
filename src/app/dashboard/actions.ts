@@ -158,9 +158,8 @@ export async function saveOnboardingProfileAndTone(
     }
 
     const stepsDone = shop.onboarding_steps_done || [];
-    if (!stepsDone.includes('context_form')) {
-      stepsDone.push('context_form');
-    }
+    if (!stepsDone.includes('context_form')) stepsDone.push('context_form');
+    if (!stepsDone.includes('classification')) stepsDone.push('classification');
 
     // Check hard requirements to unlock AI automatically
     const isClassificationDone = stepsDone.includes('classification');
