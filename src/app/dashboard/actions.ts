@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
+import { invokeGemini } from '@/lib/gemini';
 
 export async function saveBusinessType(shopId: string, businessType: string) {
   try {
@@ -40,6 +41,71 @@ export async function saveBusinessType(shopId: string, businessType: string) {
   } catch (err: any) {
     console.error('Unhandled error in saveBusinessType:', err);
     return { success: false, error: err.message || 'An unexpected error occurred.' };
+  }
+}
+
+export async function generateProfileFromFacebook(shopId: string) {
+  try {
+    const { data: shop, error: shopErr } = await supabaseAdmin
+      .from('shops')
+      .select('meta_page_access_token, meta_page_id')
+      .eq('id', shopId)
+      .single();
+
+    if (shopErr || !shop || !shop.meta_page_access_token || !shop.meta_page_id) {
+      return { success: false, error: 'Facebook Page not connected properly.' };
+    }
+
+    const fbRes = await fetch(
+      `https://graph.facebook.com/v19.0/${shop.meta_page_id}?fields=name,about,description,category,emails,phone,website,location,hours&access_token=${shop.meta_page_access_token}`
+    );
+    const fbData = await fbRes.json();
+
+    if (fbData.error) {
+      return { success: false, error: fbData.error.message || 'Failed to fetch Facebook data.' };
+    }
+
+    const systemPrompt = `You are a business profiling AI. Analyze the following JSON data extracted from a business's Facebook Page.
+Extract and infer the following fields to configure their DullBot workspace:
+1. "name": The business name (string).
+2. "category": Choose the single closest match from these broad categories: Fashion & Apparel, Electronics & Gadgets, Beauty & Cosmetics, Food & Bakery, Home & Living, Clinic & Healthcare, Salon & Spa, Tutoring & Education, Consulting & Agency, Wholesale / B2B, or Other.
+3. "operating_hours": Summarize their operating hours in a short string (e.g. "9:00 AM - 10:00 PM" or "24/7").
+4. "delivery_areas": Summarize their delivery capabilities based on location or description (e.g. "Nationwide", "Dhaka Only", or "Local").
+5. "business_overview": Write a concise, professional 2-3 sentence overview of what the business does, what they sell, and their unique value proposition.
+6. "tone_template": Pick the most appropriate conversational tone for an AI agent representing them: "casual", "warm", "technical", or "direct".
+
+Return ONLY a valid JSON object with the exact keys above. No markdown blocks or extra text.`;
+
+    const geminiResponse = await invokeGemini(systemPrompt, JSON.stringify(fbData), []);
+    
+    if (!geminiResponse || !geminiResponse.text) {
+      return { success: false, error: 'AI failed to generate profile.' };
+    }
+
+    // Clean JSON block
+    let rawJson = geminiResponse.text.trim();
+    if (rawJson.startsWith('\`\`\`json')) {
+      rawJson = rawJson.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim();
+    } else if (rawJson.startsWith('\`\`\`')) {
+      rawJson = rawJson.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+    }
+
+    const profile = JSON.parse(rawJson);
+
+    // Save to database
+    await saveOnboardingProfileAndTone(shopId, {
+      name: profile.name || fbData.name || 'My Store',
+      category: profile.category || 'Other',
+      operatingHours: profile.operating_hours || '24/7',
+      deliveryAreas: profile.delivery_areas || 'Nationwide',
+      businessOverview: profile.business_overview || fbData.about || '',
+      toneTemplate: profile.tone_template || 'casual'
+    });
+
+    return { success: true, profile };
+  } catch (err: any) {
+    console.error('generateProfileFromFacebook error:', err);
+    return { success: false, error: err.message };
   }
 }
 

@@ -4,7 +4,18 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const state = searchParams.get('state'); // shopSlug
+  const rawState = searchParams.get('state') || '';
+  
+  let shopId = rawState;
+  let source = 'settings';
+  
+  try {
+    const decoded = JSON.parse(Buffer.from(rawState, 'base64').toString('utf-8'));
+    if (decoded.shopId) shopId = decoded.shopId;
+    if (decoded.source) source = decoded.source;
+  } catch (e) {
+    // Fallback if state wasn't our JSON object (e.g., legacy connections)
+  }
 
   if (!code) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?error=NoCode`);
@@ -41,7 +52,8 @@ export async function GET(request: Request) {
   const pagesData = await pagesRes.json();
 
   if (!pagesData.data || pagesData.data.length === 0) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?error=NoPagesFound`);
+    const errDest = source === 'onboarding' ? '/onboarding?error=NoPagesFound' : '/dashboard/settings?error=NoPagesFound';
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
   const page = pagesData.data[0];
@@ -49,15 +61,24 @@ export async function GET(request: Request) {
   const pageId = page.id;
   const pageName = page.name;
 
-  // 3. Save to Supabase
-  await supabaseAdmin
-    .from('shops')
-    .update({
-      meta_page_id: pageId,
-      meta_page_name: pageName,
-      meta_page_access_token: pageAccessToken
-    })
-    .eq('slug', state || 'dull-store');
+  // 3. Save to Supabase (match by id, fallback to slug for legacy)
+  const shopQuery = shopId.includes('-') && shopId.length === 36
+    ? supabaseAdmin.from('shops').update({
+        meta_page_id: pageId,
+        meta_page_name: pageName,
+        meta_page_access_token: pageAccessToken
+      }).eq('id', shopId)
+    : supabaseAdmin.from('shops').update({
+        meta_page_id: pageId,
+        meta_page_name: pageName,
+        meta_page_access_token: pageAccessToken
+      }).eq('slug', shopId || 'dull-store');
 
-  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?success=1`);
+  await shopQuery;
+
+  const successDest = source === 'onboarding' 
+    ? '/onboarding?step=ai_analysis' 
+    : '/dashboard/settings?success=1';
+
+  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${successDest}`);
 }
