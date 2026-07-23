@@ -10,6 +10,9 @@ import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { saveBusinessType, fetchDashboardStats } from './actions';
 import { ShopStats } from '@/lib/analytics';
+import UiverseGlassCard from '@/components/ui/UiverseGlassCard';
+import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
+import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
 
 const BANNER_DISMISSED_KEY = 'dullbot_setup_banner_dismissed';
 const NUDGE_DISMISSED_KEY = 'dullbot_nudge_widget_dismissed';
@@ -279,12 +282,15 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-fog border border-dove/20 rounded-inputs px-5 py-3.5 flex items-center gap-3 shadow-subtle"
+          className="bg-white/80 backdrop-blur-md border border-dove/20 rounded-inputs px-5 py-3.5 flex items-center justify-between shadow-subtle"
         >
-          <Sparkles className="w-4 h-4 text-rust shrink-0" />
-          <p className="text-xs font-semibold text-ink leading-relaxed">
-            <span className="text-rust">Insight:</span> {getInsightCallout()}
-          </p>
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-4 h-4 text-rust shrink-0 animate-pulse" />
+            <p className="text-xs font-semibold text-ink leading-relaxed">
+              <span className="text-rust">Insight:</span> {getInsightCallout()}
+            </p>
+          </div>
+          <UiversePulseBadge label="Live Intelligence" status="rust" size="sm" />
         </motion.div>
       </div>
 
@@ -300,9 +306,9 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
             <div className="px-6 pt-5 pb-3 flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-ink text-sm">Finish setting up</h3>
-                <p className="text-xs text-ash mt-0.5">
-                  {softStepsDoneCount} of {softSteps.length} optional steps done.{' '}
-                  <span className="text-emerald-600 font-semibold">DullBot is live.</span>
+                <p className="text-xs text-ash mt-0.5 flex items-center gap-2">
+                  <span>{softStepsDoneCount} of {softSteps.length} optional steps done.</span>
+                  <UiversePulseBadge label="DullBot is live" status="active" size="sm" />
                 </p>
               </div>
               <button
@@ -340,7 +346,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         )}
       </AnimatePresence>
 
-      {/* METRIC TILES */}
+      {/* METRIC TILES (UIverse Glass Cards) */}
       <motion.div
         variants={container}
         initial="hidden"
@@ -348,37 +354,37 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
       >
         {[
-          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs previous period', icon: Package },
-          { label: 'Orders Captured', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs previous period', icon: Package },
-          { label: 'Conversations', value: currentStats.convsTotal, series: currentStats.convSeries, delta: currentStats.convDelta, sub: 'vs previous period', icon: MessageSquareText },
-          { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity }
+          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs previous period', icon: Package, variant: 'warm' as const },
+          { label: 'Orders Captured', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs previous period', icon: Package, variant: 'default' as const },
+          { label: 'Conversations', value: currentStats.convsTotal, series: currentStats.convSeries, delta: currentStats.convDelta, sub: 'vs previous period', icon: MessageSquareText, variant: 'cool' as const },
+          { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity, variant: 'default' as const }
         ].map((tile, idx) => (
-          <motion.div
+          <UiverseGlassCard
             key={idx}
-            variants={item}
-            className="bg-white rounded-cards shadow-subtle p-6 border border-dove/5 hover:border-dove/20 transition-all flex flex-col justify-between"
+            variant={tile.variant}
+            className="flex flex-col justify-between"
           >
             <div>
               <div className="flex justify-between items-start mb-3">
                 <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider">{tile.label}</span>
-                <span className="p-1.5 bg-fog text-ink rounded-lg"><tile.icon className="w-4 h-4" /></span>
+                <span className="p-1.5 bg-white/80 backdrop-blur-sm text-ink rounded-lg shadow-sm border border-dove/10"><tile.icon className="w-4 h-4" /></span>
               </div>
               <p className="text-[32px] font-serif text-ink tracking-tight font-medium leading-none">{tile.value}</p>
             </div>
             <div className="mt-4">
               <Sparkline data={tile.series} />
-              <div className="flex justify-between text-[10px] text-ash mt-2 font-semibold">
+              <div className="flex justify-between items-center text-[10px] text-ash mt-2 font-semibold">
                 {tile.delta !== null ? (
-                  <span className={tile.delta >= 0 ? 'text-emerald-600' : 'text-rust'}>
+                  <span className={`px-1.5 py-0.5 rounded-full ${tile.delta >= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rust'}`}>
                     {tile.delta >= 0 ? '↑' : '↓'} {Math.abs(tile.delta)}%
                   </span>
                 ) : (
-                  <span className="text-emerald-600">Active</span>
+                  <UiversePulseBadge label="Active" status="active" size="sm" />
                 )}
                 <span>{tile.sub}</span>
               </div>
             </div>
-          </motion.div>
+          </UiverseGlassCard>
         ))}
       </motion.div>
 

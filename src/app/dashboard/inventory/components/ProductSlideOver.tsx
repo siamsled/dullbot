@@ -13,6 +13,7 @@ import {
   manualStockAdjust, restockProduct, getStockMovements, type ProductInput, type VariantInput,
   getProductMedia, saveProductMedia,
 } from '../actions';
+import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1389,19 +1390,15 @@ export default function ProductSlideOver({
             >
               Cancel
             </button>
-            <button
-              type="button"
+            <UiverseGlowButton
+              variant="dark"
+              size="md"
               onClick={handleSave}
-              disabled={isPending}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-buttons bg-ink text-white text-sm font-medium hover:bg-black transition-colors disabled:opacity-50"
+              isLoading={isPending}
+              icon={!isPending ? <Check className="w-4 h-4" /> : undefined}
             >
-              {isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4" />
-              )}
               {isNew ? 'Add Product' : 'Save Changes'}
-            </button>
+            </UiverseGlowButton>
           </div>
         </div>
       </div>

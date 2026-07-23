@@ -14,6 +14,8 @@ import {
   createBooking, cancelBooking, rescheduleBooking, updateBookingStatus,
   getAvailableSlots, joinQueueAction, callNextInQueueAction, getTodayQueueAction
 } from './actions';
+import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
+import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
 
 interface Service {
   id: string;
@@ -741,34 +743,40 @@ export default function ServicesClient({
 
         {/* Add triggers */}
         {activeTab === 'services' && (
-          <button
+          <UiverseGlowButton
+            variant="dark"
+            size="sm"
             onClick={openAddService}
-            className="flex items-center gap-2 px-4 py-2.5 bg-ink text-white hover:bg-black rounded-buttons text-xs font-semibold shadow-subtle transition-colors"
+            icon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" /> Add Service
-          </button>
+            Add Service
+          </UiverseGlowButton>
         )}
         {activeTab === 'resources' && (
-          <button
+          <UiverseGlowButton
+            variant="dark"
+            size="sm"
             onClick={openAddResource}
-            className="flex items-center gap-2 px-4 py-2.5 bg-ink text-white hover:bg-black rounded-buttons text-xs font-semibold shadow-subtle transition-colors"
+            icon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" /> Add Resource
-          </button>
+            Add Resource
+          </UiverseGlowButton>
         )}
         {activeTab === 'bookings' && (
           <div className="flex gap-2">
-            <button
+            <UiverseGlowButton
+              variant="dark"
+              size="sm"
               onClick={() => {
                 if (resources.length === 0) return alert('Add at least one resource first!');
                 setSelectedResourceForBooking(resources[0]);
                 setBookingServiceId(services[0]?.id || '');
                 setBookingModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-ink text-white hover:bg-black rounded-buttons text-xs font-semibold shadow-subtle transition-colors"
+              icon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4" /> Book Appointment
-            </button>
+              Book Appointment
+            </UiverseGlowButton>
             <div className="flex border border-dove/20 bg-fog rounded-lg p-0.5">
               <button 
                 onClick={() => setCalendarView('grid')}

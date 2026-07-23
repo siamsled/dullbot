@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
+import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
 
 export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const pathname = usePathname();
@@ -190,9 +191,9 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             <>
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-sm font-medium text-ink truncate">{shop?.name || 'Dull Store'}</span>
-                <span className="text-xs text-ash flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
-                </span>
+                <div className="mt-0.5">
+                  <UiversePulseBadge label="Online" status="active" size="sm" />
+                </div>
               </div>
               <button
                 onClick={handleSignOut}
