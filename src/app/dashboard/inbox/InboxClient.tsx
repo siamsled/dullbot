@@ -7,6 +7,7 @@ import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFace
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import UiverseTabs from '@/components/ui/UiverseTabs';
 
 function formatWaitingTime(dateString: string) {
   const date = new Date(dateString);
@@ -709,39 +710,36 @@ export default function InboxClient({
               />
             </div>
             {/* Filter Toggles */}
-            <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
-              {(['all', 'tickets', 'confirmed', 'test'] as const)
-                .filter(f => f !== 'test' || process.env.NODE_ENV === 'development')
-                .map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => {
-                      setFilter(f);
-                      const nextFiltered = conversations.filter(conv => {
-                        if (f === 'test') return !!conv.is_test;
-                        if (conv.is_test) return false;
-                        if (f === 'tickets') {
-                          return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
-                        }
-                        if (f === 'confirmed') {
-                          return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
-                        }
-                        return true;
-                      });
-                      if (nextFiltered.length > 0 && !nextFiltered.some(c => c.id === activeId)) {
-                        setActiveId(nextFiltered[0].id);
-                      } else if (nextFiltered.length === 0) {
-                        setActiveId(null);
-                      }
-                    }}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-md border transition-all whitespace-nowrap ${filter === f
-                      ? 'bg-ink text-white border-ink shadow-sm'
-                      : 'bg-white text-ash border-dove/20 hover:bg-dove/10 hover:text-ink'
-                      }`}
-                  >
-                    {f === 'all' ? 'All' : f === 'tickets' ? 'Tickets' : f === 'confirmed' ? 'Orders' : 'Test Data'}
-                  </button>
-                ))}
+            <div className="flex mt-3 overflow-x-auto pb-1">
+              <UiverseTabs
+                tabs={[
+                  { id: 'all', label: 'All' },
+                  { id: 'tickets', label: 'Tickets' },
+                  { id: 'confirmed', label: 'Orders' },
+                  ...(process.env.NODE_ENV === 'development' ? [{ id: 'test', label: 'Test Data' }] : [])
+                ]}
+                activeTab={filter}
+                onChange={(f) => {
+                  setFilter(f as any);
+                  const nextFiltered = conversations.filter(conv => {
+                    if (f === 'test') return !!conv.is_test;
+                    if (conv.is_test) return false;
+                    if (f === 'tickets') {
+                      return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
+                    }
+                    if (f === 'confirmed') {
+                      return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
+                    }
+                    return true;
+                  });
+                  if (nextFiltered.length > 0 && !nextFiltered.some(c => c.id === activeId)) {
+                    setActiveId(nextFiltered[0].id);
+                  } else if (nextFiltered.length === 0) {
+                    setActiveId(null);
+                  }
+                }}
+                className="w-fit"
+              />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">

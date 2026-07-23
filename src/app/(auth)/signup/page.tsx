@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import UiverseGridBackground from '@/components/ui/UiverseGridBackground';
 import { Check, ArrowRight, Zap, TrendingUp, Rocket } from 'lucide-react';
 
 const PLANS = [
@@ -71,19 +72,20 @@ export default function SignupPage() {
   const plan = PLANS.find(p => p.id === selectedPlan)!;
 
   return (
-    <div className="min-h-screen bg-fog flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-3xl">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <span className="font-serif text-3xl tracking-tight text-ink font-light">
-              dull<span className="font-normal font-sans text-xl text-ash">bot.</span>
-            </span>
-          </Link>
-          <p className="mt-2 text-ash text-sm">
-            {step === 'plan' ? 'Choose your recharge pack' : 'Create your account'}
-          </p>
-        </div>
+    <UiverseGridBackground variant="grid">
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-3xl relative z-10">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-block">
+              <span className="font-serif text-3xl tracking-tight text-ink font-light">
+                dull<span className="font-normal font-sans text-xl text-ash">bot.</span>
+              </span>
+            </Link>
+            <p className="mt-2 text-ash text-sm">
+              {step === 'plan' ? 'Choose your recharge pack' : 'Create your account'}
+            </p>
+          </div>
 
         {step === 'plan' ? (
           <div>
@@ -165,6 +167,7 @@ export default function SignupPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </UiverseGridBackground>
   );
 }

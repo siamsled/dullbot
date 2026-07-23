@@ -14,6 +14,7 @@ import {
   createBooking, cancelBooking, rescheduleBooking, updateBookingStatus,
   getAvailableSlots, joinQueueAction, callNextInQueueAction, getTodayQueueAction
 } from './actions';
+import UiverseTabs from '@/components/ui/UiverseTabs';
 import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
 import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
 
@@ -681,24 +682,19 @@ export default function ServicesClient({
         </div>
 
         {/* Tab Selector */}
-        <div className="flex bg-fog p-1 rounded-lg border border-dove/20">
-          {(['services', 'resources', 'bookings'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                setActiveTab(tab);
-                setSearchQuery('');
-              }}
-              className={`px-4 py-2 text-xs font-semibold rounded-md transition-all ${
-                activeTab === tab 
-                  ? 'bg-white text-ink shadow-sm' 
-                  : 'text-ash hover:text-ink'
-              }`}
-            >
-              {tab === 'services' ? 'Services' : tab === 'resources' ? 'Resources' : 'Bookings Calendar'}
-            </button>
-          ))}
-        </div>
+        <UiverseTabs
+          tabs={[
+            { id: 'services', label: 'Services', icon: <Box className="w-4 h-4" /> },
+            { id: 'resources', label: 'Resources', icon: <Users className="w-4 h-4" /> },
+            { id: 'bookings', label: 'Bookings Calendar', icon: <CalendarRange className="w-4 h-4" /> }
+          ]}
+          activeTab={activeTab}
+          onChange={(id) => {
+            setActiveTab(id as any);
+            setSearchQuery('');
+          }}
+          className="self-start"
+        />
       </motion.div>
 
       {/* SEARCH AND ADD BAR */}

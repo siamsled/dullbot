@@ -19,6 +19,8 @@ import {
   X,
   Palette
 } from 'lucide-react';
+import UiverseGridBackground from '@/components/ui/UiverseGridBackground';
+import UiverseInput from '@/components/ui/UiverseInput';
 import { saveBusinessType, saveOnboardingProfileAndTone } from '../dashboard/actions';
 import { BD_DISTRICTS } from '@/lib/districts';
 
@@ -251,7 +253,8 @@ export default function OnboardingClient({ shop }: { shop: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-fog flex flex-col items-center justify-start sm:justify-center py-6 px-4 select-none font-sans">
+    <UiverseGridBackground variant="grid">
+      <div className="min-h-screen flex flex-col items-center justify-start sm:justify-center py-6 px-4 select-none font-sans">
       {/* Outer Card Container */}
       <div className="max-w-[760px] w-full bg-white rounded-cards shadow-subtle border border-dove/15 p-6 sm:p-8 flex flex-col my-auto">
         
@@ -398,39 +401,31 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                   
                   {/* Business Name (Part 2 fix: empty by default with placeholder) */}
                   <div>
-                    <label className="block text-xs font-semibold text-ink mb-1">
-                      Business Name *
-                    </label>
-                    <input
+                    <UiverseInput
+                      label="Business Name *"
                       type="text"
                       value={shopName}
                       required
                       onChange={(e) => setShopName(e.target.value)}
-                      className="w-full text-xs border border-dove/25 rounded-inputs px-3.5 py-2.5 bg-white focus:outline-none focus:border-ink transition-colors"
                       placeholder="e.g. Dull Store or Artisan Crafters"
                     />
                   </div>
 
                   {/* Open-Ended Category Search (Part 3) */}
                   <div className="relative" ref={categoryRef}>
-                    <label className="block text-xs font-semibold text-ink mb-1">
-                      Category *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={categorySearch}
-                        onChange={(e) => {
-                          setCategorySearch(e.target.value);
-                          setCategory(e.target.value);
-                          setIsCategoryOpen(true);
-                        }}
-                        onFocus={() => setIsCategoryOpen(true)}
-                        className="w-full text-xs border border-dove/25 rounded-inputs px-3.5 py-2.5 bg-white focus:outline-none focus:border-ink transition-colors pr-8"
-                        placeholder="Type or search category..."
-                      />
-                      <Search className="w-3.5 h-3.5 text-ash absolute right-3 top-3 pointer-events-none" />
-                    </div>
+                    <UiverseInput
+                      label="Category *"
+                      type="text"
+                      value={categorySearch}
+                      onChange={(e) => {
+                        setCategorySearch(e.target.value);
+                        setCategory(e.target.value);
+                        setIsCategoryOpen(true);
+                      }}
+                      onFocus={() => setIsCategoryOpen(true)}
+                      placeholder="Search or enter category..."
+                    />
+                    <Search className="w-3.5 h-3.5 text-ash absolute right-3 top-[34px] pointer-events-none" />
 
                     {/* Live filtered suggestion dropdown */}
                     {isCategoryOpen && (
@@ -572,14 +567,13 @@ export default function OnboardingClient({ shop }: { shop: any }) {
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <input
+                        <UiverseInput
                           type="text"
                           value={districtSearch}
                           onChange={(e) => setDistrictSearch(e.target.value)}
                           placeholder="Search districts..."
-                          className="w-full text-xs border border-dove/25 rounded px-2.5 py-1.5 mb-2 focus:outline-none"
                         />
-                        <div className="max-h-40 overflow-y-auto grid grid-cols-2 gap-1 pr-1">
+                        <div className="max-h-40 overflow-y-auto grid grid-cols-2 gap-1 pr-1 mt-2">
                           {filteredDistricts.map((d) => {
                             const isChecked = selectedDistricts.includes(d);
                             return (
@@ -667,6 +661,7 @@ export default function OnboardingClient({ shop }: { shop: any }) {
         </AnimatePresence>
 
       </div>
-    </div>
+      </div>
+    </UiverseGridBackground>
   );
 }
