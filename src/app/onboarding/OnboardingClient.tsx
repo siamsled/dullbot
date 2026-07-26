@@ -122,8 +122,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           {/* ── Divider ───────────────────────────────────────────── */}
           <div className="h-px bg-slate-100 mx-8" />
 
-          {/* ── Step Content (scrollable, card is fixed height) ──── */}
-          <div className="px-8 py-6 flex-1 overflow-y-auto">
+          {/* ── Step Content area (each step handles its own scroll + pinned nav) */}
+          <div className="px-8 py-6 flex-1 overflow-hidden flex flex-col">
             {/* Eyebrow */}
             <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-3">{eyebrow}</p>
 

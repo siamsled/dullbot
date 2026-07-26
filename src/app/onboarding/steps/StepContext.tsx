@@ -5,18 +5,9 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Loader2, Check, Sparkles, AlertCircle, Clock, MapPin } from 'lucide-react';
 import { saveOnboardingProfileAndTone, generateProfileFromFacebook } from '../../dashboard/actions';
 
-const RETAIL_CATEGORIES = [
-  'Fashion & Apparel', 'Electronics & Gadgets', 'Beauty & Cosmetics', 'Food & Bakery',
-  'Home & Living', 'Jewelry & Accessories', 'Baby & Kids', 'Books & Stationery', 'Sports & Fitness', 'Other',
-];
-const SERVICE_CATEGORIES = [
-  'Clinic & Healthcare', 'Salon & Spa', 'Tutoring & Education', 'Consulting & Agency',
-  'Event Management', 'Tech Support & Repair', 'Photography & Studio', 'Other',
-];
-const RESTAURANT_CATEGORIES = [
-  'Casual Dining', 'Fine Dining', 'Fast Food', 'Café & Bakery', 'Cloud Kitchen', 'Buffet', 'Other',
-];
-
+const RETAIL_CATEGORIES = ['Fashion & Apparel', 'Electronics & Gadgets', 'Beauty & Cosmetics', 'Food & Bakery', 'Home & Living', 'Jewelry & Accessories', 'Baby & Kids', 'Books & Stationery', 'Sports & Fitness', 'Other'];
+const SERVICE_CATEGORIES = ['Clinic & Healthcare', 'Salon & Spa', 'Tutoring & Education', 'Consulting & Agency', 'Event Management', 'Tech Support & Repair', 'Photography & Studio', 'Other'];
+const RESTAURANT_CATEGORIES = ['Casual Dining', 'Fine Dining', 'Fast Food', 'Café & Bakery', 'Cloud Kitchen', 'Buffet', 'Other'];
 const VIBE_OPTIONS = [
   { id: 'casual', emoji: '😊', label: 'Casual', desc: 'Friendly & approachable' },
   { id: 'warm', emoji: '🙏', label: 'Warm', desc: 'Polite & respectful' },
@@ -24,17 +15,12 @@ const VIBE_OPTIONS = [
   { id: 'direct', emoji: '⚡', label: 'Direct', desc: 'Fast, no-nonsense' },
 ];
 
-interface Props {
-  shop: any;
-  onNext: () => void;
-  onBack: () => void;
-}
+interface Props { shop: any; onNext: () => void; onBack: () => void; }
 
 export default function StepContext({ shop, onNext, onBack }: Props) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [generatedProfile, setGeneratedProfile] = useState<any>(null);
-
   const [shopName, setShopName] = useState(() => {
     if (!shop?.name || shop.name === 'Dull Store' || shop.name.startsWith('store-')) return '';
     return shop.name;
@@ -76,155 +62,86 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
     if (!businessOverview.trim()) return;
     setLoading(true);
     try {
-      const res = await saveOnboardingProfileAndTone(shop.id, {
-        name: shopName || 'My Store',
-        category: category || categorySearch || 'General',
-        operatingHours,
-        deliveryAreas,
-        businessOverview,
-        toneTemplate: vibe as any,
-      });
-      if (res.success) {
-        onNext();
-      } else {
-        alert(res.error || 'Failed to save. Please try again.');
-      }
-    } catch (e: any) {
-      alert(e.message);
-    }
+      const res = await saveOnboardingProfileAndTone(shop.id, { name: shopName || 'My Store', category: category || categorySearch || 'General', operatingHours, deliveryAreas, businessOverview, toneTemplate: vibe as any });
+      if (res.success) { onNext(); }
+      else { alert(res.error || 'Failed to save.'); }
+    } catch (e: any) { alert(e.message); }
     setLoading(false);
   };
 
   const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3.5 text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400';
+  const canContinue = !!(businessOverview.trim() && category);
 
   return (
-    <motion.div
-      key="step-context"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
-      className="flex flex-col"
-    >
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-1">
-        Give your assistant a brand and a voice.
-      </h1>
-      <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-        {fetching ? (
-          <span className="inline-flex items-center gap-1.5 text-blue-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking your Facebook Page…</span>
-        ) : generatedProfile ? (
-          <span className="inline-flex items-center gap-1.5 text-green-600"><Sparkles className="w-3.5 h-3.5" /> Pre-filled from your Facebook Page — review and edit.</span>
-        ) : (
-          'Provide details about your brand and choose your AI agent\'s tone.'
-        )}
-      </p>
-
-      <form onSubmit={handleSave} className="flex flex-col gap-5">
-        {/* Overview */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Business Overview <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            rows={3}
-            value={businessOverview}
-            required
-            onChange={(e) => setBusinessOverview(e.target.value)}
-            placeholder="We sell authentic products with fast nationwide delivery. Cash on delivery available across Bangladesh."
-            className={inputCls + ' resize-none'}
-          />
-          <p className="text-xs text-slate-400 mt-1">The AI falls back to this when specifics aren't available.</p>
-          {!businessOverview && <p className="text-xs text-orange-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Required — the AI uses this to answer questions</p>}
-        </div>
-
-        {/* Name + Category */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <motion.div key="step-context" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto pb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-1">Give your assistant a brand and a voice.</h1>
+        <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+          {fetching ? <span className="inline-flex items-center gap-1.5 text-blue-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking your Facebook Page…</span>
+            : generatedProfile ? <span className="inline-flex items-center gap-1.5 text-green-600"><Sparkles className="w-3.5 h-3.5" /> Pre-filled from your Facebook Page — review and edit.</span>
+            : 'Provide details about your brand and choose your AI agent\'s tone.'}
+        </p>
+        <form id="context-form" onSubmit={handleSave} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Business Name <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              value={shopName}
-              required
-              onChange={(e) => setShopName(e.target.value)}
-              placeholder="Your brand"
-              className={inputCls}
-            />
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Business Overview <span className="text-red-500">*</span></label>
+            <textarea rows={3} value={businessOverview} required onChange={(e) => setBusinessOverview(e.target.value)} placeholder="We sell authentic products with fast nationwide delivery. Cash on delivery available across Bangladesh." className={inputCls + ' resize-none'} />
+            <p className="text-xs text-slate-400 mt-1">The AI falls back to this when specifics aren&apos;t available.</p>
+            {!businessOverview && <p className="text-xs text-orange-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Required</p>}
           </div>
-          <div className="relative" ref={categoryRef}>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Category <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              value={categorySearch}
-              onChange={(e) => { setCategorySearch(e.target.value); setCategory(e.target.value); setIsCategoryOpen(true); }}
-              onFocus={() => setIsCategoryOpen(true)}
-              onBlur={() => setTimeout(() => setIsCategoryOpen(false), 150)}
-              placeholder="Choose a category"
-              className={inputCls}
-            />
-            {isCategoryOpen && filteredCategories.length > 0 && (
-              <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-44 overflow-y-auto p-1">
-                {filteredCategories.map((c) => (
-                  <button key={c} type="button" onMouseDown={() => { setCategory(c); setCategorySearch(c); setIsCategoryOpen(false); }} className={`w-full text-left px-3 py-1.5 text-sm rounded-lg hover:bg-blue-50 flex items-center justify-between ${category === c ? 'text-blue-600 font-semibold' : 'text-slate-700'}`}>
-                    {c}{category === c && <Check className="w-3.5 h-3.5 text-blue-500" />}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Business Name <span className="text-red-500">*</span></label>
+              <input type="text" value={shopName} required onChange={(e) => setShopName(e.target.value)} placeholder="Your brand" className={inputCls} />
+            </div>
+            <div className="relative" ref={categoryRef}>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Category <span className="text-red-500">*</span></label>
+              <input type="text" value={categorySearch} onChange={(e) => { setCategorySearch(e.target.value); setCategory(e.target.value); setIsCategoryOpen(true); }} onFocus={() => setIsCategoryOpen(true)} onBlur={() => setTimeout(() => setIsCategoryOpen(false), 150)} placeholder="Choose a category" className={inputCls} />
+              {isCategoryOpen && filteredCategories.length > 0 && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-44 overflow-y-auto p-1">
+                  {filteredCategories.map((c) => (
+                    <button key={c} type="button" onMouseDown={() => { setCategory(c); setCategorySearch(c); setIsCategoryOpen(false); }} className={`w-full text-left px-3 py-1.5 text-sm rounded-lg hover:bg-blue-50 flex items-center justify-between ${category === c ? 'text-blue-600 font-semibold' : 'text-slate-700'}`}>
+                      {c}{category === c && <Check className="w-3.5 h-3.5 text-blue-500" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-blue-500" /> Operating Hours</label>
+              <input type="text" value={operatingHours} onChange={(e) => setOperatingHours(e.target.value)} placeholder="9:00 AM - 10:00 PM" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-blue-500" /> Delivery Areas</label>
+              <input type="text" value={deliveryAreas} onChange={(e) => setDeliveryAreas(e.target.value)} placeholder="Nationwide / Dhaka Only" className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-3">Brand vibe · AI persona</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {VIBE_OPTIONS.map((v) => {
+                const isSelected = vibe === v.id;
+                return (
+                  <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3 rounded-xl border-2 text-left transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                    <div className="text-xl mb-1">{v.emoji}</div>
+                    <div className="font-semibold text-xs text-slate-900">{v.label}</div>
+                    <div className="text-[11px] text-slate-400 leading-snug">{v.desc}</div>
                   </button>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
-        </div>
-
-        {/* Operating Hours + Delivery */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-blue-500" /> Operating Hours</label>
-            <input type="text" value={operatingHours} onChange={(e) => setOperatingHours(e.target.value)} placeholder="9:00 AM - 10:00 PM" className={inputCls} />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-blue-500" /> Delivery Areas</label>
-            <input type="text" value={deliveryAreas} onChange={(e) => setDeliveryAreas(e.target.value)} placeholder="Nationwide / Dhaka Only" className={inputCls} />
-          </div>
-        </div>
-
-        {/* Brand Vibe */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-3">Brand vibe · AI persona</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {VIBE_OPTIONS.map((v) => {
-              const isSelected = vibe === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setVibe(v.id as any)}
-                  className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    isSelected
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{v.emoji}</div>
-                  <div className="font-semibold text-xs text-slate-900">{v.label}</div>
-                  <div className="text-[11px] text-slate-400 leading-snug">{v.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-2">
-          <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !businessOverview.trim() || !category}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold transition-all hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
+      {/* Pinned nav */}
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100 shrink-0">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
+        <button type="submit" form="context-form" disabled={loading || !canContinue} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+        </button>
+      </div>
     </motion.div>
   );
 }
