@@ -63,8 +63,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   return (
     <motion.div key="step-channels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      {/* Scrollable content with fade hint */}
+      <div className="relative flex-1 min-h-0">
+      <div className="h-full overflow-y-auto pb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-2">Where do your customers reach you?</h1>
         <p className="text-sm text-slate-500 mb-6 leading-relaxed">Connect Messenger to activate your AI agent. Instagram and WhatsApp can be added now or later.</p>
         <div className="space-y-3">
@@ -88,6 +89,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
             </div>
           ))}
         </div>
+      </div>
+      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-white to-transparent" />
       </div>
       {/* Pinned nav */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-100 shrink-0">

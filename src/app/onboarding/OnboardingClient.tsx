@@ -84,7 +84,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed min-height so card doesn't resize between steps
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col h-[640px]">
+        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col" style={{ maxHeight: '90vh', minHeight: '520px' }}>
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
