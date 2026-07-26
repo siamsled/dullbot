@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import UiverseGridBackground from '@/components/ui/UiverseGridBackground';
+import { AuroraBackground } from '@/components/ui/aurora-background';
 import WizardProgress from './WizardProgress';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
@@ -71,7 +71,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   };
 
   return (
-    <UiverseGridBackground variant="grid">
+    <AuroraBackground>
       <div className="min-h-screen flex flex-col items-center justify-start sm:justify-center py-6 px-4 select-none font-sans relative z-10">
         <div className="max-w-[720px] w-full bg-white rounded-cards shadow-subtle border border-dove/15 p-6 sm:p-8 flex flex-col my-auto">
           {/* Header */}
@@ -146,6 +146,6 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </AnimatePresence>
         </div>
       </div>
-    </UiverseGridBackground>
+    </AuroraBackground>
   );
 }
