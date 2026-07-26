@@ -58,4 +58,4 @@ AI persona to run their Messenger customer chat.
   status unknown.
 
 ## Session log
-- **2026-07-26**: Completed Onboarding v2 rebuild (strict gate, 7-step wizard, 3 business types, Facebook auto-fill, Step 7 live demo, unlock stagger animation, and admin funnel view). Verified production build clean (`npm run build`).
+- **2026-07-26**: Completed Onboarding v2 rebuild (strict gate, 7-step wizard, 3 business types, Facebook auto-fill, Step 7 live demo, unlock stagger animation, and admin funnel view). Verified production build clean (`npm run build`). Removed insecure `dull-store` fallback in `getCurrentShop` to prevent unauthenticated user session leaks. Fixed Google OAuth cookie dropout bug by stripping out large `provider_token` and `provider_refresh_token` parameters from session cookie. Added Back button to Step 2 (Connect Channels) for backward wizard navigation. All changes verified, compiled, and deployed to production.
