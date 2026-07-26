@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Smartphone, ArrowRight, X, Loader2, Check } from 'lucide-react';
+import { Globe, Smartphone, ArrowRight, ArrowLeft, X, Loader2, Check } from 'lucide-react';
 import ChannelStatusCard from '../ChannelStatusCard';
 import { saveOnboardingStep } from '../../dashboard/actions';
 
@@ -19,12 +19,13 @@ function InstagramIcon({ className = 'w-5 h-5' }: { className?: string }) {
 interface Props {
   shop: any;
   onNext: () => void;
+  onBack: () => void;
 }
 
 const WA_NUDGE_KEY = 'dullbot_wa_nudge';
 const IG_NUDGE_KEY = 'dullbot_ig_nudge';
 
-export default function StepChannels({ shop, onNext }: Props) {
+export default function StepChannels({ shop, onNext, onBack }: Props) {
   const [messengerConnected, setMessengerConnected] = useState(!!shop.meta_page_access_token);
   const [instagramConnected, setInstagramConnected] = useState(!!shop.instagram_business_id);
   const [waConnected, setWaConnected] = useState(!!shop.whatsapp_phone_number_id);
@@ -83,6 +84,12 @@ export default function StepChannels({ shop, onNext }: Props) {
       exit={{ opacity: 0, y: -14 }}
       className="flex flex-col"
     >
+      <div className="mb-3">
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs text-rust hover:underline font-medium">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
+        </button>
+      </div>
+
       <h1 className="font-serif text-3xl sm:text-4xl text-ink font-light text-center leading-tight mb-2 tracking-tight">
         Connect your channels
       </h1>

@@ -105,6 +105,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                 key="channels"
                 shop={shop}
                 onNext={goNext}
+                onBack={goBack}
               />
             )}
             {step === 'context' && (
