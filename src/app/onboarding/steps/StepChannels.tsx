@@ -112,7 +112,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         <ChannelStatusCard
           icon={<InstagramIcon className="w-5 h-5" />}
           title="Instagram DMs"
-          subtitle={instagramConnected ? 'Instagram Business Account connected' : 'Reply to DMs and comment threads automatically'}
+          subtitle={instagramConnected ? 'Instagram Business Account connected' : 'Connects via Facebook Login'}
           required={false}
           optionalLabel="Optional — add later"
           connected={instagramConnected}

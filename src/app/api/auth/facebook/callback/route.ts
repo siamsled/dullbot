@@ -64,52 +64,39 @@ export async function GET(request: Request) {
 
   const isUUID = shopId.includes('-') && shopId.length === 36;
 
-  // ── Instagram branch: source = 'onboarding_instagram' ──────────────────────
-  if (source === 'onboarding_instagram') {
-    // Fetch Instagram Business Account linked to the Page (graceful fallback if unavailable)
-    let instagramBusinessId: string | null = null;
-    try {
-      const igRes = await fetch(
-        `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
-      );
-      const igData = await igRes.json();
-      instagramBusinessId = igData?.instagram_business_account?.id || null;
-    } catch (e) {
-      console.error('Failed to fetch Instagram Business Account:', e);
-    }
-
-    const updatePayload = {
-      instagram_business_id: instagramBusinessId,
-      instagram_access_token: pageAccessToken,
-      // Also save to legacy column for backwards compatibility
-      meta_instagram_user_id: instagramBusinessId,
-      meta_instagram_access_token: pageAccessToken,
-    };
-
-    if (isUUID) {
-      await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
-    } else {
-      await supabaseAdmin.from('shops').update(updatePayload).eq('slug', shopId || 'dull-store');
-    }
-
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/onboarding?step=channels&instagram=connected`);
+  // Always attempt to fetch Instagram Business Account linked to the Page
+  let instagramBusinessId: string | null = null;
+  try {
+    const igRes = await fetch(
+      `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
+    );
+    const igData = await igRes.json();
+    instagramBusinessId = igData?.instagram_business_account?.id || null;
+  } catch (e) {
+    console.error('Failed to fetch Instagram Business Account:', e);
   }
 
-  // ── Standard Messenger / Settings branch ───────────────────────────────────
-  const messengerPayload = {
+  const payload = {
     meta_page_id: pageId,
     meta_page_name: pageName,
     meta_page_access_token: pageAccessToken,
+    instagram_business_id: instagramBusinessId,
+    instagram_access_token: instagramBusinessId ? pageAccessToken : null,
+    // Legacy columns for backwards compatibility
+    meta_instagram_user_id: instagramBusinessId,
+    meta_instagram_access_token: instagramBusinessId ? pageAccessToken : null,
   };
 
   if (isUUID) {
-    await supabaseAdmin.from('shops').update(messengerPayload).eq('id', shopId);
+    await supabaseAdmin.from('shops').update(payload).eq('id', shopId);
   } else {
-    await supabaseAdmin.from('shops').update(messengerPayload).eq('slug', shopId || 'dull-store');
+    await supabaseAdmin.from('shops').update(payload).eq('slug', shopId || 'dull-store');
   }
 
-  const successDest = source === 'onboarding'
-    ? '/onboarding?step=channels&messenger=connected'
+  // Determine redirection
+  const igParam = instagramBusinessId ? '&instagram=connected' : '';
+  const successDest = (source === 'onboarding' || source === 'onboarding_instagram')
+    ? `/onboarding?step=channels&messenger=connected${igParam}`
     : '/dashboard/settings?success=1';
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${successDest}`);
