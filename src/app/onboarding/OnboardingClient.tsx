@@ -81,10 +81,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         {/*
           ISLAND CARD
           - Fixed width: max-w-3xl (≈768px)
-          - Fixed min-height so card doesn't resize between steps
+          - Fixed static height across steps: h-[640px]
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col" style={{ maxHeight: '90vh', minHeight: '520px' }}>
+        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden">
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
