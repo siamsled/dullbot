@@ -84,7 +84,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed min-height so card doesn't resize between steps
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
+        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col h-[640px]">
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
@@ -122,8 +122,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           {/* ── Divider ───────────────────────────────────────────── */}
           <div className="h-px bg-slate-100 mx-8" />
 
-          {/* ── Step Content (fixed min-height, scrollable) ───────── */}
-          <div className="px-8 py-6 flex-1 overflow-y-auto" style={{ minHeight: '440px' }}>
+          {/* ── Step Content (scrollable, card is fixed height) ──── */}
+          <div className="px-8 py-6 flex-1 overflow-y-auto">
             {/* Eyebrow */}
             <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-3">{eyebrow}</p>
 
