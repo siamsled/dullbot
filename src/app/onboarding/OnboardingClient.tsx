@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { Sparkles } from 'lucide-react';
@@ -19,14 +19,14 @@ const STEP_ORDER: WizardStep[] = [
   'business_type', 'channels', 'context', 'type_specific', 'payments', 'delivery', 'demo',
 ];
 
-const STEP_LABELS: Record<WizardStep, { eyebrow: string; count: number }> = {
-  business_type: { eyebrow: "LET'S START WITH THE BASICS", count: 1 },
-  channels:      { eyebrow: 'CONNECT YOUR CHANNELS', count: 2 },
-  context:       { eyebrow: 'YOUR IDENTITY', count: 3 },
-  type_specific: { eyebrow: 'FINE-TUNE THE SETUP', count: 4 },
-  payments:      { eyebrow: 'PAYMENT SETUP', count: 5 },
-  delivery:      { eyebrow: 'SHIPPING & DELIVERY', count: 6 },
-  demo:          { eyebrow: 'TEST DRIVE · ALMOST THERE', count: 7 },
+const STEP_LABELS: Record<WizardStep, string> = {
+  business_type: "LET'S START WITH THE BASICS",
+  channels:      'CONNECT YOUR CHANNELS',
+  context:       'YOUR IDENTITY',
+  type_specific: 'FINE-TUNE THE SETUP',
+  payments:      'PAYMENT SETUP',
+  delivery:      'SHIPPING & DELIVERY',
+  demo:          'TEST DRIVE · ALMOST THERE',
 };
 
 function resolveInitialStep(shop: any): WizardStep {
@@ -62,7 +62,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   }, [searchParams]);
 
   const currentIndex = STEP_ORDER.indexOf(step);
-  const { eyebrow, count } = STEP_LABELS[step];
+  const eyebrow = STEP_LABELS[step];
 
   const goNext = () => {
     const idx = STEP_ORDER.indexOf(step);
@@ -75,83 +75,98 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
 
   return (
     <AuroraBackground>
-      <div className="min-h-screen w-full flex flex-col select-none font-sans relative z-10">
+      {/* Full-screen centered layout */}
+      <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans">
 
-        {/* ── Top Bar ─────────────────────────────────────────────── */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/80 px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
-              <Sparkles className="w-4 h-4 text-white" />
+        {/*
+          ISLAND CARD
+          - Fixed width: max-w-3xl (≈768px)
+          - Fixed min-height so card doesn't resize between steps
+          - Progress bar is the very first thing INSIDE the card
+        */}
+        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
+
+          {/* ── Card Header: Logo + Step counter ─────────────────── */}
+          <div className="flex items-center justify-between px-8 pt-6 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900 leading-none">DullBot</p>
+                <p className="text-[11px] text-slate-400 leading-none mt-0.5">for merchants</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900 leading-tight">DullBot</p>
-              <p className="text-[11px] text-slate-500 leading-tight">for merchants</p>
-            </div>
+            <span className="text-xs font-semibold text-slate-400 tabular-nums">
+              {currentIndex + 1} of {STEP_ORDER.length}
+            </span>
           </div>
-          <span className="text-sm font-semibold text-slate-500">{count} of {STEP_ORDER.length}</span>
-        </div>
 
-        {/* ── Segmented Progress Bar ──────────────────────────────── */}
-        <div className="bg-white/80 backdrop-blur-sm px-0 flex gap-1.5">
-          {STEP_ORDER.map((s, i) => (
-            <div
-              key={s}
-              className={`h-1.5 flex-1 transition-colors duration-500 ${
-                i <= currentIndex ? 'bg-blue-500' : 'bg-slate-200'
-              }`}
-            />
-          ))}
-        </div>
+          {/* ── Segmented Progress Bar (attached inside card) ────── */}
+          <div className="flex gap-1.5 px-8 pb-5">
+            {STEP_ORDER.map((s, i) => (
+              <motion.div
+                key={s}
+                className="h-1 flex-1 rounded-full overflow-hidden bg-slate-100"
+              >
+                <motion.div
+                  className="h-full rounded-full bg-blue-500"
+                  initial={{ scaleX: 0, originX: 0 }}
+                  animate={{ scaleX: i <= currentIndex ? 1 : 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+              </motion.div>
+            ))}
+          </div>
 
-        {/* ── Card ────────────────────────────────────────────────── */}
-        <div className="flex-1 flex items-start justify-center py-8 px-4">
-          <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
+          {/* ── Divider ───────────────────────────────────────────── */}
+          <div className="h-px bg-slate-100 mx-8" />
 
-            {/* Card inner */}
-            <div className="p-8 sm:p-10">
-              {/* Eyebrow */}
-              <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase mb-3">{eyebrow}</p>
+          {/* ── Step Content (fixed min-height, scrollable) ───────── */}
+          <div className="px-8 py-6 flex-1 overflow-y-auto" style={{ minHeight: '440px' }}>
+            {/* Eyebrow */}
+            <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-3">{eyebrow}</p>
 
-              {/* Step content */}
-              <AnimatePresence mode="wait">
-                {step === 'business_type' && (
-                  <StepBusinessType
-                    key="business_type"
-                    shop={shop}
-                    onNext={(businessType) => {
-                      setShop((prev: any) => ({ ...prev, business_type: businessType }));
-                      goNext();
-                    }}
-                    onBack={goBack}
-                  />
-                )}
-                {step === 'channels' && (
-                  <StepChannels key="channels" shop={shop} onNext={goNext} onBack={goBack} />
-                )}
-                {step === 'context' && (
-                  <StepContext key="context" shop={shop} onNext={goNext} onBack={goBack} />
-                )}
-                {step === 'type_specific' && (
-                  <StepTypeSpecific key="type_specific" shop={shop} onNext={goNext} onBack={goBack} />
-                )}
-                {step === 'payments' && (
-                  <StepPayments key="payments" shop={shop} onNext={goNext} onBack={goBack} />
-                )}
-                {step === 'delivery' && (
-                  <StepDelivery key="delivery" shop={shop} onNext={goNext} onBack={goBack} />
-                )}
-                {step === 'demo' && (
-                  <StepDemo key="demo" shop={shop} onBack={goBack} />
-                )}
-              </AnimatePresence>
-            </div>
+            <AnimatePresence mode="wait">
+              {step === 'business_type' && (
+                <StepBusinessType
+                  key="business_type"
+                  shop={shop}
+                  onNext={(businessType) => {
+                    setShop((prev: any) => ({ ...prev, business_type: businessType }));
+                    goNext();
+                  }}
+                  onBack={goBack}
+                />
+              )}
+              {step === 'channels' && (
+                <StepChannels key="channels" shop={shop} onNext={goNext} onBack={goBack} />
+              )}
+              {step === 'context' && (
+                <StepContext key="context" shop={shop} onNext={goNext} onBack={goBack} />
+              )}
+              {step === 'type_specific' && (
+                <StepTypeSpecific key="type_specific" shop={shop} onNext={goNext} onBack={goBack} />
+              )}
+              {step === 'payments' && (
+                <StepPayments key="payments" shop={shop} onNext={goNext} onBack={goBack} />
+              )}
+              {step === 'delivery' && (
+                <StepDelivery key="delivery" shop={shop} onNext={goNext} onBack={goBack} />
+              )}
+              {step === 'demo' && (
+                <StepDemo key="demo" shop={shop} onBack={goBack} />
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Card Footer ───────────────────────────────────────── */}
+          <div className="px-8 py-4 border-t border-slate-100">
+            <p className="text-[11px] text-slate-400 text-center">
+              Your progress is saved. You can adjust any of this later from your dashboard.
+            </p>
           </div>
         </div>
-
-        {/* ── Footer ──────────────────────────────────────────────── */}
-        <p className="text-center text-xs text-slate-500/80 pb-6">
-          Your progress is saved. You can adjust any of this later from your dashboard.
-        </p>
       </div>
     </AuroraBackground>
   );
