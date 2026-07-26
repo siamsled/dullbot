@@ -2,52 +2,47 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, UtensilsCrossed, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed, Sparkles, ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { saveBusinessType } from '../../dashboard/actions';
 
 const BUSINESS_TYPES = [
   {
     id: 'retail',
-    title: 'Retail / Wholesale',
-    desc: 'Physical products, inventory management, delivery, and automated checkout. Includes wholesale pricing support.',
+    title: 'Retail & E-commerce',
+    desc: 'Boutiques, product stores, D2C brands',
     icon: ShoppingBag,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
   },
   {
     id: 'restaurant',
-    title: 'Restaurant',
-    desc: 'Table reservations, menu browsing, location info, and dine-in or delivery coordination.',
+    title: 'Restaurant & Food',
+    desc: 'Cafés, dine-in, cloud kitchens',
     icon: UtensilsCrossed,
-    color: 'text-orange-600',
-    bg: 'bg-orange-50',
   },
   {
     id: 'service',
-    title: 'Services',
-    desc: 'Appointment bookings, staff scheduling, consulting slots, and service package information.',
-    icon: Briefcase,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
+    title: 'Service Business',
+    desc: 'Salons, clinics, tutoring, bookings',
+    icon: Sparkles,
   },
 ];
 
 interface Props {
   shop: any;
   onNext: (businessType: string) => void;
+  onBack: () => void;
 }
 
-export default function StepBusinessType({ shop, onNext }: Props) {
+export default function StepBusinessType({ shop, onNext, onBack }: Props) {
   const [selected, setSelected] = useState<string>(shop.business_type || '');
   const [loading, setLoading] = useState(false);
 
-  const handleSelect = async (typeId: string) => {
-    setSelected(typeId);
+  const handleContinue = async () => {
+    if (!selected) return;
     setLoading(true);
     try {
-      const res = await saveBusinessType(shop.id, typeId);
+      const res = await saveBusinessType(shop.id, selected);
       if (res.success) {
-        onNext(typeId);
+        onNext(selected);
       } else {
         alert(res.error || 'Failed to save. Please try again.');
         setLoading(false);
@@ -61,53 +56,65 @@ export default function StepBusinessType({ shop, onNext }: Props) {
   return (
     <motion.div
       key="step-business-type"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -14 }}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.25 }}
       className="flex flex-col"
     >
-      <h1 className="font-serif text-3xl sm:text-4xl text-ink font-light text-center leading-tight mb-2 tracking-tight">
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-8">
         What kind of business do you run?
       </h1>
-      <p className="text-xs text-ash text-center mb-8 max-w-md mx-auto leading-relaxed">
-        DullBot will configure the right automated workflows, conversation flows, and features based on your type.
-      </p>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         {BUSINESS_TYPES.map((type) => {
           const Icon = type.icon;
           const isSelected = selected === type.id;
-          const isLoading = loading && selected === type.id;
           return (
             <button
               key={type.id}
+              onClick={() => setSelected(type.id)}
               disabled={loading}
-              onClick={() => handleSelect(type.id)}
-              className={`p-5 rounded-cards border-2 text-left flex items-center gap-5 transition-all duration-200 group ${
+              className={`relative p-6 rounded-xl border-2 text-left flex flex-col gap-4 transition-all duration-200 hover:-translate-y-0.5 ${
                 isSelected
-                  ? 'border-rust bg-apricot-wash/40 shadow-subtle scale-[1.01]'
-                  : 'border-dove/20 bg-white hover:border-ink/30 hover:bg-fog/60 hover:-translate-y-0.5'
-              } ${loading && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  ? 'border-blue-500 bg-blue-50 shadow-md shadow-blue-100'
+                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+              }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-rust' : type.bg}`}>
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : (
-                  <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : type.color}`} />
-                )}
+              {isSelected && (
+                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                isSelected ? 'bg-blue-100' : 'bg-slate-100'
+              }`}>
+                <Icon className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-slate-500'}`} />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm text-ink mb-1">{type.title}</h3>
-                <p className="text-xs text-ash leading-relaxed">{type.desc}</p>
+              <div>
+                <h3 className="font-semibold text-slate-900 text-sm mb-1">{type.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{type.desc}</p>
               </div>
-              <ArrowRight
-                className={`w-4 h-4 shrink-0 transition-all ${
-                  isSelected ? 'text-rust translate-x-1' : 'text-dove group-hover:text-ink group-hover:translate-x-0.5'
-                }`}
-              />
             </button>
           );
         })}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button
+          onClick={handleContinue}
+          disabled={!selected || loading}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold transition-all hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+        </button>
       </div>
     </motion.div>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Loader2, CreditCard, Smartphone, SkipForward, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, CreditCard, Smartphone, Package, Check, Copy } from 'lucide-react';
 import { savePaymentChoice } from '../../dashboard/actions';
 
 const COMPANION_NUDGE_KEY = 'dullbot_companion_nudge';
@@ -12,6 +12,9 @@ interface Props {
   onNext: () => void;
   onBack: () => void;
 }
+
+// Mock pairing code for companion app
+const PAIRING_CODE = Math.floor(100000 + Math.random() * 900000).toString().split('').join(' ');
 
 export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [choice, setChoice] = useState<'merchant_api' | 'companion_app' | 'skip' | null>(
@@ -23,34 +26,20 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [bkashAppSecret, setBkashAppSecret] = useState('');
   const [bkashUsername, setBkashUsername] = useState('');
   const [bkashPassword, setBkashPassword] = useState('');
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const OPTIONS = [
-    {
-      id: 'merchant_api' as const,
-      icon: <CreditCard className="w-5 h-5" />,
-      title: 'Merchant API',
-      desc: 'Verify bKash / Nagad payments automatically via API. Requires merchant credentials.',
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      id: 'companion_app' as const,
-      icon: <Smartphone className="w-5 h-5" />,
-      title: 'Companion App',
-      desc: 'Pair our mobile app — receive payment notifications and confirm with one tap.',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      id: 'skip' as const,
-      icon: <SkipForward className="w-5 h-5" />,
-      title: 'Skip for now',
-      desc: 'Handle payment verification manually. You can set this up later in Settings.',
-      color: 'text-ash',
-      bg: 'bg-fog',
-    },
+    { id: 'merchant_api' as const, icon: <CreditCard className="w-5 h-5" />, title: 'Merchant API', desc: 'bKash / gateway credentials' },
+    { id: 'companion_app' as const, icon: <Smartphone className="w-5 h-5" />, title: 'Companion App', desc: 'Android notification listener' },
+    { id: 'skip' as const, icon: <Package className="w-5 h-5" />, title: 'Cash on Delivery', desc: 'Skip payment setup' },
   ];
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(PAIRING_CODE.replace(/ /g, ''));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleContinue = async () => {
     if (!choice) return;
@@ -60,12 +49,9 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
         app_key: bkashAppKey, app_secret: bkashAppSecret,
         username: bkashUsername, password: bkashPassword, sandbox: false,
       } : undefined;
-
       const res = await savePaymentChoice(shop.id, choice, bkashConfig);
       if (res.success) {
-        if (choice === 'companion_app') {
-          localStorage.setItem(COMPANION_NUDGE_KEY, '1');
-        }
+        if (choice === 'companion_app') localStorage.setItem(COMPANION_NUDGE_KEY, '1');
         onNext();
       } else {
         alert(res.error || 'Failed to save');
@@ -74,25 +60,25 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
     setLoading(false);
   };
 
-  const inputCls = 'w-full text-xs border border-dove/25 rounded-inputs px-3.5 py-2.5 bg-white focus:outline-none focus:border-ink';
+  const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3.5 text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400';
 
   return (
     <motion.div
       key="step-payments"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -14 }}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.25 }}
       className="flex flex-col"
     >
-      <div className="mb-3">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs text-rust hover:underline font-medium">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
-        </button>
-      </div>
-      <h1 className="font-serif text-2xl sm:text-3xl text-ink font-light leading-tight mb-1 tracking-tight">Payment verification</h1>
-      <p className="text-xs text-ash mb-6 leading-relaxed">How should DullBot verify payments before confirming orders?</p>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-2">
+        How would you like to accept payments?
+      </h1>
+      <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+        Choose how DullBot verifies payments before confirming orders.
+      </p>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3 mb-10">
         {OPTIONS.map((opt) => {
           const isSelected = choice === opt.id;
           return (
@@ -100,21 +86,28 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
               <button
                 type="button"
                 onClick={() => setChoice(opt.id)}
-                className={`w-full p-4 rounded-cards border-2 text-left flex items-center gap-4 transition-all duration-200 ${
-                  isSelected ? 'border-rust bg-apricot-wash/30 shadow-subtle' : 'border-dove/20 bg-white hover:border-ink/30 hover:bg-fog/60'
+                className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-4 transition-all duration-200 ${
+                  isSelected
+                    ? 'border-blue-500 bg-blue-50 shadow-md shadow-blue-100'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-rust' : opt.bg}`}>
-                  <span className={isSelected ? 'text-white' : opt.color}>{opt.icon}</span>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {opt.icon}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm text-ink">{opt.title}</h3>
-                  <p className="text-xs text-ash mt-0.5">{opt.desc}</p>
+                  <h3 className="font-semibold text-sm text-slate-900">{opt.title}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                 </div>
-                {isSelected && <Check className="w-4 h-4 text-rust shrink-0" />}
+                {isSelected && (
+                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
               </button>
 
-              {/* Merchant API credentials — shown inline when selected */}
               <AnimatePresence>
                 {isSelected && opt.id === 'merchant_api' && (
                   <motion.div
@@ -123,24 +116,24 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-2 p-4 bg-fog/60 rounded-inputs border border-dove/15 space-y-3">
-                      <p className="text-[11px] text-ash leading-relaxed">Enter your bKash Merchant API credentials. You can also do this later from Settings.</p>
+                    <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                      <p className="text-xs text-slate-500 leading-relaxed">Enter your bKash Merchant API credentials. You can also do this later from Settings.</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-semibold text-ink mb-1">App Key</label>
-                          <input type="text" value={bkashAppKey} onChange={(e) => setBkashAppKey(e.target.value)} placeholder="bKash app key" className={inputCls} />
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">bKash API Key</label>
+                          <input type="text" value={bkashAppKey} onChange={(e) => setBkashAppKey(e.target.value)} placeholder="API key" className={inputCls} />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-ink mb-1">App Secret</label>
-                          <input type="password" value={bkashAppSecret} onChange={(e) => setBkashAppSecret(e.target.value)} placeholder="bKash app secret" className={inputCls} />
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">API Secret</label>
+                          <input type="password" value={bkashAppSecret} onChange={(e) => setBkashAppSecret(e.target.value)} placeholder="API secret" className={inputCls} />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-ink mb-1">Username</label>
-                          <input type="text" value={bkashUsername} onChange={(e) => setBkashUsername(e.target.value)} placeholder="Merchant username" className={inputCls} />
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+                          <input type="text" value={bkashUsername} onChange={(e) => setBkashUsername(e.target.value)} placeholder="Username" className={inputCls} />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-ink mb-1">Password</label>
-                          <input type="password" value={bkashPassword} onChange={(e) => setBkashPassword(e.target.value)} placeholder="Merchant password" className={inputCls} />
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+                          <input type="password" value={bkashPassword} onChange={(e) => setBkashPassword(e.target.value)} placeholder="Password" className={inputCls} />
                         </div>
                       </div>
                     </div>
@@ -154,17 +147,35 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-2 p-4 bg-blue-50 rounded-inputs border border-blue-100 space-y-2">
-                      <p className="text-xs font-semibold text-blue-800">Download the DullBot Companion App</p>
-                      <p className="text-[11px] text-blue-700 leading-relaxed">
-                        Install the app on your phone, tap &quot;Pair new shop&quot;, and scan the QR code from the Settings page after launch.
-                        You can continue the setup now without waiting for pairing to complete.
+                    <div className="mt-2 p-4 bg-blue-50 rounded-xl border border-blue-200 space-y-3">
+                      <p className="text-sm text-blue-800 leading-relaxed">
+                        Install the DullBot companion Android app and enter this pairing code:
                       </p>
-                      <div className="flex gap-2 mt-2">
-                        <a href="/dashboard/settings" className="text-[11px] text-blue-700 font-semibold underline">
-                          View pairing instructions after launch →
-                        </a>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-xl px-4 py-3 flex-1 justify-center">
+                          {PAIRING_CODE.split(' ').map((digit, i) => (
+                            <span key={i} className="text-2xl font-bold text-blue-700 font-mono">{digit}</span>
+                          ))}
+                        </div>
+                        <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
+                          <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy code'}
+                        </button>
                       </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {isSelected && opt.id === 'skip' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        No problem — orders default to Cash on Delivery. You can wire up a gateway later from your dashboard.
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -174,13 +185,18 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
         })}
       </div>
 
-      <button
-        onClick={handleContinue}
-        disabled={!choice || loading}
-        className="w-full py-3.5 bg-ink text-white text-xs font-semibold rounded-buttons hover:bg-black flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button
+          onClick={handleContinue}
+          disabled={!choice || loading}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+        </button>
+      </div>
     </motion.div>
   );
 }
