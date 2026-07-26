@@ -59,7 +59,8 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
     if (!shop.meta_page_id) return;
     setFetching(true);
     generateProfileFromFacebook(shop.id)
-      .then((profile) => {
+      .then((result) => {
+        const profile = result.success ? result.profile : null;
         if (profile?.name && (!shopName || shopName === 'My Store')) setShopName(profile.name);
         if (profile?.category && !category) { setCategory(profile.category); setCategorySearch(profile.category); }
         if (profile?.business_overview && !businessOverview) setBusinessOverview(profile.business_overview);
