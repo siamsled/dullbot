@@ -29,6 +29,15 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false })
     .limit(20);
 
+  // Onboarding funnel — shops stuck in the wizard (not yet complete)
+  // Order by onboarding_step_updated_at ASC = longest stuck at top
+  const { data: incompleteOnboardings } = await supabaseAdmin
+    .from('shops')
+    .select('id, name, slug, business_type, onboarding_step, onboarding_step_updated_at, created_at')
+    .neq('onboarding_step', 'complete')
+    .not('onboarding_step', 'is', null)
+    .order('onboarding_step_updated_at', { ascending: true });
+
   const shops = (shopsData || []).map(shop => {
     const shopLogs = (usageLogs || []).filter(l => l.shop_id === shop.id);
     const total_spent = shopLogs.reduce((sum, log) => sum + (log.billed_credits || 0), 0);
@@ -73,6 +82,7 @@ export default async function AdminPage() {
       }}
       escalations={escalationsData || []}
       auditLogs={auditLogs || []}
+      incompleteOnboardings={incompleteOnboardings || []}
     />
   );
 }

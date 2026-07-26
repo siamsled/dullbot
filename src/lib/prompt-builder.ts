@@ -153,7 +153,33 @@ Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODU
 
   const productSection = shop.business_type === 'service'
     ? buildServiceSection(products)
+    : shop.business_type === 'restaurant'
+    ? buildRestaurantMenuSection(products)
     : buildProductSection(products);
+
+  // Restaurant location block
+  let restaurantLocationSection = '';
+  if (shop.business_type === 'restaurant') {
+    const addr = (shop as any).location_address;
+    const mapLink = (shop as any).location_map_link;
+    if (addr || mapLink) {
+      restaurantLocationSection = `\n\nRESTAURANT LOCATION:\n`;
+      if (addr) restaurantLocationSection += `Address: ${addr}\n`;
+      if (mapLink) restaurantLocationSection += `Google Maps: ${mapLink}\n`;
+      restaurantLocationSection += `When customers ask for your location, address, or directions, share the above information directly.`;
+    }
+  }
+
+  // Bulk pricing guardrail (retail/wholesale only)
+  let bulkPricingSection = '';
+  const bulkEnabled = (shop as any).bulk_pricing_enabled;
+  const bulkNote = (shop as any).bulk_pricing_note;
+  if (bulkEnabled && bulkNote) {
+    bulkPricingSection = `\n\nBULK / WHOLESALE PRICING POLICY:\n${bulkNote}\nWhen customers ask about bulk orders, discounts for large quantities, or wholesale prices, answer directly from this policy. Do not guess or invent numbers not listed here.`;
+  } else if (bulkEnabled && !bulkNote) {
+    bulkPricingSection = `\n\nBULK PRICING ESCALATION RULE:\nThis shop offers bulk/wholesale pricing, but the specific tiers are not configured here. If a customer asks about bulk orders, wholesale pricing, or large-quantity discounts, respond with: "For bulk pricing, please speak directly with our team — we\'ll get you the best deal." Then append [ESCALATION: BULK_INQUIRY] at the end of your response.`;
+  }
+  // If bulk_pricing_enabled is false or null, no special handling — treat like regular product questions
 
   let mediaSection = '';
   if (productMedia && productMedia.length > 0) {
@@ -215,7 +241,7 @@ ${voiceMessageLine ? `- ${voiceMessageLine}\n` : ''}- ${abuseHandlingLine}
 - ${contextRule}
 ${orderTakingLine}
 ${orderHistorySection}
-${customInstructionsSection}
+${customInstructionsSection}${restaurantLocationSection}${bulkPricingSection}
 ${productSection}${mediaSection}${examplesSection}`;
 }
 
@@ -227,7 +253,6 @@ function buildServiceSection(services: ProductRow[]): string {
   const lines: string[] = [];
 
   for (const s of services) {
-    // Check description for duration or parse duration if mapped
     lines.push(
       `  • [ID: ${s.id}] ${s.name}: ${s.price} BDT` +
       (s.description ? ` — ${s.description}` : '')
@@ -236,6 +261,25 @@ function buildServiceSection(services: ProductRow[]): string {
 
   return `CURRENT SERVICES OFFERED:\n${lines.join('\n')}\n\nIf a customer asks about a service not in the above list, tell them honestly that you only offer what is listed.`;
 }
+
+function buildRestaurantMenuSection(products: ProductRow[]): string {
+  if (!products || products.length === 0) {
+    return 'MENU: No menu items are currently listed. If asked about specific dishes, let the customer know the menu is being updated and invite them to visit or call for the latest selection.';
+  }
+
+  const lines: string[] = [];
+  for (const p of products) {
+    const currency = p.currency ?? 'BDT';
+    lines.push(
+      `  • [ID: ${p.id}] ${p.name}: ${p.price} ${currency}` +
+      (p.description ? ` — ${p.description}` : '') +
+      (p.image_url ? ` (Image URL: ${p.image_url})` : '')
+    );
+  }
+
+  return `RESTAURANT MENU:\n${lines.join('\n')}\n\nFor table reservations, always collect customer name, phone number, party size, and preferred date/time. When all details are gathered, append: [CREATE_BOOKING: {"customer_name": "<NAME>", "customer_phone": "<PHONE>", "party_size": <SIZE>, "starts_at": "<DATETIME_ISO>"}]`;
+}
+
 
 function buildProductSection(products: ProductRow[]): string {
   if (!products || products.length === 0) {

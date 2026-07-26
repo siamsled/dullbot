@@ -1,6 +1,8 @@
 import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
 import InventoryClient from './InventoryClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function InventoryPage() {
   // ── Resolve shop for logged-in user ───────────────────────────────────────
   const shop = await getCurrentShop();

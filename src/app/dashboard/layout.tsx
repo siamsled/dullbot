@@ -10,11 +10,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect('/login');
   }
 
-  // Hard-gate check: if business classification or context is not saved, redirect to /onboarding
-  const isClassificationDone = shop.business_type !== null && shop.business_type !== undefined;
-  const isContextDone = shop.onboarding_steps_done?.includes('context_form');
+  // Strict gate: if onboarding is not complete, redirect to wizard.
+  // Check new onboarding_step column first; fall back to old onboarding_complete flag
+  // for shops that completed the old flow (migration backfills onboarding_step='complete').
+  const isComplete =
+    shop.onboarding_step === 'complete' ||
+    (shop.onboarding_complete === true && !shop.onboarding_step); // legacy fallback
 
-  if (!isClassificationDone || !isContextDone) {
+  if (!isComplete) {
     redirect('/onboarding');
   }
 
@@ -27,5 +30,3 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     </div>
   );
 }
-
-

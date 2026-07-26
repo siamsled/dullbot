@@ -35,12 +35,217 @@ export async function saveBusinessType(shopId: string, businessType: string) {
       return { success: false, error: error.message };
     }
 
+    await saveOnboardingStep(shopId, 'channels');
+
     revalidatePath('/dashboard');
     revalidatePath('/onboarding');
     return { success: true };
   } catch (err: any) {
     console.error('Unhandled error in saveBusinessType:', err);
     return { success: false, error: err.message || 'An unexpected error occurred.' };
+  }
+}
+
+/**
+ * Update the single onboarding_step progress column used by the new gate.
+ * stepName is the new step the wizard is MOVING TO (next step after the one just completed).
+ */
+export async function saveOnboardingStep(
+  shopId: string,
+  stepName: 'business_type' | 'channels' | 'context' | 'type_specific' | 'payments' | 'delivery' | 'demo' | 'complete'
+) {
+  try {
+    await supabaseAdmin
+      .from('shops')
+      .update({
+        onboarding_step: stepName,
+        onboarding_step_updated_at: new Date().toISOString(),
+      })
+      .eq('id', shopId);
+  } catch (e) {
+    console.error('saveOnboardingStep error:', e);
+  }
+}
+
+/**
+ * Save bulk pricing toggle + note for Retail/Wholesale type-specific step.
+ */
+export async function saveBulkPricing(
+  shopId: string,
+  enabled: boolean,
+  note: string | null
+) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('shops')
+      .update({
+        bulk_pricing_enabled: enabled,
+        bulk_pricing_note: enabled ? (note || null) : null,
+      })
+      .eq('id', shopId);
+    if (error) return { success: false, error: error.message };
+    await saveOnboardingStep(shopId, 'payments');
+    revalidatePath('/onboarding');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Save restaurant location fields.
+ */
+export async function saveRestaurantLocation(
+  shopId: string,
+  address: string,
+  mapLink: string
+) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('shops')
+      .update({
+        location_address: address || null,
+        location_map_link: mapLink || null,
+      })
+      .eq('id', shopId);
+    if (error) return { success: false, error: error.message };
+    await saveOnboardingStep(shopId, 'payments');
+    revalidatePath('/onboarding');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Save payment method choice during onboarding (Step 5).
+ * choice: 'merchant_api' | 'companion_app' | 'skip'
+ */
+export async function savePaymentChoice(
+  shopId: string,
+  choice: 'merchant_api' | 'companion_app' | 'skip',
+  bkashConfig?: any
+) {
+  try {
+    const { encrypt } = await import('@/lib/encryption');
+    const updatePayload: Record<string, any> = {
+      payment_verification_method: choice === 'merchant_api' ? 'merchant_api' : choice === 'companion_app' ? 'notification_app' : 'none',
+    };
+    if (choice === 'merchant_api' && bkashConfig) {
+      updatePayload.bkash_config_encrypted = encrypt(JSON.stringify(bkashConfig));
+    }
+    const { error } = await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
+    if (error) return { success: false, error: error.message };
+    await saveOnboardingStep(shopId, 'delivery');
+    revalidatePath('/onboarding');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Save courier choice during onboarding (Step 6).
+ * provider: one of the 5 couriers or 'none' (manual)
+ */
+export async function saveCourierChoice(
+  shopId: string,
+  provider: string,
+  config?: Record<string, any>
+) {
+  try {
+    const { encrypt } = await import('@/lib/encryption');
+    const updatePayload: Record<string, any> = {
+      courier_provider: provider === 'manual' ? null : provider,
+    };
+    if (provider !== 'manual' && config) {
+      updatePayload.courier_config_encrypted = encrypt(JSON.stringify(config));
+    }
+    const { error } = await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
+    if (error) return { success: false, error: error.message };
+    await saveOnboardingStep(shopId, 'demo');
+    revalidatePath('/onboarding');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Generate a live demo Gemini reply for Step 7.
+ * Returns the AI reply text or null on any failure (never throws — Step 7 must not block).
+ */
+export async function generateLiveDemo(
+  shopId: string,
+  businessType: 'retail' | 'restaurant' | 'service'
+): Promise<{ demoReply: string | null; sampleQuestion: string }> {
+  const sampleQuestions: Record<string, string> = {
+    retail: 'Do you have this in size L? And what\'s the delivery time to Dhaka?',
+    restaurant: 'Do you have a table for 2 available tonight around 7 PM?',
+    service: 'Can I book an appointment for tomorrow afternoon?',
+  };
+  const sampleQuestion = sampleQuestions[businessType] || sampleQuestions.retail;
+
+  try {
+    const { data: shop } = await supabaseAdmin
+      .from('shops')
+      .select('*, persona_id')
+      .eq('id', shopId)
+      .single();
+
+    if (!shop) return { demoReply: null, sampleQuestion };
+
+    let persona = null;
+    if (shop.persona_id) {
+      const { data: personaData } = await supabaseAdmin
+        .from('agent_personas')
+        .select('*')
+        .eq('id', shop.persona_id)
+        .single();
+      persona = personaData;
+    }
+
+    const { buildSystemPrompt } = await import('@/lib/prompt-builder');
+    const { data: products } = await supabaseAdmin
+      .from('products')
+      .select('id, name, description, price, stock_quantity')
+      .eq('shop_id', shopId)
+      .eq('is_active', true)
+      .limit(10);
+
+    const systemPrompt = buildSystemPrompt(shop, persona, products || [], [], [], []);
+    const result = await invokeGemini(systemPrompt, sampleQuestion, []);
+
+    if (result.success && result.text) {
+      return { demoReply: result.text, sampleQuestion };
+    }
+    return { demoReply: null, sampleQuestion };
+  } catch (e) {
+    console.error('[generateLiveDemo] failed silently:', e);
+    return { demoReply: null, sampleQuestion };
+  }
+}
+
+/**
+ * Mark onboarding as complete and unlock the full dashboard.
+ */
+export async function completeOnboarding(shopId: string) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('shops')
+      .update({
+        onboarding_step: 'complete',
+        onboarding_step_updated_at: new Date().toISOString(),
+        onboarding_complete: true,
+        agent_enabled: true,
+      })
+      .eq('id', shopId);
+    if (error) return { success: false, error: error.message };
+    revalidatePath('/dashboard');
+    revalidatePath('/onboarding');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
 }
 
@@ -224,12 +429,6 @@ export async function saveOnboardingProfileAndTone(
     if (!stepsDone.includes('context_form')) stepsDone.push('context_form');
     if (!stepsDone.includes('classification')) stepsDone.push('classification');
 
-    // Check hard requirements to unlock AI automatically
-    const isClassificationDone = stepsDone.includes('classification');
-    const isContextDone = stepsDone.includes('context_form');
-    const isMetaDone = shop.meta_page_access_token !== null;
-    const hardRequirementsMet = isClassificationDone && isContextDone && isMetaDone;
-
     const { error } = await supabaseAdmin
       .from('shops')
       .update({
@@ -242,8 +441,6 @@ export async function saveOnboardingProfileAndTone(
         persona_id: persona?.id || null,
         tone_template: payload.toneTemplate,
         onboarding_steps_done: stepsDone,
-        // Unlock if hard requirements met
-        ...(hardRequirementsMet && !shop.onboarding_complete ? { agent_enabled: true, onboarding_complete: true } : {})
       })
       .eq('id', shopId);
 
@@ -251,6 +448,9 @@ export async function saveOnboardingProfileAndTone(
       console.error('Failed to save profile and tone:', error);
       return { success: false, error: error.message };
     }
+
+    // Advance wizard step to type_specific (Step 4)
+    await saveOnboardingStep(shopId, 'type_specific');
 
     revalidatePath('/dashboard');
     revalidatePath('/onboarding');

@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import AiTuningClient from './AiTuningClient';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-
+export const dynamic = 'force-dynamic';
 
 export default async function AiTuningPage() {
   const shopSlug = 'dull-store';

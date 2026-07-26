@@ -16,7 +16,7 @@ export default async function OnboardingPage(props: {
 
   // If onboarding is already fully complete, do not force the user through onboarding,
   // unless they explicitly request it via ?force=true
-  if (searchParams.force !== 'true' && shop.business_type && shop.onboarding_steps_done?.includes('context_form')) {
+  if (searchParams.force !== 'true' && shop.onboarding_step === 'complete') {
     redirect('/dashboard');
   }
 

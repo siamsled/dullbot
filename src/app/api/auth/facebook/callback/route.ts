@@ -42,17 +42,18 @@ export async function GET(request: Request) {
   
   if (!longLivedData.access_token) {
     console.error("Long-lived token exchange failed:", longLivedData);
-    // Fallback to short-lived if exchange fails for some reason
   }
   
   const userAccessToken = longLivedData.access_token || shortLivedUserToken;
 
-  // 2. Fetch User's Pages (we'll just grab the first one for the MVP)
+  // 2. Fetch User's Pages
   const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${userAccessToken}`);
   const pagesData = await pagesRes.json();
 
   if (!pagesData.data || pagesData.data.length === 0) {
-    const errDest = source === 'onboarding' ? '/onboarding?error=NoPagesFound' : '/dashboard/settings?error=NoPagesFound';
+    const errDest = (source === 'onboarding' || source === 'onboarding_instagram')
+      ? '/onboarding?error=NoPagesFound'
+      : '/dashboard/settings?error=NoPagesFound';
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
@@ -61,23 +62,54 @@ export async function GET(request: Request) {
   const pageId = page.id;
   const pageName = page.name;
 
-  // 3. Save to Supabase (match by id, fallback to slug for legacy)
-  const shopQuery = shopId.includes('-') && shopId.length === 36
-    ? supabaseAdmin.from('shops').update({
-        meta_page_id: pageId,
-        meta_page_name: pageName,
-        meta_page_access_token: pageAccessToken
-      }).eq('id', shopId)
-    : supabaseAdmin.from('shops').update({
-        meta_page_id: pageId,
-        meta_page_name: pageName,
-        meta_page_access_token: pageAccessToken
-      }).eq('slug', shopId || 'dull-store');
+  const isUUID = shopId.includes('-') && shopId.length === 36;
 
-  await shopQuery;
+  // ── Instagram branch: source = 'onboarding_instagram' ──────────────────────
+  if (source === 'onboarding_instagram') {
+    // Fetch Instagram Business Account linked to the Page (graceful fallback if unavailable)
+    let instagramBusinessId: string | null = null;
+    try {
+      const igRes = await fetch(
+        `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
+      );
+      const igData = await igRes.json();
+      instagramBusinessId = igData?.instagram_business_account?.id || null;
+    } catch (e) {
+      console.error('Failed to fetch Instagram Business Account:', e);
+    }
 
-  const successDest = source === 'onboarding' 
-    ? '/onboarding?step=ai_analysis' 
+    const updatePayload = {
+      instagram_business_id: instagramBusinessId,
+      instagram_access_token: pageAccessToken,
+      // Also save to legacy column for backwards compatibility
+      meta_instagram_user_id: instagramBusinessId,
+      meta_instagram_access_token: pageAccessToken,
+    };
+
+    if (isUUID) {
+      await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
+    } else {
+      await supabaseAdmin.from('shops').update(updatePayload).eq('slug', shopId || 'dull-store');
+    }
+
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/onboarding?step=channels&instagram=connected`);
+  }
+
+  // ── Standard Messenger / Settings branch ───────────────────────────────────
+  const messengerPayload = {
+    meta_page_id: pageId,
+    meta_page_name: pageName,
+    meta_page_access_token: pageAccessToken,
+  };
+
+  if (isUUID) {
+    await supabaseAdmin.from('shops').update(messengerPayload).eq('id', shopId);
+  } else {
+    await supabaseAdmin.from('shops').update(messengerPayload).eq('slug', shopId || 'dull-store');
+  }
+
+  const successDest = source === 'onboarding'
+    ? '/onboarding?step=channels&messenger=connected'
     : '/dashboard/settings?success=1';
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${successDest}`);

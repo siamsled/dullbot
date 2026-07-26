@@ -13,14 +13,14 @@ import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig
 import { saveOnboardingProfileAndTone } from '../actions';
 
 /* ─── constants ─────────────────────────────────────────── */
-const RETAIL_CATEGORIES    = ['Fashion', 'Electronics', 'Beauty', 'Food', 'Home goods', 'Other'];
-const SERVICE_CATEGORIES   = ['Clinic', 'Salon', 'Tutoring', 'Consulting', 'Other'];
-const WHOLESALE_CATEGORIES = ['Apparel', 'Electronics Component', 'FMCG', 'Industrial Supplies', 'Other'];
+const RETAIL_CATEGORIES      = ['Fashion', 'Electronics', 'Beauty', 'Food', 'Home goods', 'Other'];
+const SERVICE_CATEGORIES     = ['Clinic', 'Salon', 'Tutoring', 'Consulting', 'Other'];
+const RESTAURANT_CATEGORIES  = ['Casual Dining', 'Fine Dining', 'Fast Food', 'Café & Bakery', 'Cloud Kitchen', 'Buffet', 'Other'];
 const PERSONAS = [
   { id: 'casual',    label: 'Casual & Easygoing',   desc: 'Friendly, Bangla-English mix.'         },
   { id: 'formal',    label: 'Formal & Polite',       desc: 'Rumi Apa traditional style.'            },
   { id: 'technical', label: 'Tech Explainer',         desc: 'Detail-heavy, spec-focused.'            },
-  { id: 'wholesale', label: 'Wholesale & Direct',    desc: 'Negotiation-heavy, straight to point.' },
+  { id: 'direct',    label: 'Direct & Efficient',    desc: 'No-nonsense, fast answers.'            },
 ];
 
 /* ─── helpers ────────────────────────────────────────────── */
@@ -115,14 +115,14 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [profileSaved,   setProfileSaved]   = useState(false);
 
   const categories =
-    shop?.business_type === 'service'   ? SERVICE_CATEGORIES   :
-    shop?.business_type === 'wholesale' ? WHOLESALE_CATEGORIES :
+    shop?.business_type === 'service'    ? SERVICE_CATEGORIES    :
+    shop?.business_type === 'restaurant' ? RESTAURANT_CATEGORIES :
     RETAIL_CATEGORIES;
 
   const businessTypeLabel: Record<string, string> = {
-    retail:    'E-commerce & Retail',
-    service:   'Service-Based',
-    wholesale: 'Wholesale / B2B',
+    retail:     'E-commerce & Retail',
+    service:    'Service-Based',
+    restaurant: 'Restaurant',
   };
   const toneLabel: Record<string, string> = {
     casual:    'Friendly & casual tone',

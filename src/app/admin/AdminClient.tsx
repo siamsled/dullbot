@@ -36,9 +36,18 @@ interface Props {
   };
   escalations: any[];
   auditLogs: any[];
+  incompleteOnboardings: {
+    id: string;
+    name: string;
+    slug: string;
+    business_type: string | null;
+    onboarding_step: string | null;
+    onboarding_step_updated_at: string | null;
+    created_at: string;
+  }[];
 }
 
-export default function AdminClient({ shops, platformMetrics, escalations: initialEscalations, auditLogs: initialAuditLogs }: Props) {
+export default function AdminClient({ shops, platformMetrics, escalations: initialEscalations, auditLogs: initialAuditLogs, incompleteOnboardings }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isPending, startTransition] = useTransition();
   const [grantShopId, setGrantShopId] = useState<string | null>(null);
@@ -415,6 +424,100 @@ export default function AdminClient({ shops, platformMetrics, escalations: initi
             </table>
           </div>
         </div>
+      </div>
+
+      {/* ── Onboarding Funnel Panel ── */}
+      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden">
+        <div className="px-6 py-4 border-b border-dove/10 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Onboarding Funnel</h2>
+            <p className="text-xs text-ash mt-0.5">Shops that started but haven&apos;t completed setup — sorted by longest stuck first</p>
+          </div>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${incompleteOnboardings.length > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+            {incompleteOnboardings.length} stuck
+          </span>
+        </div>
+        {incompleteOnboardings.length === 0 ? (
+          <div className="py-12 text-center text-ash text-sm">
+            All shops have completed onboarding 🎉
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-dove/10 bg-fog/40">
+                  <th className="text-left py-3 px-6 font-semibold text-ash uppercase tracking-wider">Shop</th>
+                  <th className="text-left py-3 px-4 font-semibold text-ash uppercase tracking-wider">Current Step</th>
+                  <th className="text-left py-3 px-4 font-semibold text-ash uppercase tracking-wider">Time on Step</th>
+                  <th className="text-left py-3 px-4 font-semibold text-ash uppercase tracking-wider">Business Type</th>
+                  <th className="text-left py-3 px-4 font-semibold text-ash uppercase tracking-wider">Signed Up</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incompleteOnboardings.map((shop) => {
+                  const updatedAt = shop.onboarding_step_updated_at ? new Date(shop.onboarding_step_updated_at) : new Date(shop.created_at);
+                  const msSinceUpdate = Date.now() - updatedAt.getTime();
+                  const hoursOnStep = msSinceUpdate / (1000 * 60 * 60);
+
+                  const timeLabel = hoursOnStep < 1
+                    ? `${Math.round(hoursOnStep * 60)}m`
+                    : hoursOnStep < 24
+                    ? `${Math.round(hoursOnStep)}h`
+                    : `${Math.round(hoursOnStep / 24)}d`;
+
+                  const timeColor = hoursOnStep < 1 ? 'text-green-700 bg-green-50 border-green-200' : hoursOnStep < 24 ? 'text-yellow-700 bg-yellow-50 border-yellow-200' : 'text-red-700 bg-red-50 border-red-200';
+
+                  const stepLabel: Record<string, string> = {
+                    business_type: '1 · Business Type',
+                    channels: '2 · Channels',
+                    context: '3 · Context',
+                    type_specific: '4 · Details',
+                    payments: '5 · Payments',
+                    delivery: '6 · Delivery',
+                    demo: '7 · Preview',
+                  };
+
+                  const typeColors: Record<string, string> = {
+                    retail: 'bg-amber-50 text-amber-700',
+                    restaurant: 'bg-orange-50 text-orange-700',
+                    service: 'bg-blue-50 text-blue-700',
+                  };
+
+                  return (
+                    <tr key={shop.id} className="border-b border-dove/10 hover:bg-fog/30 transition-colors">
+                      <td className="py-3.5 px-6">
+                        <div className="font-semibold text-ink">{shop.name || '(unnamed)'}</div>
+                        <div className="text-ash text-[11px]">{shop.slug}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-medium text-ink">
+                          {stepLabel[shop.onboarding_step || ''] || shop.onboarding_step || '—'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${timeColor}`}>
+                          {timeLabel}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {shop.business_type ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${typeColors[shop.business_type] || 'bg-fog text-ash'}`}>
+                            {shop.business_type}
+                          </span>
+                        ) : (
+                          <span className="text-ash">—</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-ash">
+                        {new Date(shop.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Support config view Modal */}

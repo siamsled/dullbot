@@ -1,19 +1,39 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
+import { motion } from 'framer-motion';
+
+const UNLOCK_ANIM_KEY = 'dullbot_unlocked_anim';
 
 export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [shop, setShop] = useState<any>(initialShop || null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [playUnlockAnim, setPlayUnlockAnim] = useState(false);
+
+  // Detect unlock animation trigger from ?unlocked=1 query param (one-time)
+  useEffect(() => {
+    const shouldPlay =
+      searchParams.get('unlocked') === '1' &&
+      sessionStorage.getItem(UNLOCK_ANIM_KEY) !== '1';
+    if (shouldPlay) {
+      setPlayUnlockAnim(true);
+      sessionStorage.setItem(UNLOCK_ANIM_KEY, '1');
+      // Clean the URL param without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('unlocked');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (initialShop) {
@@ -27,31 +47,22 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             .select('*')
             .eq('owner_id', userRes.user.id)
             .single();
-          if (shopRes) {
-            setShop(shopRes);
-          }
+          if (shopRes) setShop(shopRes);
         }
       };
       fetchShop();
     }
 
-    // Subscribe to changes to update sidebar instantly when they go live
     const channel = supabaseBrowser
       .channel('sidebar-shop-onboarding')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'shops' },
-        (payload) => {
-          if (shop && payload.new && (payload.new as any).id === shop.id) {
-            setShop(payload.new);
-          }
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'shops' }, (payload) => {
+        if (shop && payload.new && (payload.new as any).id === shop.id) {
+          setShop(payload.new);
         }
-      )
+      })
       .subscribe();
 
-    return () => {
-      supabaseBrowser.removeChannel(channel);
-    };
+    return () => { supabaseBrowser.removeChannel(channel); };
   }, [initialShop, shop?.id]);
 
   useEffect(() => {
@@ -62,27 +73,17 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         .from('conversations')
         .select('unread_count')
         .eq('shop_id', shop.id);
-
       const count = (data || []).reduce((acc, c) => acc + (c.unread_count || 0), 0);
       setUnreadCount(count);
     };
-
     fetchUnread();
 
     const channel = supabaseBrowser
       .channel('sidebar-unread-count')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversations', filter: `shop_id=eq.${shop.id}` },
-        () => {
-          fetchUnread();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations', filter: `shop_id=eq.${shop.id}` }, () => { fetchUnread(); })
       .subscribe();
 
-    return () => {
-      supabaseBrowser.removeChannel(channel);
-    };
+    return () => { supabaseBrowser.removeChannel(channel); };
   }, [shop?.id]);
 
   const handleSignOut = async () => {
@@ -92,16 +93,21 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
   const businessType = shop?.business_type || 'retail';
 
-  // Build nav items dynamically
+  // Build nav items by business type
   const baseItems = [
     { name: 'Live Inbox', href: '/dashboard/inbox', icon: MessageSquareText, id: 'nav-inbox' },
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard, id: 'nav-overview' },
     { name: 'Orders', href: '/dashboard/orders', icon: Package, id: 'nav-orders' },
   ];
 
-  if (businessType === 'service') {
+  if (businessType === 'restaurant') {
+    // Restaurant gets both Services (for bookings/tables) and Inventory (for menu)
+    baseItems.push({ name: 'Tables & Bookings', href: '/dashboard/services', icon: UtensilsCrossed, id: 'nav-bookings' });
+    baseItems.push({ name: 'Menu / Inventory', href: '/dashboard/inventory', icon: Box, id: 'nav-inventory' });
+  } else if (businessType === 'service') {
     baseItems.push({ name: 'Services', href: '/dashboard/services', icon: Box, id: 'nav-services' });
   } else {
+    // retail (and any legacy 'wholesale' that was migrated)
     baseItems.push({ name: 'Inventory', href: '/dashboard/inventory', icon: Box, id: 'nav-inventory' });
   }
 
@@ -118,12 +124,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
   const getInitials = (name?: string) => {
     if (!name) return 'DB';
-    return name
-      .split(/\s+/)
-      .map((w) => w[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+    return name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   };
 
   return (
@@ -133,22 +134,23 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         {isCollapsed && <span className="text-2xl font-serif font-bold tracking-tight text-ink w-full text-center">DB</span>}
       </div>
       <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden">
-        {navItems.map((item) => {
+        {navItems.map((item, i) => {
           const isActive = item.href === '/dashboard'
             ? pathname === item.href
             : pathname.startsWith(item.href);
-
           const Icon = item.icon;
-          return (
+
+          const linkContent = (
             <Link
               key={item.name}
               href={item.href}
               id={item.id}
               title={isCollapsed ? item.name : undefined}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative ${isActive
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative ${
+                isActive
                   ? 'bg-white text-ink shadow-subtle border border-dove/10'
                   : 'text-ash hover:text-ink hover:bg-dove/10 border border-transparent'
-                } ${isCollapsed ? 'justify-center px-2' : ''}`}
+              } ${isCollapsed ? 'justify-center px-2' : ''}`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-graphite'}`} />
               {!isCollapsed && <span className="truncate">{item.name}</span>}
@@ -159,6 +161,21 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
               )}
             </Link>
           );
+
+          if (playUnlockAnim) {
+            return (
+              <motion.div
+                key={item.name}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3, ease: 'easeOut' }}
+              >
+                {linkContent}
+              </motion.div>
+            );
+          }
+
+          return linkContent;
         })}
       </nav>
 
@@ -166,20 +183,10 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="flex items-center justify-center w-full p-2 text-ash hover:text-ink hover:bg-dove/10 rounded-lg transition-colors"
-          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
-          >
-            <polyline points="15 18 9 12 15 6"></polyline>
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={`transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}>
+            <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
 
@@ -195,11 +202,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
                   <UiversePulseBadge label="Online" status="active" size="sm" />
                 </div>
               </div>
-              <button
-                onClick={handleSignOut}
-                title="Sign out"
-                className="p-1.5 shrink-0 rounded-lg text-dove hover:text-rust hover:bg-apricot-wash transition-colors"
-              >
+              <button onClick={handleSignOut} title="Sign out" className="p-1.5 shrink-0 rounded-lg text-dove hover:text-rust hover:bg-apricot-wash transition-colors">
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </>
@@ -207,11 +210,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         </div>
 
         {isCollapsed && (
-          <button
-            onClick={handleSignOut}
-            title="Sign out"
-            className="flex items-center justify-center w-full p-2 text-dove hover:text-rust hover:bg-apricot-wash rounded-lg transition-colors"
-          >
+          <button onClick={handleSignOut} title="Sign out" className="flex items-center justify-center w-full p-2 text-dove hover:text-rust hover:bg-apricot-wash rounded-lg transition-colors">
             <LogOut className="w-4 h-4" />
           </button>
         )}
