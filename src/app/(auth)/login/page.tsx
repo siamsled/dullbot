@@ -18,7 +18,13 @@ export default function LoginPage() {
         const key = `sb-${projectRef}-auth-token`;
         const maxAge = 60 * 60 * 24 * 7;
         const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
-        document.cookie = `${key}=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
+        
+        // Remove large provider tokens to stay under 4KB cookie limit
+        const slimSession = { ...session };
+        delete slimSession.provider_token;
+        delete slimSession.provider_refresh_token;
+        
+        document.cookie = `${key}=${encodeURIComponent(JSON.stringify(slimSession))}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
         window.location.href = '/dashboard';
       }
     };

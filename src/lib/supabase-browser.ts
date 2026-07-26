@@ -38,7 +38,16 @@ export const supabaseBrowser = createClient(
           // Save to cookie (max age 7 days)
           const maxAge = 60 * 60 * 24 * 7;
           const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
-          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
+          
+          try {
+            const parsed = JSON.parse(value);
+            delete parsed.provider_token;
+            delete parsed.provider_refresh_token;
+            const slimmedValue = JSON.stringify(parsed);
+            document.cookie = `${key}=${encodeURIComponent(slimmedValue)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
+          } catch {
+            document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure}`;
+          }
           localStorage.setItem(key, value);
         },
         removeItem: (key) => {
