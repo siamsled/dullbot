@@ -58,7 +58,7 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
   useEffect(() => {
     if (!shop.meta_page_id) return;
     setFetching(true);
-    generateProfileFromFacebook(shop.id, shop.meta_page_id, shop.meta_page_access_token)
+    generateProfileFromFacebook(shop.id)
       .then((profile) => {
         if (profile?.name && (!shopName || shopName === 'My Store')) setShopName(profile.name);
         if (profile?.category && !category) { setCategory(profile.category); setCategorySearch(profile.category); }
