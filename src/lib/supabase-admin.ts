@@ -23,13 +23,8 @@ export const getCurrentShop = cache(async function getCurrentShop() {
   try {
     cookieStore = await cookies();
   } catch {
-    // Return seed shop fallback if cookies() is called outside dynamic request context
-    const { data: seedShop } = await supabaseAdmin
-      .from('shops')
-      .select('*')
-      .eq('slug', 'dull-store')
-      .single();
-    return seedShop;
+    // Return null if cookies() is called outside dynamic request context
+    return null;
   }
 
   const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'dummy';
@@ -37,35 +32,19 @@ export const getCurrentShop = cache(async function getCurrentShop() {
   const token = cookieStore.get(storageKey)?.value;
   
   if (!token) {
-    // Fallback to dull-store for seed/local testing if no session cookie exists
-    const { data: shop } = await supabaseAdmin
-      .from('shops')
-      .select('*')
-      .eq('slug', 'dull-store')
-      .single();
-    return shop;
+    return null;
   }
   
   try {
     const session = JSON.parse(decodeURIComponent(token));
     const accessToken = session.access_token;
     if (!accessToken) {
-      const { data: shop } = await supabaseAdmin
-        .from('shops')
-        .select('*')
-        .eq('slug', 'dull-store')
-        .single();
-      return shop;
+      return null;
     }
     
     const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(accessToken);
     if (userErr || !user) {
-      const { data: shop } = await supabaseAdmin
-        .from('shops')
-        .select('*')
-        .eq('slug', 'dull-store')
-        .single();
-      return shop;
+      return null;
     }
     
     const { data: shop } = await supabaseAdmin
@@ -89,23 +68,13 @@ export const getCurrentShop = cache(async function getCurrentShop() {
 
       if (newShop) return newShop;
 
-      const { data: seedShop } = await supabaseAdmin
-        .from('shops')
-        .select('*')
-        .eq('slug', 'dull-store')
-        .single();
-      return seedShop;
+      return null;
     }
     
     return shop;
   } catch (e) {
     console.error('Error getting current shop:', e);
-    const { data: shop } = await supabaseAdmin
-      .from('shops')
-      .select('*')
-      .eq('slug', 'dull-store')
-      .single();
-    return shop;
+    return null;
   }
 });
 
