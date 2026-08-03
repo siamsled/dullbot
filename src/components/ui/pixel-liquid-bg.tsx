@@ -858,7 +858,7 @@ export function PixelLiquidBg({
   resolution = 0.4,
   mouseForce = 8,
   cursorSize = 110,
-  autoDemo = true,
+  autoDemo = false,
   children,
   className,
   ...props

@@ -96,19 +96,16 @@ export default function LoginPage() {
         resolution={0.45}
         mouseForce={12}
         cursorSize={130}
-        autoDemo={true}
-        className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0"
+        autoDemo={false}
+        className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
         {/* ── Card Stage ── */}
         <div
+          className="relative z-10 w-full max-w-[400px] px-4 my-auto mx-auto flex items-center justify-center"
           style={{
             perspective: '1000px',
-            zIndex: 10,
-            width: '100%',
-            maxWidth: 400,
-            padding: '0 16px',
             pointerEvents: 'auto',
           }}
         >
