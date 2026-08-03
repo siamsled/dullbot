@@ -4,41 +4,41 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 
 /* ─────────────────────────────────────────────
-   Ambient blob data (shape morphing + drift)
-   Each blob has independent morph + drift timing
-   so they never look synchronised.
+   1. Analogous Cool Palette Blobs (No warm/coral hues)
+   - Blob 1: Deep Violet / Purple
+   - Blob 2: Indigo / Royal Blue
+   - Blob 3: Soft Cyan / Teal
+   Independent timing per blob (8s-14s loops), 
+   morphing + drifting autonomously.
 ───────────────────────────────────────────── */
 const BLOBS = [
   {
-    // Purple-violet blob — top-left drift
-    color: 'radial-gradient(ellipse at center, rgba(147,97,253,0.55) 0%, rgba(167,120,255,0.15) 60%, transparent 80%)',
+    // Violet / Purple blob (Top-left drift)
+    color: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.50) 0%, rgba(124, 58, 237, 0.15) 60%, transparent 80%)',
     size: 520,
     initial: { x: -80, y: -100 },
-    morphDuration: '11s',
-    driftDuration: '9s',
+    morphDuration: '12s',
+    driftDuration: '10s',
     driftDelay: '0s',
     morphDelay: '0s',
   },
   {
-    // Pink-rose blob — centre-right drift
-    color: 'radial-gradient(ellipse at center, rgba(253,130,180,0.50) 0%, rgba(255,150,190,0.12) 60%, transparent 80%)',
-    size: 440,
+    // Indigo / Royal Blue blob (Center-right drift)
+    color: 'radial-gradient(ellipse at center, rgba(79, 70, 229, 0.50) 0%, rgba(67, 56, 202, 0.15) 60%, transparent 80%)',
+    size: 460,
     initial: { x: 220, y: 80 },
-    morphDuration: '13s',
-    driftDuration: '12s',
+    morphDuration: '14s',
+    driftDuration: '11s',
     driftDelay: '-3s',
     morphDelay: '-4s',
   },
   {
-    // Peach-amber blob — bottom drift
-    color: 'radial-gradient(ellipse at center, rgba(255,180,80,0.45) 0%, rgba(255,190,100,0.12) 60%, transparent 80%)',
-    size: 380,
-    initial: { x: 60, y: 260 },
+    // Soft Teal / Cyan blob (Bottom-left drift)
+    color: 'radial-gradient(ellipse at center, rgba(14, 165, 233, 0.45) 0%, rgba(20, 184, 166, 0.12) 60%, transparent 80%)',
+    size: 400,
+    initial: { x: 40, y: 260 },
     morphDuration: '9s',
     driftDuration: '13s',
     driftDelay: '-6s',
@@ -46,10 +46,14 @@ const BLOBS = [
   },
 ] as const;
 
-/* ─────────────────────────────────────────────
-   CSS keyframe animations injected as a <style>
-   block — keeps everything self-contained.
-───────────────────────────────────────────── */
+/* Palette colors for cursor particles */
+const PARTICLE_COLORS = [
+  'rgba(167, 139, 250, 0.55)', // Violet
+  'rgba(129, 140, 248, 0.55)', // Indigo
+  'rgba(56, 189, 248, 0.55)',  // Cyan/Teal
+];
+
+/* Keyframe animations for blobs, particles, and card entrance */
 const KEYFRAMES = `
   @keyframes lb-morph-0 {
     0%   { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
@@ -90,11 +94,31 @@ const KEYFRAMES = `
     80%  { transform: translate(20px, 40px); }
     100% { transform: translate(0px, 0px); }
   }
+  @keyframes particle-fade {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--dx), var(--dy)) scale(1.6);
+    }
+  }
   @keyframes card-enter {
     from { opacity: 0; transform: scale(0.94) translateY(12px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 `;
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  dx: number;
+  dy: number;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -103,12 +127,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Spotlight position (cursor follow)
-  const spotlightRef = useRef<HTMLDivElement>(null);
-  const spotX = useRef(50); // % of viewport
-  const spotY = useRef(50);
+  // 2. Cursor particle trail state & refs
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const lastSpawnTime = useRef<number>(0);
+  const nextParticleId = useRef<number>(0);
 
-  // Card tilt
+  // 3. Card 3D tilt ref
   const cardRef = useRef<HTMLDivElement>(null);
 
   /* ── Auth logic (unchanged) ── */
@@ -154,20 +178,46 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Cursor spotlight ── */
+  /* ── Mousemove: Spawns particle & handles card tilt ── */
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (spotlightRef.current) {
-      spotlightRef.current.style.transform = `translate(${e.clientX - 200}px, ${e.clientY - 200}px)`;
+    const now = Date.now();
+
+    // Spawn particle trail (throttled to ~60ms)
+    if (now - lastSpawnTime.current > 60) {
+      lastSpawnTime.current = now;
+      const size = Math.floor(Math.random() * 10) + 10; // 10px - 20px
+      const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+      
+      // Random upward drift + slight sideways move
+      const dx = (Math.random() - 0.5) * 30; // -15px to +15px
+      const dy = -(Math.random() * 25 + 15); // -15px to -40px (upwards)
+      
+      const newParticle: Particle = {
+        id: nextParticleId.current++,
+        x: e.clientX,
+        y: e.clientY,
+        size,
+        color,
+        dx,
+        dy,
+      };
+
+      setParticles((prev) => [...prev, newParticle]);
+
+      // DOM Cleanup: Automatically remove particle from state after animation completes (1.6s)
+      setTimeout(() => {
+        setParticles((prev) => prev.filter((p) => p.id !== newParticle.id));
+      }, 1600);
     }
 
-    // Card 3D tilt
+    // Card 3D tilt calculation
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / (rect.width / 2);   // -1 … +1
-      const dy = (e.clientY - cy) / (rect.height / 2);  // -1 … +1
-      const rotX = (-dy * 6).toFixed(2); // max 6deg
+      const dx = (e.clientX - cx) / (rect.width / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
+      const rotX = (-dy * 6).toFixed(2);
       const rotY = (dx * 6).toFixed(2);
       cardRef.current.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
     }
@@ -188,14 +238,13 @@ export default function LoginPage() {
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── Full-screen stage ── */}
+      {/* ── Stage ── */}
       <div
         className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #0f0c1a 0%, #1a0f2e 40%, #0f1a2e 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #090a16 0%, #0f1229 40%, #0a1628 100%)' }}
         onMouseLeave={handleMouseLeave}
       >
-
-        {/* ── Ambient blobs ── */}
+        {/* ── 1. Autonomous Ambient Blobs ── */}
         {BLOBS.map((b, i) => (
           <div
             key={i}
@@ -211,33 +260,48 @@ export default function LoginPage() {
                 `lb-morph-${i} ${b.morphDuration} ${b.morphDelay} ease-in-out infinite`,
                 `lb-drift-${i} ${b.driftDuration} ${b.driftDelay} ease-in-out infinite`,
               ].join(', '),
-              filter: 'blur(48px)',
+              filter: 'blur(54px)',
               willChange: 'transform, border-radius',
               pointerEvents: 'none',
             }}
           />
         ))}
 
-        {/* ── Cursor spotlight ── */}
+        {/* ── 2. Particle Trail Container ── */}
         <div
-          ref={spotlightRef}
           aria-hidden="true"
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            width: 400,
-            height: 400,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)',
-            borderRadius: '50%',
+            inset: 0,
             pointerEvents: 'none',
-            transition: 'transform 0.12s linear',
-            willChange: 'transform',
-            zIndex: 1,
+            zIndex: 2,
+            overflow: 'hidden',
           }}
-        />
+        >
+          {particles.map((p) => (
+            <div
+              key={p.id}
+              style={
+                {
+                  position: 'absolute',
+                  left: p.x - p.size / 2,
+                  top: p.y - p.size / 2,
+                  width: p.size,
+                  height: p.size,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${p.color} 0%, transparent 70%)`,
+                  filter: 'blur(3px)',
+                  willChange: 'transform, opacity',
+                  animation: 'particle-fade 1.6s cubic-bezier(0.1, 0.4, 0.2, 1) forwards',
+                  '--dx': `${p.dx}px`,
+                  '--dy': `${p.dy}px`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
 
-        {/* ── Card stage (perspective wrapper) ── */}
+        {/* ── 3. Card Stage (Perspective Wrapper) ── */}
         <div
           style={{
             perspective: '900px',
@@ -253,18 +317,18 @@ export default function LoginPage() {
               transition: 'transform 0.15s ease-out',
               transformStyle: 'preserve-3d',
               willChange: 'transform',
-              animation: 'card-enter 0.55s cubic-bezier(0.22,1,0.36,1) both',
+              animation: 'card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both',
             }}
           >
-            {/* ── Frosted glass card ── */}
+            {/* ── Frosted Glass Card ── */}
             <div
               style={{
-                background: 'rgba(255,255,255,0.07)',
+                background: 'rgba(255, 255, 255, 0.06)',
                 backdropFilter: 'blur(24px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                border: '1px solid rgba(255,255,255,0.14)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 20,
-                boxShadow: '0 32px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)',
+                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
                 overflow: 'hidden',
                 padding: '36px 32px 28px',
               }}
@@ -278,20 +342,20 @@ export default function LoginPage() {
                       fontSize: 32,
                       fontWeight: 300,
                       letterSpacing: '-0.03em',
-                      color: 'rgba(255,255,255,0.95)',
+                      color: 'rgba(255, 255, 255, 0.95)',
                     }}
                   >
-                    dull<span style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: 22, color: 'rgba(255,255,255,0.5)' }}>bot.</span>
+                    dull<span style={{ fontFamily: 'inherit', fontWeight: 400, fontSize: 22, color: 'rgba(255, 255, 255, 0.5)' }}>bot.</span>
                   </span>
                 </Link>
-                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <p style={{ color: 'rgba(255, 255, 255, 0.45)', fontSize: 12, marginTop: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   Sign in to your account
                 </p>
               </div>
 
               {/* Error message */}
               {errorMsg && (
-                <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '8px 12px', marginBottom: 16, fontSize: 12, color: '#fca5a5', textAlign: 'center' }}>
+                <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: '8px 12px', marginBottom: 16, fontSize: 12, color: '#fca5a5', textAlign: 'center' }}>
                   {errorMsg}
                 </div>
               )}
@@ -299,7 +363,7 @@ export default function LoginPage() {
               {/* Form */}
               <form id="login-form" onSubmit={handlePasswordLogin} className="space-y-3">
                 <div>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.6)', marginBottom: 6, letterSpacing: '0.04em' }}>
+                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 6, letterSpacing: '0.04em' }}>
                     Email
                   </label>
                   <input
@@ -312,21 +376,21 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
                       borderRadius: 10,
-                      color: 'rgba(255,255,255,0.9)',
+                      color: 'rgba(255, 255, 255, 0.9)',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'border-color 0.15s',
                     }}
-                    onFocus={(e) => (e.target.style.borderColor = 'rgba(160,124,254,0.6)')}
-                    onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
+                    onFocus={(e) => (e.target.style.borderColor = 'rgba(167, 139, 250, 0.6)')}
+                    onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.6)', marginBottom: 6, letterSpacing: '0.04em' }}>
+                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 6, letterSpacing: '0.04em' }}>
                     Password
                   </label>
                   <input
@@ -338,26 +402,26 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
                       borderRadius: 10,
-                      color: 'rgba(255,255,255,0.9)',
+                      color: 'rgba(255, 255, 255, 0.9)',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'border-color 0.15s',
                     }}
-                    onFocus={(e) => (e.target.style.borderColor = 'rgba(160,124,254,0.6)')}
-                    onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
+                    onFocus={(e) => (e.target.style.borderColor = 'rgba(167, 139, 250, 0.6)')}
+                    onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
                   />
                 </div>
               </form>
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
+                <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
               </div>
 
               {/* Google OAuth */}
@@ -372,10 +436,10 @@ export default function LoginPage() {
                   justifyContent: 'center',
                   gap: 10,
                   padding: '10px 16px',
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.13)',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.13)',
                   borderRadius: 10,
-                  color: 'rgba(255,255,255,0.85)',
+                  color: 'rgba(255, 255, 255, 0.85)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -383,8 +447,8 @@ export default function LoginPage() {
                   marginBottom: 12,
                   opacity: loading ? 0.5 : 1,
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.13)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.13)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.08)'; }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -395,7 +459,7 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              {/* Sign In button */}
+              {/* Sign In Button */}
               <button
                 type="submit"
                 form="login-form"
@@ -403,7 +467,7 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '11px 16px',
-                  background: 'linear-gradient(135deg, #9361fd 0%, #c084fc 100%)',
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
                   border: 'none',
                   borderRadius: 10,
                   color: '#fff',
@@ -411,20 +475,20 @@ export default function LoginPage() {
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'opacity 0.15s, box-shadow 0.15s',
-                  boxShadow: '0 4px 20px rgba(147,97,253,0.4)',
+                  boxShadow: '0 4px 20px rgba(124, 58, 237, 0.4)',
                   opacity: loading ? 0.7 : 1,
                   letterSpacing: '0.01em',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(147,97,253,0.6)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(147,97,253,0.4)'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(124, 58, 237, 0.6)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(124, 58, 237, 0.4)'; }}
               >
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
 
-              {/* Footer link */}
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 16 }}>
+              {/* Footer Link */}
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255, 255, 255, 0.35)', marginTop: 16 }}>
                 No account?{' '}
-                <Link href="/signup" style={{ color: 'rgba(192,132,252,0.9)', fontWeight: 600, textDecoration: 'none' }}>
+                <Link href="/signup" style={{ color: 'rgba(167, 139, 250, 0.9)', fontWeight: 600, textDecoration: 'none' }}>
                   Get started
                 </Link>
               </p>
