@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Halftone Dot-Matrix S-Wave Liquid Canvas
-   Exact match to reference artwork:
-   - Square halftone dot grid proportional to reference image
-   - Sweeping S-curve luminous bands (varying dot size & opacity)
-   - Interactive liquid warping when cursor moves over the waves
+   Master Halftone Wave & Interactive Fluid Engine
+   Matches reference image 1:1:
+   - Precision halftone dot matrix grid
+   - Sweeping luminous S-curve ribbons (white core, warm/cool edge sheen)
+   - Real-time viscous fluid warping when cursor drags across waves
 ───────────────────────────────────────────── */
 
 const KEYFRAMES = `
@@ -31,7 +31,7 @@ export default function LoginPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  /* ── Auth logic (unchanged) ── */
+  /* ── Auth logic ── */
   useEffect(() => {
     const handleSession = (session: any) => {
       if (session) {
@@ -74,7 +74,7 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Halftone S-Wave & Liquid Distortion Engine ── */
+  /* ── Halftone Wave & Fluid Distortion Engine ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -85,7 +85,7 @@ export default function LoginPage() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Mouse tracking for dynamic liquid warping
+    // Mouse velocity & position tracking
     const mouse = {
       x: -1000,
       y: -1000,
@@ -95,12 +95,12 @@ export default function LoginPage() {
       lastY: -1000,
     };
 
-    // Calculate GRID_GAP based on viewport so dot proportion matches reference image (~60-70 dots across width)
-    let GRID_GAP = Math.max(10, Math.floor(width / 65));
-    let cols = Math.ceil(width / GRID_GAP) + 1;
-    let rows = Math.ceil(height / GRID_GAP) + 1;
+    // Calculate grid spacing for halftone resolution (~65-75 dots across viewport width)
+    let GRID_GAP = Math.max(9, Math.floor(width / 68));
+    let cols = Math.ceil(width / GRID_GAP) + 2;
+    let rows = Math.ceil(height / GRID_GAP) + 2;
 
-    // Smooth fluid displacement grid (dx, dy per vertex)
+    // Velocity displacement grid
     let gridDispX = new Float32Array(cols * rows);
     let gridDispY = new Float32Array(cols * rows);
 
@@ -108,18 +108,18 @@ export default function LoginPage() {
       const cx = e.clientX;
       const cy = e.clientY;
       if (mouse.lastX !== -1000) {
-        mouse.vx = (cx - mouse.lastX) * 0.5;
-        mouse.vy = (cy - mouse.lastY) * 0.5;
+        mouse.vx = (cx - mouse.lastX) * 0.6;
+        mouse.vy = (cy - mouse.lastY) * 0.6;
       }
       mouse.x = cx;
       mouse.y = cy;
       mouse.lastX = cx;
       mouse.lastY = cy;
 
-      // Apply fluid displacement impulse to nearby grid vertices
+      // Apply fluid impulse to nearby grid points
       const cellX = Math.floor(cx / GRID_GAP);
       const cellY = Math.floor(cy / GRID_GAP);
-      const radiusCells = 20; // Soft brush radius in grid units
+      const radiusCells = 22; // Brush radius
 
       for (let r = -radiusCells; r <= radiusCells; r++) {
         for (let c = -radiusCells; c <= radiusCells; c++) {
@@ -130,10 +130,11 @@ export default function LoginPage() {
             const distSq = c * c + r * r;
             const maxDistSq = radiusCells * radiusCells;
             if (distSq < maxDistSq) {
-              // Smooth Gaussian cosine falloff for silky fluid stretching
-              const factor = (Math.cos((Math.sqrt(distSq) / radiusCells) * Math.PI) + 1) * 0.5;
-              gridDispX[index] += mouse.vx * factor * 0.45;
-              gridDispY[index] += mouse.vy * factor * 0.45;
+              const dist = Math.sqrt(distSq);
+              // Cosine falloff brush for silky fluid displacement
+              const factor = (Math.cos((dist / radiusCells) * Math.PI) + 1) * 0.5;
+              gridDispX[index] += mouse.vx * factor * 0.5;
+              gridDispY[index] += mouse.vy * factor * 0.5;
             }
           }
         }
@@ -143,9 +144,9 @@ export default function LoginPage() {
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      GRID_GAP = Math.max(10, Math.floor(width / 65));
-      cols = Math.ceil(width / GRID_GAP) + 1;
-      rows = Math.ceil(height / GRID_GAP) + 1;
+      GRID_GAP = Math.max(9, Math.floor(width / 68));
+      cols = Math.ceil(width / GRID_GAP) + 2;
+      rows = Math.ceil(height / GRID_GAP) + 2;
       gridDispX = new Float32Array(cols * rows);
       gridDispY = new Float32Array(cols * rows);
     };
@@ -156,79 +157,83 @@ export default function LoginPage() {
     let time = 0;
 
     const render = () => {
-      time += 0.006; // Slow organic wave drift speed
+      time += 0.005; // Gentle, organic wave movement
 
       // Pitch black background (matching reference image)
       ctx.fillStyle = '#030406';
       ctx.fillRect(0, 0, width, height);
 
-      // Smooth elastic return for liquid grid displacement
+      // Smooth elastic return for fluid displacement
       for (let i = 0; i < gridDispX.length; i++) {
-        gridDispX[i] *= 0.94;
-        gridDispY[i] *= 0.94;
+        gridDispX[i] *= 0.93;
+        gridDispY[i] *= 0.93;
       }
 
-      // Render Halftone Dot Grid
+      const maxDotRadius = GRID_GAP * 0.47;
+
+      // Render Halftone Matrix
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const index = r * cols + c;
           const dispX = gridDispX[index];
           const dispY = gridDispY[index];
 
-          // Base dot position + liquid cursor displacement
+          // Displaced position from liquid cursor interaction
           const origX = c * GRID_GAP;
           const origY = r * GRID_GAP;
           const posX = origX + dispX;
           const posY = origY + dispY;
 
-          // Normalized coordinates for wave equation
+          // Normalized coordinates (0..1) including fluid distortion
           const nx = posX / width;
           const ny = posY / height;
 
-          /* ── Exact Halftone S-Wave Ribbons (from reference image) ──
-             Three sweeping luminous ribbons:
-             1. Top-right sweeping curve
-             2. Large middle S-curve
-             3. Bottom-right sweeping curve
+          /* ── Exact Halftone S-Wave Ribbons (Reference Artwork Match) ──
+             1. Top Ribbon: sweeping arch from top right to center left
+             2. Middle Main S-Curve: sweeping from center left down to bottom right
+             3. Bottom Ribbon: lower arch
           */
-          const wave1Y = 0.18 + 0.22 * Math.sin(nx * Math.PI * 1.6 + time * 0.8);
-          const wave2Y = 0.52 + 0.32 * Math.sin(nx * Math.PI * 2.2 - time * 0.6);
-          const wave3Y = 0.88 + 0.20 * Math.cos(nx * Math.PI * 1.4 + time * 0.4);
+          const wave1 = Math.abs(ny - (0.22 + 0.18 * Math.sin(nx * Math.PI * 1.8 + time * 0.8)));
+          const wave2 = Math.abs(ny - (0.54 + 0.28 * Math.sin(nx * Math.PI * 2.1 - time * 0.6)));
+          const wave3 = Math.abs(ny - (0.86 + 0.16 * Math.cos(nx * Math.PI * 1.5 + time * 0.5)));
 
-          const dist1 = Math.abs(ny - wave1Y);
-          const dist2 = Math.abs(ny - wave2Y);
-          const dist3 = Math.abs(ny - wave3Y);
-
-          const minDist = Math.min(dist1, dist2, dist3);
-          const bandWidth = 0.13; // Thickness of the luminous wave bands
+          const minDist = Math.min(wave1, wave2, wave3);
+          const bandWidth = 0.125;
 
           let intensity = 0;
           if (minDist < bandWidth) {
-            intensity = Math.pow(1 - minDist / bandWidth, 1.8);
+            intensity = Math.pow(1 - minDist / bandWidth, 2.0);
           }
 
-          // Halftone Dot Size Calculation (dots get large in wave center, tiny at edges)
-          const maxDotRadius = GRID_GAP * 0.46; // Dots touch at full intensity
           let dotRadius: number;
           let fillStyle: string;
 
-          if (intensity > 0.02) {
-            dotRadius = Math.max(0.8, maxDotRadius * intensity);
-            const alpha = Math.min(1, 0.2 + intensity * 0.8);
+          if (intensity > 0.01) {
+            dotRadius = Math.max(0.6, maxDotRadius * intensity);
+            const alpha = Math.min(1, 0.15 + intensity * 0.85);
 
-            // Subtle chromatic tint on ribbon edges (warm bronze / soft blue accents like artwork)
-            if (intensity > 0.6) {
-              fillStyle = `rgba(255, 255, 255, ${alpha})`; // Crisp white core
+            if (intensity > 0.55) {
+              // Pure brilliant white wave crest
+              fillStyle = `rgba(255, 255, 255, ${alpha})`;
             } else {
-              const red = Math.floor(235 + intensity * 20);
-              const green = Math.floor(220 + intensity * 25);
-              const blue = Math.floor(210 + intensity * 45);
-              fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+              // Soft gradient edge tint (warm amber on upper edge, cool cyan on lower edge)
+              const isUpperEdge = ny < 0.5;
+              if (isUpperEdge) {
+                const red = Math.floor(245 + intensity * 10);
+                const green = Math.floor(230 + intensity * 25);
+                const blue = Math.floor(215 + intensity * 40);
+                fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+              } else {
+                const red = Math.floor(210 + intensity * 45);
+                const green = Math.floor(225 + intensity * 30);
+                const blue = Math.floor(245 + intensity * 10);
+                fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+              }
             }
           } else {
-            // Dark unlit background matrix dots
-            dotRadius = 0.7;
-            fillStyle = 'rgba(255, 255, 255, 0.07)';
+            // Dark matrix background dots
+            dotRadius = 0.65;
+            fillStyle = 'rgba(255, 255, 255, 0.08)';
           }
 
           ctx.fillStyle = fillStyle;
@@ -238,7 +243,7 @@ export default function LoginPage() {
         }
       }
 
-      // Decay mouse velocity
+      // Velocity decay
       mouse.vx *= 0.88;
       mouse.vy *= 0.88;
 
@@ -284,7 +289,7 @@ export default function LoginPage() {
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
-        {/* ── 1. Halftone S-Wave Canvas ── */}
+        {/* ── 1. Master Halftone S-Wave Canvas ── */}
         <canvas
           ref={canvasRef}
           style={{
