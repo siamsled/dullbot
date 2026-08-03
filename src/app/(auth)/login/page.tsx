@@ -87,7 +87,7 @@ export default function LoginPage() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Liquid Blobs definition
+    // Windows 11 Light Palette Colors
     const colors = [
       { r: 0, g: 120, b: 212 },   // #0078d4 - Windows Blue
       { r: 56, g: 189, b: 248 },  // #38bdf8 - Aqua Cyan
@@ -109,8 +109,8 @@ export default function LoginPage() {
       constructor(x: number, y: number, radius: number, color: { r: number; g: number; b: number }) {
         this.x = x;
         this.y = y;
-        this.vx = (Math.random() - 0.5) * 0.8;
-        this.vy = (Math.random() - 0.5) * 0.8;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = (Math.random() - 0.5) * 1.2;
         this.baseRadius = radius;
         this.radius = radius;
         this.color = color;
@@ -118,54 +118,57 @@ export default function LoginPage() {
       }
 
       update(time: number, mouse: { x: number; y: number; vx: number; vy: number; active: boolean }) {
-        // Organic gentle floating
-        this.phase += 0.015;
-        this.radius = this.baseRadius + Math.sin(this.phase) * 20;
+        // Organic breathing size morphing
+        this.phase += 0.02;
+        this.radius = this.baseRadius + Math.sin(this.phase) * 25;
 
-        // Interaction: stir liquid when mouse moves
+        // Mouse stirring & fluid push force
         if (mouse.active) {
           const dx = mouse.x - this.x;
           const dy = mouse.y - this.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 280;
+          const maxDist = 380;
 
-          if (dist < maxDist) {
-            const force = (1 - dist / maxDist) * 1.8;
-            // Push drop along mouse velocity + radial displacement (fluid vortex)
-            this.vx += mouse.vx * force * 0.08 - (dx / dist) * force * 0.5;
-            this.vy += mouse.vy * force * 0.08 - (dy / dist) * force * 0.5;
+          if (dist < maxDist && dist > 1) {
+            const force = (1 - dist / maxDist);
+            // Stronger displacement + fluid swirl vector
+            const pushX = (dx / dist) * force * 14;
+            const pushY = (dy / dist) * force * 14;
+            
+            this.vx -= pushX * 0.15 - mouse.vx * force * 0.25;
+            this.vy -= pushY * 0.15 - mouse.vy * force * 0.25;
           }
         }
 
-        // Apply friction / fluid drag
-        this.vx *= 0.96;
-        this.vy *= 0.96;
+        // Velocity damping for smooth viscous liquid glide
+        this.vx *= 0.94;
+        this.vy *= 0.94;
 
         this.x += this.vx;
         this.y += this.vy;
 
-        // Soft bounce off canvas edges
-        const margin = 80;
-        if (this.x < margin) this.vx += 0.2;
-        if (this.x > width - margin) this.vx -= 0.2;
-        if (this.y < margin) this.vy += 0.2;
-        if (this.y > height - margin) this.vy -= 0.2;
+        // Soft bounce off screen bounds
+        const margin = 50;
+        if (this.x < margin) { this.x = margin; this.vx *= -0.5; }
+        if (this.x > width - margin) { this.x = width - margin; this.vx *= -0.5; }
+        if (this.y < margin) { this.y = margin; this.vy *= -0.5; }
+        if (this.y > height - margin) { this.y = height - margin; this.vy *= -0.5; }
       }
     }
 
-    // Initialize 8 liquid drops around the screen
+    // Initialize liquid drops spread across canvas
     const drops: LiquidDrop[] = [
-      new LiquidDrop(width * 0.25, height * 0.3, 260, colors[0]),
-      new LiquidDrop(width * 0.75, height * 0.25, 240, colors[1]),
-      new LiquidDrop(width * 0.65, height * 0.7, 280, colors[2]),
-      new LiquidDrop(width * 0.3, height * 0.75, 220, colors[3]),
-      new LiquidDrop(width * 0.5, height * 0.45, 250, colors[4]),
-      new LiquidDrop(width * 0.15, height * 0.6, 200, colors[1]),
-      new LiquidDrop(width * 0.85, height * 0.5, 210, colors[0]),
-      new LiquidDrop(width * 0.45, height * 0.15, 230, colors[2]),
+      new LiquidDrop(width * 0.2, height * 0.25, 280, colors[0]),
+      new LiquidDrop(width * 0.8, height * 0.2, 260, colors[1]),
+      new LiquidDrop(width * 0.7, height * 0.75, 300, colors[2]),
+      new LiquidDrop(width * 0.25, height * 0.8, 240, colors[3]),
+      new LiquidDrop(width * 0.5, height * 0.5, 270, colors[4]),
+      new LiquidDrop(width * 0.1, height * 0.55, 220, colors[1]),
+      new LiquidDrop(width * 0.9, height * 0.6, 230, colors[0]),
+      new LiquidDrop(width * 0.5, height * 0.15, 250, colors[2]),
     ];
 
-    // Mouse tracking for fluid stirring
+    // Shared global mouse tracker
     const mouse = {
       x: -1000,
       y: -1000,
@@ -176,30 +179,34 @@ export default function LoginPage() {
       active: false,
     };
 
-    const handleMouseMoveWindow = (e: MouseEvent) => {
+    const handlePointerMove = (e: MouseEvent) => {
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+
       if (mouse.lastX !== -1000) {
-        mouse.vx = e.clientX - mouse.lastX;
-        mouse.vy = e.clientY - mouse.lastY;
+        mouse.vx = currentX - mouse.lastX;
+        mouse.vy = currentY - mouse.lastY;
       }
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      mouse.lastX = e.clientX;
-      mouse.lastY = e.clientY;
+      mouse.x = currentX;
+      mouse.y = currentY;
+      mouse.lastX = currentX;
+      mouse.lastY = currentY;
       mouse.active = true;
 
-      // Add temporary fluid ripples at mouse location when moving fast
+      // Spawn dynamic liquid drop directly on fast cursor movement
       const speed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
-      if (speed > 8 && drops.length < 18) {
+      if (speed > 4 && drops.length < 22) {
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        const ripple = new LiquidDrop(mouse.x, mouse.y, Math.min(speed * 4 + 40, 140), randomColor);
-        ripple.vx = mouse.vx * 0.3;
-        ripple.vy = mouse.vy * 0.3;
+        const ripple = new LiquidDrop(currentX, currentY, Math.min(speed * 3 + 50, 150), randomColor);
+        ripple.vx = mouse.vx * 0.25;
+        ripple.vy = mouse.vy * 0.25;
         drops.push(ripple);
-        // Remove ripple after 3 seconds
+
+        // Remove drop after 2.5 seconds
         setTimeout(() => {
           const idx = drops.indexOf(ripple);
           if (idx !== -1) drops.splice(idx, 1);
-        }, 3000);
+        }, 2500);
       }
     };
 
@@ -208,25 +215,26 @@ export default function LoginPage() {
       height = canvas.height = window.innerHeight;
     };
 
-    window.addEventListener('mousemove', handleMouseMoveWindow);
+    // Attach listeners to document & window so mousemove is captured everywhere (even over form card)
+    document.addEventListener('mousemove', handlePointerMove, { passive: true });
     window.addEventListener('resize', handleResize);
 
-    // Animation Loop
+    // Animation Render Loop
     let startTime = Date.now();
     const render = () => {
       const time = (Date.now() - startTime) * 0.001;
 
-      // Base background: Soft Windows 11 Light Mode tint
+      // Clear with Windows 11 Light Slate tint
       ctx.fillStyle = '#f1f5f9';
       ctx.fillRect(0, 0, width, height);
 
-      // Render blended liquid drops
+      // Render liquid drops
       drops.forEach((drop) => {
         drop.update(time, mouse);
 
         const grad = ctx.createRadialGradient(drop.x, drop.y, 0, drop.x, drop.y, drop.radius);
-        grad.addColorStop(0, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.45)`);
-        grad.addColorStop(0.5, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.22)`);
+        grad.addColorStop(0, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.55)`);
+        grad.addColorStop(0.5, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.28)`);
         grad.addColorStop(1, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0)`);
 
         ctx.fillStyle = grad;
@@ -235,7 +243,7 @@ export default function LoginPage() {
         ctx.fill();
       });
 
-      // Mouse velocity decay
+      // Decay mouse velocity
       mouse.vx *= 0.9;
       mouse.vy *= 0.9;
 
@@ -246,7 +254,7 @@ export default function LoginPage() {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('mousemove', handleMouseMoveWindow);
+      document.removeEventListener('mousemove', handlePointerMove);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -285,11 +293,13 @@ export default function LoginPage() {
         <canvas
           ref={canvasRef}
           style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            filter: 'blur(36px) contrast(120%)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            filter: 'blur(32px) contrast(115%)',
+            pointerEvents: 'none',
             zIndex: 1,
           }}
         />
@@ -298,7 +308,7 @@ export default function LoginPage() {
         <div
           aria-hidden="true"
           style={{
-            position: 'absolute',
+            position: 'fixed',
             inset: 0,
             backgroundImage: 'radial-gradient(rgba(0, 120, 212, 0.12) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
