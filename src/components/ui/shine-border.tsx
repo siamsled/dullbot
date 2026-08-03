@@ -4,55 +4,60 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 interface ShineBorderProps {
-  borderRadius?: number;
+  /**
+   * Width of the shine border in pixels.
+   * @default 1
+   */
   borderWidth?: number;
+  /**
+   * Duration of the animation in seconds.
+   * @default 14
+   */
   duration?: number;
-  color?: string | string[];
+  /**
+   * Color of the border, as a single color string or array of colors for gradient.
+   */
   shineColor?: string | string[];
   className?: string;
-  children?: React.ReactNode;
 }
 
+/**
+ * Shine Border — exact Magic UI implementation.
+ * Usage: place as a self-closing child INSIDE a `relative overflow-hidden` Card.
+ * <Card className="relative overflow-hidden">
+ *   <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
+ *   ...card content...
+ * </Card>
+ */
 export function ShineBorder({
-  borderRadius = 16,
-  borderWidth = 2,
-  duration = 8,
-  color,
+  borderWidth = 1,
+  duration = 14,
   shineColor = ["#A07CFE", "#FE8FB5", "#FFBE7B"],
   className,
-  children,
 }: ShineBorderProps) {
-  const activeColor = color || shineColor;
-  const gradientString = Array.isArray(activeColor)
-    ? activeColor.join(", ")
-    : activeColor;
+  const gradientColors = Array.isArray(shineColor)
+    ? shineColor.join(", ")
+    : shineColor;
 
   return (
     <div
-      className={cn("relative p-[2px] rounded-[18px] overflow-hidden", className)}
-    >
-      {/* Animated Conic Gradient Border */}
-      <div
-        className="absolute inset-[-200%] animate-spin-slow pointer-events-none"
-        style={{
-          background: `conic-gradient(from 0deg, ${gradientString}, ${gradientString})`,
-          animationDuration: `${duration}s`,
-        }}
-      />
-
-      {/* Subtle Glowing Blur Effect around border */}
-      <div
-        className="absolute inset-[-10%] blur-md opacity-70 animate-spin-slow pointer-events-none"
-        style={{
-          background: `conic-gradient(from 0deg, ${gradientString}, ${gradientString})`,
-          animationDuration: `${duration}s`,
-        }}
-      />
-
-      {/* Card Content Wrapper */}
-      <div className="relative z-10 w-full h-full rounded-[16px] overflow-hidden">
-        {children}
-      </div>
-    </div>
+      aria-hidden="true"
+      style={
+        {
+          "--border-width": `${borderWidth}px`,
+          "--duration": `${duration}s`,
+          backgroundImage: `radial-gradient(transparent,transparent), conic-gradient(from calc(270deg - (360deg / 2)), ${gradientColors}, transparent 360deg)`,
+          WebkitMaskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+          maskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+          padding: `var(--border-width)`,
+        } as React.CSSProperties
+      }
+      className={cn(
+        "pointer-events-none absolute inset-0 rounded-[inherit] [background-size:300%_300%] animate-shine",
+        className,
+      )}
+    />
   );
 }
