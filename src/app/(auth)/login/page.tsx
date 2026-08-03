@@ -6,50 +6,50 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Windows 11 Fluent 3D "Bloom" Theme Palette
-   Bright, rich, luminous colors with higher opacity:
-   - Blob 1: Vibrant Windows Cyan / Electric Blue (#0078d4 / #00b4d8)
-   - Blob 2: Vibrant Fluent Purple / Violet (#7738d8 / #9d4edd)
-   - Blob 3: Vibrant Hot Magenta / Pink (#e056fd / #f368e0)
+   Windows 11 Light Mode "Bloom" Theme Palette
+   Clean, pastel, luminous 3D ribbon/flow colors:
+   - Blob 1: Soft Sky Blue / Windows Blue (rgba(0, 120, 212, 0.25))
+   - Blob 2: Vibrant Lavender / Soft Purple (rgba(147, 97, 253, 0.28))
+   - Blob 3: Pastel Cyan / Aqua (rgba(56, 189, 248, 0.25))
 ───────────────────────────────────────────── */
 const BLOBS = [
   {
-    // Electric Cyan / Blue (Top-Left)
-    color: 'radial-gradient(circle, rgba(0, 180, 216, 0.75) 0%, rgba(0, 119, 182, 0.35) 55%, transparent 75%)',
-    size: 560,
+    // Windows Sky Blue (Top-Left)
+    color: 'radial-gradient(circle, rgba(0, 120, 212, 0.30) 0%, rgba(56, 189, 248, 0.15) 55%, transparent 75%)',
+    size: 580,
     initial: { x: -60, y: -80 },
-    morphDuration: '11s',
-    driftDuration: '10s',
+    morphDuration: '12s',
+    driftDuration: '11s',
     driftDelay: '0s',
     morphDelay: '0s',
   },
   {
-    // Windows Fluent Purple (Center-Right)
-    color: 'radial-gradient(circle, rgba(157, 78, 221, 0.75) 0%, rgba(119, 56, 216, 0.35) 55%, transparent 75%)',
-    size: 500,
+    // Soft Lavender / Purple (Center-Right)
+    color: 'radial-gradient(circle, rgba(147, 97, 253, 0.32) 0%, rgba(192, 132, 252, 0.15) 55%, transparent 75%)',
+    size: 520,
     initial: { x: 240, y: 60 },
-    morphDuration: '13s',
-    driftDuration: '12s',
+    morphDuration: '14s',
+    driftDuration: '13s',
     driftDelay: '-3s',
     morphDelay: '-4s',
   },
   {
-    // Vibrant Hot Magenta (Bottom-Left)
-    color: 'radial-gradient(circle, rgba(224, 86, 253, 0.70) 0%, rgba(243, 104, 224, 0.30) 55%, transparent 75%)',
-    size: 440,
+    // Fresh Mint Cyan (Bottom-Left)
+    color: 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(45, 212, 191, 0.12) 55%, transparent 75%)',
+    size: 460,
     initial: { x: 20, y: 280 },
     morphDuration: '10s',
-    driftDuration: '14s',
+    driftDuration: '15s',
     driftDelay: '-6s',
     morphDelay: '-2s',
   },
 ] as const;
 
-/* Palette colors for cursor particles */
+/* Palette colors for cursor particles in Light Mode */
 const PARTICLE_COLORS = [
-  'rgba(0, 212, 255, 0.75)',   // Cyan
-  'rgba(186, 104, 255, 0.75)', // Purple
-  'rgba(243, 104, 224, 0.75)', // Magenta
+  'rgba(0, 120, 212, 0.45)',  // Sky Blue
+  'rgba(147, 97, 253, 0.45)', // Lavender
+  'rgba(45, 212, 191, 0.45)', // Mint Cyan
 ];
 
 /* Keyframe animations for morphing 3D shapes, particles, and card entrance */
@@ -236,28 +236,28 @@ export default function LoginPage() {
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── Windows 11 Fluent Dark Canvas Background ── */}
+      {/* ── Windows 11 Light Mode Desktop Canvas Background ── */}
       <div
         className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
         style={{
-          background: 'radial-gradient(circle at 50% 30%, #151a35 0%, #0b0e1d 60%, #05060d 100%)',
+          background: 'linear-gradient(135deg, #f3f6fc 0%, #eef2f9 50%, #e8edf7 100%)',
         }}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Subtle grid pattern overlay like Windows 11 desktop */}
+        {/* Subtle grid pattern overlay like Windows 11 Light Desktop */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(rgba(0, 120, 212, 0.08) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
-            opacity: 0.6,
+            opacity: 0.7,
             pointerEvents: 'none',
           }}
         />
 
-        {/* ── 1. Windows 11 "Bloom" Vibrant 3D Blobs ── */}
+        {/* ── 1. Windows 11 Light Mode Pastel 3D Blobs ── */}
         {BLOBS.map((b, i) => (
           <div
             key={i}
@@ -273,8 +273,7 @@ export default function LoginPage() {
                 `lb-morph-${i} ${b.morphDuration} ${b.morphDelay} ease-in-out infinite`,
                 `lb-drift-${i} ${b.driftDuration} ${b.driftDelay} ease-in-out infinite`,
               ].join(', '),
-              filter: 'blur(36px)',
-              mixBlendMode: 'screen',
+              filter: 'blur(48px)',
               willChange: 'transform, border-radius',
               pointerEvents: 'none',
             }}
@@ -315,7 +314,7 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* ── 3. Card Stage (Windows 11 Acrylic Glass Card) ── */}
+        {/* ── 3. Card Stage (Windows 11 Light Acrylic Glass Card) ── */}
         <div
           style={{
             perspective: '1000px',
@@ -334,15 +333,15 @@ export default function LoginPage() {
               animation: 'card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
             }}
           >
-            {/* ── Windows 11 Acrylic Frosted Card ── */}
+            {/* ── Windows 11 Light Acrylic Glass Card ── */}
             <div
               style={{
-                background: 'rgba(20, 26, 48, 0.65)',
-                backdropFilter: 'blur(32px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
+                background: 'rgba(255, 255, 255, 0.75)',
+                backdropFilter: 'blur(32px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.85)',
                 borderRadius: 24,
-                boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 20px rgba(0, 180, 216, 0.15)',
+                boxShadow: '0 20px 50px rgba(0, 120, 212, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1)',
                 overflow: 'hidden',
                 padding: '40px 34px 32px',
               }}
@@ -356,21 +355,20 @@ export default function LoginPage() {
                       fontSize: 34,
                       fontWeight: 300,
                       letterSpacing: '-0.03em',
-                      color: '#ffffff',
-                      textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                      color: '#0f172a',
                     }}
                   >
-                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 22, color: 'rgba(0, 212, 255, 0.9)' }}>bot.</span>
+                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 600, fontSize: 22, color: '#0078d4' }}>bot.</span>
                   </span>
                 </Link>
-                <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: 12, marginTop: 6, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <p style={{ color: '#64748b', fontSize: 12, marginTop: 6, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   Sign in to your account
                 </p>
               </div>
 
               {/* Error message */}
               {errorMsg && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: 13, color: '#fca5a5', textAlign: 'center' }}>
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: 13, color: '#dc2626', textAlign: 'center' }}>
                   {errorMsg}
                 </div>
               )}
@@ -378,7 +376,7 @@ export default function LoginPage() {
               {/* Form */}
               <form id="login-form" onSubmit={handlePasswordLogin} className="space-y-4">
                 <div>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)', marginBottom: 6, letterSpacing: '0.03em' }}>
+                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6, letterSpacing: '0.03em' }}>
                     Email Address
                   </label>
                   <input
@@ -391,29 +389,29 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      border: '1px solid #cbd5e1',
                       borderRadius: 12,
-                      color: '#ffffff',
+                      color: '#0f172a',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s ease',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#00b4d8';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.12)';
-                      e.target.style.boxShadow = '0 0 12px rgba(0, 180, 216, 0.4)';
+                      e.target.style.borderColor = '#0078d4';
+                      e.target.style.background = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.18)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.16)';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.8)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)', marginBottom: 6, letterSpacing: '0.03em' }}>
+                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6, letterSpacing: '0.03em' }}>
                     Password
                   </label>
                   <input
@@ -425,23 +423,23 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      border: '1px solid #cbd5e1',
                       borderRadius: 12,
-                      color: '#ffffff',
+                      color: '#0f172a',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s ease',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#00b4d8';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.12)';
-                      e.target.style.boxShadow = '0 0 12px rgba(0, 180, 216, 0.4)';
+                      e.target.style.borderColor = '#0078d4';
+                      e.target.style.background = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.18)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.16)';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                      e.target.style.borderColor = '#cbd5e1';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.8)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
@@ -450,9 +448,9 @@ export default function LoginPage() {
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.14)' }} />
-                <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.14)' }} />
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
               </div>
 
               {/* Google OAuth Button */}
@@ -467,24 +465,25 @@ export default function LoginPage() {
                   justifyContent: 'center',
                   gap: 10,
                   padding: '11px 16px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
                   borderRadius: 12,
-                  color: '#ffffff',
+                  color: '#334155',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   marginBottom: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                   opacity: loading ? 0.5 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.18)';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                  (e.currentTarget as HTMLButtonElement).style.background = '#f8fafc';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.1)';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255, 255, 255, 0.18)';
+                  (e.currentTarget as HTMLButtonElement).style.background = '#ffffff';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#cbd5e1';
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
@@ -496,7 +495,7 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              {/* Windows 11 Electric Blue Fluent Submit Button */}
+              {/* Windows 11 Light Mode Primary Blue Button */}
               <button
                 type="submit"
                 form="login-form"
@@ -504,7 +503,7 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #0077b6 0%, #00b4d8 50%, #9d4edd 100%)',
+                  background: 'linear-gradient(135deg, #0078d4 0%, #0284c7 50%, #7c3aed 100%)',
                   border: 'none',
                   borderRadius: 12,
                   color: '#ffffff',
@@ -512,16 +511,16 @@ export default function LoginPage() {
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 20px rgba(0, 180, 216, 0.45)',
+                  boxShadow: '0 4px 16px rgba(0, 120, 212, 0.35)',
                   opacity: loading ? 0.7 : 1,
                   letterSpacing: '0.02em',
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(0, 180, 216, 0.7)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(0, 120, 212, 0.5)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(0, 180, 216, 0.45)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0, 120, 212, 0.35)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
                 }}
               >
@@ -529,9 +528,9 @@ export default function LoginPage() {
               </button>
 
               {/* Footer Link */}
-              <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255, 255, 255, 0.55)', marginTop: 18 }}>
+              <p style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 18 }}>
                 No account?{' '}
-                <Link href="/signup" style={{ color: '#00d4ff', fontWeight: 600, textDecoration: 'none' }}>
+                <Link href="/signup" style={{ color: '#0078d4', fontWeight: 600, textDecoration: 'none' }}>
                   Get started
                 </Link>
               </p>
