@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Halftone Dot-Matrix Ocean Wave & Fluid Canvas
-   - Smooth continuous ocean wave flow across canvas
-   - Soft, organic cursor fluid brush warping (Gaussian Falloff)
-   - Soft white & silver luminous halftone palette
+   Halftone Dot-Matrix S-Wave Liquid Canvas
+   Exact match to reference artwork:
+   - Square halftone dot grid proportional to reference image
+   - Sweeping S-curve luminous bands (varying dot size & opacity)
+   - Interactive liquid warping when cursor moves over the waves
 ───────────────────────────────────────────── */
 
 const KEYFRAMES = `
@@ -73,7 +74,7 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Ocean Wave & Soft Fluid Warp Engine ── */
+  /* ── Halftone S-Wave & Liquid Distortion Engine ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -84,7 +85,7 @@ export default function LoginPage() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Mouse tracking for fluid warping
+    // Mouse tracking for dynamic liquid warping
     const mouse = {
       x: -1000,
       y: -1000,
@@ -94,11 +95,12 @@ export default function LoginPage() {
       lastY: -1000,
     };
 
-    const GRID_GAP = 7; // High resolution tiny dots
-    let cols = Math.ceil(width / GRID_GAP);
-    let rows = Math.ceil(height / GRID_GAP);
+    // Calculate GRID_GAP based on viewport so dot proportion matches reference image (~60-70 dots across width)
+    let GRID_GAP = Math.max(10, Math.floor(width / 65));
+    let cols = Math.ceil(width / GRID_GAP) + 1;
+    let rows = Math.ceil(height / GRID_GAP) + 1;
 
-    // Smooth viscous force displacement grid
+    // Smooth fluid displacement grid (dx, dy per vertex)
     let gridDispX = new Float32Array(cols * rows);
     let gridDispY = new Float32Array(cols * rows);
 
@@ -106,18 +108,18 @@ export default function LoginPage() {
       const cx = e.clientX;
       const cy = e.clientY;
       if (mouse.lastX !== -1000) {
-        mouse.vx = (cx - mouse.lastX) * 0.4;
-        mouse.vy = (cy - mouse.lastY) * 0.4;
+        mouse.vx = (cx - mouse.lastX) * 0.5;
+        mouse.vy = (cy - mouse.lastY) * 0.5;
       }
       mouse.x = cx;
       mouse.y = cy;
       mouse.lastX = cx;
       mouse.lastY = cy;
 
-      // Soft Gaussian brush fluid impulse to grid
+      // Apply fluid displacement impulse to nearby grid vertices
       const cellX = Math.floor(cx / GRID_GAP);
       const cellY = Math.floor(cy / GRID_GAP);
-      const radiusCells = 24; // Wide, soft brush radius
+      const radiusCells = 20; // Soft brush radius in grid units
 
       for (let r = -radiusCells; r <= radiusCells; r++) {
         for (let c = -radiusCells; c <= radiusCells; c++) {
@@ -128,10 +130,10 @@ export default function LoginPage() {
             const distSq = c * c + r * r;
             const maxDistSq = radiusCells * radiusCells;
             if (distSq < maxDistSq) {
-              // Smooth cosine/Gaussian falloff for silky soft warping
+              // Smooth Gaussian cosine falloff for silky fluid stretching
               const factor = (Math.cos((Math.sqrt(distSq) / radiusCells) * Math.PI) + 1) * 0.5;
-              gridDispX[index] += mouse.vx * factor * 0.3;
-              gridDispY[index] += mouse.vy * factor * 0.3;
+              gridDispX[index] += mouse.vx * factor * 0.45;
+              gridDispY[index] += mouse.vy * factor * 0.45;
             }
           }
         }
@@ -141,8 +143,9 @@ export default function LoginPage() {
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      cols = Math.ceil(width / GRID_GAP);
-      rows = Math.ceil(height / GRID_GAP);
+      GRID_GAP = Math.max(10, Math.floor(width / 65));
+      cols = Math.ceil(width / GRID_GAP) + 1;
+      rows = Math.ceil(height / GRID_GAP) + 1;
       gridDispX = new Float32Array(cols * rows);
       gridDispY = new Float32Array(cols * rows);
     };
@@ -153,57 +156,89 @@ export default function LoginPage() {
     let time = 0;
 
     const render = () => {
-      time += 0.008; // Smooth, slow-rolling ocean wave frequency
+      time += 0.006; // Slow organic wave drift speed
 
-      // Deep rich black background
-      ctx.fillStyle = '#050608';
+      // Pitch black background (matching reference image)
+      ctx.fillStyle = '#030406';
       ctx.fillRect(0, 0, width, height);
 
-      // Ultra-smooth viscous damping (slow elastic return)
+      // Smooth elastic return for liquid grid displacement
       for (let i = 0; i < gridDispX.length; i++) {
-        gridDispX[i] *= 0.95;
-        gridDispY[i] *= 0.95;
+        gridDispX[i] *= 0.94;
+        gridDispY[i] *= 0.94;
       }
 
-      // Render Ocean Wave Halftone Matrix
+      // Render Halftone Dot Grid
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const baseIdx = r * cols + c;
-          const dispX = gridDispX[baseIdx];
-          const dispY = gridDispY[baseIdx + 1] || gridDispY[baseIdx];
+          const index = r * cols + c;
+          const dispX = gridDispX[index];
+          const dispY = gridDispY[index];
 
-          const origX = c * GRID_GAP + GRID_GAP / 2;
-          const origY = r * GRID_GAP + GRID_GAP / 2;
+          // Base dot position + liquid cursor displacement
+          const origX = c * GRID_GAP;
+          const origY = r * GRID_GAP;
           const posX = origX + dispX;
           const posY = origY + dispY;
 
-          /* ── Coherent Ocean Wave Field ──
-             Continuous directional wave fronts (top-right to bottom-left flow)
-             instead of isolated random dot lighting.
+          // Normalized coordinates for wave equation
+          const nx = posX / width;
+          const ny = posY / height;
+
+          /* ── Exact Halftone S-Wave Ribbons (from reference image) ──
+             Three sweeping luminous ribbons:
+             1. Top-right sweeping curve
+             2. Large middle S-curve
+             3. Bottom-right sweeping curve
           */
-          const waveAngle = posX * 0.0025 + posY * 0.0015;
-          const wavePrimary = Math.sin(waveAngle - time * 1.4) * 0.5 + 0.5;
-          const waveSecondary = Math.cos(waveAngle * 1.5 + time * 0.8) * 0.5 + 0.5;
-          const waveDetail = Math.sin((posX - posY) * 0.001 - time * 0.5) * 0.5 + 0.5;
+          const wave1Y = 0.18 + 0.22 * Math.sin(nx * Math.PI * 1.6 + time * 0.8);
+          const wave2Y = 0.52 + 0.32 * Math.sin(nx * Math.PI * 2.2 - time * 0.6);
+          const wave3Y = 0.88 + 0.20 * Math.cos(nx * Math.PI * 1.4 + time * 0.4);
 
-          // Combine wave harmonics into smooth ocean swell
-          const intensity = Math.pow(wavePrimary * 0.55 + waveSecondary * 0.3 + waveDetail * 0.15, 2.5);
+          const dist1 = Math.abs(ny - wave1Y);
+          const dist2 = Math.abs(ny - wave2Y);
+          const dist3 = Math.abs(ny - wave3Y);
 
-          // Soft white & silver dot rendering
-          const maxRadius = GRID_GAP * 0.46;
-          const dotRadius = Math.max(0.6, maxRadius * intensity);
+          const minDist = Math.min(dist1, dist2, dist3);
+          const bandWidth = 0.13; // Thickness of the luminous wave bands
 
-          // Soft white brush luminance
-          const opacity = Math.min(1, 0.15 + intensity * 0.85);
+          let intensity = 0;
+          if (minDist < bandWidth) {
+            intensity = Math.pow(1 - minDist / bandWidth, 1.8);
+          }
 
-          ctx.fillStyle = `rgba(245, 248, 255, ${opacity})`;
+          // Halftone Dot Size Calculation (dots get large in wave center, tiny at edges)
+          const maxDotRadius = GRID_GAP * 0.46; // Dots touch at full intensity
+          let dotRadius: number;
+          let fillStyle: string;
+
+          if (intensity > 0.02) {
+            dotRadius = Math.max(0.8, maxDotRadius * intensity);
+            const alpha = Math.min(1, 0.2 + intensity * 0.8);
+
+            // Subtle chromatic tint on ribbon edges (warm bronze / soft blue accents like artwork)
+            if (intensity > 0.6) {
+              fillStyle = `rgba(255, 255, 255, ${alpha})`; // Crisp white core
+            } else {
+              const red = Math.floor(235 + intensity * 20);
+              const green = Math.floor(220 + intensity * 25);
+              const blue = Math.floor(210 + intensity * 45);
+              fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+            }
+          } else {
+            // Dark unlit background matrix dots
+            dotRadius = 0.7;
+            fillStyle = 'rgba(255, 255, 255, 0.07)';
+          }
+
+          ctx.fillStyle = fillStyle;
           ctx.beginPath();
           ctx.arc(posX, posY, dotRadius, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      // Smooth decay of mouse velocity
+      // Decay mouse velocity
       mouse.vx *= 0.88;
       mouse.vy *= 0.88;
 
@@ -249,7 +284,7 @@ export default function LoginPage() {
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
-        {/* ── 1. Coherent Ocean Wave Halftone Canvas ── */}
+        {/* ── 1. Halftone S-Wave Canvas ── */}
         <canvas
           ref={canvasRef}
           style={{
@@ -285,12 +320,12 @@ export default function LoginPage() {
             {/* ── Glass Card ── */}
             <div
               style={{
-                background: 'rgba(15, 18, 28, 0.75)',
+                background: 'rgba(10, 12, 20, 0.78)',
                 backdropFilter: 'blur(32px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 24,
-                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18)',
                 overflow: 'hidden',
                 padding: '40px 34px 32px',
               }}
