@@ -89,6 +89,13 @@
   --animate-blob: blob 7s infinite;
   --animate-grid-drift: grid-drift 20s linear infinite;
   --animate-aurora: aurora 60s linear infinite;
+  --animate-shine: shine var(--duration) infinite linear;
+
+  @keyframes shine {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+  }
 
   @keyframes blob {
     0% { transform: translate(0px, 0px) scale(1); }
