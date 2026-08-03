@@ -6,118 +6,21 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Windows 11 Light Mode "Bloom" Theme Palette
-   Clean, pastel, luminous 3D ribbon/flow colors:
-   - Blob 1: Soft Sky Blue / Windows Blue (rgba(0, 120, 212, 0.25))
-   - Blob 2: Vibrant Lavender / Soft Purple (rgba(147, 97, 253, 0.28))
-   - Blob 3: Pastel Cyan / Aqua (rgba(56, 189, 248, 0.25))
+   Interactive Liquid Canvas — Windows 11 Light Mode Theme
+   Fluid simulation with multi-color Windows 11 light palette:
+   - Sky Blue:   #0078d4
+   - Aqua Cyan:  #38bdf8
+   - Lavender:   #9361fd
+   - Mint Teal:  #2dd4bf
+   - Soft Pink:  #f472b6
 ───────────────────────────────────────────── */
-const BLOBS = [
-  {
-    // Windows Sky Blue (Top-Left)
-    color: 'radial-gradient(circle, rgba(0, 120, 212, 0.30) 0%, rgba(56, 189, 248, 0.15) 55%, transparent 75%)',
-    size: 580,
-    initial: { x: -60, y: -80 },
-    morphDuration: '12s',
-    driftDuration: '11s',
-    driftDelay: '0s',
-    morphDelay: '0s',
-  },
-  {
-    // Soft Lavender / Purple (Center-Right)
-    color: 'radial-gradient(circle, rgba(147, 97, 253, 0.32) 0%, rgba(192, 132, 252, 0.15) 55%, transparent 75%)',
-    size: 520,
-    initial: { x: 240, y: 60 },
-    morphDuration: '14s',
-    driftDuration: '13s',
-    driftDelay: '-3s',
-    morphDelay: '-4s',
-  },
-  {
-    // Fresh Mint Cyan (Bottom-Left)
-    color: 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(45, 212, 191, 0.12) 55%, transparent 75%)',
-    size: 460,
-    initial: { x: 20, y: 280 },
-    morphDuration: '10s',
-    driftDuration: '15s',
-    driftDelay: '-6s',
-    morphDelay: '-2s',
-  },
-] as const;
 
-/* Palette colors for cursor particles in Light Mode */
-const PARTICLE_COLORS = [
-  'rgba(0, 120, 212, 0.45)',  // Sky Blue
-  'rgba(147, 97, 253, 0.45)', // Lavender
-  'rgba(45, 212, 191, 0.45)', // Mint Cyan
-];
-
-/* Keyframe animations for morphing 3D shapes, particles, and card entrance */
 const KEYFRAMES = `
-  @keyframes lb-morph-0 {
-    0%   { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-    25%  { border-radius: 35% 65% 60% 40% / 55% 45% 55% 45%; }
-    50%  { border-radius: 50% 60% 35% 65% / 35% 55% 65% 45%; }
-    75%  { border-radius: 45% 55% 55% 45% / 60% 40% 45% 55%; }
-    100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-  }
-  @keyframes lb-morph-1 {
-    0%   { border-radius: 45% 55% 65% 35% / 55% 45% 65% 35%; }
-    30%  { border-radius: 65% 35% 40% 60% / 45% 65% 35% 55%; }
-    60%  { border-radius: 35% 65% 55% 45% / 55% 35% 65% 45%; }
-    100% { border-radius: 45% 55% 65% 35% / 55% 45% 65% 35%; }
-  }
-  @keyframes lb-morph-2 {
-    0%   { border-radius: 55% 45% 45% 55% / 45% 55% 55% 45%; }
-    35%  { border-radius: 70% 30% 60% 40% / 50% 60% 40% 50%; }
-    65%  { border-radius: 40% 60% 35% 65% / 60% 40% 60% 40%; }
-    100% { border-radius: 55% 45% 45% 55% / 45% 55% 55% 45%; }
-  }
-  @keyframes lb-drift-0 {
-    0%   { transform: translate(0px, 0px) rotate(0deg); }
-    25%  { transform: translate(50px, -40px) rotate(10deg); }
-    50%  { transform: translate(-30px, 60px) rotate(-8deg); }
-    75%  { transform: translate(40px, 30px) rotate(5deg); }
-    100% { transform: translate(0px, 0px) rotate(0deg); }
-  }
-  @keyframes lb-drift-1 {
-    0%   { transform: translate(0px, 0px) rotate(0deg); }
-    30%  { transform: translate(-60px, 40px) rotate(-12deg); }
-    60%  { transform: translate(40px, -50px) rotate(15deg); }
-    100% { transform: translate(0px, 0px) rotate(0deg); }
-  }
-  @keyframes lb-drift-2 {
-    0%   { transform: translate(0px, 0px) rotate(0deg); }
-    20%  { transform: translate(40px, -60px) rotate(8deg); }
-    55%  { transform: translate(-50px, 30px) rotate(-10deg); }
-    80%  { transform: translate(30px, 50px) rotate(6deg); }
-    100% { transform: translate(0px, 0px) rotate(0deg); }
-  }
-  @keyframes particle-fade {
-    0% {
-      opacity: 1;
-      transform: translate(0, 0) scale(1);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(var(--dx), var(--dy)) scale(1.8);
-    }
-  }
   @keyframes card-enter {
     from { opacity: 0; transform: scale(0.93) translateY(16px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 `;
-
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-  dx: number;
-  dy: number;
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -126,12 +29,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Particle trail state & refs
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const lastSpawnTime = useRef<number>(0);
-  const nextParticleId = useRef<number>(0);
-
-  // Card 3D tilt ref
+  // Canvas & Simulation Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   /* ── Auth logic (unchanged) ── */
@@ -177,38 +76,183 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Mousemove: Spawns particle & handles card tilt ── */
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    const now = Date.now();
+  /* ── Interactive Liquid Canvas Engine ── */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
 
-    // Spawn particle trail (throttled to ~60ms)
-    if (now - lastSpawnTime.current > 60) {
-      lastSpawnTime.current = now;
-      const size = Math.floor(Math.random() * 12) + 12; // 12px - 24px
-      const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
-      
-      const dx = (Math.random() - 0.5) * 36;
-      const dy = -(Math.random() * 30 + 15);
-      
-      const newParticle: Particle = {
-        id: nextParticleId.current++,
-        x: e.clientX,
-        y: e.clientY,
-        size,
-        color,
-        dx,
-        dy,
-      };
+    let animationFrameId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
 
-      setParticles((prev) => [...prev, newParticle]);
+    // Liquid Blobs definition
+    const colors = [
+      { r: 0, g: 120, b: 212 },   // #0078d4 - Windows Blue
+      { r: 56, g: 189, b: 248 },  // #38bdf8 - Aqua Cyan
+      { r: 147, g: 97, b: 253 },  // #9361fd - Lavender
+      { r: 45, g: 212, b: 191 },  // #2dd4bf - Mint Teal
+      { r: 244, g: 114, b: 182 }, // #f472b6 - Soft Pink
+    ];
 
-      // DOM Cleanup
-      setTimeout(() => {
-        setParticles((prev) => prev.filter((p) => p.id !== newParticle.id));
-      }, 1600);
+    class LiquidDrop {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      radius: number;
+      baseRadius: number;
+      color: { r: number; g: number; b: number };
+      phase: number;
+
+      constructor(x: number, y: number, radius: number, color: { r: number; g: number; b: number }) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.baseRadius = radius;
+        this.radius = radius;
+        this.color = color;
+        this.phase = Math.random() * Math.PI * 2;
+      }
+
+      update(time: number, mouse: { x: number; y: number; vx: number; vy: number; active: boolean }) {
+        // Organic gentle floating
+        this.phase += 0.015;
+        this.radius = this.baseRadius + Math.sin(this.phase) * 20;
+
+        // Interaction: stir liquid when mouse moves
+        if (mouse.active) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = 280;
+
+          if (dist < maxDist) {
+            const force = (1 - dist / maxDist) * 1.8;
+            // Push drop along mouse velocity + radial displacement (fluid vortex)
+            this.vx += mouse.vx * force * 0.08 - (dx / dist) * force * 0.5;
+            this.vy += mouse.vy * force * 0.08 - (dy / dist) * force * 0.5;
+          }
+        }
+
+        // Apply friction / fluid drag
+        this.vx *= 0.96;
+        this.vy *= 0.96;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Soft bounce off canvas edges
+        const margin = 80;
+        if (this.x < margin) this.vx += 0.2;
+        if (this.x > width - margin) this.vx -= 0.2;
+        if (this.y < margin) this.vy += 0.2;
+        if (this.y > height - margin) this.vy -= 0.2;
+      }
     }
 
-    // Card 3D tilt calculation
+    // Initialize 8 liquid drops around the screen
+    const drops: LiquidDrop[] = [
+      new LiquidDrop(width * 0.25, height * 0.3, 260, colors[0]),
+      new LiquidDrop(width * 0.75, height * 0.25, 240, colors[1]),
+      new LiquidDrop(width * 0.65, height * 0.7, 280, colors[2]),
+      new LiquidDrop(width * 0.3, height * 0.75, 220, colors[3]),
+      new LiquidDrop(width * 0.5, height * 0.45, 250, colors[4]),
+      new LiquidDrop(width * 0.15, height * 0.6, 200, colors[1]),
+      new LiquidDrop(width * 0.85, height * 0.5, 210, colors[0]),
+      new LiquidDrop(width * 0.45, height * 0.15, 230, colors[2]),
+    ];
+
+    // Mouse tracking for fluid stirring
+    const mouse = {
+      x: -1000,
+      y: -1000,
+      lastX: -1000,
+      lastY: -1000,
+      vx: 0,
+      vy: 0,
+      active: false,
+    };
+
+    const handleMouseMoveWindow = (e: MouseEvent) => {
+      if (mouse.lastX !== -1000) {
+        mouse.vx = e.clientX - mouse.lastX;
+        mouse.vy = e.clientY - mouse.lastY;
+      }
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.lastX = e.clientX;
+      mouse.lastY = e.clientY;
+      mouse.active = true;
+
+      // Add temporary fluid ripples at mouse location when moving fast
+      const speed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
+      if (speed > 8 && drops.length < 18) {
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const ripple = new LiquidDrop(mouse.x, mouse.y, Math.min(speed * 4 + 40, 140), randomColor);
+        ripple.vx = mouse.vx * 0.3;
+        ripple.vy = mouse.vy * 0.3;
+        drops.push(ripple);
+        // Remove ripple after 3 seconds
+        setTimeout(() => {
+          const idx = drops.indexOf(ripple);
+          if (idx !== -1) drops.splice(idx, 1);
+        }, 3000);
+      }
+    };
+
+    const handleResize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveWindow);
+    window.addEventListener('resize', handleResize);
+
+    // Animation Loop
+    let startTime = Date.now();
+    const render = () => {
+      const time = (Date.now() - startTime) * 0.001;
+
+      // Base background: Soft Windows 11 Light Mode tint
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, 0, width, height);
+
+      // Render blended liquid drops
+      drops.forEach((drop) => {
+        drop.update(time, mouse);
+
+        const grad = ctx.createRadialGradient(drop.x, drop.y, 0, drop.x, drop.y, drop.radius);
+        grad.addColorStop(0, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.45)`);
+        grad.addColorStop(0.5, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.22)`);
+        grad.addColorStop(1, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0)`);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Mouse velocity decay
+      mouse.vx *= 0.9;
+      mouse.vy *= 0.9;
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('mousemove', handleMouseMoveWindow);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  /* ── 3D Card Tilt ── */
+  const handleMouseMoveCard = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
@@ -221,100 +265,50 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeaveCard = useCallback(() => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
     }
   }, []);
 
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [handleMouseMove]);
-
   return (
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── Windows 11 Light Mode Desktop Canvas Background ── */}
+      {/* ── Fullscreen Stage ── */}
       <div
         className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
-        style={{
-          background: 'linear-gradient(135deg, #f3f6fc 0%, #eef2f9 50%, #e8edf7 100%)',
-        }}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMoveCard}
+        onMouseLeave={handleMouseLeaveCard}
       >
-        {/* Subtle grid pattern overlay like Windows 11 Light Desktop */}
+        {/* ── 1. Interactive Liquid Simulation Canvas ── */}
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            filter: 'blur(36px) contrast(120%)',
+            zIndex: 1,
+          }}
+        />
+
+        {/* ── Subtle Windows Desktop Dot Grid ── */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'radial-gradient(rgba(0, 120, 212, 0.08) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(rgba(0, 120, 212, 0.12) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
-            opacity: 0.7,
+            opacity: 0.6,
             pointerEvents: 'none',
+            zIndex: 2,
           }}
         />
 
-        {/* ── 1. Windows 11 Light Mode Pastel 3D Blobs ── */}
-        {BLOBS.map((b, i) => (
-          <div
-            key={i}
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              width: b.size,
-              height: b.size,
-              left: b.initial.x,
-              top: b.initial.y,
-              background: b.color,
-              animation: [
-                `lb-morph-${i} ${b.morphDuration} ${b.morphDelay} ease-in-out infinite`,
-                `lb-drift-${i} ${b.driftDuration} ${b.driftDelay} ease-in-out infinite`,
-              ].join(', '),
-              filter: 'blur(48px)',
-              willChange: 'transform, border-radius',
-              pointerEvents: 'none',
-            }}
-          />
-        ))}
-
-        {/* ── 2. Particle Trail Container ── */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 2,
-            overflow: 'hidden',
-          }}
-        >
-          {particles.map((p) => (
-            <div
-              key={p.id}
-              style={
-                {
-                  position: 'absolute',
-                  left: p.x - p.size / 2,
-                  top: p.y - p.size / 2,
-                  width: p.size,
-                  height: p.size,
-                  borderRadius: '50%',
-                  background: `radial-gradient(circle, ${p.color} 0%, transparent 70%)`,
-                  filter: 'blur(2px)',
-                  willChange: 'transform, opacity',
-                  animation: 'particle-fade 1.6s cubic-bezier(0.1, 0.4, 0.2, 1) forwards',
-                  '--dx': `${p.dx}px`,
-                  '--dy': `${p.dy}px`,
-                } as React.CSSProperties
-              }
-            />
-          ))}
-        </div>
-
-        {/* ── 3. Card Stage (Windows 11 Light Acrylic Glass Card) ── */}
+        {/* ── 2. Card Stage (Windows 11 Light Acrylic Glass Card) ── */}
         <div
           style={{
             perspective: '1000px',
@@ -336,12 +330,12 @@ export default function LoginPage() {
             {/* ── Windows 11 Light Acrylic Glass Card ── */}
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                backdropFilter: 'blur(32px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.85)',
+                background: 'rgba(255, 255, 255, 0.72)',
+                backdropFilter: 'blur(32px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(32px) saturate(190%)',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
                 borderRadius: 24,
-                boxShadow: '0 20px 50px rgba(0, 120, 212, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                boxShadow: '0 24px 60px rgba(0, 120, 212, 0.14), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1)',
                 overflow: 'hidden',
                 padding: '40px 34px 32px',
               }}
@@ -389,7 +383,7 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.8)',
+                      background: 'rgba(255, 255, 255, 0.85)',
                       border: '1px solid #cbd5e1',
                       borderRadius: 12,
                       color: '#0f172a',
@@ -401,11 +395,11 @@ export default function LoginPage() {
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0078d4';
                       e.target.style.background = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.18)';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.2)';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#cbd5e1';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.8)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.85)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
@@ -423,7 +417,7 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.8)',
+                      background: 'rgba(255, 255, 255, 0.85)',
                       border: '1px solid #cbd5e1',
                       borderRadius: 12,
                       color: '#0f172a',
@@ -435,11 +429,11 @@ export default function LoginPage() {
                     onFocus={(e) => {
                       e.target.style.borderColor = '#0078d4';
                       e.target.style.background = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.18)';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.2)';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#cbd5e1';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.8)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.85)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
@@ -495,7 +489,7 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              {/* Windows 11 Light Mode Primary Blue Button */}
+              {/* Primary Windows Blue Gradient Submit Button */}
               <button
                 type="submit"
                 form="login-form"
@@ -503,7 +497,7 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #0078d4 0%, #0284c7 50%, #7c3aed 100%)',
+                  background: 'linear-gradient(135deg, #0078d4 0%, #0284c7 50%, #9361fd 100%)',
                   border: 'none',
                   borderRadius: 12,
                   color: '#ffffff',
