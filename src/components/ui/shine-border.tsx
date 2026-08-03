@@ -4,60 +4,51 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 interface ShineBorderProps {
-  /**
-   * Width of the shine border in pixels.
-   * @default 1
-   */
   borderWidth?: number;
-  /**
-   * Duration of the animation in seconds.
-   * @default 14
-   */
   duration?: number;
-  /**
-   * Color of the border, as a single color string or array of colors for gradient.
-   */
   shineColor?: string | string[];
   className?: string;
+  children?: React.ReactNode;
 }
 
 /**
- * Shine Border — exact Magic UI implementation.
- * Usage: place as a self-closing child INSIDE a `relative overflow-hidden` Card.
- * <Card className="relative overflow-hidden">
- *   <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
- *   ...card content...
- * </Card>
+ * Shine Border — wrapper implementation that is guaranteed to work cross-browser.
+ * Wraps children in an animated gradient shell, with a white inner container.
+ *
+ * Usage:
+ * <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} className="max-w-[360px]">
+ *   <Card className="border-0 shadow-none">...</Card>
+ * </ShineBorder>
  */
 export function ShineBorder({
-  borderWidth = 1,
+  borderWidth = 2,
   duration = 14,
   shineColor = ["#A07CFE", "#FE8FB5", "#FFBE7B"],
   className,
+  children,
 }: ShineBorderProps) {
-  const gradientColors = Array.isArray(shineColor)
-    ? shineColor.join(", ")
-    : shineColor;
+  const colors = Array.isArray(shineColor) ? shineColor.join(", ") : shineColor;
 
   return (
     <div
-      aria-hidden="true"
       style={
         {
-          "--border-width": `${borderWidth}px`,
+          backgroundImage: `conic-gradient(from 270deg at 50% 50%, transparent 0deg, ${colors}, transparent 360deg)`,
+          backgroundSize: "300% 300%",
+          padding: `${borderWidth}px`,
           "--duration": `${duration}s`,
-          backgroundImage: `radial-gradient(transparent,transparent), conic-gradient(from calc(270deg - (360deg / 2)), ${gradientColors}, transparent 360deg)`,
-          WebkitMaskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
-          maskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
-          WebkitMaskComposite: "xor",
-          maskComposite: "exclude",
-          padding: `var(--border-width)`,
+          borderRadius: "14px",
         } as React.CSSProperties
       }
-      className={cn(
-        "pointer-events-none absolute inset-0 rounded-[inherit] [background-size:300%_300%] animate-shine",
-        className,
-      )}
-    />
+      className={cn("animate-shine w-full shadow-xl", className)}
+    >
+      {/* White inner surface — border-radius is 2px less to sit flush inside */}
+      <div
+        style={{ borderRadius: `${14 - borderWidth}px` }}
+        className="bg-white w-full h-full overflow-hidden"
+      >
+        {children}
+      </div>
+    </div>
   );
 }
