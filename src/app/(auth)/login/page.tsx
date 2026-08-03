@@ -4,14 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-
-/* ─────────────────────────────────────────────
-   Master Halftone Wave & Interactive Fluid Engine
-   Matches reference image 1:1:
-   - Precision halftone dot matrix grid
-   - Sweeping luminous S-curve ribbons (white core, warm/cool edge sheen)
-   - Real-time viscous fluid warping when cursor drags across waves
-───────────────────────────────────────────── */
+import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
 
 const KEYFRAMES = `
   @keyframes card-enter {
@@ -27,11 +20,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Canvas & Card Refs
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // 3D Card Tilt Ref
   const cardRef = useRef<HTMLDivElement>(null);
 
-  /* ── Auth logic ── */
+  /* ── Auth logic (unchanged) ── */
   useEffect(() => {
     const handleSession = (session: any) => {
       if (session) {
@@ -74,191 +66,6 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Halftone Wave & Fluid Distortion Engine ── */
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) return;
-
-    let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    // Mouse velocity & position tracking
-    const mouse = {
-      x: -1000,
-      y: -1000,
-      vx: 0,
-      vy: 0,
-      lastX: -1000,
-      lastY: -1000,
-    };
-
-    // Calculate grid spacing for halftone resolution (~65-75 dots across viewport width)
-    let GRID_GAP = Math.max(9, Math.floor(width / 68));
-    let cols = Math.ceil(width / GRID_GAP) + 2;
-    let rows = Math.ceil(height / GRID_GAP) + 2;
-
-    // Velocity displacement grid
-    let gridDispX = new Float32Array(cols * rows);
-    let gridDispY = new Float32Array(cols * rows);
-
-    const handlePointerMove = (e: MouseEvent) => {
-      const cx = e.clientX;
-      const cy = e.clientY;
-      if (mouse.lastX !== -1000) {
-        mouse.vx = (cx - mouse.lastX) * 0.6;
-        mouse.vy = (cy - mouse.lastY) * 0.6;
-      }
-      mouse.x = cx;
-      mouse.y = cy;
-      mouse.lastX = cx;
-      mouse.lastY = cy;
-
-      // Apply fluid impulse to nearby grid points
-      const cellX = Math.floor(cx / GRID_GAP);
-      const cellY = Math.floor(cy / GRID_GAP);
-      const radiusCells = 22; // Brush radius
-
-      for (let r = -radiusCells; r <= radiusCells; r++) {
-        for (let c = -radiusCells; c <= radiusCells; c++) {
-          const gc = cellX + c;
-          const gr = cellY + r;
-          if (gc >= 0 && gc < cols && gr >= 0 && gr < rows) {
-            const index = gr * cols + gc;
-            const distSq = c * c + r * r;
-            const maxDistSq = radiusCells * radiusCells;
-            if (distSq < maxDistSq) {
-              const dist = Math.sqrt(distSq);
-              // Cosine falloff brush for silky fluid displacement
-              const factor = (Math.cos((dist / radiusCells) * Math.PI) + 1) * 0.5;
-              gridDispX[index] += mouse.vx * factor * 0.5;
-              gridDispY[index] += mouse.vy * factor * 0.5;
-            }
-          }
-        }
-      }
-    };
-
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      GRID_GAP = Math.max(9, Math.floor(width / 68));
-      cols = Math.ceil(width / GRID_GAP) + 2;
-      rows = Math.ceil(height / GRID_GAP) + 2;
-      gridDispX = new Float32Array(cols * rows);
-      gridDispY = new Float32Array(cols * rows);
-    };
-
-    document.addEventListener('mousemove', handlePointerMove, { passive: true });
-    window.addEventListener('resize', handleResize);
-
-    let time = 0;
-
-    const render = () => {
-      time += 0.005; // Gentle, organic wave movement
-
-      // Pitch black background (matching reference image)
-      ctx.fillStyle = '#030406';
-      ctx.fillRect(0, 0, width, height);
-
-      // Smooth elastic return for fluid displacement
-      for (let i = 0; i < gridDispX.length; i++) {
-        gridDispX[i] *= 0.93;
-        gridDispY[i] *= 0.93;
-      }
-
-      const maxDotRadius = GRID_GAP * 0.47;
-
-      // Render Halftone Matrix
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const index = r * cols + c;
-          const dispX = gridDispX[index];
-          const dispY = gridDispY[index];
-
-          // Displaced position from liquid cursor interaction
-          const origX = c * GRID_GAP;
-          const origY = r * GRID_GAP;
-          const posX = origX + dispX;
-          const posY = origY + dispY;
-
-          // Normalized coordinates (0..1) including fluid distortion
-          const nx = posX / width;
-          const ny = posY / height;
-
-          /* ── Exact Halftone S-Wave Ribbons (Reference Artwork Match) ──
-             1. Top Ribbon: sweeping arch from top right to center left
-             2. Middle Main S-Curve: sweeping from center left down to bottom right
-             3. Bottom Ribbon: lower arch
-          */
-          const wave1 = Math.abs(ny - (0.22 + 0.18 * Math.sin(nx * Math.PI * 1.8 + time * 0.8)));
-          const wave2 = Math.abs(ny - (0.54 + 0.28 * Math.sin(nx * Math.PI * 2.1 - time * 0.6)));
-          const wave3 = Math.abs(ny - (0.86 + 0.16 * Math.cos(nx * Math.PI * 1.5 + time * 0.5)));
-
-          const minDist = Math.min(wave1, wave2, wave3);
-          const bandWidth = 0.125;
-
-          let intensity = 0;
-          if (minDist < bandWidth) {
-            intensity = Math.pow(1 - minDist / bandWidth, 2.0);
-          }
-
-          let dotRadius: number;
-          let fillStyle: string;
-
-          if (intensity > 0.01) {
-            dotRadius = Math.max(0.6, maxDotRadius * intensity);
-            const alpha = Math.min(1, 0.15 + intensity * 0.85);
-
-            if (intensity > 0.55) {
-              // Pure brilliant white wave crest
-              fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            } else {
-              // Soft gradient edge tint (warm amber on upper edge, cool cyan on lower edge)
-              const isUpperEdge = ny < 0.5;
-              if (isUpperEdge) {
-                const red = Math.floor(245 + intensity * 10);
-                const green = Math.floor(230 + intensity * 25);
-                const blue = Math.floor(215 + intensity * 40);
-                fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-              } else {
-                const red = Math.floor(210 + intensity * 45);
-                const green = Math.floor(225 + intensity * 30);
-                const blue = Math.floor(245 + intensity * 10);
-                fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-              }
-            }
-          } else {
-            // Dark matrix background dots
-            dotRadius = 0.65;
-            fillStyle = 'rgba(255, 255, 255, 0.08)';
-          }
-
-          ctx.fillStyle = fillStyle;
-          ctx.beginPath();
-          ctx.arc(posX, posY, dotRadius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      // Velocity decay
-      mouse.vx *= 0.88;
-      mouse.vy *= 0.88;
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      document.removeEventListener('mousemove', handlePointerMove);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   /* ── 3D Card Tilt ── */
   const handleMouseMoveCard = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (cardRef.current) {
@@ -283,27 +90,18 @@ export default function LoginPage() {
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── Stage Container ── */}
-      <div
-        className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
+      {/* ── PixelLiquidBg Background ── */}
+      <PixelLiquidBg
+        pixelSize={14}
+        resolution={0.45}
+        mouseForce={12}
+        cursorSize={130}
+        autoDemo={true}
+        className="fixed inset-0 w-full h-full flex items-center justify-center bg-black"
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
-        {/* ── 1. Master Halftone S-Wave Canvas ── */}
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-
-        {/* ── 2. Card Stage (Frosted Dark Glass Card) ── */}
+        {/* ── Card Stage ── */}
         <div
           style={{
             perspective: '1000px',
@@ -523,7 +321,7 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </div>
+      </PixelLiquidBg>
     </>
   );
 }
