@@ -96,7 +96,7 @@ export default function LoginPage() {
     };
 
     // Velocity field for cursor disturbance ripple
-    const GRID_GAP = 14; // Dot grid resolution
+    const GRID_GAP = 7; // Doubled dot population grid resolution (tiny crisp dots)
     let cols = Math.ceil(width / GRID_GAP);
     let rows = Math.ceil(height / GRID_GAP);
 
