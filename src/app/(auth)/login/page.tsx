@@ -6,13 +6,11 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Interactive Liquid Canvas — Windows 11 Light Mode Theme
-   Fluid simulation with multi-color Windows 11 light palette:
-   - Sky Blue:   #0078d4
-   - Aqua Cyan:  #38bdf8
-   - Lavender:   #9361fd
-   - Mint Teal:  #2dd4bf
-   - Soft Pink:  #f472b6
+   Halftone Dot-Matrix Liquid Flow Canvas
+   Matches exact reference image:
+   - High-density dark halftone dot matrix grid
+   - Soft luminous light ribbons (white/blue-silver glow)
+   - Dynamic cursor fluid distortion (stirring/warping the dots & wave paths)
 ───────────────────────────────────────────── */
 
 const KEYFRAMES = `
@@ -29,7 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Canvas & Simulation Refs
+  // Canvas & Card Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +74,7 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Interactive Liquid Canvas Engine ── */
+  /* ── Halftone Dot-Matrix Fluid Engine ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,161 +85,120 @@ export default function LoginPage() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Windows 11 Light Palette Colors
-    const colors = [
-      { r: 0, g: 120, b: 212 },   // #0078d4 - Windows Blue
-      { r: 56, g: 189, b: 248 },  // #38bdf8 - Aqua Cyan
-      { r: 147, g: 97, b: 253 },  // #9361fd - Lavender
-      { r: 45, g: 212, b: 191 },  // #2dd4bf - Mint Teal
-      { r: 244, g: 114, b: 182 }, // #f472b6 - Soft Pink
-    ];
-
-    class LiquidDrop {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      baseRadius: number;
-      color: { r: number; g: number; b: number };
-      phase: number;
-
-      constructor(x: number, y: number, radius: number, color: { r: number; g: number; b: number }) {
-        this.x = x;
-        this.y = y;
-        this.vx = (Math.random() - 0.5) * 1.2;
-        this.vy = (Math.random() - 0.5) * 1.2;
-        this.baseRadius = radius;
-        this.radius = radius;
-        this.color = color;
-        this.phase = Math.random() * Math.PI * 2;
-      }
-
-      update(time: number, mouse: { x: number; y: number; vx: number; vy: number; active: boolean }) {
-        // Organic breathing size morphing
-        this.phase += 0.02;
-        this.radius = this.baseRadius + Math.sin(this.phase) * 25;
-
-        // Mouse stirring & fluid push force
-        if (mouse.active) {
-          const dx = mouse.x - this.x;
-          const dy = mouse.y - this.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 380;
-
-          if (dist < maxDist && dist > 1) {
-            const force = (1 - dist / maxDist);
-            // Stronger displacement + fluid swirl vector
-            const pushX = (dx / dist) * force * 14;
-            const pushY = (dy / dist) * force * 14;
-            
-            this.vx -= pushX * 0.15 - mouse.vx * force * 0.25;
-            this.vy -= pushY * 0.15 - mouse.vy * force * 0.25;
-          }
-        }
-
-        // Velocity damping for smooth viscous liquid glide
-        this.vx *= 0.94;
-        this.vy *= 0.94;
-
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Soft bounce off screen bounds
-        const margin = 50;
-        if (this.x < margin) { this.x = margin; this.vx *= -0.5; }
-        if (this.x > width - margin) { this.x = width - margin; this.vx *= -0.5; }
-        if (this.y < margin) { this.y = margin; this.vy *= -0.5; }
-        if (this.y > height - margin) { this.y = height - margin; this.vy *= -0.5; }
-      }
-    }
-
-    // Initialize liquid drops spread across canvas
-    const drops: LiquidDrop[] = [
-      new LiquidDrop(width * 0.2, height * 0.25, 280, colors[0]),
-      new LiquidDrop(width * 0.8, height * 0.2, 260, colors[1]),
-      new LiquidDrop(width * 0.7, height * 0.75, 300, colors[2]),
-      new LiquidDrop(width * 0.25, height * 0.8, 240, colors[3]),
-      new LiquidDrop(width * 0.5, height * 0.5, 270, colors[4]),
-      new LiquidDrop(width * 0.1, height * 0.55, 220, colors[1]),
-      new LiquidDrop(width * 0.9, height * 0.6, 230, colors[0]),
-      new LiquidDrop(width * 0.5, height * 0.15, 250, colors[2]),
-    ];
-
-    // Shared global mouse tracker
+    // Mouse tracking for fluid warping
     const mouse = {
       x: -1000,
       y: -1000,
-      lastX: -1000,
-      lastY: -1000,
       vx: 0,
       vy: 0,
-      active: false,
+      lastX: -1000,
+      lastY: -1000,
     };
 
+    // Velocity field for cursor disturbance ripple
+    const GRID_GAP = 14; // Dot grid resolution
+    let cols = Math.ceil(width / GRID_GAP);
+    let rows = Math.ceil(height / GRID_GAP);
+
+    // Force displacement grid
+    let gridDisp = new Float32Array(cols * rows * 2); // dx, dy per cell
+
     const handlePointerMove = (e: MouseEvent) => {
-      const currentX = e.clientX;
-      const currentY = e.clientY;
-
+      const cx = e.clientX;
+      const cy = e.clientY;
       if (mouse.lastX !== -1000) {
-        mouse.vx = currentX - mouse.lastX;
-        mouse.vy = currentY - mouse.lastY;
+        mouse.vx = cx - mouse.lastX;
+        mouse.vy = cy - mouse.lastY;
       }
-      mouse.x = currentX;
-      mouse.y = currentY;
-      mouse.lastX = currentX;
-      mouse.lastY = currentY;
-      mouse.active = true;
+      mouse.x = cx;
+      mouse.y = cy;
+      mouse.lastX = cx;
+      mouse.lastY = cy;
 
-      // Spawn dynamic liquid drop directly on fast cursor movement
-      const speed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
-      if (speed > 4 && drops.length < 22) {
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        const ripple = new LiquidDrop(currentX, currentY, Math.min(speed * 3 + 50, 150), randomColor);
-        ripple.vx = mouse.vx * 0.25;
-        ripple.vy = mouse.vy * 0.25;
-        drops.push(ripple);
+      // Apply fluid impulse to nearby grid cells
+      const cellX = Math.floor(cx / GRID_GAP);
+      const cellY = Math.floor(cy / GRID_GAP);
+      const radiusCells = 12;
 
-        // Remove drop after 2.5 seconds
-        setTimeout(() => {
-          const idx = drops.indexOf(ripple);
-          if (idx !== -1) drops.splice(idx, 1);
-        }, 2500);
+      for (let r = -radiusCells; r <= radiusCells; r++) {
+        for (let c = -radiusCells; c <= radiusCells; c++) {
+          const gc = cellX + c;
+          const gr = cellY + r;
+          if (gc >= 0 && gc < cols && gr >= 0 && gr < rows) {
+            const index = (gr * cols + gc) * 2;
+            const distSq = c * c + r * r;
+            if (distSq < radiusCells * radiusCells) {
+              const factor = (1 - Math.sqrt(distSq) / radiusCells) * 1.5;
+              gridDisp[index] += mouse.vx * factor * 0.4;
+              gridDisp[index + 1] += mouse.vy * factor * 0.4;
+            }
+          }
+        }
       }
     };
 
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      cols = Math.ceil(width / GRID_GAP);
+      rows = Math.ceil(height / GRID_GAP);
+      gridDisp = new Float32Array(cols * rows * 2);
     };
 
-    // Attach listeners to document & window so mousemove is captured everywhere (even over form card)
     document.addEventListener('mousemove', handlePointerMove, { passive: true });
     window.addEventListener('resize', handleResize);
 
-    // Animation Render Loop
-    let startTime = Date.now();
-    const render = () => {
-      const time = (Date.now() - startTime) * 0.001;
+    let time = 0;
 
-      // Clear with Windows 11 Light Slate tint
-      ctx.fillStyle = '#f1f5f9';
+    const render = () => {
+      time += 0.015;
+
+      // Deep rich black background (matches image)
+      ctx.fillStyle = '#050608';
       ctx.fillRect(0, 0, width, height);
 
-      // Render liquid drops
-      drops.forEach((drop) => {
-        drop.update(time, mouse);
+      // Dampen grid displacement forces over time (viscous fluid effect)
+      for (let i = 0; i < gridDisp.length; i++) {
+        gridDisp[i] *= 0.92;
+      }
 
-        const grad = ctx.createRadialGradient(drop.x, drop.y, 0, drop.x, drop.y, drop.radius);
-        grad.addColorStop(0, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.55)`);
-        grad.addColorStop(0.5, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0.28)`);
-        grad.addColorStop(1, `rgba(${drop.color.r}, ${drop.color.g}, ${drop.color.b}, 0)`);
+      // Render Halftone Dot Grid
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const baseIdx = (r * cols + c) * 2;
+          const dispX = gridDisp[baseIdx];
+          const dispY = gridDisp[baseIdx + 1];
 
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
+          // Base position + liquid displacement offset
+          const origX = c * GRID_GAP + GRID_GAP / 2;
+          const origY = r * GRID_GAP + GRID_GAP / 2;
+          const posX = origX + dispX;
+          const posY = origY + dispY;
+
+          // Wave field equation for S-curve luminous bands (matching image)
+          const wave1 = Math.sin(posX * 0.003 + time * 0.8 + Math.cos(posY * 0.002)) * 0.5 + 0.5;
+          const wave2 = Math.cos(posY * 0.004 - time * 0.6 + Math.sin(posX * 0.003)) * 0.5 + 0.5;
+          const wave3 = Math.sin((posX + posY) * 0.0025 + time * 0.5) * 0.5 + 0.5;
+
+          // Luminance intensity calculation
+          const intensity = Math.pow((wave1 * 0.4 + wave2 * 0.4 + wave3 * 0.2), 2.2);
+
+          // Dot size scales with luminance intensity (halftone effect)
+          const maxRadius = GRID_GAP * 0.45;
+          const dotRadius = Math.max(0.8, maxRadius * intensity);
+
+          // Color palette matching image (bright white to silver-blue tones)
+          const red = Math.floor(220 + intensity * 35);
+          const green = Math.floor(225 + intensity * 30);
+          const blue = Math.floor(235 + intensity * 20);
+          const alpha = 0.25 + intensity * 0.75;
+
+          ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(posX, posY, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
       // Decay mouse velocity
       mouse.vx *= 0.9;
@@ -283,13 +240,13 @@ export default function LoginPage() {
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── Fullscreen Stage ── */}
+      {/* ── Stage Container ── */}
       <div
         className="relative min-h-screen w-full overflow-hidden flex items-center justify-center"
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
-        {/* ── 1. Interactive Liquid Simulation Canvas ── */}
+        {/* ── 1. Interactive Halftone Dot Matrix Liquid Canvas ── */}
         <canvas
           ref={canvasRef}
           style={{
@@ -298,27 +255,12 @@ export default function LoginPage() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            filter: 'blur(32px) contrast(115%)',
             pointerEvents: 'none',
             zIndex: 1,
           }}
         />
 
-        {/* ── Subtle Windows Desktop Dot Grid ── */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundImage: 'radial-gradient(rgba(0, 120, 212, 0.12) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-            opacity: 0.6,
-            pointerEvents: 'none',
-            zIndex: 2,
-          }}
-        />
-
-        {/* ── 2. Card Stage (Windows 11 Light Acrylic Glass Card) ── */}
+        {/* ── 2. Card Stage (Frosted Dark Glass Card matching image style) ── */}
         <div
           style={{
             perspective: '1000px',
@@ -337,15 +279,15 @@ export default function LoginPage() {
               animation: 'card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
             }}
           >
-            {/* ── Windows 11 Light Acrylic Glass Card ── */}
+            {/* ── Glass Card ── */}
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.72)',
-                backdropFilter: 'blur(32px) saturate(190%)',
-                WebkitBackdropFilter: 'blur(32px) saturate(190%)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
+                background: 'rgba(15, 18, 28, 0.75)',
+                backdropFilter: 'blur(32px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 borderRadius: 24,
-                boxShadow: '0 24px 60px rgba(0, 120, 212, 0.14), 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 overflow: 'hidden',
                 padding: '40px 34px 32px',
               }}
@@ -359,20 +301,20 @@ export default function LoginPage() {
                       fontSize: 34,
                       fontWeight: 300,
                       letterSpacing: '-0.03em',
-                      color: '#0f172a',
+                      color: '#ffffff',
                     }}
                   >
-                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 600, fontSize: 22, color: '#0078d4' }}>bot.</span>
+                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 22, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                   </span>
                 </Link>
-                <p style={{ color: '#64748b', fontSize: 12, marginTop: 6, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginTop: 6, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   Sign in to your account
                 </p>
               </div>
 
               {/* Error message */}
               {errorMsg && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: 13, color: '#dc2626', textAlign: 'center' }}>
+                <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: 13, color: '#fca5a5', textAlign: 'center' }}>
                   {errorMsg}
                 </div>
               )}
@@ -380,7 +322,7 @@ export default function LoginPage() {
               {/* Form */}
               <form id="login-form" onSubmit={handlePasswordLogin} className="space-y-4">
                 <div>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6, letterSpacing: '0.03em' }}>
+                  <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255, 255, 255, 0.75)', marginBottom: 6, letterSpacing: '0.03em' }}>
                     Email Address
                   </label>
                   <input
@@ -393,29 +335,29 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.85)',
-                      border: '1px solid #cbd5e1',
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: 12,
-                      color: '#0f172a',
+                      color: '#ffffff',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s ease',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#0078d4';
-                      e.target.style.background = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.2)';
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.12)';
+                      e.target.style.boxShadow = '0 0 12px rgba(255, 255, 255, 0.2)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#cbd5e1';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.85)';
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.07)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6, letterSpacing: '0.03em' }}>
+                  <label htmlFor="password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255, 255, 255, 0.75)', marginBottom: 6, letterSpacing: '0.03em' }}>
                     Password
                   </label>
                   <input
@@ -427,23 +369,23 @@ export default function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '11px 14px',
-                      background: 'rgba(255, 255, 255, 0.85)',
-                      border: '1px solid #cbd5e1',
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: 12,
-                      color: '#0f172a',
+                      color: '#ffffff',
                       fontSize: 14,
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s ease',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#0078d4';
-                      e.target.style.background = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 120, 212, 0.2)';
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.12)';
+                      e.target.style.boxShadow = '0 0 12px rgba(255, 255, 255, 0.2)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#cbd5e1';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.85)';
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                      e.target.style.background = 'rgba(255, 255, 255, 0.07)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
@@ -452,9 +394,9 @@ export default function LoginPage() {
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.12)' }} />
+                <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.12)' }} />
               </div>
 
               {/* Google OAuth Button */}
@@ -469,25 +411,22 @@ export default function LoginPage() {
                   justifyContent: 'center',
                   gap: 10,
                   padding: '11px 16px',
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.18)',
                   borderRadius: 12,
-                  color: '#334155',
+                  color: '#ffffff',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   marginBottom: 14,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                   opacity: loading ? 0.5 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = '#f8fafc';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.15)';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = '#ffffff';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#cbd5e1';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.08)';
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
@@ -499,7 +438,7 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              {/* Primary Windows Blue Gradient Submit Button */}
+              {/* Primary Monochrome White Button matching theme */}
               <button
                 type="submit"
                 form="login-form"
@@ -507,24 +446,24 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #0078d4 0%, #0284c7 50%, #9361fd 100%)',
+                  background: '#ffffff',
                   border: 'none',
                   borderRadius: 12,
-                  color: '#ffffff',
+                  color: '#090a0f',
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 16px rgba(0, 120, 212, 0.35)',
+                  boxShadow: '0 4px 20px rgba(255, 255, 255, 0.25)',
                   opacity: loading ? 0.7 : 1,
                   letterSpacing: '0.02em',
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(0, 120, 212, 0.5)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(255, 255, 255, 0.45)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0, 120, 212, 0.35)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(255, 255, 255, 0.25)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
                 }}
               >
@@ -532,9 +471,9 @@ export default function LoginPage() {
               </button>
 
               {/* Footer Link */}
-              <p style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 18 }}>
+              <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255, 255, 255, 0.5)', marginTop: 18 }}>
                 No account?{' '}
-                <Link href="/signup" style={{ color: '#0078d4', fontWeight: 600, textDecoration: 'none' }}>
+                <Link href="/signup" style={{ color: '#ffffff', fontWeight: 600, textDecoration: 'none' }}>
                   Get started
                 </Link>
               </p>
