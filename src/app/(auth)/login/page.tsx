@@ -6,11 +6,10 @@ import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 /* ─────────────────────────────────────────────
-   Halftone Dot-Matrix Liquid Flow Canvas
-   Matches exact reference image:
-   - High-density dark halftone dot matrix grid
-   - Soft luminous light ribbons (white/blue-silver glow)
-   - Dynamic cursor fluid distortion (stirring/warping the dots & wave paths)
+   Halftone Dot-Matrix Ocean Wave & Fluid Canvas
+   - Smooth continuous ocean wave flow across canvas
+   - Soft, organic cursor fluid brush warping (Gaussian Falloff)
+   - Soft white & silver luminous halftone palette
 ───────────────────────────────────────────── */
 
 const KEYFRAMES = `
@@ -74,7 +73,7 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Halftone Dot-Matrix Fluid Engine ── */
+  /* ── Ocean Wave & Soft Fluid Warp Engine ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,42 +94,44 @@ export default function LoginPage() {
       lastY: -1000,
     };
 
-    // Velocity field for cursor disturbance ripple
-    const GRID_GAP = 7; // Doubled dot population grid resolution (tiny crisp dots)
+    const GRID_GAP = 7; // High resolution tiny dots
     let cols = Math.ceil(width / GRID_GAP);
     let rows = Math.ceil(height / GRID_GAP);
 
-    // Force displacement grid
-    let gridDisp = new Float32Array(cols * rows * 2); // dx, dy per cell
+    // Smooth viscous force displacement grid
+    let gridDispX = new Float32Array(cols * rows);
+    let gridDispY = new Float32Array(cols * rows);
 
     const handlePointerMove = (e: MouseEvent) => {
       const cx = e.clientX;
       const cy = e.clientY;
       if (mouse.lastX !== -1000) {
-        mouse.vx = cx - mouse.lastX;
-        mouse.vy = cy - mouse.lastY;
+        mouse.vx = (cx - mouse.lastX) * 0.4;
+        mouse.vy = (cy - mouse.lastY) * 0.4;
       }
       mouse.x = cx;
       mouse.y = cy;
       mouse.lastX = cx;
       mouse.lastY = cy;
 
-      // Apply fluid impulse to nearby grid cells
+      // Soft Gaussian brush fluid impulse to grid
       const cellX = Math.floor(cx / GRID_GAP);
       const cellY = Math.floor(cy / GRID_GAP);
-      const radiusCells = 12;
+      const radiusCells = 24; // Wide, soft brush radius
 
       for (let r = -radiusCells; r <= radiusCells; r++) {
         for (let c = -radiusCells; c <= radiusCells; c++) {
           const gc = cellX + c;
           const gr = cellY + r;
           if (gc >= 0 && gc < cols && gr >= 0 && gr < rows) {
-            const index = (gr * cols + gc) * 2;
+            const index = gr * cols + gc;
             const distSq = c * c + r * r;
-            if (distSq < radiusCells * radiusCells) {
-              const factor = (1 - Math.sqrt(distSq) / radiusCells) * 1.5;
-              gridDisp[index] += mouse.vx * factor * 0.4;
-              gridDisp[index + 1] += mouse.vy * factor * 0.4;
+            const maxDistSq = radiusCells * radiusCells;
+            if (distSq < maxDistSq) {
+              // Smooth cosine/Gaussian falloff for silky soft warping
+              const factor = (Math.cos((Math.sqrt(distSq) / radiusCells) * Math.PI) + 1) * 0.5;
+              gridDispX[index] += mouse.vx * factor * 0.3;
+              gridDispY[index] += mouse.vy * factor * 0.3;
             }
           }
         }
@@ -142,7 +143,8 @@ export default function LoginPage() {
       height = canvas.height = window.innerHeight;
       cols = Math.ceil(width / GRID_GAP);
       rows = Math.ceil(height / GRID_GAP);
-      gridDisp = new Float32Array(cols * rows * 2);
+      gridDispX = new Float32Array(cols * rows);
+      gridDispY = new Float32Array(cols * rows);
     };
 
     document.addEventListener('mousemove', handlePointerMove, { passive: true });
@@ -151,58 +153,59 @@ export default function LoginPage() {
     let time = 0;
 
     const render = () => {
-      time += 0.015;
+      time += 0.008; // Smooth, slow-rolling ocean wave frequency
 
-      // Deep rich black background (matches image)
+      // Deep rich black background
       ctx.fillStyle = '#050608';
       ctx.fillRect(0, 0, width, height);
 
-      // Dampen grid displacement forces over time (viscous fluid effect)
-      for (let i = 0; i < gridDisp.length; i++) {
-        gridDisp[i] *= 0.92;
+      // Ultra-smooth viscous damping (slow elastic return)
+      for (let i = 0; i < gridDispX.length; i++) {
+        gridDispX[i] *= 0.95;
+        gridDispY[i] *= 0.95;
       }
 
-      // Render Halftone Dot Grid
+      // Render Ocean Wave Halftone Matrix
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const baseIdx = (r * cols + c) * 2;
-          const dispX = gridDisp[baseIdx];
-          const dispY = gridDisp[baseIdx + 1];
+          const baseIdx = r * cols + c;
+          const dispX = gridDispX[baseIdx];
+          const dispY = gridDispY[baseIdx + 1] || gridDispY[baseIdx];
 
-          // Base position + liquid displacement offset
           const origX = c * GRID_GAP + GRID_GAP / 2;
           const origY = r * GRID_GAP + GRID_GAP / 2;
           const posX = origX + dispX;
           const posY = origY + dispY;
 
-          // Wave field equation for S-curve luminous bands (matching image)
-          const wave1 = Math.sin(posX * 0.003 + time * 0.8 + Math.cos(posY * 0.002)) * 0.5 + 0.5;
-          const wave2 = Math.cos(posY * 0.004 - time * 0.6 + Math.sin(posX * 0.003)) * 0.5 + 0.5;
-          const wave3 = Math.sin((posX + posY) * 0.0025 + time * 0.5) * 0.5 + 0.5;
+          /* ── Coherent Ocean Wave Field ──
+             Continuous directional wave fronts (top-right to bottom-left flow)
+             instead of isolated random dot lighting.
+          */
+          const waveAngle = posX * 0.0025 + posY * 0.0015;
+          const wavePrimary = Math.sin(waveAngle - time * 1.4) * 0.5 + 0.5;
+          const waveSecondary = Math.cos(waveAngle * 1.5 + time * 0.8) * 0.5 + 0.5;
+          const waveDetail = Math.sin((posX - posY) * 0.001 - time * 0.5) * 0.5 + 0.5;
 
-          // Luminance intensity calculation
-          const intensity = Math.pow((wave1 * 0.4 + wave2 * 0.4 + wave3 * 0.2), 2.2);
+          // Combine wave harmonics into smooth ocean swell
+          const intensity = Math.pow(wavePrimary * 0.55 + waveSecondary * 0.3 + waveDetail * 0.15, 2.5);
 
-          // Dot size scales with luminance intensity (halftone effect)
-          const maxRadius = GRID_GAP * 0.45;
-          const dotRadius = Math.max(0.8, maxRadius * intensity);
+          // Soft white & silver dot rendering
+          const maxRadius = GRID_GAP * 0.46;
+          const dotRadius = Math.max(0.6, maxRadius * intensity);
 
-          // Color palette matching image (bright white to silver-blue tones)
-          const red = Math.floor(220 + intensity * 35);
-          const green = Math.floor(225 + intensity * 30);
-          const blue = Math.floor(235 + intensity * 20);
-          const alpha = 0.25 + intensity * 0.75;
+          // Soft white brush luminance
+          const opacity = Math.min(1, 0.15 + intensity * 0.85);
 
-          ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+          ctx.fillStyle = `rgba(245, 248, 255, ${opacity})`;
           ctx.beginPath();
           ctx.arc(posX, posY, dotRadius, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      // Decay mouse velocity
-      mouse.vx *= 0.9;
-      mouse.vy *= 0.9;
+      // Smooth decay of mouse velocity
+      mouse.vx *= 0.88;
+      mouse.vy *= 0.88;
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -246,7 +249,7 @@ export default function LoginPage() {
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
-        {/* ── 1. Interactive Halftone Dot Matrix Liquid Canvas ── */}
+        {/* ── 1. Coherent Ocean Wave Halftone Canvas ── */}
         <canvas
           ref={canvasRef}
           style={{
@@ -260,7 +263,7 @@ export default function LoginPage() {
           }}
         />
 
-        {/* ── 2. Card Stage (Frosted Dark Glass Card matching image style) ── */}
+        {/* ── 2. Card Stage (Frosted Dark Glass Card) ── */}
         <div
           style={{
             perspective: '1000px',
@@ -438,7 +441,7 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              {/* Primary Monochrome White Button matching theme */}
+              {/* Primary White Button */}
               <button
                 type="submit"
                 form="login-form"
