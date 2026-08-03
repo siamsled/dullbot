@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface ShineBorderProps {
@@ -12,49 +13,46 @@ interface ShineBorderProps {
   children?: React.ReactNode;
 }
 
-/**
- * @name Shine Border
- * @description An animated background border effect component with configurable color, border-radius, and duration.
- */
 export function ShineBorder({
-  borderRadius = 12,
-  borderWidth = 1,
-  duration = 14,
+  borderRadius = 16,
+  borderWidth = 2,
+  duration = 8,
   color,
   shineColor = ["#A07CFE", "#FE8FB5", "#FFBE7B"],
   className,
   children,
 }: ShineBorderProps) {
   const activeColor = color || shineColor;
+  const gradientString = Array.isArray(activeColor)
+    ? activeColor.join(", ")
+    : activeColor;
+
   return (
     <div
-      style={
-        {
-          "--border-radius": `${borderRadius}px`,
-        } as React.CSSProperties
-      }
-      className={cn(
-        "relative min-h-[60px] w-full rounded-[var(--border-radius)] p-px",
-        className,
-      )}
+      className={cn("relative p-[2px] rounded-[18px] overflow-hidden", className)}
     >
+      {/* Animated Conic Gradient Border */}
       <div
-        style={
-          {
-            "--border-width": `${borderWidth}px`,
-            "--border-radius": `${borderRadius}px`,
-            "--duration": `${duration}s`,
-            "--mask-linear-gradient": `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
-            "--background-radial-gradient": `radial-gradient(circle,transparent,rgba(0,0,0,0.5) 100%)`,
-            "--shine-pulse-duration": `${duration}s`,
-            "--shine-gradient": `conic-gradient(from 0deg at 50% 50%, ${
-              Array.isArray(activeColor) ? activeColor.join(",") : activeColor
-            })`,
-          } as React.CSSProperties
-        }
-        className={`before:bg-shine-gradient pointer-events-none before:absolute before:inset-0 before:size-full before:rounded-[var(--border-radius)] before:p-[var(--border-width)] before:will-change-[background-position] before:content-[""] before:![-webkit-mask-composite:xor] before:![mask-composite:exclude] before:[background-size:300%_300%] before:[mask:var(--mask-linear-gradient)] motion-safe:before:animate-shine`}
+        className="absolute inset-[-200%] animate-spin-slow pointer-events-none"
+        style={{
+          background: `conic-gradient(from 0deg, ${gradientString}, ${gradientString})`,
+          animationDuration: `${duration}s`,
+        }}
       />
-      {children}
+
+      {/* Subtle Glowing Blur Effect around border */}
+      <div
+        className="absolute inset-[-10%] blur-md opacity-70 animate-spin-slow pointer-events-none"
+        style={{
+          background: `conic-gradient(from 0deg, ${gradientString}, ${gradientString})`,
+          animationDuration: `${duration}s`,
+        }}
+      />
+
+      {/* Card Content Wrapper */}
+      <div className="relative z-10 w-full h-full rounded-[16px] overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
