@@ -317,9 +317,13 @@ class CommonGL {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(this.width, this.height, false);
     const el = this.renderer.domElement;
+    el.style.position = "absolute";
+    el.style.top = "0";
+    el.style.left = "0";
     el.style.width = "100%";
     el.style.height = "100%";
     el.style.display = "block";
+    el.style.pointerEvents = "none";
     this.clock = new THREE.Clock();
     this.clock.start();
   }
@@ -1013,7 +1017,7 @@ export function PixelLiquidBg({
       {...props}
     >
       {children && (
-        <div className="relative z-10 w-full h-full">{children}</div>
+        <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">{children}</div>
       )}
     </div>
   );

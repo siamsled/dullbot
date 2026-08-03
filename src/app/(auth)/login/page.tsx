@@ -97,7 +97,7 @@ export default function LoginPage() {
         mouseForce={12}
         cursorSize={130}
         autoDemo={true}
-        className="fixed inset-0 w-full h-full flex items-center justify-center bg-black"
+        className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0"
         onMouseMove={handleMouseMoveCard}
         onMouseLeave={handleMouseLeaveCard}
       >
@@ -109,6 +109,7 @@ export default function LoginPage() {
             width: '100%',
             maxWidth: 400,
             padding: '0 16px',
+            pointerEvents: 'auto',
           }}
         >
           <div
