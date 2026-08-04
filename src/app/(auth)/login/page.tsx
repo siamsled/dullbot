@@ -119,11 +119,11 @@ export default function LoginPage() {
                 borderRadius: 24,
                 boxShadow: '0 32px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 overflow: 'hidden',
-                padding: '48px 40px 42px',
+                padding: '44px 40px 36px',
               }}
             >
-              {/* Logo */}
-              <div className="text-center mb-8">
+              {/* Logo & Header */}
+              <div className="text-center mb-9">
                 <Link href="/" className="inline-block">
                   <span
                     style={{
@@ -137,7 +137,7 @@ export default function LoginPage() {
                     dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 24, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                   </span>
                 </Link>
-                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 13, marginTop: 8, fontWeight: 500, letterSpacing: '0.04em' }}>
+                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 13, marginTop: 6, fontWeight: 500, letterSpacing: '0.04em' }}>
                   Sign in or create an account with Google
                 </p>
               </div>
@@ -192,7 +192,7 @@ export default function LoginPage() {
               </button>
 
               {/* Secure Notice */}
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255, 255, 255, 0.4)', marginTop: 24, lineHeight: 1.5 }}>
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255, 255, 255, 0.4)', marginTop: 20, lineHeight: 1.5 }}>
                 By continuing, you agree to our Terms of Service & Privacy Policy.
               </p>
             </div>
