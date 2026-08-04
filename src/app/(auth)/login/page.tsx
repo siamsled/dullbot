@@ -103,7 +103,7 @@ export default function LoginPage() {
       >
         {/* ── Card Stage ── */}
         <div
-          className="relative z-10 w-full max-w-[450px] px-4 my-auto mx-auto flex items-center justify-center"
+          className="relative z-10 w-full max-w-[490px] px-4 my-auto mx-auto flex items-center justify-center"
           style={{
             perspective: '1000px',
             pointerEvents: 'auto',
@@ -129,7 +129,7 @@ export default function LoginPage() {
                 borderRadius: 24,
                 boxShadow: '0 32px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 overflow: 'hidden',
-                padding: '44px 40px 36px',
+                padding: '44px 44px 38px',
               }}
             >
               {/* Logo */}
