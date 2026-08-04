@@ -103,7 +103,7 @@ export default function LoginPage() {
       >
         {/* ── Card Stage ── */}
         <div
-          className="relative z-10 w-full max-w-[400px] px-4 my-auto mx-auto flex items-center justify-center"
+          className="relative z-10 w-full max-w-[450px] px-4 my-auto mx-auto flex items-center justify-center"
           style={{
             perspective: '1000px',
             pointerEvents: 'auto',
@@ -111,6 +111,7 @@ export default function LoginPage() {
         >
           <div
             ref={cardRef}
+            className="w-full"
             style={{
               transition: 'transform 0.15s cubic-bezier(0.1, 0.8, 0.2, 1)',
               transformStyle: 'preserve-3d',
@@ -121,29 +122,29 @@ export default function LoginPage() {
             {/* ── Glass Card ── */}
             <div
               style={{
-                background: 'rgba(10, 12, 20, 0.78)',
-                backdropFilter: 'blur(32px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                background: 'rgba(10, 12, 20, 0.82)',
+                backdropFilter: 'blur(36px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(36px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 borderRadius: 24,
-                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18)',
+                boxShadow: '0 32px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                 overflow: 'hidden',
-                padding: '40px 34px 32px',
+                padding: '44px 40px 36px',
               }}
             >
               {/* Logo */}
-              <div className="text-center mb-6">
+              <div className="text-center mb-8">
                 <Link href="/" className="inline-block">
                   <span
                     style={{
                       fontFamily: 'Georgia, serif',
-                      fontSize: 34,
+                      fontSize: 36,
                       fontWeight: 300,
                       letterSpacing: '-0.03em',
                       color: '#ffffff',
                     }}
                   >
-                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 22, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 24, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                   </span>
                 </Link>
                 <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginTop: 6, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -173,7 +174,7 @@ export default function LoginPage() {
                     required
                     style={{
                       width: '100%',
-                      padding: '11px 14px',
+                      padding: '12px 16px',
                       background: 'rgba(255, 255, 255, 0.07)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: 12,
@@ -207,7 +208,7 @@ export default function LoginPage() {
                     required
                     style={{
                       width: '100%',
-                      padding: '11px 14px',
+                      padding: '12px 16px',
                       background: 'rgba(255, 255, 255, 0.07)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: 12,
@@ -232,7 +233,7 @@ export default function LoginPage() {
               </form>
 
               {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }}>
                 <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.12)' }} />
                 <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
                 <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.12)' }} />
@@ -249,12 +250,12 @@ export default function LoginPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 10,
-                  padding: '11px 16px',
+                  padding: '12px 16px',
                   background: 'rgba(255, 255, 255, 0.08)',
                   border: '1px solid rgba(255, 255, 255, 0.18)',
                   borderRadius: 12,
                   color: '#ffffff',
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
@@ -284,7 +285,7 @@ export default function LoginPage() {
                 disabled={loading}
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
+                  padding: '13px 16px',
                   background: '#ffffff',
                   border: 'none',
                   borderRadius: 12,
@@ -310,7 +311,7 @@ export default function LoginPage() {
               </button>
 
               {/* Footer Link */}
-              <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255, 255, 255, 0.5)', marginTop: 18 }}>
+              <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255, 255, 255, 0.5)', marginTop: 20 }}>
                 No account?{' '}
                 <Link href="/signup" style={{ color: '#ffffff', fontWeight: 600, textDecoration: 'none' }}>
                   Get started
