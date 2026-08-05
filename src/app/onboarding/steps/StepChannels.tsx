@@ -53,6 +53,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     if (params.get('instagram') === 'connected') setInstagramConnected(true);
   }, []);
 
+  const hasAnyChannelConnected = messengerConnected || instagramConnected || waConnected;
+
   const handleSaveWa = async () => {
     setWaError('');
     const cleanWaba = waWabaId.trim();
@@ -60,15 +62,15 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     const cleanToken = waToken.trim();
 
     if (cleanWaba && !/^\d{10,20}$/.test(cleanWaba)) {
-      setWaError('WABA ID must be a valid 10-20 digit number.');
+      setWaError('WABA ID must contain numbers only (10-20 digits).');
       return;
     }
-    if (!/^\d{10,20}$/.test(cleanPhone)) {
-      setWaError('Phone Number ID must be a valid 10-20 digit number.');
+    if (!cleanPhone || !/^\d{10,20}$/.test(cleanPhone)) {
+      setWaError('Phone Number ID must contain numbers only (10-20 digits).');
       return;
     }
-    if (cleanToken.length < 20) {
-      setWaError('System User Access Token is invalid or too short.');
+    if (!cleanToken || cleanToken.length < 20 || /[^a-zA-Z0-9_-]/.test(cleanToken)) {
+      setWaError('System User Access Token is invalid or contains unexpected characters.');
       return;
     }
 
@@ -102,6 +104,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   };
 
   const handleNext = async () => {
+    if (!hasAnyChannelConnected) return;
     setAdvancing(true);
     if (!instagramConnected) localStorage.setItem(IG_NUDGE_KEY, '1');
     if (!waConnected) localStorage.setItem(WA_NUDGE_KEY, '1');
@@ -112,7 +115,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
 
   const channels = [
-    { key: 'messenger' as const, icon: <MessengerIcon className="w-5 h-5 text-[#0084FF]" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: true, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
+    { key: 'messenger' as const, icon: <MessengerIcon className="w-5 h-5 text-[#0084FF]" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: false, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
     { key: 'instagram' as const, icon: <InstagramIcon className="w-5 h-5 text-[#E4405F]" />, title: 'Instagram DMs', subtitle: instagramConnected ? 'Instagram Business Account connected' : 'Connects via Facebook Login', required: false, connected: instagramConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding_instagram`, onClick: undefined as any },
     { key: 'whatsapp' as const, icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />, title: 'WhatsApp Business', subtitle: waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API', required: false, connected: waConnected, href: undefined as any, onClick: () => { setWaError(''); setShowWaModal(true); } },
   ];
@@ -123,7 +126,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       <div className="relative flex-1 min-h-0">
       <div className="h-full overflow-y-auto pb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
-        <p className="text-sm text-white/60 mb-6 leading-relaxed">Connect Messenger to activate your AI agent. Instagram and WhatsApp can be added now or later.</p>
+        <p className="text-sm text-white/60 mb-6 leading-relaxed">Connect at least one channel (Messenger, Instagram, or WhatsApp) to activate your AI agent.</p>
         <div className="space-y-3">
           {channels.map((ch) => (
             <div key={ch.title} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${ch.connected ? 'border-white/30 bg-white/10' : 'border-white/10 bg-white/5'}`}>
@@ -155,7 +158,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* Pinned nav */}
       <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button onClick={handleNext} disabled={!messengerConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+        <button onClick={handleNext} disabled={!hasAnyChannelConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
           {advancing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
