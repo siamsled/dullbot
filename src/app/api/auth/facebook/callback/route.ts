@@ -57,14 +57,22 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
-  // If user manages MULTIPLE pages, pass the pages list to the client so the merchant selects the exact page
+  // If user manages MULTIPLE pages, fetch IG info per page in parallel then pass to client for selection
   if (pagesData.data.length > 1) {
-    const pagesPayload = pagesData.data.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      access_token: p.access_token,
-    }));
-    const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesPayload)).toString('base64'));
+    const pagesWithIg = await Promise.all(
+      pagesData.data.map(async (p: any) => {
+        let instagram_business_id: string | null = null;
+        try {
+          const igRes = await fetch(
+            `https://graph.facebook.com/v19.0/${p.id}?fields=instagram_business_account&access_token=${p.access_token}`
+          );
+          const igData = await igRes.json();
+          instagram_business_id = igData?.instagram_business_account?.id || null;
+        } catch (_) {}
+        return { id: p.id, name: p.name, access_token: p.access_token, instagram_business_id };
+      })
+    );
+    const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesWithIg)).toString('base64'));
     const targetDest = (source === 'onboarding' || source === 'onboarding_instagram')
       ? `/onboarding?step=channels&select_page=true&pages=${encodedPages}`
       : `/dashboard/settings?select_page=true&pages=${encodedPages}`;

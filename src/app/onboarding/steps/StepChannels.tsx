@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Smartphone, ArrowRight, ArrowLeft, X, Loader2, Check } from 'lucide-react';
+import { ArrowRight, ArrowLeft, X, Loader2, Check, Info } from 'lucide-react';
 import { saveOnboardingStep } from '../../dashboard/actions';
 
 function MessengerIcon({ className = 'w-5 h-5' }: { className?: string }) {
@@ -29,36 +29,47 @@ function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+type PageOption = {
+  id: string;
+  name: string;
+  access_token: string;
+  instagram_business_id: string | null;
+};
+
 interface Props { shop: any; onNext: () => void; onBack: () => void; }
 const WA_NUDGE_KEY = 'dullbot_wa_nudge';
-const IG_NUDGE_KEY = 'dullbot_ig_nudge';
 
 export default function StepChannels({ shop, onNext, onBack }: Props) {
   const [messengerConnected, setMessengerConnected] = useState(!!shop.meta_page_access_token);
   const [instagramConnected, setInstagramConnected] = useState(!!shop.instagram_business_id);
   const [waConnected, setWaConnected] = useState(!!shop.whatsapp_phone_number_id);
+  const [connectedPageName, setConnectedPageName] = useState<string>(shop.meta_page_name || '');
+
   const [showWaModal, setShowWaModal] = useState(false);
   const [waWabaId, setWaWabaId] = useState(shop.whatsapp_business_account_id || '');
   const [waPhoneId, setWaPhoneId] = useState(shop.whatsapp_phone_number_id || '');
   const [waToken, setWaToken] = useState(shop.whatsapp_access_token || '');
   const [waSaving, setWaSaving] = useState(false);
-  const [advancing, setAdvancing] = useState(false);
-
   const [waError, setWaError] = useState('');
+
+  const [advancing, setAdvancing] = useState(false);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+
   const [pageError, setPageError] = useState('');
-  const [availablePages, setAvailablePages] = useState<Array<{ id: string; name: string; access_token: string }>>([]);
+  const [availablePages, setAvailablePages] = useState<PageOption[]>([]);
   const [showPagePicker, setShowPagePicker] = useState(false);
-  const [selectingPage, setSelectingPage] = useState(false);
+  const [selectingPageId, setSelectingPageId] = useState<string | null>(null);
+
+  // Info toast for IG when Messenger is already connected but no IG was found
+  const [showIgInfo, setShowIgInfo] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('messenger') === 'connected') setMessengerConnected(true);
     if (params.get('instagram') === 'connected') setInstagramConnected(true);
     if (params.get('error') === 'NoPagesFound') {
-      setPageError('No Facebook Pages found. Ensure your Facebook account has Admin permissions on the Page you want to connect.');
+      setPageError('No Facebook Pages found on your account. Make sure you are an Admin of the Facebook Page you want to connect, then try again.');
     }
-
     if (params.get('select_page') === 'true' && params.get('pages')) {
       try {
         const raw = decodeURIComponent(params.get('pages')!);
@@ -73,9 +84,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     }
   }, []);
 
-  const [selectingPageId, setSelectingPageId] = useState<string | null>(null);
-
-  const handleSelectPage = async (page: { id: string; name: string; access_token: string }) => {
+  const handleSelectPage = async (page: PageOption) => {
     setSelectingPageId(page.id);
     setPageError('');
     try {
@@ -83,9 +92,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       const res = await selectPageMeta(shop.id, page);
       if (res.success) {
         setMessengerConnected(true);
+        setConnectedPageName(page.name);
         if (res.instagramConnected) setInstagramConnected(true);
-        shop.meta_page_name = page.name;
-        shop.meta_page_id = page.id;
         setShowPagePicker(false);
       } else {
         setPageError(res.error || 'Failed to select Facebook Page');
@@ -94,6 +102,17 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       setPageError(e.message || 'Error selecting Facebook Page');
     }
     setSelectingPageId(null);
+  };
+
+  const handleInstagramClick = () => {
+    if (messengerConnected) {
+      // IG is auto-fetched from the connected page. If not connected, it means no IG account was linked.
+      if (!instagramConnected) setShowIgInfo(true);
+      // If already connected, do nothing — row shows the connected state
+    } else {
+      // No FB page yet — run the same Meta OAuth as Messenger
+      window.location.href = `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`;
+    }
   };
 
   const hasAnyChannelConnected = messengerConnected || instagramConnected || waConnected;
@@ -105,11 +124,11 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     const cleanToken = waToken.trim();
 
     if (cleanWaba && !/^\d{10,20}$/.test(cleanWaba)) {
-      setWaError('WABA ID must contain numbers only (10-20 digits).');
+      setWaError('WABA ID must contain numbers only (10–20 digits).');
       return;
     }
     if (!cleanPhone || !/^\d{10,20}$/.test(cleanPhone)) {
-      setWaError('Phone Number ID must contain numbers only (10-20 digits).');
+      setWaError('Phone Number ID must contain numbers only (10–20 digits).');
       return;
     }
     if (!cleanToken || cleanToken.length < 20 || /[^a-zA-Z0-9_-]/.test(cleanToken)) {
@@ -128,13 +147,13 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   };
 
   const handleDisconnect = async (channelKey: 'messenger' | 'instagram' | 'whatsapp') => {
-    if (!confirm(`Are you sure you want to disconnect ${channelKey === 'messenger' ? 'Facebook Messenger' : channelKey === 'instagram' ? 'Instagram' : 'WhatsApp'}?`)) return;
+    if (!confirm(`Disconnect ${channelKey === 'messenger' ? 'Facebook Messenger' : channelKey === 'instagram' ? 'Instagram' : 'WhatsApp'}?`)) return;
     setDisconnecting(channelKey);
     try {
       const actions = await import('../../dashboard/settings/actions');
       if (channelKey === 'messenger') {
         const res = await actions.disconnectFacebook(shop.id);
-        if (res.success) setMessengerConnected(false);
+        if (res.success) { setMessengerConnected(false); setConnectedPageName(''); }
       } else if (channelKey === 'instagram') {
         const res = await actions.disconnectInstagram(shop.id);
         if (res.success) setInstagramConnected(false);
@@ -149,7 +168,6 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   const handleNext = async () => {
     if (!hasAnyChannelConnected) return;
     setAdvancing(true);
-    if (!instagramConnected) localStorage.setItem(IG_NUDGE_KEY, '1');
     if (!waConnected) localStorage.setItem(WA_NUDGE_KEY, '1');
     await saveOnboardingStep(shop.id, 'context');
     onNext();
@@ -157,88 +175,190 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
 
+  // ─── Channel Rows ────────────────────────────────────────────────────────────
   const channels = [
-    { key: 'messenger' as const, icon: <MessengerIcon className="w-5 h-5 text-[#0084FF]" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: false, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
-    { key: 'instagram' as const, icon: <InstagramIcon className="w-5 h-5 text-[#E4405F]" />, title: 'Instagram DMs', subtitle: instagramConnected ? 'Instagram Business Account connected' : 'Connects via Facebook Login', required: false, connected: instagramConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding_instagram`, onClick: undefined as any },
-    { key: 'whatsapp' as const, icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />, title: 'WhatsApp Business', subtitle: waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API', required: false, connected: waConnected, href: undefined as any, onClick: () => { setWaError(''); setShowWaModal(true); } },
+    {
+      key: 'messenger' as const,
+      icon: <MessengerIcon className="w-5 h-5 text-[#0084FF]" />,
+      color: '#0084FF',
+      title: 'Facebook Messenger',
+      subtitle: messengerConnected
+        ? `Page: ${connectedPageName || shop.meta_page_name || 'Connected'}`
+        : 'Receive and respond to Page messages',
+      connected: messengerConnected,
+      action: () => { window.location.href = `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`; },
+      connectLabel: 'Connect',
+    },
+    {
+      key: 'instagram' as const,
+      icon: <InstagramIcon className="w-5 h-5 text-[#E4405F]" />,
+      color: '#E4405F',
+      title: 'Instagram DMs',
+      subtitle: instagramConnected
+        ? 'Instagram Business Account connected'
+        : messengerConnected
+          ? 'No Instagram account linked to your Facebook Page'
+          : 'Connect via your Facebook Page',
+      connected: instagramConnected,
+      action: handleInstagramClick,
+      connectLabel: messengerConnected ? 'Learn more' : 'Connect via Facebook',
+    },
+    {
+      key: 'whatsapp' as const,
+      icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />,
+      color: '#25D366',
+      title: 'WhatsApp Business',
+      subtitle: waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API',
+      connected: waConnected,
+      action: () => { setWaError(''); setShowWaModal(true); },
+      connectLabel: 'Connect',
+    },
   ];
 
   return (
     <motion.div key="step-channels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
-      {/* Scrollable content with fade hint */}
       <div className="relative flex-1 min-h-0">
-      <div className="h-full overflow-y-auto pb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
-        <p className="text-sm text-white/60 mb-4 leading-relaxed">Connect at least one channel (Messenger, Instagram, or WhatsApp) to activate your AI agent.</p>
-        
-        {pageError && (
-          <div className="mb-4 p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-200 leading-relaxed flex items-center justify-between">
-            <span>{pageError}</span>
-            <button onClick={() => setPageError('')} className="ml-2 text-white/50 hover:text-white"><X className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
+        <div className="h-full overflow-y-auto pb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
+          <p className="text-sm text-white/60 mb-4 leading-relaxed">Connect at least one channel to activate your AI agent.</p>
 
-        <div className="space-y-3">
-          {channels.map((ch) => (
-            <div key={ch.title} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${ch.connected ? 'border-white/30 bg-white/10' : 'border-white/10 bg-white/5'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ch.connected ? 'bg-white text-black' : 'bg-white/10 text-white/70'}`}>{ch.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-white text-sm">{ch.title}</span>
-                  {ch.required && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white/90 uppercase tracking-wide border border-white/20">Required</span>}
-                </div>
-                <p className="text-xs text-white/60 mt-0.5">{ch.subtitle}</p>
-              </div>
-              {ch.connected ? (
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold border border-white/20"><Check className="w-3.5 h-3.5" /> Connected</div>
-                  <button onClick={() => handleDisconnect(ch.key)} disabled={disconnecting === ch.key} className="px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs font-medium border border-red-500/30 transition-colors disabled:opacity-40">
-                    {disconnecting === ch.key ? <Loader2 className="w-3 h-3 animate-spin text-red-300" /> : 'Disconnect'}
-                  </button>
-                </div>
-              ) : ch.href ? (
-                <a href={ch.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</a>
-              ) : (
-                <button onClick={ch.onClick} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</button>
-              )}
+          {/* Error banner */}
+          {pageError && (
+            <div className="mb-4 p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-200 leading-relaxed flex items-start justify-between gap-2">
+              <span>{pageError}</span>
+              <button onClick={() => setPageError('')} className="text-white/50 hover:text-white shrink-0 mt-0.5"><X className="w-3.5 h-3.5" /></button>
             </div>
-          ))}
+          )}
+
+          {/* IG info toast */}
+          <AnimatePresence>
+            {showIgInfo && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-xs text-blue-200 leading-relaxed flex items-start gap-2.5">
+                <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-blue-100 mb-0.5">No Instagram account found on your Page</p>
+                  <p className="text-blue-200/70">Instagram DMs require a Facebook Page with a linked Instagram Business account. Go to your Facebook Page settings → Instagram → Link account, then reconnect here.</p>
+                </div>
+                <button onClick={() => setShowIgInfo(false)} className="text-blue-400/60 hover:text-blue-200 shrink-0 ml-auto"><X className="w-3.5 h-3.5" /></button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Channel rows */}
+          <div className="space-y-3">
+            {channels.map((ch) => (
+              <div
+                key={ch.key}
+                className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  ch.connected ? 'border-white/25 bg-white/8' : 'border-white/10 bg-white/4'
+                }`}
+              >
+                {/* Icon */}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                    ch.connected ? 'bg-white' : 'bg-white/10'
+                  }`}
+                  style={ch.connected ? { color: ch.color } : {}}
+                >
+                  {ch.icon}
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-white text-sm block">{ch.title}</span>
+                  <p className="text-xs text-white/50 mt-0.5 truncate">{ch.subtitle}</p>
+                </div>
+
+                {/* Action */}
+                {ch.connected ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18">
+                      <Check className="w-3.5 h-3.5" /> Connected
+                    </div>
+                    <button
+                      onClick={() => handleDisconnect(ch.key)}
+                      disabled={disconnecting === ch.key}
+                      className="px-3 py-1.5 rounded-full bg-red-500/15 text-red-300 hover:bg-red-500/25 text-xs font-medium border border-red-500/25 transition-colors disabled:opacity-40"
+                    >
+                      {disconnecting === ch.key ? <Loader2 className="w-3 h-3 animate-spin text-red-300" /> : 'Disconnect'}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={ch.action}
+                    className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold transition-colors shrink-0 ${
+                      ch.key === 'instagram' && messengerConnected
+                        ? 'bg-white/10 text-white/60 hover:bg-white/15 border border-white/15'
+                        : 'bg-white text-black hover:bg-white/90'
+                    }`}
+                  >
+                    {ch.connectLabel}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Meta explanation note */}
+          <p className="mt-4 text-[11px] text-white/30 leading-relaxed">
+            Instagram DMs are managed through your Facebook Page via Meta&apos;s API — connecting Messenger also auto-links any Instagram Business account on the same Page.
+          </p>
         </div>
       </div>
-      </div>
+
       {/* Pinned nav */}
       <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button onClick={handleNext} disabled={!hasAnyChannelConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+        <button
+          onClick={handleNext}
+          disabled={!hasAnyChannelConnected || advancing}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
           {advancing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
 
-      {/* WhatsApp Modal */}
+      {/* ─── WhatsApp Modal ────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showWaModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.92)] backdrop-blur-[36px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-md p-6 text-white">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.93)] backdrop-blur-[40px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-md p-6 text-white">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-base text-white">Connect WhatsApp Cloud API</h3>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#25D366]/20 flex items-center justify-center">
+                    <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
+                  </div>
+                  <h3 className="font-bold text-base text-white">Connect WhatsApp Business</h3>
+                </div>
                 <button onClick={() => setShowWaModal(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs text-white/60 mb-4 leading-relaxed">Requires a Meta Business Account and approved WhatsApp Business Account (WABA).</p>
+              <p className="text-xs text-white/50 mb-5 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA).</p>
 
               {waError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">
-                  {waError}
-                </div>
+                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">{waError}</div>
               )}
 
               <div className="space-y-4">
-                <div><label className="block text-xs font-semibold text-white/80 mb-1.5">WABA ID <span className="text-white/40 font-normal">(optional)</span></label><input type="text" value={waWabaId} onChange={(e) => setWaWabaId(e.target.value)} placeholder="e.g. 123456789012345" className={inputCls} /></div>
-                <div><label className="block text-xs font-semibold text-white/80 mb-1.5">Phone Number ID <span className="text-red-400">*</span></label><input type="text" value={waPhoneId} onChange={(e) => setWaPhoneId(e.target.value)} placeholder="e.g. 987654321098765" className={inputCls} /></div>
-                <div><label className="block text-xs font-semibold text-white/80 mb-1.5">System User Access Token <span className="text-red-400">*</span></label><input type="password" value={waToken} onChange={(e) => setWaToken(e.target.value)} placeholder="EAAG..." className={inputCls} /></div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/70 mb-1.5">WABA ID <span className="text-white/35 font-normal">(optional)</span></label>
+                  <input type="text" value={waWabaId} onChange={(e) => setWaWabaId(e.target.value)} placeholder="e.g. 123456789012345" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/70 mb-1.5">Phone Number ID <span className="text-red-400">*</span></label>
+                  <input type="text" value={waPhoneId} onChange={(e) => setWaPhoneId(e.target.value)} placeholder="e.g. 987654321098765" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/70 mb-1.5">System User Access Token <span className="text-red-400">*</span></label>
+                  <input type="password" value={waToken} onChange={(e) => setWaToken(e.target.value)} placeholder="EAAG..." className={inputCls} />
+                </div>
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowWaModal(false)} className="flex-1 py-2.5 text-xs font-semibold text-white/70 bg-white/10 border border-white/15 rounded-xl hover:bg-white/15 transition-colors">Skip for now</button>
-                <button onClick={handleSaveWa} disabled={waSaving || !waPhoneId.trim() || !waToken.trim()} className="flex-1 py-2.5 text-xs font-semibold text-black bg-white rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed">
+                <button onClick={() => setShowWaModal(false)} className="flex-1 py-2.5 text-xs font-semibold text-white/60 bg-white/8 border border-white/12 rounded-xl hover:bg-white/12 transition-colors">Skip for now</button>
+                <button
+                  onClick={handleSaveWa}
+                  disabled={waSaving || !waPhoneId.trim() || !waToken.trim()}
+                  className="flex-1 py-2.5 text-xs font-semibold text-black bg-white rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
                   {waSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                 </button>
               </div>
@@ -247,43 +367,70 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Page Selection Modal */}
+      {/* ─── Page Picker Modal ─────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showPagePicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.92)] backdrop-blur-[36px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-lg p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-base text-white">Select Facebook Page</h3>
-                <button onClick={() => setShowPagePicker(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.93)] backdrop-blur-[40px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-lg p-6 text-white">
+              
+              {/* Header */}
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <h3 className="font-bold text-lg text-white mb-1">Choose your Facebook Page</h3>
+                  <p className="text-xs text-white/50 leading-relaxed max-w-sm">
+                    We found multiple Pages on your account. Select the one DullBot should manage. Instagram DMs will be auto-linked if that Page has one.
+                  </p>
+                </div>
+                <button onClick={() => setShowPagePicker(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0 ml-3"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs text-white/60 mb-5 leading-relaxed">Multiple Facebook Pages were found for your account. Select which Page DullBot should respond to:</p>
 
-              <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+              {/* Page list */}
+              <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-0.5">
                 {availablePages.map((pg) => (
-                  <div key={pg.id} className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#0084FF]/20 text-[#0084FF] flex items-center justify-center font-bold text-sm shrink-0">
-                        <MessengerIcon className="w-5 h-5" />
+                  <div
+                    key={pg.id}
+                    className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/20 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-xl bg-[#0084FF]/20 text-[#0084FF] flex items-center justify-center font-bold text-sm shrink-0">
+                        {pg.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="font-semibold text-white text-sm">{pg.name}</div>
-                        <div className="text-[11px] text-white/40">Page ID: {pg.id}</div>
+                      {/* Info */}
+                      <div className="min-w-0">
+                        <div className="font-semibold text-white text-sm truncate">{pg.name}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] text-white/35">ID: {pg.id}</span>
+                          {/* IG badge */}
+                          {pg.instagram_business_id ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#E4405F]/15 border border-[#E4405F]/30 text-[10px] font-semibold text-[#E4405F]">
+                              <InstagramIcon className="w-2.5 h-2.5" /> Instagram linked
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/12 text-[10px] text-white/35">
+                              No Instagram
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Select button */}
                     <button
                       onClick={() => handleSelectPage(pg)}
                       disabled={selectingPageId !== null}
-                      className="px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-40"
+                      className="ml-3 px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 shrink-0 flex items-center gap-1.5"
                     >
-                      {selectingPageId === pg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : 'Select'}
+                      {selectingPageId === pg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : 'Use this Page'}
                     </button>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 pt-3 border-t border-white/10 flex justify-end">
-                <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-semibold text-white/70 hover:text-white transition-colors">Cancel</button>
-              </div>
+              {/* Footer note */}
+              <p className="mt-4 pt-3 border-t border-white/10 text-[11px] text-white/30 leading-relaxed">
+                Only one Page can be active per shop. You can change this anytime in <span className="text-white/50">Settings → Channels</span>.
+              </p>
             </motion.div>
           </motion.div>
         )}
