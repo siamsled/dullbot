@@ -83,10 +83,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         movementSpeed={0.35}
         mouseInfluence={120}
         gravityStrength={80}
-        className="absolute inset-0 size-full text-white"
+        className="absolute inset-0 size-full text-white pointer-events-none"
       />
       {/* Full-screen centered layout */}
-      <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-auto">
+      <div className="relative z-10 w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-auto">
 
         {/*
           ISLAND CARD
