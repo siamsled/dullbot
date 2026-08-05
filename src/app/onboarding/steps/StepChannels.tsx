@@ -275,6 +275,15 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18">
                       <Check className="w-3.5 h-3.5" /> Connected
                     </div>
+                    {/* Switch Page option for Messenger */}
+                    {ch.key === 'messenger' && (
+                      <a
+                        href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`}
+                        className="px-3 py-1.5 rounded-full bg-white/8 text-white/50 hover:bg-white/15 hover:text-white text-xs font-medium border border-white/12 transition-colors"
+                      >
+                        Switch Page
+                      </a>
+                    )}
                     <button
                       onClick={() => handleDisconnect(ch.key)}
                       disabled={disconnecting === ch.key}
