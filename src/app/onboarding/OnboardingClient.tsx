@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AuroraBackground } from '@/components/ui/aurora-background';
+import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
 import { Sparkles } from 'lucide-react';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
@@ -74,9 +74,16 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   };
 
   return (
-    <AuroraBackground>
+    <PixelLiquidBg
+      pixelSize={14}
+      resolution={0.45}
+      mouseForce={12}
+      cursorSize={130}
+      autoDemo={false}
+      className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
+    >
       {/* Full-screen centered layout */}
-      <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans">
+      <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-auto">
 
         {/*
           ISLAND CARD
@@ -168,6 +175,6 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
         </div>
       </div>
-    </AuroraBackground>
+    </PixelLiquidBg>
   );
 }
