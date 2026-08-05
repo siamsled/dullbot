@@ -74,7 +74,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center">
+    <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0">
       <GravityStarsBackground
         starsCount={100}
         starsSize={2.5}
@@ -83,10 +83,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         movementSpeed={0.35}
         mouseInfluence={120}
         gravityStrength={80}
-        className="absolute inset-0 size-full text-white pointer-events-none"
+        className="absolute inset-0 size-full text-white"
       />
       {/* Full-screen centered layout */}
-      <div className="relative z-10 w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-auto">
+      <div className="fixed inset-0 w-full h-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-none z-10">
 
         {/*
           ISLAND CARD
@@ -94,7 +94,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed static height across steps: h-[640px]
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.60)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.6)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white">
+        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.60)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.6)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
           <div className="flex items-center justify-between px-8 pt-7 pb-3">
