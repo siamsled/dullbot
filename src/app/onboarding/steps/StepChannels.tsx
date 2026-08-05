@@ -53,7 +53,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     onNext();
   };
 
-  const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3.5 text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400';
+  const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
 
   const channels = [
     { icon: <Globe className="w-5 h-5" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: true, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
@@ -66,37 +66,37 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* Scrollable content with fade hint */}
       <div className="relative flex-1 min-h-0">
       <div className="h-full overflow-y-auto pb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-2">Where do your customers reach you?</h1>
-        <p className="text-sm text-slate-500 mb-6 leading-relaxed">Connect Messenger to activate your AI agent. Instagram and WhatsApp can be added now or later.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
+        <p className="text-sm text-white/60 mb-6 leading-relaxed">Connect Messenger to activate your AI agent. Instagram and WhatsApp can be added now or later.</p>
         <div className="space-y-3">
           {channels.map((ch) => (
-            <div key={ch.title} className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${ch.connected ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ch.connected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{ch.icon}</div>
+            <div key={ch.title} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${ch.connected ? 'border-white/30 bg-white/10' : 'border-white/10 bg-white/5'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ch.connected ? 'bg-white text-black' : 'bg-white/10 text-white/70'}`}>{ch.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-slate-900 text-sm">{ch.title}</span>
-                  {ch.required && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 uppercase tracking-wide">Required</span>}
+                  <span className="font-semibold text-white text-sm">{ch.title}</span>
+                  {ch.required && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white/90 uppercase tracking-wide border border-white/20">Required</span>}
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">{ch.subtitle}</p>
+                <p className="text-xs text-white/60 mt-0.5">{ch.subtitle}</p>
               </div>
               {ch.connected ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold shrink-0"><Check className="w-3.5 h-3.5" /> Connected</div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold shrink-0 border border-white/20"><Check className="w-3.5 h-3.5" /> Connected</div>
               ) : ch.href ? (
-                <a href={ch.href} className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition-colors shrink-0">Connect</a>
+                <a href={ch.href} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</a>
               ) : (
-                <button onClick={ch.onClick} className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition-colors shrink-0">Connect</button>
+                <button onClick={ch.onClick} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</button>
               )}
             </div>
           ))}
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-white to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-[rgba(10,12,20,0.85)] to-transparent" />
       </div>
       {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 shrink-0">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button onClick={handleNext} disabled={!messengerConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          {advancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
+        <button onClick={handleNext} disabled={!messengerConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          {advancing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
 

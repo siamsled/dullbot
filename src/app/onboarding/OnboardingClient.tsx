@@ -91,20 +91,20 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed static height across steps: h-[640px]
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/60 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden">
+        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.82)] backdrop-blur-[36px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white">
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shadow-sm">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900 leading-none">DullBot</p>
-                <p className="text-[11px] text-slate-400 leading-none mt-0.5">for merchants</p>
+                <p className="text-sm font-bold text-white leading-none">DullBot</p>
+                <p className="text-[11px] text-white/50 leading-none mt-0.5">for merchants</p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-slate-400 tabular-nums">
+            <span className="text-xs font-semibold text-white/40 tabular-nums">
               {currentIndex + 1} of {STEP_ORDER.length}
             </span>
           </div>
@@ -114,10 +114,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
             {STEP_ORDER.map((s, i) => (
               <motion.div
                 key={s}
-                className="h-1 flex-1 rounded-full overflow-hidden bg-slate-100"
+                className="h-1 flex-1 rounded-full overflow-hidden bg-white/10"
               >
                 <motion.div
-                  className="h-full rounded-full bg-blue-500"
+                  className="h-full rounded-full bg-white"
                   initial={{ scaleX: 0, originX: 0 }}
                   animate={{ scaleX: i <= currentIndex ? 1 : 0 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -127,12 +127,12 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Divider ───────────────────────────────────────────── */}
-          <div className="h-px bg-slate-100 mx-8" />
+          <div className="h-px bg-white/10 mx-8" />
 
           {/* ── Step Content area (each step handles its own scroll + pinned nav) */}
           <div className="px-8 py-6 flex-1 overflow-hidden flex flex-col">
             {/* Eyebrow */}
-            <p className="text-[11px] font-bold tracking-widest text-blue-600 uppercase mb-3">{eyebrow}</p>
+            <p className="text-[11px] font-bold tracking-widest text-white/50 uppercase mb-3">{eyebrow}</p>
 
             <AnimatePresence mode="wait">
               {step === 'business_type' && (
@@ -168,8 +168,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Card Footer ───────────────────────────────────────── */}
-          <div className="px-8 py-4 border-t border-slate-100">
-            <p className="text-[11px] text-slate-400 text-center">
+          <div className="px-8 py-4 border-t border-white/10">
+            <p className="text-[11px] text-white/40 text-center">
               Your progress is saved. You can adjust any of this later from your dashboard.
             </p>
           </div>
