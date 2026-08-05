@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
+import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
 
 const KEYFRAMES = `
   @keyframes card-enter {
@@ -80,17 +80,18 @@ export default function LoginPage() {
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* ── PixelLiquidBg Background ── */}
-      <PixelLiquidBg
-        pixelSize={14}
-        resolution={0.45}
-        mouseForce={3.5}
-        cursorSize={75}
-        autoDemo={false}
-        className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
-        onMouseMove={handleMouseMoveCard}
-        onMouseLeave={handleMouseLeaveCard}
-      >
+      {/* ── GravityStarsBackground ── */}
+      <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center">
+        <GravityStarsBackground
+          starsCount={100}
+          starsSize={2.5}
+          starsOpacity={0.8}
+          glowIntensity={20}
+          movementSpeed={0.35}
+          mouseInfluence={120}
+          gravityStrength={80}
+          className="absolute inset-0 size-full text-white pointer-events-none"
+        />
         {/* ── Card Stage ── */}
         <div
           className="relative z-10 w-full max-w-[460px] px-4 my-auto mx-auto flex items-center justify-center"
@@ -198,7 +199,7 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </PixelLiquidBg>
+      </div>
     </>
   );
 }

@@ -335,6 +335,33 @@ function GravityStarsBackground({
   ]);
 
   React.useEffect(() => {
+    const handleGlobalPointerMove = (e: MouseEvent | TouchEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      let clientX = 0;
+      let clientY = 0;
+      if ('touches' in e && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if ('clientX' in e) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else {
+        return;
+      }
+      mouseRef.current = { x: clientX - rect.left, y: clientY - rect.top };
+    };
+
+    window.addEventListener('mousemove', handleGlobalPointerMove);
+    window.addEventListener('touchmove', handleGlobalPointerMove);
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalPointerMove);
+      window.removeEventListener('touchmove', handleGlobalPointerMove);
+    };
+  }, []);
+
+  React.useEffect(() => {
     if (animRef.current) cancelAnimationFrame(animRef.current);
     animRef.current = requestAnimationFrame(animate);
     return () => {
