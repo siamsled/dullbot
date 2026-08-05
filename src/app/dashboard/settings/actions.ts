@@ -20,6 +20,45 @@ export async function disconnectFacebook(shopId: string) {
   }
 
   revalidatePath('/dashboard/settings');
+  revalidatePath('/onboarding');
+  return { success: true };
+}
+
+export async function disconnectInstagram(shopId: string) {
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({
+      instagram_business_id: null,
+    })
+    .eq('id', shopId);
+
+  if (error) {
+    console.error('Failed to disconnect Instagram:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath('/onboarding');
+  return { success: true };
+}
+
+export async function disconnectWhatsApp(shopId: string) {
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({
+      whatsapp_business_account_id: null,
+      whatsapp_phone_number_id: null,
+      whatsapp_access_token: null,
+    })
+    .eq('id', shopId);
+
+  if (error) {
+    console.error('Failed to disconnect WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath('/onboarding');
   return { success: true };
 }
 
