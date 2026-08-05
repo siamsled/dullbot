@@ -26,7 +26,6 @@ export async function selectPageMeta(
     instagram_business_id: instagramBusinessId,
     instagram_access_token: instagramBusinessId ? page.access_token : null,
     meta_instagram_user_id: instagramBusinessId,
-    meta_instagram_access_token: instagramBusinessId ? page.access_token : null,
   };
 
   const isUUID = shopId.includes('-') && shopId.length === 36;

@@ -96,9 +96,8 @@ export async function GET(request: Request) {
     meta_page_access_token: pageAccessToken,
     instagram_business_id: instagramBusinessId,
     instagram_access_token: instagramBusinessId ? pageAccessToken : null,
-    // Legacy columns for backwards compatibility
+    // Legacy column for backwards compatibility
     meta_instagram_user_id: instagramBusinessId,
-    meta_instagram_access_token: instagramBusinessId ? pageAccessToken : null,
   };
 
   if (isUUID) {
