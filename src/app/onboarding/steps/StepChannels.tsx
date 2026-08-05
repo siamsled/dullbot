@@ -82,7 +82,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               {ch.connected ? (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold shrink-0 border border-white/20"><Check className="w-3.5 h-3.5" /> Connected</div>
               ) : ch.href ? (
-                <a href={ch.href} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</a>
+                <a href={ch.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</a>
               ) : (
                 <button onClick={ch.onClick} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">Connect</button>
               )}
@@ -90,7 +90,6 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
           ))}
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-[rgba(10,12,20,0.85)] to-transparent" />
       </div>
       {/* Pinned nav */}
       <div className="flex items-center justify-between pt-3 shrink-0">

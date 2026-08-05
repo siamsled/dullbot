@@ -55,7 +55,6 @@ export default function StepBusinessType({ shop, onNext }: Props) {
           })}
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-[rgba(10,12,20,0.85)] to-transparent" />
       </div>
       {/* Pinned nav (No Back button on Step 1) */}
       <div className="flex items-center justify-end pt-3 shrink-0">

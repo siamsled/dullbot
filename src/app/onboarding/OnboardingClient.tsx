@@ -90,7 +90,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed static height across steps: h-[640px]
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.82)] backdrop-blur-[36px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white">
+        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.60)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.6)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white">
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
