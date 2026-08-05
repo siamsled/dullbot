@@ -52,9 +52,23 @@ export async function GET(request: Request) {
 
   if (!pagesData.data || pagesData.data.length === 0) {
     const errDest = (source === 'onboarding' || source === 'onboarding_instagram')
-      ? '/onboarding?error=NoPagesFound'
+      ? '/onboarding?step=channels&error=NoPagesFound'
       : '/dashboard/settings?error=NoPagesFound';
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
+  }
+
+  // If user manages MULTIPLE pages, pass the pages list to the client so the merchant selects the exact page
+  if (pagesData.data.length > 1) {
+    const pagesPayload = pagesData.data.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      access_token: p.access_token,
+    }));
+    const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesPayload)).toString('base64'));
+    const targetDest = (source === 'onboarding' || source === 'onboarding_instagram')
+      ? `/onboarding?step=channels&select_page=true&pages=${encodedPages}`
+      : `/dashboard/settings?select_page=true&pages=${encodedPages}`;
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${targetDest}`);
   }
 
   const page = pagesData.data[0];
@@ -64,7 +78,7 @@ export async function GET(request: Request) {
 
   const isUUID = shopId.includes('-') && shopId.length === 36;
 
-  // Always attempt to fetch Instagram Business Account linked to the Page
+  // Fetch Instagram Business Account linked to this specific selected Page
   let instagramBusinessId: string | null = null;
   try {
     const igRes = await fetch(

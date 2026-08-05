@@ -46,12 +46,50 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   const [waError, setWaError] = useState('');
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [pageError, setPageError] = useState('');
+  const [availablePages, setAvailablePages] = useState<Array<{ id: string; name: string; access_token: string }>>([]);
+  const [showPagePicker, setShowPagePicker] = useState(false);
+  const [selectingPage, setSelectingPage] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('messenger') === 'connected') setMessengerConnected(true);
     if (params.get('instagram') === 'connected') setInstagramConnected(true);
+    if (params.get('error') === 'NoPagesFound') {
+      setPageError('No Facebook Pages found. Ensure your Facebook account has Admin permissions on the Page you want to connect.');
+    }
+
+    if (params.get('select_page') === 'true' && params.get('pages')) {
+      try {
+        const raw = decodeURIComponent(params.get('pages')!);
+        const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAvailablePages(parsed);
+          setShowPagePicker(true);
+        }
+      } catch (e) {
+        console.error('Failed to parse pages payload:', e);
+      }
+    }
   }, []);
+
+  const handleSelectPage = async (page: { id: string; name: string; access_token: string }) => {
+    setSelectingPage(true);
+    try {
+      const { selectPageMeta } = await import('../../dashboard/settings/actions');
+      const res = await selectPageMeta(shop.id, page);
+      if (res.success) {
+        setMessengerConnected(true);
+        if (res.instagramConnected) setInstagramConnected(true);
+        setShowPagePicker(false);
+      } else {
+        setPageError(res.error || 'Failed to select Facebook Page');
+      }
+    } catch (e: any) {
+      setPageError(e.message || 'Error selecting Facebook Page');
+    }
+    setSelectingPage(false);
+  };
 
   const hasAnyChannelConnected = messengerConnected || instagramConnected || waConnected;
 
@@ -126,7 +164,15 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       <div className="relative flex-1 min-h-0">
       <div className="h-full overflow-y-auto pb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
-        <p className="text-sm text-white/60 mb-6 leading-relaxed">Connect at least one channel (Messenger, Instagram, or WhatsApp) to activate your AI agent.</p>
+        <p className="text-sm text-white/60 mb-4 leading-relaxed">Connect at least one channel (Messenger, Instagram, or WhatsApp) to activate your AI agent.</p>
+        
+        {pageError && (
+          <div className="mb-4 p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-200 leading-relaxed flex items-center justify-between">
+            <span>{pageError}</span>
+            <button onClick={() => setPageError('')} className="ml-2 text-white/50 hover:text-white"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
+
         <div className="space-y-3">
           {channels.map((ch) => (
             <div key={ch.title} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${ch.connected ? 'border-white/30 bg-white/10' : 'border-white/10 bg-white/5'}`}>
@@ -190,6 +236,48 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 <button onClick={handleSaveWa} disabled={waSaving || !waPhoneId.trim() || !waToken.trim()} className="flex-1 py-2.5 text-xs font-semibold text-black bg-white rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed">
                   {waSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Page Selection Modal */}
+      <AnimatePresence>
+        {showPagePicker && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.92)] backdrop-blur-[36px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-lg p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-base text-white">Select Facebook Page</h3>
+                <button onClick={() => setShowPagePicker(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
+              </div>
+              <p className="text-xs text-white/60 mb-5 leading-relaxed">Multiple Facebook Pages were found for your account. Select which Page DullBot should respond to:</p>
+
+              <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+                {availablePages.map((pg) => (
+                  <div key={pg.id} className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#0084FF]/20 text-[#0084FF] flex items-center justify-center font-bold text-sm shrink-0">
+                        <MessengerIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-white text-sm">{pg.name}</div>
+                        <div className="text-[11px] text-white/40">Page ID: {pg.id}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleSelectPage(pg)}
+                      disabled={selectingPage}
+                      className="px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-40"
+                    >
+                      {selectingPage ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : 'Select'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 pt-3 border-t border-white/10 flex justify-end">
+                <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-semibold text-white/70 hover:text-white transition-colors">Cancel</button>
               </div>
             </motion.div>
           </motion.div>

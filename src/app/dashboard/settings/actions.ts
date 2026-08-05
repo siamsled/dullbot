@@ -4,6 +4,46 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 import { encrypt } from '@/lib/encryption';
 
+export async function selectPageMeta(
+  shopId: string,
+  page: { id: string; name: string; access_token: string }
+) {
+  let instagramBusinessId: string | null = null;
+  try {
+    const igRes = await fetch(
+      `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+    );
+    const igData = await igRes.json();
+    instagramBusinessId = igData?.instagram_business_account?.id || null;
+  } catch (e) {
+    console.error('Failed to fetch Instagram Business Account for selected page:', e);
+  }
+
+  const payload = {
+    meta_page_id: page.id,
+    meta_page_name: page.name,
+    meta_page_access_token: page.access_token,
+    instagram_business_id: instagramBusinessId,
+    instagram_access_token: instagramBusinessId ? page.access_token : null,
+    meta_instagram_user_id: instagramBusinessId,
+    meta_instagram_access_token: instagramBusinessId ? page.access_token : null,
+  };
+
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  const { error } = isUUID
+    ? await supabaseAdmin.from('shops').update(payload).eq('id', shopId)
+    : await supabaseAdmin.from('shops').update(payload).eq('slug', shopId || 'dull-store');
+
+  if (error) {
+    console.error('Failed to select Facebook Page:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath('/onboarding');
+  return { success: true, instagramConnected: !!instagramBusinessId };
+}
+
 export async function disconnectFacebook(shopId: string) {
   const { error } = await supabaseAdmin
     .from('shops')
