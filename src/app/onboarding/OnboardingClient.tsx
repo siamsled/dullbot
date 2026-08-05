@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
+import SiriOrb from '@/components/ui/siri-orb';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
 import StepContext from './steps/StepContext';
@@ -92,30 +93,36 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         */}
         <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.60)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.6)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white">
 
-          {/* ── Card Header: Logo + Step indicator badge ─────────────────── */}
+          {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
           <div className="flex items-center justify-between px-8 pt-7 pb-3">
             <div className="flex items-center gap-3">
-              <span
-                style={{
-                  fontFamily: 'Georgia, serif',
-                  fontSize: 24,
-                  fontWeight: 300,
-                  letterSpacing: '-0.03em',
-                  color: '#ffffff',
-                }}
-              >
-                dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 15, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
-              </span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/10">
-                Merchants
-              </span>
+              {/* Siri Orb positioned on the left side of dullbot logo */}
+              <SiriOrb size="26px" state="listening" className="mr-0.5" />
+              
+              <div className="flex items-baseline gap-2">
+                <span
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: 24,
+                    fontWeight: 300,
+                    letterSpacing: '-0.03em',
+                    color: '#ffffff',
+                  }}
+                >
+                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 15, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                </span>
+                {/* Creative Merchant text placement (sleek gradient typography) */}
+                <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
+                  for merchants
+                </span>
+              </div>
             </div>
 
-            {/* Modern Step Pill Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-white/70 tabular-nums">
-                Step <span className="text-white font-semibold">{currentIndex + 1}</span> of {STEP_ORDER.length}
+            {/* Sleek Step Counter (not confined in a box) */}
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
+                Step <span className="text-white font-semibold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
               </span>
             </div>
           </div>
