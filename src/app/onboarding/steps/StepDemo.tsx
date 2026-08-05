@@ -87,7 +87,7 @@ export default function StepDemo({ shop, onBack }: Props) {
         </div>
       </div>
       {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
+      <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleDeploy} disabled={completing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm text-black bg-white hover:bg-white/90 transition-all disabled:opacity-40">
           {completing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <><Rocket className="w-4 h-4" /> Deploy Assistant</>}

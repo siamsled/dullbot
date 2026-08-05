@@ -114,7 +114,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Segmented Progress Bar (attached inside card) ────── */}
-          <div className="flex gap-1.5 px-8 pb-5">
+          <div className="flex gap-1.5 px-8 pb-3">
             {STEP_ORDER.map((s, i) => (
               <motion.div
                 key={s}
@@ -130,11 +130,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
             ))}
           </div>
 
-          {/* ── Divider ───────────────────────────────────────────── */}
-          <div className="h-px bg-white/10 mx-8" />
-
           {/* ── Step Content area (each step handles its own scroll + pinned nav) */}
-          <div className="px-8 py-6 flex-1 overflow-hidden flex flex-col">
+          <div className="px-8 py-4 flex-1 overflow-hidden flex flex-col">
             {/* Eyebrow */}
             <p className="text-[11px] font-bold tracking-widest text-white/50 uppercase mb-3">{eyebrow}</p>
 
@@ -172,7 +169,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Card Footer ───────────────────────────────────────── */}
-          <div className="px-8 py-4 border-t border-white/10">
+          <div className="px-8 py-3 pb-5">
             <p className="text-[11px] text-white/40 text-center">
               Your progress is saved. You can adjust any of this later from your dashboard.
             </p>

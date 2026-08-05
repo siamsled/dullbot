@@ -31,7 +31,7 @@ function RetailBranch({ shop, onNext, onBack }: Props) {
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
+      <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleSave} disabled={loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
@@ -57,7 +57,7 @@ function RestaurantBranch({ shop, onNext, onBack }: Props) {
           <div><label className="block text-sm font-semibold text-white/80 mb-1.5">Google Maps Link <span className="text-white/40 font-normal">(optional)</span></label><input type="url" value={mapLink} onChange={(e) => setMapLink(e.target.value)} placeholder="https://maps.google.com/…" className={inputCls} /></div>
         </div>
       </div>
-      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
+      <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleSave} disabled={loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
@@ -82,7 +82,7 @@ function ServiceBranch({ shop, onNext, onBack }: Props) {
           ))}</ul>
         </div>
       </div>
-      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
+      <div className="flex items-center justify-between pt-3 shrink-0">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleContinue} disabled={loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
