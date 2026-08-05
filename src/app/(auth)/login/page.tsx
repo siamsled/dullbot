@@ -81,7 +81,7 @@ export default function LoginPage() {
       <style>{KEYFRAMES}</style>
 
       {/* ── GravityStarsBackground ── */}
-      <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center">
+      <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0">
         <GravityStarsBackground
           starsCount={100}
           starsSize={2.5}
@@ -90,16 +90,16 @@ export default function LoginPage() {
           movementSpeed={0.35}
           mouseInfluence={120}
           gravityStrength={80}
-          className="absolute inset-0 size-full text-white pointer-events-none"
+          className="absolute inset-0 size-full text-white"
         />
-        {/* ── Card Stage ── */}
-        <div
-          className="relative z-10 w-full max-w-[460px] px-4 my-auto mx-auto flex items-center justify-center"
-          style={{
-            perspective: '1000px',
-            pointerEvents: 'auto',
-          }}
-        >
+        {/* ── Card Stage (Fixed Inset Center) ── */}
+        <div className="fixed inset-0 w-full h-full flex items-center justify-center p-4 select-none pointer-events-none z-10">
+          <div
+            className="w-full max-w-[460px] flex items-center justify-center pointer-events-auto"
+            style={{
+              perspective: '1000px',
+            }}
+          >
           <div
             ref={cardRef}
             className="w-full"
@@ -200,6 +200,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 }
