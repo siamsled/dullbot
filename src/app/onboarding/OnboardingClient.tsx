@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
+import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
 import SiriOrb from '@/components/ui/siri-orb';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
@@ -74,14 +74,17 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   };
 
   return (
-    <PixelLiquidBg
-      pixelSize={14}
-      resolution={0.45}
-      mouseForce={3.5}
-      cursorSize={75}
-      autoDemo={false}
-      className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
-    >
+    <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center">
+      <GravityStarsBackground
+        starsCount={100}
+        starsSize={2.5}
+        starsOpacity={0.8}
+        glowIntensity={20}
+        movementSpeed={0.35}
+        mouseInfluence={120}
+        gravityStrength={80}
+        className="absolute inset-0 size-full text-white"
+      />
       {/* Full-screen centered layout */}
       <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-auto">
 
@@ -95,21 +98,21 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
           <div className="flex items-center justify-between px-8 pt-7 pb-3">
-            <div className="flex items-center gap-3">
-              {/* Siri Orb positioned on the left side of dullbot logo */}
-              <SiriOrb size="26px" state="listening" className="mr-0.5" />
+            <div className="flex items-center gap-3.5">
+              {/* Siri Orb (Bigger 36px size) */}
+              <SiriOrb size="36px" state="listening" className="mr-0.5" />
               
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-2.5">
                 <span
                   style={{
                     fontFamily: 'Georgia, serif',
-                    fontSize: 24,
+                    fontSize: 32,
                     fontWeight: 300,
                     letterSpacing: '-0.03em',
                     color: '#ffffff',
                   }}
                 >
-                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 15, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 19, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                 </span>
                 {/* Creative Merchant text placement (sleek gradient typography) */}
                 <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
@@ -118,11 +121,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
               </div>
             </div>
 
-            {/* Sleek Step Counter (not confined in a box) */}
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
-                Step <span className="text-white font-semibold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
+            {/* Sleek Step Counter (No 'Step' text, no green dot) */}
+            <div className="flex items-center">
+              <span className="text-sm tracking-wider text-white/50 uppercase font-medium tabular-nums">
+                <span className="text-white font-bold text-base">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
               </span>
             </div>
           </div>
@@ -185,6 +187,6 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
         </div>
       </div>
-    </PixelLiquidBg>
+    </div>
   );
 }

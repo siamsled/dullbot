@@ -5,12 +5,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Smartphone, ArrowRight, ArrowLeft, X, Loader2, Check } from 'lucide-react';
 import { saveOnboardingStep } from '../../dashboard/actions';
 
+function MessengerIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.91 1.45 5.513 3.722 7.216V22l3.376-1.854c.905.25 1.868.388 2.902.388 5.523 0 10-4.145 10-9.276S17.523 2 12 2zm1.08 12.336-2.584-2.756-5.044 2.756 5.548-5.888 2.646 2.756 4.98-2.756-5.546 5.888z" />
+    </svg>
+  );
+}
+
 function InstagramIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.94 9.94 0 0 0 1.332 4.985L2 22l5.166-1.335a9.96 9.96 0 0 0 4.846 1.258h.005c5.507 0 9.99-4.478 9.99-9.985 0-2.667-1.039-5.176-2.927-7.062A9.92 9.92 0 0 0 12.012 2zm5.871 14.17c-.247.697-1.437 1.33-1.986 1.387-.52.054-1.185.078-3.391-.832-2.825-1.166-4.63-4.043-4.772-4.232-.14-.188-1.144-1.523-1.144-2.905 0-1.381.724-2.06.98-2.342.256-.282.56-.353.748-.353.187 0 .373.003.535.01.171.007.404-.065.632.483.235.564.796 1.942.866 2.083.07.142.117.307.023.494-.094.188-.141.306-.282.471-.14.165-.296.37-.423.498-.141.14-.288.293-.124.575.164.282.729 1.204 1.564 1.948 1.074.957 1.98 1.254 2.263 1.395.282.141.446.118.61-.07.165-.188.705-.823.892-1.106.188-.282.376-.235.633-.141.258.094 1.644.776 1.925.917.282.141.47.212.54.33.07.117.07.682-.177 1.379z" />
     </svg>
   );
 }
@@ -98,9 +112,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
 
   const channels = [
-    { key: 'messenger' as const, icon: <Globe className="w-5 h-5" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: true, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
-    { key: 'instagram' as const, icon: <InstagramIcon className="w-5 h-5" />, title: 'Instagram DMs', subtitle: instagramConnected ? 'Instagram Business Account connected' : 'Connects via Facebook Login', required: false, connected: instagramConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding_instagram`, onClick: undefined as any },
-    { key: 'whatsapp' as const, icon: <Smartphone className="w-5 h-5" />, title: 'WhatsApp Business', subtitle: waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API', required: false, connected: waConnected, href: undefined as any, onClick: () => { setWaError(''); setShowWaModal(true); } },
+    { key: 'messenger' as const, icon: <MessengerIcon className="w-5 h-5 text-[#0084FF]" />, title: 'Facebook Messenger', subtitle: messengerConnected ? `Connected: ${shop.meta_page_name || 'Your Page'}` : 'Receive and respond to Page messages', required: true, connected: messengerConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`, onClick: undefined as any },
+    { key: 'instagram' as const, icon: <InstagramIcon className="w-5 h-5 text-[#E4405F]" />, title: 'Instagram DMs', subtitle: instagramConnected ? 'Instagram Business Account connected' : 'Connects via Facebook Login', required: false, connected: instagramConnected, href: `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding_instagram`, onClick: undefined as any },
+    { key: 'whatsapp' as const, icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />, title: 'WhatsApp Business', subtitle: waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API', required: false, connected: waConnected, href: undefined as any, onClick: () => { setWaError(''); setShowWaModal(true); } },
   ];
 
   return (
