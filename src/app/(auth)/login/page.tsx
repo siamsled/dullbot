@@ -84,8 +84,8 @@ export default function LoginPage() {
       <PixelLiquidBg
         pixelSize={14}
         resolution={0.45}
-        mouseForce={12}
-        cursorSize={130}
+        mouseForce={3.5}
+        cursorSize={75}
         autoDemo={false}
         className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
         onMouseMove={handleMouseMoveCard}

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PixelLiquidBg } from '@/components/ui/pixel-liquid-bg';
-import { Sparkles } from 'lucide-react';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
 import StepContext from './steps/StepContext';
@@ -77,8 +76,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
     <PixelLiquidBg
       pixelSize={14}
       resolution={0.45}
-      mouseForce={12}
-      cursorSize={130}
+      mouseForce={3.5}
+      cursorSize={75}
       autoDemo={false}
       className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0 flex items-center justify-center"
     >
@@ -95,14 +94,19 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
 
           {/* ── Card Header: Logo + Step counter ─────────────────── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white leading-none">DullBot</p>
-                <p className="text-[11px] text-white/50 leading-none mt-0.5">for merchants</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <span
+                style={{
+                  fontFamily: 'Georgia, serif',
+                  fontSize: 22,
+                  fontWeight: 300,
+                  letterSpacing: '-0.03em',
+                  color: '#ffffff',
+                }}
+              >
+                dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 14, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+              </span>
+              <span className="text-[11px] text-white/40 font-medium ml-1">for merchants</span>
             </div>
             <span className="text-xs font-semibold text-white/40 tabular-nums">
               {currentIndex + 1} of {STEP_ORDER.length}

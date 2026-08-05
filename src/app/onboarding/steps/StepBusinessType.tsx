@@ -2,18 +2,18 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, UtensilsCrossed, Sparkles, ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Store, Utensils, Scissors, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { saveBusinessType } from '../../dashboard/actions';
 
 const BUSINESS_TYPES = [
-  { id: 'retail', title: 'Retail & E-commerce', desc: 'Boutiques, product stores, D2C brands', icon: ShoppingBag },
-  { id: 'restaurant', title: 'Restaurant & Food', desc: 'Cafés, dine-in, cloud kitchens', icon: UtensilsCrossed },
-  { id: 'service', title: 'Service Business', desc: 'Salons, clinics, tutoring, bookings', icon: Sparkles },
+  { id: 'retail', title: 'Retail & E-commerce', desc: 'Boutiques, clothing, gadget & D2C shops', icon: Store },
+  { id: 'restaurant', title: 'Restaurant & Food', desc: 'Cafés, cloud kitchens, food delivery', icon: Utensils },
+  { id: 'service', title: 'Service Business', desc: 'Salons, parlors, clinics, tutoring & bookings', icon: Scissors },
 ];
 
 interface Props { shop: any; onNext: (businessType: string) => void; onBack: () => void; }
 
-export default function StepBusinessType({ shop, onNext, onBack }: Props) {
+export default function StepBusinessType({ shop, onNext }: Props) {
   const [selected, setSelected] = useState<string>(shop.business_type || '');
   const [loading, setLoading] = useState(false);
 
@@ -57,11 +57,8 @@ export default function StepBusinessType({ shop, onNext, onBack }: Props) {
       </div>
       <div className="pointer-events-none absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-[rgba(10,12,20,0.85)] to-transparent" />
       </div>
-      {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/10 shrink-0">
-        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
+      {/* Pinned nav (No Back button on Step 1) */}
+      <div className="flex items-center justify-end pt-4 border-t border-white/10 shrink-0">
         <button onClick={handleContinue} disabled={!selected || loading}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
