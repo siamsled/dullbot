@@ -73,14 +73,19 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     }
   }, []);
 
+  const [selectingPageId, setSelectingPageId] = useState<string | null>(null);
+
   const handleSelectPage = async (page: { id: string; name: string; access_token: string }) => {
-    setSelectingPage(true);
+    setSelectingPageId(page.id);
+    setPageError('');
     try {
       const { selectPageMeta } = await import('../../dashboard/settings/actions');
       const res = await selectPageMeta(shop.id, page);
       if (res.success) {
         setMessengerConnected(true);
         if (res.instagramConnected) setInstagramConnected(true);
+        shop.meta_page_name = page.name;
+        shop.meta_page_id = page.id;
         setShowPagePicker(false);
       } else {
         setPageError(res.error || 'Failed to select Facebook Page');
@@ -88,7 +93,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     } catch (e: any) {
       setPageError(e.message || 'Error selecting Facebook Page');
     }
-    setSelectingPage(false);
+    setSelectingPageId(null);
   };
 
   const hasAnyChannelConnected = messengerConnected || instagramConnected || waConnected;
@@ -267,10 +272,10 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     </div>
                     <button
                       onClick={() => handleSelectPage(pg)}
-                      disabled={selectingPage}
+                      disabled={selectingPageId !== null}
                       className="px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-40"
                     >
-                      {selectingPage ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : 'Select'}
+                      {selectingPageId === pg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : 'Select'}
                     </button>
                   </div>
                 ))}
