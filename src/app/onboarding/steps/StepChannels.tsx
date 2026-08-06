@@ -264,13 +264,25 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
           <AnimatePresence>
             {showIgInfo && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-xs text-blue-200 leading-relaxed flex items-start gap-2.5">
-                <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-blue-100 mb-0.5">No Instagram account linked to your Page</p>
-                  <p className="text-blue-200/70">Instagram DMs are auto-linked when your Facebook Page has a Business Instagram account connected in Meta. Go to your Page Settings → Instagram → Link account, then click Switch Page to reconnect.</p>
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-xs text-blue-200 leading-relaxed">
+                <div className="flex items-start gap-2.5">
+                  <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-blue-100 mb-0.5">No Instagram linked to your Facebook Page</p>
+                    <p className="text-blue-200/70 mb-3">Instagram DMs require your Facebook Page to have a linked Instagram Business account. You can do this directly in Facebook settings — it only takes a minute.</p>
+                    <a
+                      href="https://www.facebook.com/settings/?tab=linked_instagram"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 hover:bg-blue-500/30 font-semibold transition-colors text-[11px]"
+                    >
+                      <InstagramIcon className="w-3 h-3" />
+                      Link Instagram on Facebook →
+                    </a>
+                    <p className="text-blue-200/40 mt-2 text-[11px]">After linking, come back and click <span className="text-blue-200/70 font-medium">+ Add Page</span> to reconnect.</p>
+                  </div>
+                  <button onClick={() => setShowIgInfo(false)} className="text-blue-400/60 hover:text-blue-200 shrink-0"><X className="w-3.5 h-3.5" /></button>
                 </div>
-                <button onClick={() => setShowIgInfo(false)} className="text-blue-400/60 hover:text-blue-200 shrink-0 ml-auto"><X className="w-3.5 h-3.5" /></button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -481,7 +493,15 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                               <InstagramIcon className="w-2.5 h-2.5" /> Instagram linked
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/12 text-[10px] text-white/35">No Instagram</span>
+                            <a
+                              href="https://www.facebook.com/settings/?tab=linked_instagram"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/15 text-[10px] text-white/40 hover:text-white/70 hover:border-white/25 transition-colors"
+                            >
+                              No Instagram · Link →
+                            </a>
                           )}
                         </div>
                       </div>
