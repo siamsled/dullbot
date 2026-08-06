@@ -15,9 +15,9 @@ export async function GET(request: Request) {
   const stateObj = { shopId: shopId || 'dull-store', source: source || 'settings' };
   const state = Buffer.from(JSON.stringify(stateObj)).toString('base64');
 
-  // auth_type=rerequest forces Meta to re-ask for any scopes the user may not have granted yet
-  // (e.g. instagram_basic was added after the user first connected — this re-prompts them)
-  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&auth_type=rerequest${configId ? `&config_id=${configId}` : ''}`;
+  // NOTE: config_id overrides scope — do NOT include it, use scope= directly
+  // so instagram_basic and instagram_manage_messages are properly granted
+  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&auth_type=rerequest`;
 
   return NextResponse.redirect(fbAuthUrl);
 }
