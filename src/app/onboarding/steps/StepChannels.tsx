@@ -270,15 +270,25 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-blue-100 mb-0.5">No Instagram linked to your Facebook Page</p>
                     <p className="text-blue-200/70 mb-3">Instagram DMs require your Facebook Page to have a linked Instagram Business account. You can do this directly in Facebook settings — it only takes a minute.</p>
-                    <a
-                      href="https://www.facebook.com/settings/?tab=linked_instagram"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 hover:bg-blue-500/30 font-semibold transition-colors text-[11px]"
-                    >
-                      <InstagramIcon className="w-3 h-3" />
-                      Link Instagram on Facebook →
-                    </a>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href="https://www.facebook.com/settings/?tab=linked_instagram"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 hover:bg-blue-500/30 font-semibold transition-colors text-[11px]"
+                      >
+                        <InstagramIcon className="w-3 h-3" />
+                        Link Instagram on Facebook →
+                      </a>
+                      <a
+                        href="https://www.facebook.com/settings/?tab=linked_profiles"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-blue-200/50 hover:text-blue-200/80 text-[11px] transition-colors"
+                      >
+                        All linked accounts →
+                      </a>
+                    </div>
                     <p className="text-blue-200/40 mt-2 text-[11px]">After linking, come back and click <span className="text-blue-200/70 font-medium">+ Add Page</span> to reconnect.</p>
                   </div>
                   <button onClick={() => setShowIgInfo(false)} className="text-blue-400/60 hover:text-blue-200 shrink-0"><X className="w-3.5 h-3.5" /></button>
@@ -422,7 +432,25 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 </div>
                 <button onClick={() => setShowWaModal(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs text-white/50 mb-5 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA).</p>
+              <p className="text-xs text-white/50 mb-3 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA). Not set up yet? Start here:</p>
+              <div className="flex flex-wrap gap-2 mb-5">
+                <a
+                  href="https://www.facebook.com/settings/?tab=linked_whatsapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 text-[11px] font-semibold transition-colors"
+                >
+                  <WhatsAppIcon className="w-3 h-3" /> Link WhatsApp on Facebook →
+                </a>
+                <a
+                  href="https://www.facebook.com/settings/?tab=linked_profiles"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-white/50 hover:text-white/70 hover:border-white/25 text-[11px] font-medium transition-colors"
+                >
+                  All linked accounts →
+                </a>
+              </div>
               {waError && <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">{waError}</div>}
               <div className="space-y-4">
                 <div><label className="block text-xs font-semibold text-white/70 mb-1.5">WABA ID <span className="text-white/35 font-normal">(optional)</span></label><input type="text" value={waWabaId} onChange={e => setWaWabaId(e.target.value)} placeholder="e.g. 123456789012345" className={inputCls} /></div>
