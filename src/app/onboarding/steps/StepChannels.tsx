@@ -99,7 +99,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
         if (Array.isArray(parsed) && parsed.length > 0) {
           setAvailablePages(parsed);
-          // Pre-check already-connected page IDs
+          // Cache pages so + Add Page can re-open the picker without re-doing OAuth
+          sessionStorage.setItem(`dullbot_pages_${shop.id}`, JSON.stringify(parsed));
           setSelectedPageIds(new Set()); // will be merged after connectedPages load
           setShowPagePicker(true);
         }
@@ -128,6 +129,27 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       });
     }
   }, [showPagePicker, connectedPages]);
+
+  // Open picker using cached pages, or fall back to OAuth
+  const handleAddPage = () => {
+    // Try in-memory state first, then sessionStorage cache
+    let pages = availablePages;
+    if (pages.length === 0) {
+      try {
+        const cached = sessionStorage.getItem(`dullbot_pages_${shop.id}`);
+        if (cached) pages = JSON.parse(cached);
+      } catch (_) {}
+    }
+    if (pages.length > 0) {
+      setAvailablePages(pages);
+      // Pre-check currently connected pages
+      setSelectedPageIds(new Set(connectedPages.map(p => p.meta_page_id)));
+      setShowPagePicker(true);
+    } else {
+      // No cached pages — fall back to OAuth (will repopulate cache on return)
+      window.location.href = `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`;
+    }
+  };
 
   const togglePageSelection = (pageId: string) => {
     setSelectedPageIds(prev => {
@@ -271,9 +293,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18">
                       <Check className="w-3.5 h-3.5" /> {connectedPages.length > 1 ? `${connectedPages.length} Pages` : 'Connected'}
                     </div>
-                    <a href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`} className="px-3 py-1.5 rounded-full bg-white/8 text-white/50 hover:bg-white/15 hover:text-white text-xs font-medium border border-white/12 transition-colors">
+                    <button onClick={handleAddPage} className="px-3 py-1.5 rounded-full bg-white/8 text-white/50 hover:bg-white/15 hover:text-white text-xs font-medium border border-white/12 transition-colors">
                       + Add Page
-                    </a>
+                    </button>
                   </div>
                 ) : (
                   <a href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">
