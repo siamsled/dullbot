@@ -294,6 +294,13 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
             </div>
           )}
 
+          {connectedPages.length === 0 && availablePages.length > 0 && (
+            <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 leading-relaxed flex items-center justify-between gap-3">
+              <span><strong>Facebook Connected:</strong> Page selection required to finish setup.</span>
+              <button onClick={handleAddPage} className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 font-semibold hover:bg-amber-500/30 shrink-0 transition-colors">Select Page(s) →</button>
+            </div>
+          )}
+
           <AnimatePresence>
             {showIgInfo && (
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs leading-relaxed">
@@ -347,6 +354,10 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                       + Add Page
                     </button>
                   </div>
+                ) : availablePages.length > 0 ? (
+                  <button onClick={handleAddPage} className="inline-flex items-center px-4 py-2 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/40 text-xs font-semibold hover:bg-amber-500/30 transition-colors shrink-0">
+                    Finish Setup (Select Pages)
+                  </button>
                 ) : (
                   <a href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">
                     Connect

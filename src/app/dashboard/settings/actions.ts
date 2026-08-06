@@ -47,25 +47,16 @@ export async function selectPagesMeta(
     is_primary: index === 0,
   }));
 
-  // Remove pages that were de-selected
-  const { data: currentPages } = await supabaseAdmin
-    .from('shop_meta_pages')
-    .select('meta_page_id')
-    .eq('shop_id', resolvedId);
-  const currentPageIds = (currentPages || []).map((p) => p.meta_page_id);
-  const newPageIds = pages.map((p) => p.id);
-  const toRemove = currentPageIds.filter((id) => !newPageIds.includes(id));
-  if (toRemove.length > 0) {
-    await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', resolvedId).in('meta_page_id', toRemove);
-  }
-
-  // Upsert selected pages
+  // 1. Upsert all selected pages in a single atomic batch statement
   const { error: upsertErr } = await supabaseAdmin
     .from('shop_meta_pages')
     .upsert(upsertRows, { onConflict: 'shop_id,meta_page_id' });
-  if (upsertErr) return { success: false, error: upsertErr.message };
+  if (upsertErr) {
+    console.error('Failed to upsert shop_meta_pages:', upsertErr);
+    return { success: false, error: 'Could not save your page selection. Please try again.' };
+  }
 
-  // Keep shops table in sync with primary page (backward compat)
+  // 2. Keep shops table in sync with primary page (backward compat)
   const primary = pages[0];
   const { error: shopErr } = await supabaseAdmin
     .from('shops')
@@ -77,7 +68,22 @@ export async function selectPagesMeta(
       instagram_access_token: primary.instagram_business_id ? primary.access_token : null,
     })
     .eq('id', resolvedId);
-  if (shopErr) return { success: false, error: shopErr.message };
+  if (shopErr) {
+    console.error('Failed to sync primary page to shops table:', shopErr);
+    return { success: false, error: 'Could not sync primary page settings. Please try again.' };
+  }
+
+  // 3. Delete de-selected pages ONLY after upsert & shop sync succeed
+  const { data: currentPages } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id')
+    .eq('shop_id', resolvedId);
+  const currentPageIds = (currentPages || []).map((p) => p.meta_page_id);
+  const newPageIds = pages.map((p) => p.id);
+  const toRemove = currentPageIds.filter((id) => !newPageIds.includes(id));
+  if (toRemove.length > 0) {
+    await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', resolvedId).in('meta_page_id', toRemove);
+  }
 
   revalidatePath('/dashboard/settings');
   revalidatePath('/onboarding');
