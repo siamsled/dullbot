@@ -586,10 +586,19 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 })}
               </div>
 
-              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-white/30 leading-relaxed">
-                  {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
-                </p>
+              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] text-white/40 leading-relaxed">
+                    {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
+                  </p>
+                  <a
+                    href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`}
+                    onClick={() => { try { sessionStorage.removeItem(`dullbot_pages_${shop.id}`); } catch (_) {} }}
+                    className="text-[11px] text-white/30 hover:text-white/70 underline underline-offset-2 transition-colors"
+                  >
+                    Re-connect Facebook
+                  </a>
+                </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors">Cancel</button>
                   <button
