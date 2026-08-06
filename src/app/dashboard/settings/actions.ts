@@ -6,10 +6,17 @@ import { encrypt } from '@/lib/encryption';
 
 // ─── Get connected pages for a shop ────────────────────────────────────────
 export async function getConnectedPages(shopId: string) {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
   const { data } = await supabaseAdmin
     .from('shop_meta_pages')
     .select('meta_page_id, meta_page_name, instagram_business_id, is_primary')
-    .eq('shop_id', shopId)
+    .eq('shop_id', resolvedId)
     .order('is_primary', { ascending: false });
   return data || [];
 }
@@ -21,9 +28,16 @@ export async function selectPagesMeta(
 ) {
   if (pages.length === 0) return { success: false, error: 'No pages selected' };
 
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
   // Build upsert rows — first page is primary
   const upsertRows = pages.map((page, index) => ({
-    shop_id: shopId,
+    shop_id: resolvedId,
     meta_page_id: page.id,
     meta_page_name: page.name,
     meta_page_access_token: page.access_token,
@@ -37,12 +51,12 @@ export async function selectPagesMeta(
   const { data: currentPages } = await supabaseAdmin
     .from('shop_meta_pages')
     .select('meta_page_id')
-    .eq('shop_id', shopId);
+    .eq('shop_id', resolvedId);
   const currentPageIds = (currentPages || []).map((p) => p.meta_page_id);
   const newPageIds = pages.map((p) => p.id);
   const toRemove = currentPageIds.filter((id) => !newPageIds.includes(id));
   if (toRemove.length > 0) {
-    await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', shopId).in('meta_page_id', toRemove);
+    await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', resolvedId).in('meta_page_id', toRemove);
   }
 
   // Upsert selected pages
@@ -62,7 +76,7 @@ export async function selectPagesMeta(
       instagram_business_id: primary.instagram_business_id || null,
       instagram_access_token: primary.instagram_business_id ? primary.access_token : null,
     })
-    .eq('id', shopId);
+    .eq('id', resolvedId);
   if (shopErr) return { success: false, error: shopErr.message };
 
   revalidatePath('/dashboard/settings');
@@ -260,13 +274,38 @@ export async function saveWhatsAppConfig(
 
 // ─── Diagnostic: check what Meta Graph API returns for instagram_business_account ─
 export async function checkInstagramForPage(shopId: string) {
-  const { data: pages } = await supabaseAdmin
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
+  let { data: pages } = await supabaseAdmin
     .from('shop_meta_pages')
     .select('meta_page_id, meta_page_name, meta_page_access_token, meta_user_access_token')
-    .eq('shop_id', shopId);
+    .eq('shop_id', resolvedId);
+
+  // Fallback to shops table if shop_meta_pages has no entries for this shop yet
+  if (!pages || pages.length === 0) {
+    const { data: shopRow } = await supabaseAdmin
+      .from('shops')
+      .select('meta_page_id, meta_page_name, meta_page_access_token')
+      .eq('id', resolvedId)
+      .single();
+
+    if (shopRow?.meta_page_id && shopRow?.meta_page_access_token) {
+      pages = [{
+        meta_page_id: shopRow.meta_page_id,
+        meta_page_name: shopRow.meta_page_name || 'Primary Page',
+        meta_page_access_token: shopRow.meta_page_access_token,
+        meta_user_access_token: null,
+      }];
+    }
+  }
 
   if (!pages || pages.length === 0) {
-    return { success: false, error: 'No connected pages found' };
+    return { success: false, error: 'No connected pages found for this shop in database.' };
   }
 
   const results = await Promise.all(
