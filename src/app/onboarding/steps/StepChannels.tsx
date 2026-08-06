@@ -264,38 +264,34 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
           <AnimatePresence>
             {showIgInfo && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-xs text-blue-200 leading-relaxed">
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs leading-relaxed">
                 <div className="flex items-start gap-2.5">
-                  <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                  <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-blue-100 mb-0.5">No Instagram linked to your Facebook Page</p>
-                    <p className="text-blue-200/70 mb-3">Instagram DMs require your Facebook Page to have a linked Instagram Business account. You can do this directly in Facebook settings — it only takes a minute.</p>
+                    <p className="font-semibold text-amber-100 mb-1">Instagram isn&apos;t linked to your Facebook <em>Page</em></p>
+                    <p className="text-amber-200/70 mb-1">Your Instagram may already be linked to your <em>personal</em> Facebook account — but that&apos;s different. DullBot needs Instagram linked directly to your <strong className="text-amber-200">Facebook Page</strong> ({connectedPages[0]?.meta_page_name || 'your Page'}).</p>
+                    <p className="text-amber-200/60 mb-3">Go to your Page → <strong className="text-amber-200">Settings → Instagram → Connect account</strong>, then come back here.</p>
                     <div className="flex flex-wrap gap-2">
-                      <a
-                        href="https://www.facebook.com/settings/?tab=linked_instagram"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 hover:bg-blue-500/30 font-semibold transition-colors text-[11px]"
-                      >
-                        <InstagramIcon className="w-3 h-3" />
-                        Link Instagram on Facebook →
-                      </a>
-                      <a
-                        href="https://www.facebook.com/settings/?tab=linked_profiles"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-blue-200/50 hover:text-blue-200/80 text-[11px] transition-colors"
-                      >
-                        All linked accounts →
-                      </a>
+                      {connectedPages.length > 0 && (
+                        <a
+                          href={`https://www.facebook.com/${connectedPages[0].meta_page_id}/settings/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 font-semibold transition-colors text-[11px]"
+                        >
+                          <InstagramIcon className="w-3 h-3" />
+                          Open {connectedPages[0].meta_page_name || 'Page'} Settings →
+                        </a>
+                      )}
                     </div>
-                    <p className="text-blue-200/40 mt-2 text-[11px]">After linking, come back and click <span className="text-blue-200/70 font-medium">+ Add Page</span> to reconnect.</p>
+                    <p className="text-amber-200/40 mt-2 text-[11px]">After linking on your Page, click <span className="text-amber-200/70 font-medium">+ Add Page</span> to reconnect.</p>
                   </div>
-                  <button onClick={() => setShowIgInfo(false)} className="text-blue-400/60 hover:text-blue-200 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setShowIgInfo(false)} className="text-amber-400/60 hover:text-amber-200 shrink-0"><X className="w-3.5 h-3.5" /></button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
 
           {/* ─── Channel rows ──────────────────────────────────────────────────────── */}
           <div className="space-y-3">
@@ -522,13 +518,13 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                             </span>
                           ) : (
                             <a
-                              href="https://www.facebook.com/settings/?tab=linked_instagram"
+                              href={`https://www.facebook.com/${pg.id}/settings/`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/15 text-[10px] text-white/40 hover:text-white/70 hover:border-white/25 transition-colors"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[10px] text-amber-300/70 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
                             >
-                              No Instagram · Link →
+                              No Instagram · Link via Page Settings →
                             </a>
                           )}
                         </div>
