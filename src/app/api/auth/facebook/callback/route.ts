@@ -57,19 +57,24 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
+  // Helper: fetch instagram_business_account using USER token (carries all OAuth scopes)
+  const fetchIgId = async (pageId: string): Promise<string | null> => {
+    try {
+      const igRes = await fetch(
+        `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${userAccessToken}`
+      );
+      const igData = await igRes.json();
+      if (igData?.error) console.error(`IG fetch error for page ${pageId}:`, igData.error);
+      return igData?.instagram_business_account?.id || null;
+    } catch (_) { return null; }
+  };
+
   // If user manages MULTIPLE pages, fetch IG info per page in parallel then pass to client for selection
   if (pagesData.data.length > 1) {
     const pagesWithIg = await Promise.all(
       pagesData.data.map(async (p: any) => {
-        let instagram_business_id: string | null = null;
-        try {
-          const igRes = await fetch(
-            `https://graph.facebook.com/v19.0/${p.id}?fields=instagram_business_account&access_token=${p.access_token}`
-          );
-          const igData = await igRes.json();
-          instagram_business_id = igData?.instagram_business_account?.id || null;
-        } catch (_) {}
-        return { id: p.id, name: p.name, access_token: p.access_token, instagram_business_id };
+        const instagram_business_id = await fetchIgId(p.id);
+        return { id: p.id, name: p.name, access_token: p.access_token, user_access_token: userAccessToken, instagram_business_id };
       })
     );
     const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesWithIg)).toString('base64'));
@@ -86,22 +91,14 @@ export async function GET(request: Request) {
 
   const isUUID = shopId.includes('-') && shopId.length === 36;
 
-  // Fetch Instagram Business Account linked to this specific selected Page
-  let instagramBusinessId: string | null = null;
-  try {
-    const igRes = await fetch(
-      `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
-    );
-    const igData = await igRes.json();
-    instagramBusinessId = igData?.instagram_business_account?.id || null;
-  } catch (e) {
-    console.error('Failed to fetch Instagram Business Account:', e);
-  }
+  // Use user access token for IG check — it carries all OAuth-granted scopes directly
+  const instagramBusinessId = await fetchIgId(pageId);
 
   const payload = {
     meta_page_id: pageId,
     meta_page_name: pageName,
     meta_page_access_token: pageAccessToken,
+    meta_user_access_token: userAccessToken,    // store so Refresh can re-query without re-OAuth
     instagram_business_id: instagramBusinessId,
     instagram_access_token: instagramBusinessId ? pageAccessToken : null,
   };
@@ -109,12 +106,25 @@ export async function GET(request: Request) {
   // Resolve shop UUID for shop_meta_pages (needed whether shopId is UUID or slug)
   let resolvedShopId: string | null = null;
   if (isUUID) {
-    await supabaseAdmin.from('shops').update(payload).eq('id', shopId);
+    // Only update columns that exist in shops; meta_user_access_token is in shop_meta_pages
+    await supabaseAdmin.from('shops').update({
+      meta_page_id: pageId,
+      meta_page_name: pageName,
+      meta_page_access_token: pageAccessToken,
+      instagram_business_id: instagramBusinessId,
+      instagram_access_token: instagramBusinessId ? pageAccessToken : null,
+    }).eq('id', shopId);
     resolvedShopId = shopId;
   } else {
     const { data: shopRow } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId || 'dull-store').single();
     resolvedShopId = shopRow?.id || null;
-    if (resolvedShopId) await supabaseAdmin.from('shops').update(payload).eq('id', resolvedShopId);
+    if (resolvedShopId) await supabaseAdmin.from('shops').update({
+      meta_page_id: pageId,
+      meta_page_name: pageName,
+      meta_page_access_token: pageAccessToken,
+      instagram_business_id: instagramBusinessId,
+      instagram_access_token: instagramBusinessId ? pageAccessToken : null,
+    }).eq('id', resolvedShopId);
   }
 
   // Also upsert into shop_meta_pages for multi-page routing support
@@ -124,6 +134,7 @@ export async function GET(request: Request) {
       meta_page_id: pageId,
       meta_page_name: pageName,
       meta_page_access_token: pageAccessToken,
+      meta_user_access_token: userAccessToken,
       instagram_business_id: instagramBusinessId,
       instagram_access_token: instagramBusinessId ? pageAccessToken : null,
       is_primary: true,
@@ -138,3 +149,5 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${successDest}`);
 }
+
+

@@ -17,7 +17,7 @@ export async function getConnectedPages(shopId: string) {
 // ─── Select (multi) pages — upserts selected, removes de-selected ────────────
 export async function selectPagesMeta(
   shopId: string,
-  pages: Array<{ id: string; name: string; access_token: string; instagram_business_id: string | null }>
+  pages: Array<{ id: string; name: string; access_token: string; instagram_business_id: string | null; user_access_token?: string | null }>
 ) {
   if (pages.length === 0) return { success: false, error: 'No pages selected' };
 
@@ -27,6 +27,7 @@ export async function selectPagesMeta(
     meta_page_id: page.id,
     meta_page_name: page.name,
     meta_page_access_token: page.access_token,
+    ...(page.user_access_token ? { meta_user_access_token: page.user_access_token } : {}),
     instagram_business_id: page.instagram_business_id || null,
     instagram_access_token: page.instagram_business_id ? page.access_token : null,
     is_primary: index === 0,
@@ -261,7 +262,7 @@ export async function saveWhatsAppConfig(
 export async function checkInstagramForPage(shopId: string) {
   const { data: pages } = await supabaseAdmin
     .from('shop_meta_pages')
-    .select('meta_page_id, meta_page_name, meta_page_access_token')
+    .select('meta_page_id, meta_page_name, meta_page_access_token, meta_user_access_token')
     .eq('shop_id', shopId);
 
   if (!pages || pages.length === 0) {
@@ -271,8 +272,9 @@ export async function checkInstagramForPage(shopId: string) {
   const results = await Promise.all(
     pages.map(async (pg) => {
       try {
+        const token = pg.meta_user_access_token || pg.meta_page_access_token;
         const res = await fetch(
-          `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
+          `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${token}`
         );
         const data = await res.json();
         return {
