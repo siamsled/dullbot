@@ -256,3 +256,54 @@ export async function saveWhatsAppConfig(
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
+
+// ─── Diagnostic: check what Meta Graph API returns for instagram_business_account ─
+export async function checkInstagramForPage(shopId: string) {
+  const { data: pages } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id, meta_page_name, meta_page_access_token')
+    .eq('shop_id', shopId);
+
+  if (!pages || pages.length === 0) {
+    return { success: false, error: 'No connected pages found' };
+  }
+
+  const results = await Promise.all(
+    pages.map(async (pg) => {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
+        );
+        const data = await res.json();
+        return {
+          pageId: pg.meta_page_id,
+          pageName: pg.meta_page_name,
+          rawResponse: data,
+          instagramBusinessId: data?.instagram_business_account?.id || null,
+          error: data?.error?.message || null,
+        };
+      } catch (e: any) {
+        return { pageId: pg.meta_page_id, pageName: pg.meta_page_name, rawResponse: null, instagramBusinessId: null, error: e.message };
+      }
+    })
+  );
+
+  // If any page returned an IG ID, also upsert it
+  for (const r of results) {
+    if (r.instagramBusinessId) {
+      const pg = pages.find(p => p.meta_page_id === r.pageId)!;
+      await supabaseAdmin.from('shop_meta_pages').update({
+        instagram_business_id: r.instagramBusinessId,
+        instagram_access_token: pg.meta_page_access_token,
+      }).eq('shop_id', shopId).eq('meta_page_id', r.pageId);
+      // Also update primary in shops table for backward compat
+      const { data: primaryPage } = await supabaseAdmin.from('shop_meta_pages').select('meta_page_id').eq('shop_id', shopId).eq('is_primary', true).single();
+      if (primaryPage?.meta_page_id === r.pageId) {
+        await supabaseAdmin.from('shops').update({ instagram_business_id: r.instagramBusinessId, instagram_access_token: pg.meta_page_access_token }).eq('id', shopId);
+      }
+      revalidatePath('/onboarding');
+    }
+  }
+
+  return { success: true, results };
+}

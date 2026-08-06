@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, X, Loader2, Check, Info } from 'lucide-react';
+import { ArrowRight, ArrowLeft, X, Loader2, Check, Info, RefreshCw } from 'lucide-react';
 import { saveOnboardingStep } from '../../dashboard/actions';
 
 function MessengerIcon({ className = 'w-5 h-5' }: { className?: string }) {
@@ -71,6 +71,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   const [savingPages, setSavingPages] = useState(false);
 
   const [showIgInfo, setShowIgInfo] = useState(false);
+  const [igRefreshing, setIgRefreshing] = useState(false);
+  const [igDiagnostic, setIgDiagnostic] = useState<string | null>(null);
 
   // Load connected pages from DB
   useEffect(() => {
@@ -148,6 +150,36 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     } else {
       // No cached pages — fall back to OAuth (will repopulate cache on return)
       window.location.href = `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`;
+    }
+  };
+
+  const handleIgRefresh = async () => {
+    setIgRefreshing(true);
+    setIgDiagnostic(null);
+    try {
+      const { checkInstagramForPage } = await import('../../dashboard/settings/actions');
+      const res = await checkInstagramForPage(shop.id);
+      if (!res.success) {
+        setIgDiagnostic(`Error: ${res.error}`);
+        return;
+      }
+      const found = res.results?.filter((r: any) => r.instagramBusinessId);
+      if (found && found.length > 0) {
+        const { getConnectedPages } = await import('../../dashboard/settings/actions');
+        const pages = await getConnectedPages(shop.id);
+        setConnectedPages(pages);
+        setIgDiagnostic(null);
+      } else {
+        const firstResult = res.results?.[0];
+        const rawMsg = firstResult?.error
+          ? `API error: ${firstResult.error}`
+          : `No instagram_business_account returned. Raw: ${JSON.stringify(firstResult?.rawResponse)}`;
+        setIgDiagnostic(rawMsg);
+      }
+    } catch (e: any) {
+      setIgDiagnostic(`Exception: ${e.message}`);
+    } finally {
+      setIgRefreshing(false);
     }
   };
 
@@ -369,17 +401,37 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18 shrink-0">
                   <Check className="w-3.5 h-3.5" /> Connected
                 </div>
+              ) : messengerConnected ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleIgRefresh}
+                    disabled={igRefreshing}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E4405F]/15 border border-[#E4405F]/30 text-[#E4405F] hover:bg-[#E4405F]/25 text-xs font-semibold transition-colors disabled:opacity-40"
+                  >
+                    {igRefreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    {igRefreshing ? 'Checking…' : 'Refresh'}
+                  </button>
+                  <button
+                    onClick={handleInstagramClick}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 text-white/60 hover:bg-white/15 border border-white/15 text-xs font-semibold transition-colors"
+                  >
+                    Learn more
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={handleInstagramClick}
-                  className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                    messengerConnected ? 'bg-white/10 text-white/60 hover:bg-white/15 border border-white/15' : 'bg-white text-black hover:bg-white/90'
-                  }`}
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0"
                 >
-                  {messengerConnected ? 'Learn more' : 'Connect via Facebook'}
+                  Connect via Facebook
                 </button>
               )}
             </div>
+            {igDiagnostic && (
+              <div className="mt-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-300/80 font-mono break-all leading-relaxed">
+                {igDiagnostic}
+              </div>
+            )}
 
             {/* WhatsApp */}
             <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${waConnected ? 'border-white/25 bg-white/8' : 'border-white/10 bg-white/4'}`}>
