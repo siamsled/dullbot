@@ -335,12 +335,16 @@ export async function checkInstagramForPage(shopId: string) {
             `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
           );
           const data = await res.json();
+          let errMsg = data?.error?.message || null;
+          if (data?.error?.code === 100 || (errMsg && errMsg.includes('pages_read_engagement'))) {
+            errMsg = `Your Facebook token was granted under older permissions. Click '+ Add Page' → 'Re-connect Facebook' to refresh your authorization.`;
+          }
           return {
             pageId: pg.meta_page_id,
             pageName: pg.meta_page_name,
             rawResponse: data,
             instagramBusinessId: data?.instagram_business_account?.id || null,
-            error: data?.error?.message || null,
+            error: errMsg,
           };
         }
       } catch (e: any) {
