@@ -46,8 +46,8 @@ export async function GET(request: Request) {
   
   const userAccessToken = longLivedData.access_token || shortLivedUserToken;
 
-  // 2. Fetch User's Pages
-  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${userAccessToken}`);
+  // 2. Fetch User's Pages (with instagram_business_account field included directly)
+  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${userAccessToken}`);
   const pagesData = await pagesRes.json();
 
   if (!pagesData.data || pagesData.data.length === 0) {
@@ -57,26 +57,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
-  // Helper: fetch instagram_business_account using USER token (carries all OAuth scopes)
-  const fetchIgId = async (pageId: string): Promise<string | null> => {
-    try {
-      const igRes = await fetch(
-        `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${userAccessToken}`
-      );
-      const igData = await igRes.json();
-      if (igData?.error) console.error(`IG fetch error for page ${pageId}:`, igData.error);
-      return igData?.instagram_business_account?.id || null;
-    } catch (_) { return null; }
-  };
+  // Extract IG business ID for a page item directly from the me/accounts response
+  const getIgId = (p: any): string | null => p?.instagram_business_account?.id || null;
 
-  // If user manages MULTIPLE pages, fetch IG info per page in parallel then pass to client for selection
+  // If user manages MULTIPLE pages, pass IG info per page to client for selection
   if (pagesData.data.length > 1) {
-    const pagesWithIg = await Promise.all(
-      pagesData.data.map(async (p: any) => {
-        const instagram_business_id = await fetchIgId(p.id);
-        return { id: p.id, name: p.name, access_token: p.access_token, user_access_token: userAccessToken, instagram_business_id };
-      })
-    );
+    const pagesWithIg = pagesData.data.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      access_token: p.access_token,
+      user_access_token: userAccessToken,
+      instagram_business_id: getIgId(p),
+    }));
     const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesWithIg)).toString('base64'));
     const targetDest = (source === 'onboarding' || source === 'onboarding_instagram')
       ? `/onboarding?step=channels&select_page=true&pages=${encodedPages}`
@@ -91,8 +83,7 @@ export async function GET(request: Request) {
 
   const isUUID = shopId.includes('-') && shopId.length === 36;
 
-  // Use user access token for IG check — it carries all OAuth-granted scopes directly
-  const instagramBusinessId = await fetchIgId(pageId);
+  const instagramBusinessId = getIgId(page);
 
   const payload = {
     meta_page_id: pageId,

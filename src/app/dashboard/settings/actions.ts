@@ -311,18 +311,32 @@ export async function checkInstagramForPage(shopId: string) {
   const results = await Promise.all(
     pages.map(async (pg) => {
       try {
-        const token = pg.meta_user_access_token || pg.meta_page_access_token;
-        const res = await fetch(
-          `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${token}`
-        );
-        const data = await res.json();
-        return {
-          pageId: pg.meta_page_id,
-          pageName: pg.meta_page_name,
-          rawResponse: data,
-          instagramBusinessId: data?.instagram_business_account?.id || null,
-          error: data?.error?.message || null,
-        };
+        if (pg.meta_user_access_token) {
+          const res = await fetch(
+            `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${pg.meta_user_access_token}`
+          );
+          const data = await res.json();
+          const matchedPage = data?.data?.find((p: any) => p.id === pg.meta_page_id);
+          return {
+            pageId: pg.meta_page_id,
+            pageName: pg.meta_page_name,
+            rawResponse: data,
+            instagramBusinessId: matchedPage?.instagram_business_account?.id || null,
+            error: data?.error?.message || null,
+          };
+        } else {
+          const res = await fetch(
+            `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
+          );
+          const data = await res.json();
+          return {
+            pageId: pg.meta_page_id,
+            pageName: pg.meta_page_name,
+            rawResponse: data,
+            instagramBusinessId: data?.instagram_business_account?.id || null,
+            error: data?.error?.message || null,
+          };
+        }
       } catch (e: any) {
         return { pageId: pg.meta_page_id, pageName: pg.meta_page_name, rawResponse: null, instagramBusinessId: null, error: e.message };
       }
