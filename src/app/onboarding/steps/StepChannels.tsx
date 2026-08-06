@@ -229,7 +229,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
   return (
     <motion.div key="step-channels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
       <div className="relative flex-1 min-h-0">
-        <div className="h-full overflow-y-auto pb-4">
+        <div className="h-full overflow-y-auto pb-6 scroll-smooth">
           <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
           <p className="text-sm text-white/60 mb-4 leading-relaxed">Connect at least one channel to activate your AI agent.</p>
 
@@ -285,7 +285,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               {/* Connected pages list */}
               <AnimatePresence>
                 {connectedPages.length > 0 && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="mt-3 space-y-1.5">
                     {connectedPages.map((pg) => (
                       <div key={pg.meta_page_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/8">
                         <div className="flex items-center gap-2 min-w-0">
