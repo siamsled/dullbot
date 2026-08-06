@@ -4,59 +4,139 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 import { encrypt } from '@/lib/encryption';
 
-export async function selectPageMeta(
-  shopId: string,
-  page: { id: string; name: string; access_token: string }
-) {
-  let instagramBusinessId: string | null = null;
-  try {
-    const igRes = await fetch(
-      `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
-    );
-    const igData = await igRes.json();
-    instagramBusinessId = igData?.instagram_business_account?.id || null;
-  } catch (e) {
-    console.error('Failed to fetch Instagram Business Account for selected page:', e);
-  }
+// ─── Get connected pages for a shop ────────────────────────────────────────
+export async function getConnectedPages(shopId: string) {
+  const { data } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id, meta_page_name, instagram_business_id, is_primary')
+    .eq('shop_id', shopId)
+    .order('is_primary', { ascending: false });
+  return data || [];
+}
 
-  const payload = {
+// ─── Select (multi) pages — upserts selected, removes de-selected ────────────
+export async function selectPagesMeta(
+  shopId: string,
+  pages: Array<{ id: string; name: string; access_token: string; instagram_business_id: string | null }>
+) {
+  if (pages.length === 0) return { success: false, error: 'No pages selected' };
+
+  // Build upsert rows — first page is primary
+  const upsertRows = pages.map((page, index) => ({
+    shop_id: shopId,
     meta_page_id: page.id,
     meta_page_name: page.name,
     meta_page_access_token: page.access_token,
-    instagram_business_id: instagramBusinessId,
-    instagram_access_token: instagramBusinessId ? page.access_token : null,
+    instagram_business_id: page.instagram_business_id || null,
+    instagram_access_token: page.instagram_business_id ? page.access_token : null,
+    is_primary: index === 0,
+  }));
+
+  // Remove pages that were de-selected
+  const { data: currentPages } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id')
+    .eq('shop_id', shopId);
+  const currentPageIds = (currentPages || []).map((p) => p.meta_page_id);
+  const newPageIds = pages.map((p) => p.id);
+  const toRemove = currentPageIds.filter((id) => !newPageIds.includes(id));
+  if (toRemove.length > 0) {
+    await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', shopId).in('meta_page_id', toRemove);
+  }
+
+  // Upsert selected pages
+  const { error: upsertErr } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .upsert(upsertRows, { onConflict: 'shop_id,meta_page_id' });
+  if (upsertErr) return { success: false, error: upsertErr.message };
+
+  // Keep shops table in sync with primary page (backward compat)
+  const primary = pages[0];
+  const { error: shopErr } = await supabaseAdmin
+    .from('shops')
+    .update({
+      meta_page_id: primary.id,
+      meta_page_name: primary.name,
+      meta_page_access_token: primary.access_token,
+      instagram_business_id: primary.instagram_business_id || null,
+      instagram_access_token: primary.instagram_business_id ? primary.access_token : null,
+    })
+    .eq('id', shopId);
+  if (shopErr) return { success: false, error: shopErr.message };
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath('/onboarding');
+  return {
+    success: true,
+    instagramConnected: pages.some((p) => !!p.instagram_business_id),
+    pageCount: pages.length,
   };
+}
 
-  const isUUID = shopId.includes('-') && shopId.length === 36;
-  const { error } = isUUID
-    ? await supabaseAdmin.from('shops').update(payload).eq('id', shopId)
-    : await supabaseAdmin.from('shops').update(payload).eq('slug', shopId || 'dull-store');
+// ─── Legacy single-page select (kept for backward compat) ───────────────────
+export async function selectPageMeta(
+  shopId: string,
+  page: { id: string; name: string; access_token: string; instagram_business_id?: string | null }
+) {
+  let instagramBusinessId: string | null = page.instagram_business_id ?? null;
+  if (instagramBusinessId === undefined) {
+    try {
+      const igRes = await fetch(
+        `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+      );
+      const igData = await igRes.json();
+      instagramBusinessId = igData?.instagram_business_account?.id || null;
+    } catch (e) {
+      console.error('Failed to fetch Instagram Business Account for selected page:', e);
+    }
+  }
+  return selectPagesMeta(shopId, [{ id: page.id, name: page.name, access_token: page.access_token, instagram_business_id: instagramBusinessId }]);
+}
 
-  if (error) {
-    console.error('Failed to select Facebook Page:', error);
-    return { success: false, error: error.message };
+// ─── Disconnect a specific page ──────────────────────────────────────────────
+export async function disconnectMetaPage(shopId: string, metaPageId: string) {
+  await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', shopId).eq('meta_page_id', metaPageId);
+
+  const { data: remaining } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id, meta_page_name, meta_page_access_token, instagram_business_id, instagram_access_token, is_primary')
+    .eq('shop_id', shopId)
+    .order('is_primary', { ascending: false });
+
+  if (!remaining || remaining.length === 0) {
+    await supabaseAdmin
+      .from('shops')
+      .update({ meta_page_id: null, meta_page_name: null, meta_page_access_token: null, instagram_business_id: null, instagram_access_token: null })
+      .eq('id', shopId);
+  } else {
+    const newPrimary = remaining.find((p) => p.is_primary) || remaining[0];
+    if (!remaining.find((p) => p.is_primary)) {
+      await supabaseAdmin.from('shop_meta_pages').update({ is_primary: true }).eq('shop_id', shopId).eq('meta_page_id', newPrimary.meta_page_id);
+    }
+    await supabaseAdmin.from('shops').update({
+      meta_page_id: newPrimary.meta_page_id,
+      meta_page_name: newPrimary.meta_page_name,
+      meta_page_access_token: newPrimary.meta_page_access_token,
+      instagram_business_id: newPrimary.instagram_business_id,
+      instagram_access_token: newPrimary.instagram_access_token,
+    }).eq('id', shopId);
   }
 
   revalidatePath('/dashboard/settings');
   revalidatePath('/onboarding');
-  return { success: true, instagramConnected: !!instagramBusinessId };
+  return { success: true };
 }
 
 export async function disconnectFacebook(shopId: string) {
+  // Clear all pages from shop_meta_pages
+  await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', shopId);
+
   const { error } = await supabaseAdmin
     .from('shops')
-    .update({
-      meta_page_id: null,
-      meta_page_name: null,
-      meta_page_access_token: null,
-    })
+    .update({ meta_page_id: null, meta_page_name: null, meta_page_access_token: null, instagram_business_id: null, instagram_access_token: null })
     .eq('id', shopId);
 
-  if (error) {
-    console.error('Failed to disconnect Facebook:', error);
-    return { success: false, error: error.message };
-  }
-
+  if (error) return { success: false, error: error.message };
   revalidatePath('/dashboard/settings');
   revalidatePath('/onboarding');
   return { success: true };

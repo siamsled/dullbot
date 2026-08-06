@@ -106,10 +106,28 @@ export async function GET(request: Request) {
     instagram_access_token: instagramBusinessId ? pageAccessToken : null,
   };
 
+  // Resolve shop UUID for shop_meta_pages (needed whether shopId is UUID or slug)
+  let resolvedShopId: string | null = null;
   if (isUUID) {
     await supabaseAdmin.from('shops').update(payload).eq('id', shopId);
+    resolvedShopId = shopId;
   } else {
-    await supabaseAdmin.from('shops').update(payload).eq('slug', shopId || 'dull-store');
+    const { data: shopRow } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId || 'dull-store').single();
+    resolvedShopId = shopRow?.id || null;
+    if (resolvedShopId) await supabaseAdmin.from('shops').update(payload).eq('id', resolvedShopId);
+  }
+
+  // Also upsert into shop_meta_pages for multi-page routing support
+  if (resolvedShopId) {
+    await supabaseAdmin.from('shop_meta_pages').upsert({
+      shop_id: resolvedShopId,
+      meta_page_id: pageId,
+      meta_page_name: pageName,
+      meta_page_access_token: pageAccessToken,
+      instagram_business_id: instagramBusinessId,
+      instagram_access_token: instagramBusinessId ? pageAccessToken : null,
+      is_primary: true,
+    }, { onConflict: 'shop_id,meta_page_id' });
   }
 
   // Determine redirection

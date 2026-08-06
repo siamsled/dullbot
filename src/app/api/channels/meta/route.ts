@@ -35,12 +35,30 @@ export async function POST(request: Request) {
       for (const entry of body.entry) {
         const pageId = entry.id; // The Facebook Page ID
         
-        // Find the shop that connected this page
-        const { data: shop } = await supabaseAdmin
-          .from('shops')
-          .select('id, slug')
+        // Look up via shop_meta_pages for multi-page routing
+        const { data: pageRow } = await supabaseAdmin
+          .from('shop_meta_pages')
+          .select('shop_id')
           .eq('meta_page_id', pageId)
           .single();
+
+        let shop: { id: string; slug: string } | null = null;
+        if (pageRow) {
+          const { data: shopData } = await supabaseAdmin
+            .from('shops')
+            .select('id, slug')
+            .eq('id', pageRow.shop_id)
+            .single();
+          shop = shopData;
+        } else {
+          // Fallback: direct shops lookup (backward compat)
+          const { data: shopData } = await supabaseAdmin
+            .from('shops')
+            .select('id, slug')
+            .eq('meta_page_id', pageId)
+            .single();
+          shop = shopData;
+        }
 
         if (!shop) {
           console.error(`Received message for unlinked page ID: ${pageId}`);

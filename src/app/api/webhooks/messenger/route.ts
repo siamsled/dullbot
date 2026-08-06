@@ -74,11 +74,33 @@ export async function POST(request: Request) {
       for (const entry of body.entry) {
         const pageId = entry.id;
 
-        const { data: shop } = await supabaseAdmin
-          .from('shops')
-          .select('*')
+        // Look up via shop_meta_pages for multi-page routing
+        const { data: pageRow } = await supabaseAdmin
+          .from('shop_meta_pages')
+          .select('shop_id, meta_page_access_token, instagram_business_id, instagram_access_token')
           .eq('meta_page_id', pageId)
           .single();
+
+        let shop: any = null;
+        if (pageRow) {
+          const { data: shopData } = await supabaseAdmin
+            .from('shops')
+            .select('*')
+            .eq('id', pageRow.shop_id)
+            .single();
+          if (shopData) {
+            // Override with the specific page's token for this message
+            shop = { ...shopData, meta_page_access_token: pageRow.meta_page_access_token };
+          }
+        } else {
+          // Fallback: direct shops lookup (backward compat)
+          const { data: shopData } = await supabaseAdmin
+            .from('shops')
+            .select('*')
+            .eq('meta_page_id', pageId)
+            .single();
+          shop = shopData;
+        }
 
         if (!shop) {
           console.warn(`No shop found for page ID: ${pageId}`);
