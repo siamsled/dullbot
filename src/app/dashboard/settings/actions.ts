@@ -82,7 +82,7 @@ export async function selectPagesMeta(
     .upsert(upsertRows, { onConflict: 'shop_id,meta_page_id' });
   if (upsertErr) {
     console.error('Failed to upsert shop_meta_pages:', upsertErr);
-    return { success: false, error: 'Could not save your page selection. Please try again.' };
+    return { success: false, error: `Database error: ${upsertErr.message}` };
   }
 
   // 2. Keep shops table in sync with primary page (backward compat)
@@ -99,7 +99,7 @@ export async function selectPagesMeta(
     .eq('id', resolvedId);
   if (shopErr) {
     console.error('Failed to sync primary page to shops table:', shopErr);
-    return { success: false, error: 'Could not sync primary page settings. Please try again.' };
+    return { success: false, error: `Shop sync error: ${shopErr.message}` };
   }
 
   // 3. Delete de-selected pages ONLY after upsert & shop sync succeed
@@ -114,8 +114,13 @@ export async function selectPagesMeta(
     await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', resolvedId).in('meta_page_id', toRemove);
   }
 
-  revalidatePath('/dashboard/settings');
-  revalidatePath('/onboarding');
+  try {
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/onboarding');
+  } catch (revalErr) {
+    console.warn('revalidatePath non-critical warning:', revalErr);
+  }
+
   return {
     success: true,
     instagramConnected: pages.some((p) => !!p.instagram_business_id),
