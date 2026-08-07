@@ -497,20 +497,20 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               <p className="text-xs text-white/50 mb-3 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA). Not set up yet? Start here:</p>
               <div className="flex flex-wrap gap-2 mb-5">
                 <a
-                  href="https://www.facebook.com/settings/?tab=linked_whatsapp"
+                  href="https://developers.facebook.com/apps/1012936751146812/whatsapp-business/api-setup/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 text-[11px] font-semibold transition-colors"
                 >
-                  <WhatsAppIcon className="w-3 h-3" /> Link WhatsApp on Facebook →
+                  <WhatsAppIcon className="w-3 h-3" /> Get WhatsApp API Keys →
                 </a>
                 <a
-                  href="https://www.facebook.com/settings/?tab=linked_profiles"
+                  href="https://business.facebook.com/latest/settings/whatsapp_account"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-white/50 hover:text-white/70 hover:border-white/25 text-[11px] font-medium transition-colors"
                 >
-                  All linked accounts →
+                  Meta Business Suite →
                 </a>
               </div>
               {waError && <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">{waError}</div>}
