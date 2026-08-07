@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   const configId = process.env.FACEBOOK_LOGIN_CONFIG_ID || '2249651995857878';
   const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/facebook/callback`;
 
-  // We now request all scopes so both Messenger and Instagram can be connected at once
-  const scopes = 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,instagram_basic,instagram_manage_messages';
+  // Request all permissions for Facebook Messenger, FB post comments/private replies, Instagram DMs & Instagram comments
+  const scopes = 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_manage_messages,instagram_manage_comments';
 
   const stateObj = { shopId: shopId || 'dull-store', source: source || 'settings' };
   const state = Buffer.from(JSON.stringify(stateObj)).toString('base64');
