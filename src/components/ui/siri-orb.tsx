@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import * as React from 'react';
 
 export type AIState = 'idle' | 'listening' | 'thinking' | 'streaming' | 'done' | 'error';
 
@@ -34,208 +34,249 @@ export function useAudioAmplitude() {
   return { amplitude: 0.2, status: 'idle' as const, start: () => {}, stop: () => {} };
 }
 
-interface SiriOrbProps {
-  amplitude?: number;
+function cn(...classes: Array<string | undefined | null | false>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+const SIZE_THRESHOLD_SMALL = 50;
+const SIZE_THRESHOLD_TINY = 30;
+const SIZE_THRESHOLD_MEDIUM = 100;
+const BLUR_MULTIPLIER_SMALL = 0.008;
+const BLUR_MIN_SMALL = 1;
+const BLUR_MULTIPLIER_LARGE = 0.015;
+const BLUR_MIN_LARGE = 4;
+const CONTRAST_MULTIPLIER_SMALL = 0.004;
+const CONTRAST_MIN_SMALL = 1.2;
+const CONTRAST_MULTIPLIER_LARGE = 0.008;
+const CONTRAST_MIN_LARGE = 1.5;
+const DOT_SIZE_MULTIPLIER_SMALL = 0.004;
+const DOT_SIZE_MIN_SMALL = 0.05;
+const DOT_SIZE_MULTIPLIER_LARGE = 0.008;
+const DOT_SIZE_MIN_LARGE = 0.1;
+const SHADOW_MULTIPLIER_SMALL = 0.004;
+const SHADOW_MIN_SMALL = 0.5;
+const SHADOW_MULTIPLIER_LARGE = 0.008;
+const SHADOW_MIN_LARGE = 2;
+const MASK_RADIUS_TINY = '0%';
+const MASK_RADIUS_SMALL = '5%';
+const MASK_RADIUS_MEDIUM = '15%';
+const MASK_RADIUS_LARGE = '25%';
+const CONTRAST_TINY = 1.1;
+const CONTRAST_MULTIPLIER_FINAL = 1.2;
+const CONTRAST_MIN_FINAL = 1.3;
+
+export interface SiriOrbProps {
+  animationDuration?: number;
+  className?: string;
+  colors?: {
+    bg?: string;
+    c1?: string;
+    c2?: string;
+    c3?: string;
+  };
   size?: string;
   state?: AIState;
-  className?: string;
+  amplitude?: number;
 }
 
-interface Point3D {
-  ux: number;
-  uy: number;
-  uz: number;
-  phi: number;
-  theta: number;
-}
-
-export default function SiriOrb({
-  amplitude = 0.2,
+export const SiriOrb: React.FC<SiriOrbProps> = ({
   size = '36px',
+  className,
+  colors,
+  animationDuration = 16,
   state = 'idle',
-  className = '',
-}: SiriOrbProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  amplitude = 0.2,
+}) => {
+  const defaultColors = state === 'error' ? {
+    bg: 'rgba(15, 12, 16, 0.95)',
+    c1: 'oklch(60% 0.22 25)',
+    c2: 'oklch(65% 0.20 15)',
+    c3: 'oklch(55% 0.24 35)',
+  } : {
+    bg: 'rgba(12, 13, 20, 0.95)',
+    c1: 'oklch(75% 0.18 350)',
+    c2: 'oklch(75% 0.16 220)',
+    c3: 'oklch(75% 0.18 290)',
+  };
 
-  // Generate 3D sphere lattice (staggered ring distribution for dense organic particle mesh)
-  const points = useMemo<Point3D[]>(() => {
-    const pts: Point3D[] = [];
-    const rings = 40;
-    const pointsPerRing = 54;
+  const finalColors = { ...defaultColors, ...colors };
 
-    for (let i = 0; i < rings; i++) {
-      const theta = ((i + 0.5) / rings - 0.5) * Math.PI;
-      const cosTheta = Math.cos(theta);
-      const sinTheta = Math.sin(theta);
-      const ringPoints = Math.max(6, Math.floor(pointsPerRing * cosTheta));
+  const sizeValue = Number.parseInt(size.replace('px', ''), 10) || 36;
 
-      for (let j = 0; j < ringPoints; j++) {
-        const phi = (j / ringPoints) * 2 * Math.PI + (i * 0.37);
-        pts.push({
-          ux: cosTheta * Math.cos(phi),
-          uy: sinTheta,
-          uz: cosTheta * Math.sin(phi),
-          phi,
-          theta,
-        });
-      }
+  const blurAmount =
+    sizeValue < SIZE_THRESHOLD_SMALL
+      ? Math.max(sizeValue * BLUR_MULTIPLIER_SMALL, BLUR_MIN_SMALL)
+      : Math.max(sizeValue * BLUR_MULTIPLIER_LARGE, BLUR_MIN_LARGE);
+
+  const contrastAmount =
+    sizeValue < SIZE_THRESHOLD_SMALL
+      ? Math.max(sizeValue * CONTRAST_MULTIPLIER_SMALL, CONTRAST_MIN_SMALL)
+      : Math.max(sizeValue * CONTRAST_MULTIPLIER_LARGE, CONTRAST_MIN_LARGE);
+
+  const dotSize =
+    sizeValue < SIZE_THRESHOLD_SMALL
+      ? Math.max(sizeValue * DOT_SIZE_MULTIPLIER_SMALL, DOT_SIZE_MIN_SMALL)
+      : Math.max(sizeValue * DOT_SIZE_MULTIPLIER_LARGE, DOT_SIZE_MIN_LARGE);
+
+  const shadowSpread =
+    sizeValue < SIZE_THRESHOLD_SMALL
+      ? Math.max(sizeValue * SHADOW_MULTIPLIER_SMALL, SHADOW_MIN_SMALL)
+      : Math.max(sizeValue * SHADOW_MULTIPLIER_LARGE, SHADOW_MIN_LARGE);
+
+  const getMaskRadius = (value: number) => {
+    if (value < SIZE_THRESHOLD_TINY) return MASK_RADIUS_TINY;
+    if (value < SIZE_THRESHOLD_SMALL) return MASK_RADIUS_SMALL;
+    if (value < SIZE_THRESHOLD_MEDIUM) return MASK_RADIUS_MEDIUM;
+    return MASK_RADIUS_LARGE;
+  };
+
+  const maskRadius = getMaskRadius(sizeValue);
+
+  const getFinalContrast = (value: number) => {
+    if (value < SIZE_THRESHOLD_TINY) return CONTRAST_TINY;
+    if (value < SIZE_THRESHOLD_SMALL) {
+      return Math.max(
+        contrastAmount * CONTRAST_MULTIPLIER_FINAL,
+        CONTRAST_MIN_FINAL
+      );
     }
-    return pts;
-  }, []);
+    return contrastAmount;
+  };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const finalContrast = getFinalContrast(sizeValue);
 
-    let animId: number;
-    let time = 0;
-
-    const render = () => {
-      const parsedSize = parseFloat(size) || 36;
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width > 0 ? rect.width : parsedSize;
-      const height = rect.height > 0 ? rect.height : parsedSize;
-      const dpr = Math.min(window.devicePixelRatio || 2, 2);
-
-      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-      }
-
-      ctx.save();
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, width, height);
-
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const baseRadius = width * 0.38;
-
-      const speedMult = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.85;
-      const ampMult = state === 'listening' ? 1.4 : state === 'streaming' ? 1.6 : 1.0;
-      time += 0.014 * speedMult;
-
-      const rotY = time * 0.35;
-      const rotX = Math.sin(time * 0.2) * 0.25 + 0.15;
-      const rotZ = Math.cos(time * 0.15) * 0.1;
-
-      const sinY = Math.sin(rotY), cosY = Math.cos(rotY);
-      const sinX = Math.sin(rotX), cosX = Math.cos(rotX);
-      const sinZ = Math.sin(rotZ), cosZ = Math.cos(rotZ);
-
-      const projected = [];
-
-      for (let i = 0; i < points.length; i++) {
-        const pt = points[i];
-
-        // Multi-frequency noise displacement for organic wavy non-spherical morphing blob
-        const w1 = Math.sin(2.2 * pt.ux + time * 1.3) * Math.cos(2.0 * pt.uy - time * 0.9);
-        const w2 = Math.cos(3.1 * pt.uy + time * 1.6) * Math.sin(2.8 * pt.uz + time * 1.1);
-        const w3 = Math.sin(4.2 * pt.ux - time * 1.0) * Math.cos(3.8 * pt.uz + time * 1.4);
-        const w4 = Math.sin(5.5 * pt.phi + time * 2.0) * 0.5;
-
-        const displacement = (0.18 * w1 + 0.14 * w2 + 0.09 * w3 + 0.05 * w4 + (amplitude * 0.22 * ampMult * Math.sin(4 * pt.uy + time * 3)));
-        const radius = baseRadius * (1 + displacement);
-
-        const x = pt.ux * radius;
-        const y = pt.uy * radius;
-        const z = pt.uz * radius;
-
-        const x1 = x * cosY - z * sinY;
-        const z1 = x * sinY + z * cosY;
-
-        const y2 = y * cosX - z1 * sinX;
-        const z2 = y * sinX + z1 * cosX;
-
-        const x3 = x1 * cosZ - y2 * sinZ;
-        const y3 = x1 * sinZ + y2 * cosZ;
-
-        const cameraDist = baseRadius * 3.5;
-        const scale = cameraDist / (cameraDist - z2);
-        const px = centerX + x3 * scale;
-        const py = centerY + y3 * scale;
-
-        projected.push({
-          px,
-          py,
-          pz: z2,
-          ny: y3 / baseRadius,
-          nx: x3 / baseRadius,
-          scale,
-        });
-      }
-
-      // Sort points back-to-front for proper depth overlap
-      projected.sort((a, b) => a.pz - b.pz);
-
-      const dotBaseRadius = Math.max(0.65, width * 0.019);
-
-      for (let i = 0; i < projected.length; i++) {
-        const p = projected[i];
-
-        const isBack = p.pz < 0;
-        const depthAlpha = isBack
-          ? 0.15 + 0.35 * ((p.pz + baseRadius) / baseRadius)
-          : 0.5 + 0.5 * (p.pz / baseRadius);
-
-        const alpha = Math.max(0.08, Math.min(1.0, depthAlpha));
-        const currentDotRadius = Math.max(0.4, dotBaseRadius * (0.65 + 0.55 * Math.max(0, (p.pz / baseRadius) + 0.5)));
-
-        // Color mapping matching reference design:
-        // Top: Golden Yellow -> Mid: Fuchsia Pink -> Lower: Deep Violet / Electric Blue
-        let r = 240, g = 30, b = 150;
-
-        if (state === 'error') {
-          r = 239; g = 68; b = 68;
-        } else {
-          const normY = p.ny;
-          if (normY < -0.2) {
-            const t = Math.min(1, Math.max(0, (normY + 1.0) / 0.8));
-            r = Math.round(255 * (1 - t) + 245 * t);
-            g = Math.round(215 * (1 - t) + 55 * t);
-            b = Math.round(110 * (1 - t) + 160 * t);
-          } else if (normY < 0.35) {
-            const t = Math.min(1, Math.max(0, (normY + 0.2) / 0.55));
-            r = Math.round(245 * (1 - t) + 155 * t);
-            g = Math.round(55 * (1 - t) + 35 * t);
-            b = Math.round(160 * (1 - t) + 215 * t);
-          } else {
-            const t = Math.min(1, Math.max(0, (normY - 0.35) / 0.65));
-            r = Math.round(155 * (1 - t) + 45 * t);
-            g = Math.round(35 * (1 - t) + 95 * t);
-            b = Math.round(215 * (1 - t) + 255 * t);
-          }
-        }
-
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
-        ctx.beginPath();
-        ctx.arc(p.px, p.py, currentDotRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animId);
-    };
-  }, [points, state, amplitude, size]);
+  // Speed up rotation duration when active/listening
+  const duration = state === 'listening' ? animationDuration * 0.4 : state === 'thinking' ? animationDuration * 0.6 : animationDuration;
 
   return (
     <div
       aria-label={`AI State: ${state}`}
-      className={`relative flex items-center justify-center shrink-0 bg-transparent ${className}`}
-      style={{ width: size, height: size, minWidth: size, minHeight: size }}
+      className={cn('siri-orb shrink-0', className)}
+      style={
+        {
+          width: size,
+          height: size,
+          minWidth: size,
+          minHeight: size,
+          '--bg': finalColors.bg,
+          '--c1': finalColors.c1,
+          '--c2': finalColors.c2,
+          '--c3': finalColors.c3,
+          '--animation-duration': `${duration}s`,
+          '--blur-amount': `${blurAmount}px`,
+          '--contrast-amount': finalContrast,
+          '--dot-size': `${dotSize}px`,
+          '--shadow-spread': `${shadowSpread}px`,
+          '--mask-radius': maskRadius,
+        } as React.CSSProperties
+      }
     >
-      <canvas
-        ref={canvasRef}
-        style={{ width: size, height: size, background: 'transparent' }}
-        className="w-full h-full block bg-transparent pointer-events-none"
-      />
+      <style>{`
+        @property --angle {
+          syntax: "<angle>";
+          inherits: false;
+          initial-value: 0deg;
+        }
+
+        .siri-orb {
+          display: grid;
+          grid-template-areas: "stack";
+          overflow: hidden;
+          border-radius: 50%;
+          position: relative;
+        }
+
+        .siri-orb::before,
+        .siri-orb::after {
+          content: "";
+          display: block;
+          grid-area: stack;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+        }
+
+        .siri-orb::before {
+          background:
+            conic-gradient(
+              from calc(var(--angle) * 2) at 25% 70%,
+              var(--c3),
+              transparent 20% 80%,
+              var(--c3)
+            ),
+            conic-gradient(
+              from calc(var(--angle) * 2) at 45% 75%,
+              var(--c2),
+              transparent 30% 60%,
+              var(--c2)
+            ),
+            conic-gradient(
+              from calc(var(--angle) * -3) at 80% 20%,
+              var(--c1),
+              transparent 40% 60%,
+              var(--c1)
+            ),
+            conic-gradient(
+              from calc(var(--angle) * 2) at 15% 5%,
+              var(--c2),
+              transparent 10% 90%,
+              var(--c2)
+            ),
+            conic-gradient(
+              from calc(var(--angle) * 1) at 20% 80%,
+              var(--c1),
+              transparent 10% 90%,
+              var(--c1)
+            ),
+            conic-gradient(
+              from calc(var(--angle) * -2) at 85% 10%,
+              var(--c3),
+              transparent 20% 80%,
+              var(--c3)
+            );
+          box-shadow: inset var(--bg) 0 0 var(--shadow-spread)
+            calc(var(--shadow-spread) * 0.2);
+          filter: blur(var(--blur-amount)) contrast(var(--contrast-amount));
+          animation: rotate var(--animation-duration) linear infinite;
+        }
+
+        .siri-orb::after {
+          background-image: radial-gradient(
+            circle at center,
+            var(--bg) var(--dot-size),
+            transparent var(--dot-size)
+          );
+          background-size: calc(var(--dot-size) * 2) calc(var(--dot-size) * 2);
+          backdrop-filter: blur(calc(var(--blur-amount) * 2))
+            contrast(calc(var(--contrast-amount) * 2));
+          mix-blend-mode: overlay;
+        }
+
+        .siri-orb[style*="--mask-radius: 0%"]::after {
+          mask-image: none;
+        }
+
+        .siri-orb:not([style*="--mask-radius: 0%"])::after {
+          mask-image: radial-gradient(
+            black var(--mask-radius),
+            transparent 75%
+          );
+        }
+
+        @keyframes rotate {
+          to {
+            --angle: 360deg;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .siri-orb::before {
+            animation: none;
+          }
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default SiriOrb;
