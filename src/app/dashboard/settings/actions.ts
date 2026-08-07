@@ -18,7 +18,36 @@ export async function getConnectedPages(shopId: string) {
     .select('meta_page_id, meta_page_name, instagram_business_id, is_primary')
     .eq('shop_id', resolvedId)
     .order('is_primary', { ascending: false });
-  return data || [];
+
+  if (data && data.length > 0) return data;
+
+  // Fallback: Check shops table for legacy connections and auto-backfill shop_meta_pages
+  const { data: shopRow } = await supabaseAdmin
+    .from('shops')
+    .select('meta_page_id, meta_page_name, meta_page_access_token, instagram_business_id, instagram_access_token')
+    .eq('id', resolvedId)
+    .single();
+
+  if (shopRow?.meta_page_id && shopRow?.meta_page_access_token) {
+    await supabaseAdmin.from('shop_meta_pages').upsert({
+      shop_id: resolvedId,
+      meta_page_id: shopRow.meta_page_id,
+      meta_page_name: shopRow.meta_page_name || 'Facebook Page',
+      meta_page_access_token: shopRow.meta_page_access_token,
+      instagram_business_id: shopRow.instagram_business_id || null,
+      instagram_access_token: shopRow.instagram_access_token || null,
+      is_primary: true,
+    }, { onConflict: 'shop_id,meta_page_id' });
+
+    return [{
+      meta_page_id: shopRow.meta_page_id,
+      meta_page_name: shopRow.meta_page_name || 'Facebook Page',
+      instagram_business_id: shopRow.instagram_business_id || null,
+      is_primary: true,
+    }];
+  }
+
+  return [];
 }
 
 // ─── Select (multi) pages — upserts selected, removes de-selected ────────────
