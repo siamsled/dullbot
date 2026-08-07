@@ -29,11 +29,36 @@ function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+function PageAvatar({ pageId, pageName, size = 'sm' }: { pageId: string; pageName: string | null; size?: 'sm' | 'md' }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = (pageName || '?').charAt(0).toUpperCase();
+  const avatarUrl = `https://graph.facebook.com/${pageId}/picture?type=square`;
+  const sizeCls = size === 'md' ? 'w-8 h-8 rounded-xl text-xs font-semibold' : 'w-6 h-6 rounded-lg text-[10px] font-bold';
+
+  if (imgError || !pageId) {
+    return (
+      <div className={`${sizeCls} bg-white/10 text-white flex items-center justify-center shrink-0`}>
+        {initial}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={avatarUrl}
+      alt={pageName || 'Page'}
+      onError={() => setImgError(true)}
+      className={`${sizeCls} object-cover shrink-0 bg-white/10 border border-white/10 shadow-sm`}
+    />
+  );
+}
+
 type PageOption = {
   id: string;
   name: string;
   access_token: string;
   instagram_business_id: string | null;
+  picture_url?: string | null;
 };
 
 type ConnectedPage = {
@@ -368,9 +393,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     {connectedPages.map((pg) => (
                       <div key={pg.meta_page_id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/4 border border-white/6 hover:border-white/10 transition-all duration-200">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-5.5 h-5.5 rounded-lg bg-white/10 flex items-center justify-center text-white font-bold text-[10px] shrink-0">
-                            {(pg.meta_page_name || '?').charAt(0).toUpperCase()}
-                          </div>
+                          <PageAvatar pageId={pg.meta_page_id} pageName={pg.meta_page_name} size="sm" />
                           <span className="text-xs text-white/80 font-medium truncate">{pg.meta_page_name || 'Facebook Page'}</span>
                           {pg.is_primary && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/8 text-white/40 border border-white/8 shrink-0 font-medium">Primary</span>}
                           {pg.instagram_business_id && (
@@ -563,9 +586,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                       </div>
 
                       {/* Page avatar */}
-                      <div className="w-8 h-8 rounded-xl bg-white/8 text-white/70 flex items-center justify-center font-semibold text-sm shrink-0">
-                        {pg.name.charAt(0).toUpperCase()}
-                      </div>
+                      <PageAvatar pageId={pg.id} pageName={pg.name} size="md" />
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">

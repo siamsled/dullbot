@@ -356,7 +356,16 @@ export default function SettingsClient({ shop }: { shop: any }) {
               <StatusBadge connected={!!shop?.meta_page_name} />
               {shop?.meta_page_name ? (
                 <>
-                  <p className="text-[10px] text-ash truncate">{shop.meta_page_name}</p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {shop?.meta_page_id && (
+                      <img
+                        src={`https://graph.facebook.com/${shop.meta_page_id}/picture?type=square`}
+                        alt={shop.meta_page_name}
+                        className="w-4 h-4 rounded-md object-cover bg-fog shrink-0 border border-dove/20"
+                      />
+                    )}
+                    <p className="text-[10px] text-ash truncate font-medium">{shop.meta_page_name}</p>
+                  </div>
                   <button
                     onClick={handleDisconnect}
                     disabled={isPending}
