@@ -46,6 +46,22 @@ export async function GET(request: Request) {
   
   const userAccessToken = longLivedData.access_token || shortLivedUserToken;
 
+  // 1.8 Verify if instagram_basic permission was actually granted by Meta
+  let hasIgPermission = true;
+  try {
+    const permRes = await fetch(`https://graph.facebook.com/v19.0/me/permissions?access_token=${userAccessToken}`);
+    const permData = await permRes.json();
+    if (Array.isArray(permData?.data)) {
+      const igPerm = permData.data.find((p: any) => p.permission === 'instagram_basic');
+      hasIgPermission = igPerm?.status === 'granted';
+      if (!hasIgPermission) {
+        console.warn('Meta OAuth granted token WITHOUT instagram_basic permission. Granted permissions:', permData.data);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to check token permissions:', e);
+  }
+
   // 2. Fetch User's Pages (with instagram_business_account field included directly)
   const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${userAccessToken}`);
   const pagesData = await pagesRes.json();
@@ -70,9 +86,10 @@ export async function GET(request: Request) {
       instagram_business_id: getIgId(p),
     }));
     const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesWithIg)).toString('base64'));
+    const igMissingParam = !hasIgPermission ? '&ig_permission_missing=true' : '';
     const targetDest = (source === 'onboarding' || source === 'onboarding_instagram')
-      ? `/onboarding?step=channels&select_page=true&pages=${encodedPages}`
-      : `/dashboard/settings?select_page=true&pages=${encodedPages}`;
+      ? `/onboarding?step=channels&select_page=true&pages=${encodedPages}${igMissingParam}`
+      : `/dashboard/settings?select_page=true&pages=${encodedPages}${igMissingParam}`;
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${targetDest}`);
   }
 
@@ -134,9 +151,10 @@ export async function GET(request: Request) {
 
   // Determine redirection
   const igParam = instagramBusinessId ? '&instagram=connected' : '';
+  const igMissingParam = !hasIgPermission ? '&ig_permission_missing=true' : '';
   const successDest = (source === 'onboarding' || source === 'onboarding_instagram')
-    ? `/onboarding?step=channels&messenger=connected${igParam}`
-    : '/dashboard/settings?success=1';
+    ? `/onboarding?step=channels&messenger=connected${igParam}${igMissingParam}`
+    : `/dashboard/settings?success=1${igMissingParam}`;
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${successDest}`);
 }

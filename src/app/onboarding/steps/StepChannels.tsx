@@ -110,6 +110,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         console.error('Failed to parse pages payload:', e);
       }
     }
+    if (params.get('ig_permission_missing') === 'true') {
+      setIgDiagnostic("Meta App Setting Required: Meta stripped 'instagram_basic' permission during login. Make sure your Facebook account is added as an Admin/Developer under App Roles in developers.facebook.com.");
+    }
     // Single-page OAuth callback — re-load connected pages
     if (params.get('messenger') === 'connected') {
       (async () => {
