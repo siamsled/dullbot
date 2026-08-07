@@ -69,17 +69,17 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
     setLoading(false);
   };
 
-  const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
+  const inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-sm focus:border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ease-out placeholder:text-white/30';
   const canContinue = !!(businessOverview.trim() && category);
 
   return (
     <motion.div key="step-context" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full overflow-hidden">
       <div className="relative flex-1 min-h-0 overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto pb-8 pr-1">
+        <div className="flex-1 overflow-y-auto pb-6 pr-1 scroll-smooth">
           <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-1">Give your assistant a brand and a voice.</h1>
-          <p className="text-sm text-white/60 mb-4 leading-relaxed">
-            {fetching ? <span className="inline-flex items-center gap-1.5 text-white/90"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking your Facebook Page…</span>
-              : generatedProfile ? <span className="inline-flex items-center gap-1.5 text-emerald-400"><Sparkles className="w-3.5 h-3.5" /> Pre-filled from your Facebook Page — review and edit.</span>
+          <p className="text-sm text-white/60 mb-5 leading-relaxed">
+            {fetching ? <span className="inline-flex items-center gap-1.5 text-white/80"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking your Facebook Page…</span>
+              : generatedProfile ? <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg shadow-[0_0_12px_rgba(16,185,129,0.15)]"><Sparkles className="w-3.5 h-3.5" /> Pre-filled from your Facebook Page — review and edit.</span>
               : 'Provide details about your brand and choose your AI agent\'s tone.'}
           </p>
           <form id="context-form" onSubmit={handleSave} className="flex flex-col gap-4">
@@ -98,9 +98,9 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
                 <label className="block text-sm font-semibold text-white/80 mb-1.5">Category <span className="text-rose-400">*</span></label>
                 <input type="text" value={categorySearch} onChange={(e) => { setCategorySearch(e.target.value); setCategory(e.target.value); setIsCategoryOpen(true); }} onFocus={() => setIsCategoryOpen(true)} onBlur={() => setTimeout(() => setIsCategoryOpen(false), 150)} placeholder="Choose a category" className={inputCls} />
                 {isCategoryOpen && filteredCategories.length > 0 && (
-                  <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[rgba(15,18,28,0.95)] backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-1">
+                  <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[rgba(12,13,18,0.95)] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl py-1.5">
                     {filteredCategories.map((c) => (
-                      <button key={c} type="button" onMouseDown={() => { setCategory(c); setCategorySearch(c); setIsCategoryOpen(false); }} className="w-full text-left px-3.5 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors">{c}</button>
+                      <button key={c} type="button" onMouseDown={() => { setCategory(c); setCategorySearch(c); setIsCategoryOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/8 hover:text-white transition-colors duration-150">{c}</button>
                     ))}
                   </div>
                 )}
@@ -109,9 +109,9 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-white/80 mb-2">Vibe & Tone</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {VIBE_OPTIONS.map((v) => (
-                  <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3 rounded-xl border text-left transition-all ${vibe === v.id ? 'border-white bg-white/15' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                  <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3.5 rounded-2xl border text-left transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${vibe === v.id ? 'border-white/30 bg-white/12 shadow-sm' : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'}`}>
                     <div className="text-xl mb-1">{v.emoji}</div>
                     <div className="font-semibold text-xs text-white">{v.label}</div>
                     <div className="text-[11px] text-white/50 leading-snug">{v.desc}</div>
@@ -131,11 +131,10 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
             </div>
           </form>
         </div>
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-[rgba(10,12,20,0.85)] to-transparent" />
       </div>
-      <div className="flex items-center justify-between pt-3 shrink-0 mt-1">
-        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button form="context-form" type="submit" disabled={!canContinue || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+      <div className="flex items-center justify-between pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg px-1"><ArrowLeft className="w-4 h-4" /> Back</button>
+        <button form="context-form" type="submit" disabled={!canContinue || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
