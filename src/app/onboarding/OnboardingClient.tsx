@@ -94,7 +94,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           - Fixed static height across steps: h-[640px]
           - Progress bar is the very first thing INSIDE the card
         */}
-        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.60)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.6)] border border-white/15 flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
+        <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.62)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.07),inset_0_1px_0_rgba(255,255,255,0.12)] flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
           <div className="flex items-center justify-between px-8 pt-7 pb-3">

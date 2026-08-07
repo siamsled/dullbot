@@ -290,9 +290,10 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         : `${connectedPages.length} Pages active`;
 
   return (
-    <motion.div key="step-channels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
-      <div className="relative flex-1 min-h-0">
-        <div className="h-full overflow-y-auto pb-6 scroll-smooth">
+    <motion.div key="step-channels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full gap-0">
+      {/* Scrollable content area — nav bar is OUTSIDE this so it never gets clipped */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div className="h-full overflow-y-auto pb-4 scroll-smooth">
           <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Where do your customers reach you?</h1>
           <p className="text-sm text-white/60 mb-4 leading-relaxed">Connect at least one channel to activate your AI agent.</p>
 
@@ -345,9 +346,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
           <div className="space-y-3">
 
             {/* Messenger */}
-            <div className={`p-4 rounded-xl border transition-all ${messengerConnected ? 'border-white/25 bg-white/8' : 'border-white/10 bg-white/4'}`}>
+            <div className={`p-4 rounded-xl border transition-all ${messengerConnected ? 'border-white/20 bg-white/7' : 'border-white/8 bg-white/3'}`}>
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${messengerConnected ? 'bg-white' : 'bg-white/10'}`} style={messengerConnected ? { color: '#0084FF' } : {}}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${messengerConnected ? 'bg-white/15 text-white' : 'bg-white/8 text-white/50'}`}>
                   <MessengerIcon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -381,7 +382,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     {connectedPages.map((pg) => (
                       <div key={pg.meta_page_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/8">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 rounded-md bg-[#0084FF]/20 flex items-center justify-center text-[#0084FF] font-bold text-[10px] shrink-0">
+                          <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-white font-bold text-[10px] shrink-0">
                             {(pg.meta_page_name || '?').charAt(0).toUpperCase()}
                           </div>
                           <span className="text-xs text-white/80 font-medium truncate">{pg.meta_page_name || pg.meta_page_id}</span>
@@ -407,8 +408,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
             </div>
 
             {/* Instagram */}
-            <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${instagramConnected ? 'border-white/25 bg-white/8' : 'border-white/10 bg-white/4'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${instagramConnected ? 'bg-white' : 'bg-white/10'}`} style={instagramConnected ? { color: '#E4405F' } : {}}>
+            <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${instagramConnected ? 'border-white/20 bg-white/7' : 'border-white/8 bg-white/3'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${instagramConnected ? 'bg-white/15 text-white' : 'bg-white/8 text-white/50'}`}>
                 <InstagramIcon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -418,7 +419,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 </p>
               </div>
               {instagramConnected ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18 shrink-0">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold border border-white/15 shrink-0">
                   <Check className="w-3.5 h-3.5" /> Connected
                 </div>
               ) : messengerConnected ? (
@@ -426,14 +427,14 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                   <button
                     onClick={handleIgRefresh}
                     disabled={igRefreshing}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E4405F]/15 border border-[#E4405F]/30 text-[#E4405F] hover:bg-[#E4405F]/25 text-xs font-semibold transition-colors disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-white/60 hover:bg-white/15 hover:text-white text-xs font-semibold transition-colors disabled:opacity-40"
                   >
                     {igRefreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                     {igRefreshing ? 'Checking…' : 'Refresh'}
                   </button>
                   <button
                     onClick={handleInstagramClick}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 text-white/60 hover:bg-white/15 border border-white/15 text-xs font-semibold transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 border border-white/10 text-xs font-semibold transition-colors"
                   >
                     Learn more
                   </button>
@@ -454,8 +455,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
             )}
 
             {/* WhatsApp */}
-            <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${waConnected ? 'border-white/25 bg-white/8' : 'border-white/10 bg-white/4'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${waConnected ? 'bg-white' : 'bg-white/10'}`} style={waConnected ? { color: '#25D366' } : {}}>
+            <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${waConnected ? 'border-white/20 bg-white/7' : 'border-white/8 bg-white/3'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${waConnected ? 'bg-white/15 text-white' : 'bg-white/8 text-white/50'}`}>
                 <WhatsAppIcon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -480,8 +481,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         </div>
       </div>
 
-      {/* Nav */}
-      <div className="flex items-center justify-between pt-3 shrink-0">
+      {/* Nav — pinned outside scroll, always visible */}
+      <div className="flex items-center justify-between pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleNext} disabled={!hasAnyChannelConnected || advancing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
           {advancing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
@@ -491,22 +492,22 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* ─── WhatsApp Modal ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showWaModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.93)] backdrop-blur-[40px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-md p-6 text-white">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(12,13,18,0.95)] backdrop-blur-[48px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] w-full max-w-md p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#25D366]/20 flex items-center justify-center"><WhatsAppIcon className="w-4 h-4 text-[#25D366]" /></div>
-                  <h3 className="font-bold text-base">Connect WhatsApp Business</h3>
+                  <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center"><WhatsAppIcon className="w-4 h-4 text-white/70" /></div>
+                  <h3 className="font-semibold text-sm tracking-tight">Connect WhatsApp Business</h3>
                 </div>
-                <button onClick={() => setShowWaModal(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
+                <button onClick={() => setShowWaModal(false)} className="text-white/30 hover:text-white p-1 rounded-lg hover:bg-white/8 transition-colors"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs text-white/50 mb-3 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA). Not set up yet? Start here:</p>
+              <p className="text-xs text-white/40 mb-3 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA). Not set up yet? Start here:</p>
               <div className="flex flex-wrap gap-2 mb-5">
                 <a
                   href="https://developers.facebook.com/apps/1012936751146812/whatsapp-business/api-setup/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 text-[11px] font-semibold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/7 border border-white/12 text-white/60 hover:text-white hover:bg-white/12 text-[11px] font-semibold transition-colors"
                 >
                   <WhatsAppIcon className="w-3 h-3" /> Get WhatsApp API Keys →
                 </a>
@@ -514,7 +515,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                   href="https://business.facebook.com/latest/settings/whatsapp_account"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-white/50 hover:text-white/70 hover:border-white/25 text-[11px] font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-white/35 hover:text-white/60 hover:border-white/18 text-[11px] font-medium transition-colors"
                 >
                   Meta Business Suite →
                 </a>
@@ -539,8 +540,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* ─── Page Picker Modal (checkbox multi-select) ──────────────────────────── */}
       <AnimatePresence>
         {showPagePicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }} className="bg-[rgba(10,12,20,0.93)] backdrop-blur-[40px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.75)] border border-white/20 w-full max-w-lg p-6 text-white">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(12,13,18,0.95)] backdrop-blur-[48px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] w-full max-w-lg p-6 text-white">
 
               <div className="flex items-start justify-between mb-5">
                 <div>
@@ -561,21 +562,21 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     <button
                       key={pg.id}
                       onClick={() => togglePageSelection(pg.id)}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${
                         isSelected
-                          ? 'border-white/30 bg-white/10 ring-1 ring-white/20'
-                          : 'border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/20'
+                          ? 'border-white/20 bg-white/8'
+                          : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/14'
                       }`}
                     >
                       {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                        isSelected ? 'bg-white border-white' : 'border-white/30'
-                      }`}>
-                        {isSelected && <Check className="w-3 h-3 text-black" />}
+                      <div className={`w-4.5 h-4.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                        isSelected ? 'bg-white border-white' : 'border-white/25 bg-transparent'
+                      }`} style={{ width: 18, height: 18, borderRadius: 5 }}>
+                        {isSelected && <Check className="w-2.5 h-2.5 text-black" />}
                       </div>
 
                       {/* Page avatar */}
-                      <div className="w-9 h-9 rounded-xl bg-[#0084FF]/20 text-[#0084FF] flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-white/8 text-white/70 flex items-center justify-center font-semibold text-sm shrink-0">
                         {pg.name.charAt(0).toUpperCase()}
                       </div>
 
@@ -585,7 +586,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-[11px] text-white/35">ID: {pg.id}</span>
                           {pg.instagram_business_id ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#E4405F]/15 border border-[#E4405F]/30 text-[10px] font-semibold text-[#E4405F]">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/15 text-[10px] font-semibold text-white/70">
                               <InstagramIcon className="w-2.5 h-2.5" /> Instagram linked
                             </span>
                           ) : (
@@ -594,7 +595,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[10px] text-amber-300/70 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] text-white/35 hover:text-white/60 hover:border-white/20 transition-colors"
                             >
                               No Instagram · Link via Page Settings →
                             </a>
@@ -606,25 +607,25 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 })}
               </div>
 
-              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <p className="text-[11px] text-white/40 leading-relaxed">
+              <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <p className="text-[11px] text-white/35 leading-relaxed shrink-0">
                     {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
                   </p>
                   <a
                     href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`}
                     onClick={() => { try { sessionStorage.removeItem(`dullbot_pages_${shop.id}`); } catch (_) {} }}
-                    className="text-[11px] text-white/30 hover:text-white/70 underline underline-offset-2 transition-colors"
+                    className="text-[11px] text-white/25 hover:text-white/60 underline underline-offset-2 transition-colors"
                   >
                     Re-connect Facebook
                   </a>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors">Cancel</button>
+                  <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-medium text-white/40 hover:text-white transition-colors">Cancel</button>
                   <button
                     onClick={handleConnectSelected}
                     disabled={savingPages || selectedPageIds.size === 0}
-                    className="px-5 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {savingPages ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : `Connect${selectedPageIds.size > 0 ? ` (${selectedPageIds.size})` : ''}`}
                   </button>
