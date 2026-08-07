@@ -49,15 +49,21 @@ const WA_NUDGE_KEY = 'dullbot_wa_nudge';
 export default function StepChannels({ shop, onNext, onBack }: Props) {
   const [connectedPages, setConnectedPages] = useState<ConnectedPage[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
-  const [waConnected, setWaConnected] = useState(!!shop.whatsapp_phone_number_id);
+  const parseWaRef = (refStr?: string | null) => {
+    if (!refStr) return null;
+    try { return JSON.parse(refStr); } catch (e) { return null; }
+  };
+  const parsedWa = parseWaRef(shop.prompt_cache_ref);
+
+  const [waConnected, setWaConnected] = useState(!!parsedWa?.phoneId || !!shop.whatsapp_phone_number_id);
 
   const messengerConnected = connectedPages.length > 0;
   const instagramConnected = connectedPages.some(p => !!p.instagram_business_id);
 
   const [showWaModal, setShowWaModal] = useState(false);
-  const [waWabaId, setWaWabaId] = useState(shop.whatsapp_business_account_id || '');
-  const [waPhoneId, setWaPhoneId] = useState(shop.whatsapp_phone_number_id || '');
-  const [waToken, setWaToken] = useState(shop.whatsapp_access_token || '');
+  const [waWabaId, setWaWabaId] = useState(parsedWa?.wabaId || shop.whatsapp_business_account_id || '');
+  const [waPhoneId, setWaPhoneId] = useState(parsedWa?.phoneId || shop.whatsapp_phone_number_id || '');
+  const [waToken, setWaToken] = useState(parsedWa?.token || shop.whatsapp_access_token || '');
   const [waSaving, setWaSaving] = useState(false);
   const [waError, setWaError] = useState('');
 

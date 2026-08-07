@@ -293,21 +293,32 @@ export async function saveWhatsAppConfig(
   shopId: string,
   payload: { wabaId: string; phoneId: string; token: string }
 ) {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
+  const configJson = JSON.stringify({ wabaId: payload.wabaId, phoneId: payload.phoneId, token: payload.token });
+
   const { error } = await supabaseAdmin
     .from('shops')
     .update({
-      whatsapp_business_account_id: payload.wabaId || null,
-      whatsapp_phone_number_id: payload.phoneId || null,
-      whatsapp_access_token: payload.token || null,
+      prompt_cache_ref: configJson,
     })
-    .eq('id', shopId);
+    .eq('id', resolvedId);
 
   if (error) {
     console.error('Failed to update WhatsApp config:', error);
     return { success: false, error: error.message };
   }
 
-  revalidatePath('/dashboard/settings');
+  try {
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/onboarding');
+  } catch (e) {}
+
   return { success: true };
 }
 

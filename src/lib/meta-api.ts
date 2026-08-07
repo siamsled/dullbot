@@ -147,10 +147,20 @@ interface WaShop {
 async function getWaShop(shopId: string): Promise<WaShop | null> {
   const { data } = await supabaseAdmin
     .from('shops')
-    .select('whatsapp_phone_number_id, whatsapp_access_token')
+    .select('prompt_cache_ref')
     .eq('id', shopId)
     .single();
-  return data ?? null;
+
+  if (data?.prompt_cache_ref) {
+    try {
+      const parsed = JSON.parse(data.prompt_cache_ref);
+      return {
+        whatsapp_phone_number_id: parsed.phoneId || null,
+        whatsapp_access_token: parsed.token || null,
+      };
+    } catch (e) {}
+  }
+  return null;
 }
 
 /**

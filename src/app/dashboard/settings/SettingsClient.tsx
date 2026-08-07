@@ -84,9 +84,15 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [nagadPublicKey,   setNagadPublicKey]   = useState(shop?.nagadConfig?.public_key   ?? '');
   
   /* whatsapp */
-  const [waWabaId, setWaWabaId] = useState(shop?.whatsapp_business_account_id ?? '');
-  const [waPhoneId, setWaPhoneId] = useState(shop?.whatsapp_phone_number_id ?? '');
-  const [waToken, setWaToken] = useState(shop?.whatsapp_access_token ?? '');
+  const parseWaRef = (refStr?: string | null) => {
+    if (!refStr) return null;
+    try { return JSON.parse(refStr); } catch (e) { return null; }
+  };
+  const parsedWaSettings = parseWaRef(shop?.prompt_cache_ref);
+
+  const [waWabaId, setWaWabaId] = useState(parsedWaSettings?.wabaId ?? shop?.whatsapp_business_account_id ?? '');
+  const [waPhoneId, setWaPhoneId] = useState(parsedWaSettings?.phoneId ?? shop?.whatsapp_phone_number_id ?? '');
+  const [waToken, setWaToken] = useState(parsedWaSettings?.token ?? shop?.whatsapp_access_token ?? '');
   const [isWaSaving, startWaSave] = useTransition();
 
 
@@ -377,7 +383,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
             </div>
             <p className="text-sm font-semibold text-ink mb-1">WhatsApp</p>
             <div className="mt-auto pt-3 flex flex-col gap-2">
-              <StatusBadge connected={!!shop?.whatsapp_business_account_id} />
+              <StatusBadge connected={!!waPhoneId || !!shop?.whatsapp_business_account_id} />
               
               <div className="space-y-2 mt-2">
                 <input
