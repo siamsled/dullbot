@@ -62,8 +62,8 @@ export async function GET(request: Request) {
     console.error('Failed to check token permissions:', e);
   }
 
-  // 2. Fetch User's Pages (with instagram_business_account and connected_whatsapp_account fields included directly)
-  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account,connected_whatsapp_account&access_token=${userAccessToken}`);
+  // 2. Fetch User's Pages (with instagram_business_account and business fields included directly)
+  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account,business{id,name}&access_token=${userAccessToken}`);
   const pagesData = await pagesRes.json();
 
   if (!pagesData.data || pagesData.data.length === 0) {
