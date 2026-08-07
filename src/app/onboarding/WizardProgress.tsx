@@ -6,7 +6,6 @@ const STEPS = [
   { key: 'business_type', label: 'Type' },
   { key: 'channels', label: 'Channels' },
   { key: 'context', label: 'Context' },
-  { key: 'type_specific', label: 'Details' },
   { key: 'payments', label: 'Payments' },
   { key: 'delivery', label: 'Delivery' },
   { key: 'demo', label: 'Preview' },

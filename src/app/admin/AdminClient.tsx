@@ -471,10 +471,9 @@ export default function AdminClient({ shops, platformMetrics, escalations: initi
                     business_type: '1 · Business Type',
                     channels: '2 · Channels',
                     context: '3 · Context',
-                    type_specific: '4 · Details',
-                    payments: '5 · Payments',
-                    delivery: '6 · Delivery',
-                    demo: '7 · Preview',
+                    payments: '4 · Payments',
+                    delivery: '5 · Delivery',
+                    demo: '6 · Preview',
                   };
 
                   const typeColors: Record<string, string> = {

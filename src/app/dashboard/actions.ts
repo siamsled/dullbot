@@ -52,7 +52,7 @@ export async function saveBusinessType(shopId: string, businessType: string) {
  */
 export async function saveOnboardingStep(
   shopId: string,
-  stepName: 'business_type' | 'channels' | 'context' | 'type_specific' | 'payments' | 'delivery' | 'demo' | 'complete'
+  stepName: 'business_type' | 'channels' | 'context' | 'payments' | 'delivery' | 'demo' | 'complete'
 ) {
   try {
     await supabaseAdmin
@@ -449,8 +449,8 @@ export async function saveOnboardingProfileAndTone(
       return { success: false, error: error.message };
     }
 
-    // Advance wizard step to type_specific (Step 4)
-    await saveOnboardingStep(shopId, 'type_specific');
+    // Advance wizard step to payments (Step 4)
+    await saveOnboardingStep(shopId, 'payments');
 
     revalidatePath('/dashboard');
     revalidatePath('/onboarding');

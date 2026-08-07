@@ -8,22 +8,20 @@ import SiriOrb from '@/components/ui/siri-orb';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
 import StepContext from './steps/StepContext';
-import StepTypeSpecific from './steps/StepTypeSpecific';
 import StepPayments from './steps/StepPayments';
 import StepDelivery from './steps/StepDelivery';
 import StepDemo from './steps/StepDemo';
 
-type WizardStep = 'business_type' | 'channels' | 'context' | 'type_specific' | 'payments' | 'delivery' | 'demo';
+type WizardStep = 'business_type' | 'channels' | 'context' | 'payments' | 'delivery' | 'demo';
 
 const STEP_ORDER: WizardStep[] = [
-  'business_type', 'channels', 'context', 'type_specific', 'payments', 'delivery', 'demo',
+  'business_type', 'channels', 'context', 'payments', 'delivery', 'demo',
 ];
 
 const STEP_LABELS: Record<WizardStep, string> = {
   business_type: "LET'S START WITH THE BASICS",
   channels:      'CONNECT YOUR CHANNELS',
   context:       'YOUR IDENTITY',
-  type_specific: 'FINE-TUNE THE SETUP',
   payments:      'PAYMENT SETUP',
   delivery:      'SHIPPING & DELIVERY',
   demo:          'TEST DRIVE · ALMOST THERE',
@@ -31,11 +29,12 @@ const STEP_LABELS: Record<WizardStep, string> = {
 
 function resolveInitialStep(shop: any): WizardStep {
   const dbStep = shop?.onboarding_step;
+  if (dbStep === 'type_specific') return 'payments';
   if (dbStep && STEP_ORDER.includes(dbStep as WizardStep)) {
     return dbStep as WizardStep;
   }
   const done = shop?.onboarding_steps_done || [];
-  if (done.includes('context_form')) return 'type_specific';
+  if (done.includes('context_form')) return 'payments';
   if (done.includes('classification')) return 'channels';
   return 'business_type';
 }
@@ -163,9 +162,6 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
               )}
               {step === 'context' && (
                 <StepContext key="context" shop={shop} onNext={goNext} onBack={goBack} />
-              )}
-              {step === 'type_specific' && (
-                <StepTypeSpecific key="type_specific" shop={shop} onNext={goNext} onBack={goBack} />
               )}
               {step === 'payments' && (
                 <StepPayments key="payments" shop={shop} onNext={goNext} onBack={goBack} />
