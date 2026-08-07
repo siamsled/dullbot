@@ -97,7 +97,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         <div className="w-full max-w-3xl bg-[rgba(10,12,20,0.62)] backdrop-blur-[24px] saturate-[180%] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.07),inset_0_1px_0_rgba(255,255,255,0.12)] flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
-          <div className="flex items-center justify-between px-8 pt-7 pb-3">
+          <div className="flex items-center justify-between px-8 pt-6 pb-2">
             <div className="flex items-center gap-3.5">
               {/* Siri Orb (Bigger 36px size) */}
               <SiriOrb size="36px" state="listening" className="mr-0.5" />
@@ -106,13 +106,13 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                 <span
                   style={{
                     fontFamily: 'Georgia, serif',
-                    fontSize: 32,
+                    fontSize: 30,
                     fontWeight: 300,
                     letterSpacing: '-0.03em',
                     color: '#ffffff',
                   }}
                 >
-                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 19, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 18, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                 </span>
                 {/* Creative Merchant text placement (sleek gradient typography) */}
                 <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
@@ -123,14 +123,14 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
 
             {/* Sleek Step Counter (No 'Step' text, no green dot) */}
             <div className="flex items-center">
-              <span className="text-sm tracking-wider text-white/50 uppercase font-medium tabular-nums">
-                <span className="text-white font-bold text-base">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
+              <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
+                <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
               </span>
             </div>
           </div>
 
           {/* ── Modern Continuous Progress Track with Glow ────── */}
-          <div className="px-8 pt-1 pb-4">
+          <div className="px-8 pt-1 pb-3">
             <div className="relative w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-white/60 via-white to-white shadow-[0_0_12px_rgba(255,255,255,0.8)]"
@@ -142,9 +142,9 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Step Content area (each step handles its own scroll + pinned nav) */}
-          <div className="px-8 py-4 flex-1 overflow-hidden flex flex-col">
+          <div className="px-8 pt-2 pb-1 flex-1 overflow-hidden flex flex-col min-h-0">
             {/* Eyebrow */}
-            <p className="text-[11px] font-bold tracking-widest text-white/50 uppercase mb-3">{eyebrow}</p>
+            <p className="text-[11px] font-bold tracking-widest text-white/50 uppercase mb-2 shrink-0">{eyebrow}</p>
 
             <AnimatePresence mode="wait">
               {step === 'business_type' && (
@@ -180,8 +180,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Card Footer ───────────────────────────────────────── */}
-          <div className="px-8 py-3 pb-5">
-            <p className="text-[11px] text-white/40 text-center">
+          <div className="px-8 pt-1.5 pb-3 shrink-0">
+            <p className="text-[10px] text-white/35 text-center">
               Your progress is saved. You can adjust any of this later from your dashboard.
             </p>
           </div>
