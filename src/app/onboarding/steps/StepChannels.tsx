@@ -487,8 +487,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* ─── WhatsApp Modal ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showWaModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(12,13,18,0.95)] backdrop-blur-[48px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] w-full max-w-md p-6 text-white">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(16,19,30,0.58)] backdrop-blur-[48px] saturate-[200%] rounded-[24px] shadow-[0_32px_96px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.12),inset_0_1px_0_0_rgba(255,255,255,0.2)] w-full max-w-md p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center"><WhatsAppIcon className="w-4 h-4 text-white/70" /></div>
@@ -527,8 +527,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       {/* ─── Page Picker Modal ──────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showPagePicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(12,13,18,0.95)] backdrop-blur-[48px] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] w-full max-w-lg p-6 text-white">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-[rgba(16,19,30,0.58)] backdrop-blur-[48px] saturate-[200%] rounded-[24px] shadow-[0_32px_96px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.12),inset_0_1px_0_0_rgba(255,255,255,0.2)] w-full max-w-lg p-6 text-white">
 
               <div className="flex items-start justify-between mb-5">
                 <div>
