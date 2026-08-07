@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Loader2, Check, Sparkles, AlertCircle, Clock, MapPin } from 'lucide-react';
-import { saveOnboardingProfileAndTone, generateProfileFromFacebook } from '../../dashboard/actions';
+import { ArrowRight, ArrowLeft, Loader2, Check, Sparkles, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { saveOnboardingProfileAndTone } from '../../dashboard/actions';
 
 const RETAIL_CATEGORIES = ['Fashion & Apparel', 'Electronics & Gadgets', 'Beauty & Cosmetics', 'Food & Bakery', 'Home & Living', 'Jewelry & Accessories', 'Baby & Kids', 'Books & Stationery', 'Sports & Fitness', 'Other'];
 const SERVICE_CATEGORIES = ['Clinic & Healthcare', 'Salon & Spa', 'Tutoring & Education', 'Consulting & Agency', 'Event Management', 'Tech Support & Repair', 'Photography & Studio', 'Other'];
@@ -19,8 +19,6 @@ interface Props { shop: any; onNext: () => void; onBack: () => void; }
 
 export default function StepContext({ shop, onNext, onBack }: Props) {
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(false);
-  const [generatedProfile, setGeneratedProfile] = useState<any>(null);
   const [shopName, setShopName] = useState(() => {
     if (!shop?.name || shop.name === 'Dull Store' || shop.name.startsWith('store-')) return '';
     return shop.name;
@@ -41,22 +39,6 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
     return referenceCategories.filter((c) => c.toLowerCase().includes(categorySearch.toLowerCase()));
   }, [categorySearch, referenceCategories]);
 
-  useEffect(() => {
-    if (!shop.meta_page_id) return;
-    setFetching(true);
-    generateProfileFromFacebook(shop.id)
-      .then((result) => {
-        const profile = result.success ? result.profile : null;
-        if (profile?.name && (!shopName || shopName === 'My Store')) setShopName(profile.name);
-        if (profile?.category && !category) { setCategory(profile.category); setCategorySearch(profile.category); }
-        if (profile?.business_overview && !businessOverview) setBusinessOverview(profile.business_overview);
-        if (profile) setGeneratedProfile(profile);
-      })
-      .catch(() => {})
-      .finally(() => setFetching(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessOverview.trim()) return;
@@ -69,7 +51,7 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
     setLoading(false);
   };
 
-  const inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-sm focus:border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ease-out placeholder:text-white/30';
+  const inputCls = 'w-full bg-white/4 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/30';
   const canContinue = !!(businessOverview.trim() && category);
 
   return (
@@ -78,9 +60,7 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
         <div className="flex-1 overflow-y-auto pb-6 pr-1 scroll-smooth">
           <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-1">Give your assistant a brand and a voice.</h1>
           <p className="text-sm text-white/60 mb-5 leading-relaxed">
-            {fetching ? <span className="inline-flex items-center gap-1.5 text-white/80"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking your Facebook Page…</span>
-              : generatedProfile ? <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg shadow-[0_0_12px_rgba(16,185,129,0.15)]"><Sparkles className="w-3.5 h-3.5" /> Pre-filled from your Facebook Page — review and edit.</span>
-              : 'Provide details about your brand and choose your AI agent\'s tone.'}
+            Provide details about your brand and choose your AI agent&apos;s tone.
           </p>
           <form id="context-form" onSubmit={handleSave} className="flex flex-col gap-4">
             <div>

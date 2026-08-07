@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useEffect, useRef, useMemo } from 'react';
 
 export type AIState = 'idle' | 'listening' | 'thinking' | 'streaming' | 'done' | 'error';
 
@@ -42,95 +41,13 @@ interface SiriOrbProps {
   className?: string;
 }
 
-const VERTEX_SHADER = `
-  uniform float time;
-  uniform float amplitude;
-
-  varying vec3 vPos;
-  varying float vNoise;
-
-  float hash(vec3 p) {
-    return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
-  }
-
-  float noise(vec3 p) {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-
-    float n = mix(
-      mix(
-        mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-        mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-      mix(
-        mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-        mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
-      f.z);
-
-    return n;
-  }
-
-  void main() {
-    vec3 p = position;
-
-    // Organic multi-octave 3D noise displacement
-    float n1 = noise(position * 2.8 + vec3(time * 0.35, time * 0.25, time * 0.3));
-    float n2 = noise(position * 5.2 - vec3(time * 0.45, time * 0.35, time * 0.4));
-
-    float n = mix(n1, n2, 0.35);
-
-    // Deform sphere surface along normal vector (organic wavy non-spherical blob)
-    p += normalize(position) * (n - 0.5) * (0.48 + amplitude * 0.28);
-
-    vNoise = n;
-    vPos = p;
-
-    vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-
-    // Points size attenuation based on camera depth
-    gl_PointSize = (2.2 + amplitude * 0.8) * (160.0 / -mvPosition.z);
-    gl_Position = projectionMatrix * mvPosition;
-  }
-`;
-
-const FRAGMENT_SHADER = `
-  uniform float isError;
-  varying vec3 vPos;
-  varying float vNoise;
-
-  void main() {
-    vec2 uv = gl_PointCoord - vec2(0.5);
-    float d = length(uv);
-
-    if (d > 0.5) discard;
-
-    // Soft glow particle disc falloff
-    float alpha = smoothstep(0.5, 0.0, d);
-
-    if (isError > 0.5) {
-      gl_FragColor = vec4(0.95, 0.25, 0.25, alpha * 0.9);
-      return;
-    }
-
-    // Color gradient mapping:
-    // Electric Blue -> Deep Purple -> Neon Fuchsia -> Golden Peach Highlight
-    vec3 electricBlue = vec3(0.18, 0.45, 1.0);
-    vec3 deepPurple = vec3(0.55, 0.1, 0.85);
-    vec3 neonPink = vec3(1.0, 0.15, 0.65);
-    vec3 goldenYellow = vec3(1.0, 0.85, 0.4);
-
-    float h = vPos.y * 0.55 + 0.5;
-
-    vec3 color = mix(electricBlue, deepPurple, smoothstep(0.0, 0.4, h));
-    color = mix(color, neonPink, smoothstep(0.4, 0.78, h));
-    color = mix(color, goldenYellow, smoothstep(0.78, 1.0, h));
-
-    // Subtle specular highlight on noise peaks
-    color += vec3(0.12, 0.08, 0.18) * pow(vNoise, 3.0);
-
-    gl_FragColor = vec4(color, alpha * 0.88);
-  }
-`;
+interface Point3D {
+  ux: number;
+  uy: number;
+  uz: number;
+  phi: number;
+  theta: number;
+}
 
 export default function SiriOrb({
   amplitude = 0.2,
@@ -138,109 +55,187 @@ export default function SiriOrb({
   state = 'idle',
   className = '',
 }: SiriOrbProps) {
-  const mountRef = useRef<HTMLDivElement | null>(null);
-  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Generate 3D sphere lattice (staggered ring distribution for dense organic particle mesh)
+  const points = useMemo<Point3D[]>(() => {
+    const pts: Point3D[] = [];
+    const rings = 40;
+    const pointsPerRing = 54;
+
+    for (let i = 0; i < rings; i++) {
+      const theta = ((i + 0.5) / rings - 0.5) * Math.PI;
+      const cosTheta = Math.cos(theta);
+      const sinTheta = Math.sin(theta);
+      const ringPoints = Math.max(6, Math.floor(pointsPerRing * cosTheta));
+
+      for (let j = 0; j < ringPoints; j++) {
+        const phi = (j / ringPoints) * 2 * Math.PI + (i * 0.37);
+        pts.push({
+          ux: cosTheta * Math.cos(phi),
+          uy: sinTheta,
+          uz: cosTheta * Math.sin(phi),
+          phi,
+          theta,
+        });
+      }
+    }
+    return pts;
+  }, []);
 
   useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
-
-    const width = container.clientWidth || parseFloat(size) || 36;
-    const height = container.clientHeight || parseFloat(size) || 36;
-
-    // Scene & Camera
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 3.6;
-
-    // WebGL Renderer
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    } catch (e) {
-      console.warn('WebGL not supported for SiriOrb, falling back:', e);
-      return;
-    }
-
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-
-    // Point cloud density dynamically scaled based on component size
-    const pointCount = width > 80 ? 120000 : 45000;
-    const positions = new Float32Array(pointCount * 3);
-
-    // Uniform spherical distribution using Fibonacci spiral
-    const phiGold = (1 + Math.sqrt(5)) / 2;
-    for (let i = 0; i < pointCount; i++) {
-      const theta = 2 * Math.PI * i / phiGold;
-      const y = 1 - (i / (pointCount - 1)) * 2;
-      const radiusAtY = Math.sqrt(Math.max(0, 1 - y * y));
-
-      positions[i * 3] = radiusAtY * Math.cos(theta);
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = radiusAtY * Math.sin(theta);
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    const material = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      uniforms: {
-        time: { value: 0 },
-        amplitude: { value: amplitude },
-        isError: { value: state === 'error' ? 1.0 : 0.0 },
-      },
-      vertexShader: VERTEX_SHADER,
-      fragmentShader: FRAGMENT_SHADER,
-    });
-    materialRef.current = material;
-
-    const orbMesh = new THREE.Points(geometry, material);
-    scene.add(orbMesh);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     let animId: number;
-    let startTime = performance.now();
+    let time = 0;
 
-    const speed = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.9;
+    const render = () => {
+      const parsedSize = parseFloat(size) || 36;
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width > 0 ? rect.width : parsedSize;
+      const height = rect.height > 0 ? rect.height : parsedSize;
+      const dpr = Math.min(window.devicePixelRatio || 2, 2);
 
-    const animate = (currentTime: number) => {
-      const elapsed = (currentTime - startTime) * 0.001 * speed;
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
 
-      material.uniforms.time.value = elapsed;
-      material.uniforms.amplitude.value = amplitude;
-      material.uniforms.isError.value = state === 'error' ? 1.0 : 0.0;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
 
-      orbMesh.rotation.y = elapsed * 0.25;
-      orbMesh.rotation.x = Math.sin(elapsed * 0.15) * 0.12;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseRadius = width * 0.38;
 
-      renderer.render(scene, camera);
-      animId = requestAnimationFrame(animate);
+      const speedMult = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.85;
+      const ampMult = state === 'listening' ? 1.4 : state === 'streaming' ? 1.6 : 1.0;
+      time += 0.014 * speedMult;
+
+      const rotY = time * 0.35;
+      const rotX = Math.sin(time * 0.2) * 0.25 + 0.15;
+      const rotZ = Math.cos(time * 0.15) * 0.1;
+
+      const sinY = Math.sin(rotY), cosY = Math.cos(rotY);
+      const sinX = Math.sin(rotX), cosX = Math.cos(rotX);
+      const sinZ = Math.sin(rotZ), cosZ = Math.cos(rotZ);
+
+      const projected = [];
+
+      for (let i = 0; i < points.length; i++) {
+        const pt = points[i];
+
+        // Multi-frequency noise displacement for organic wavy non-spherical morphing blob
+        const w1 = Math.sin(2.2 * pt.ux + time * 1.3) * Math.cos(2.0 * pt.uy - time * 0.9);
+        const w2 = Math.cos(3.1 * pt.uy + time * 1.6) * Math.sin(2.8 * pt.uz + time * 1.1);
+        const w3 = Math.sin(4.2 * pt.ux - time * 1.0) * Math.cos(3.8 * pt.uz + time * 1.4);
+        const w4 = Math.sin(5.5 * pt.phi + time * 2.0) * 0.5;
+
+        const displacement = (0.18 * w1 + 0.14 * w2 + 0.09 * w3 + 0.05 * w4 + (amplitude * 0.22 * ampMult * Math.sin(4 * pt.uy + time * 3)));
+        const radius = baseRadius * (1 + displacement);
+
+        const x = pt.ux * radius;
+        const y = pt.uy * radius;
+        const z = pt.uz * radius;
+
+        const x1 = x * cosY - z * sinY;
+        const z1 = x * sinY + z * cosY;
+
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
+
+        const x3 = x1 * cosZ - y2 * sinZ;
+        const y3 = x1 * sinZ + y2 * cosZ;
+
+        const cameraDist = baseRadius * 3.5;
+        const scale = cameraDist / (cameraDist - z2);
+        const px = centerX + x3 * scale;
+        const py = centerY + y3 * scale;
+
+        projected.push({
+          px,
+          py,
+          pz: z2,
+          ny: y3 / baseRadius,
+          nx: x3 / baseRadius,
+          scale,
+        });
+      }
+
+      // Sort points back-to-front for proper depth overlap
+      projected.sort((a, b) => a.pz - b.pz);
+
+      const dotBaseRadius = Math.max(0.65, width * 0.019);
+
+      for (let i = 0; i < projected.length; i++) {
+        const p = projected[i];
+
+        const isBack = p.pz < 0;
+        const depthAlpha = isBack
+          ? 0.15 + 0.35 * ((p.pz + baseRadius) / baseRadius)
+          : 0.5 + 0.5 * (p.pz / baseRadius);
+
+        const alpha = Math.max(0.08, Math.min(1.0, depthAlpha));
+        const currentDotRadius = Math.max(0.4, dotBaseRadius * (0.65 + 0.55 * Math.max(0, (p.pz / baseRadius) + 0.5)));
+
+        // Color mapping matching reference design:
+        // Top: Golden Yellow -> Mid: Fuchsia Pink -> Lower: Deep Violet / Electric Blue
+        let r = 240, g = 30, b = 150;
+
+        if (state === 'error') {
+          r = 239; g = 68; b = 68;
+        } else {
+          const normY = p.ny;
+          if (normY < -0.2) {
+            const t = Math.min(1, Math.max(0, (normY + 1.0) / 0.8));
+            r = Math.round(255 * (1 - t) + 245 * t);
+            g = Math.round(215 * (1 - t) + 55 * t);
+            b = Math.round(110 * (1 - t) + 160 * t);
+          } else if (normY < 0.35) {
+            const t = Math.min(1, Math.max(0, (normY + 0.2) / 0.55));
+            r = Math.round(245 * (1 - t) + 155 * t);
+            g = Math.round(55 * (1 - t) + 35 * t);
+            b = Math.round(160 * (1 - t) + 215 * t);
+          } else {
+            const t = Math.min(1, Math.max(0, (normY - 0.35) / 0.65));
+            r = Math.round(155 * (1 - t) + 45 * t);
+            g = Math.round(35 * (1 - t) + 95 * t);
+            b = Math.round(215 * (1 - t) + 255 * t);
+          }
+        }
+
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, currentDotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
     };
 
-    animId = requestAnimationFrame(animate);
+    render();
 
     return () => {
       cancelAnimationFrame(animId);
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-      geometry.dispose();
-      material.dispose();
-      renderer.dispose();
     };
-  }, [amplitude, state, size]);
+  }, [points, state, amplitude, size]);
 
   return (
     <div
       aria-label={`AI State: ${state}`}
-      className={`relative flex items-center justify-center shrink-0 ${className}`}
-      style={{ width: size, height: size }}
+      className={`relative flex items-center justify-center shrink-0 bg-transparent ${className}`}
+      style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
-      <div ref={mountRef} className="w-full h-full block pointer-events-none" style={{ width: size, height: size }} />
+      <canvas
+        ref={canvasRef}
+        style={{ width: size, height: size, background: 'transparent' }}
+        className="w-full h-full block bg-transparent pointer-events-none"
+      />
     </div>
   );
 }
