@@ -78,7 +78,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   const [showIgInfo, setShowIgInfo] = useState(false);
   const [igRefreshing, setIgRefreshing] = useState(false);
-  const [igDiagnostic, setIgDiagnostic] = useState<string | null>(null);
+  const [igNotFound, setIgNotFound] = useState(false);
 
   // Load connected pages from DB
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         const pages = await getConnectedPages(shop.id);
         setConnectedPages(pages);
       } catch (e) {
-        console.error('Failed to load connected pages:', e);
+        // silent — user can retry via Refresh
       } finally {
         setLoadingPages(false);
       }
@@ -107,17 +107,13 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
         if (Array.isArray(parsed) && parsed.length > 0) {
           setAvailablePages(parsed);
-          // Cache pages so + Add Page can re-open the picker without re-doing OAuth
           sessionStorage.setItem(`dullbot_pages_${shop.id}`, JSON.stringify(parsed));
-          setSelectedPageIds(new Set()); // will be merged after connectedPages load
+          setSelectedPageIds(new Set());
           setShowPagePicker(true);
         }
       } catch (e) {
-        console.error('Failed to parse pages payload:', e);
+        // ignore malformed payloads
       }
-    }
-    if (params.get('ig_permission_missing') === 'true') {
-      setIgDiagnostic("Meta App Setting Required: Meta stripped 'instagram_basic' permission during login. Make sure your Facebook account is added as an Admin/Developer under App Roles in developers.facebook.com.");
     }
     // Single-page OAuth callback — re-load connected pages
     if (params.get('messenger') === 'connected') {
@@ -143,7 +139,6 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   // Open picker using cached pages, or fall back to OAuth
   const handleAddPage = () => {
-    // Try in-memory state first, then sessionStorage cache
     let pages = availablePages;
     if (pages.length === 0) {
       try {
@@ -153,23 +148,21 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     }
     if (pages.length > 0) {
       setAvailablePages(pages);
-      // Pre-check currently connected pages
       setSelectedPageIds(new Set(connectedPages.map(p => p.meta_page_id)));
       setShowPagePicker(true);
     } else {
-      // No cached pages — fall back to OAuth (will repopulate cache on return)
       window.location.href = `/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`;
     }
   };
 
   const handleIgRefresh = async () => {
     setIgRefreshing(true);
-    setIgDiagnostic(null);
+    setIgNotFound(false);
     try {
       const { checkInstagramForPage } = await import('../../dashboard/settings/actions');
       const res = await checkInstagramForPage(shop.id);
       if (!res.success) {
-        setIgDiagnostic(`Error: ${res.error}`);
+        setIgNotFound(true);
         return;
       }
       const found = res.results?.filter((r: any) => r.instagramBusinessId);
@@ -177,16 +170,12 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         const { getConnectedPages } = await import('../../dashboard/settings/actions');
         const pages = await getConnectedPages(shop.id);
         setConnectedPages(pages);
-        setIgDiagnostic(null);
+        setIgNotFound(false);
       } else {
-        const firstResult = res.results?.[0];
-        const rawMsg = firstResult?.error
-          ? `API error: ${firstResult.error}`
-          : `No instagram_business_account returned. Raw: ${JSON.stringify(firstResult?.rawResponse)}`;
-        setIgDiagnostic(rawMsg);
+        setIgNotFound(true);
       }
     } catch (e: any) {
-      setIgDiagnostic(`Exception: ${e.message}`);
+      setIgNotFound(true);
     } finally {
       setIgRefreshing(false);
     }
@@ -213,16 +202,15 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
       const { selectPagesMeta } = await import('../../dashboard/settings/actions');
       const res = await selectPagesMeta(shop.id, selected);
       if (res.success) {
-        // Reload connected pages
         const { getConnectedPages } = await import('../../dashboard/settings/actions');
         const pages = await getConnectedPages(shop.id);
         setConnectedPages(pages);
         setShowPagePicker(false);
       } else {
-        setPageError(res.error || 'Failed to connect pages');
+        setPageError('Something went wrong. Please try again.');
       }
     } catch (e: any) {
-      setPageError(e.message || 'Error connecting pages');
+      setPageError('Something went wrong. Please try again.');
     }
     setSavingPages(false);
   };
@@ -237,7 +225,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         setConnectedPages(prev => prev.filter(p => p.meta_page_id !== metaPageId));
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to disconnect page');
+      // silent — page list will remain unchanged
     }
     setDisconnectingPageId(null);
   };
@@ -257,16 +245,16 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
     const cleanWaba = waWabaId.trim();
     const cleanPhone = waPhoneId.trim();
     const cleanToken = waToken.trim();
-    if (cleanWaba && !/^\d{10,20}$/.test(cleanWaba)) { setWaError('WABA ID must contain numbers only (10–20 digits).'); return; }
-    if (!cleanPhone || !/^\d{10,20}$/.test(cleanPhone)) { setWaError('Phone Number ID must contain numbers only (10–20 digits).'); return; }
-    if (!cleanToken || cleanToken.length < 20 || /[^a-zA-Z0-9_-]/.test(cleanToken)) { setWaError('System User Access Token is invalid.'); return; }
+    if (cleanWaba && !/^\d{10,20}$/.test(cleanWaba)) { setWaError('WABA ID must be 10–20 digits.'); return; }
+    if (!cleanPhone || !/^\d{10,20}$/.test(cleanPhone)) { setWaError('Phone Number ID must be 10–20 digits.'); return; }
+    if (!cleanToken || cleanToken.length < 20) { setWaError('Please enter a valid System User Access Token.'); return; }
     setWaSaving(true);
     try {
       const { saveWhatsAppConfig } = await import('../../dashboard/settings/actions');
       const res = await saveWhatsAppConfig(shop.id, { wabaId: cleanWaba, phoneId: cleanPhone, token: cleanToken });
       if (res.success) { setWaConnected(true); setShowWaModal(false); }
-      else setWaError(res.error || 'Failed to save.');
-    } catch (e: any) { setWaError(e.message || 'Error'); }
+      else setWaError('Something went wrong. Please check your credentials and try again.');
+    } catch (e: any) { setWaError('Something went wrong. Please try again.'); }
     setWaSaving(false);
   };
 
@@ -280,7 +268,6 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
 
   const inputCls = 'w-full bg-white/5 border border-white/15 rounded-lg py-2.5 px-3.5 text-white text-sm focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all placeholder:text-white/30';
 
-  // Messenger subtitle
   const messengerSubtitle = loadingPages
     ? 'Loading...'
     : connectedPages.length === 0
@@ -305,42 +292,41 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
           )}
 
           {connectedPages.length === 0 && availablePages.length > 0 && (
-            <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 leading-relaxed flex items-center justify-between gap-3">
-              <span><strong>Facebook Connected:</strong> Page selection required to finish setup.</span>
-              <button onClick={handleAddPage} className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 font-semibold hover:bg-amber-500/30 shrink-0 transition-colors">Select Page(s) →</button>
+            <div className="mb-4 p-3.5 rounded-xl bg-white/8 border border-white/12 text-xs text-white/70 leading-relaxed flex items-center justify-between gap-3">
+              <span>Facebook connected — select which Page DullBot should manage.</span>
+              <button onClick={handleAddPage} className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 font-semibold hover:bg-white/15 shrink-0 transition-colors">Select Page →</button>
             </div>
           )}
 
           <AnimatePresence>
             {showIgInfo && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs leading-relaxed">
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 p-3.5 rounded-xl bg-white/6 border border-white/10 text-xs leading-relaxed">
                 <div className="flex items-start gap-2.5">
-                  <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <Info className="w-3.5 h-3.5 text-white/50 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-amber-100 mb-1">Instagram isn&apos;t linked to your Facebook <em>Page</em></p>
-                    <p className="text-amber-200/70 mb-1">Your Instagram may already be linked to your <em>personal</em> Facebook account — but that&apos;s different. DullBot needs Instagram linked directly to your <strong className="text-amber-200">Facebook Page</strong> ({connectedPages[0]?.meta_page_name || 'your Page'}).</p>
-                    <p className="text-amber-200/60 mb-3">Go to your Page → <strong className="text-amber-200">Settings → Instagram → Connect account</strong>, then come back here.</p>
+                    <p className="font-semibold text-white/90 mb-1">Link Instagram to your Facebook Page</p>
+                    <p className="text-white/50 mb-1">DullBot connects to Instagram through your Facebook Page. To enable this, go to your Page settings and connect your Instagram Business account there.</p>
+                    <p className="text-white/40 mb-3">Page → <strong className="text-white/60">Settings → Instagram → Connect account</strong></p>
                     <div className="flex flex-wrap gap-2">
                       {connectedPages.length > 0 && (
                         <a
                           href={`https://www.facebook.com/${connectedPages[0].meta_page_id}/settings/`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 font-semibold transition-colors text-[11px]"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-white/60 hover:text-white hover:bg-white/12 font-semibold transition-colors text-[11px]"
                         >
                           <InstagramIcon className="w-3 h-3" />
                           Open {connectedPages[0].meta_page_name || 'Page'} Settings →
                         </a>
                       )}
                     </div>
-                    <p className="text-amber-200/40 mt-2 text-[11px]">After linking on your Page, click <span className="text-amber-200/70 font-medium">+ Add Page</span> to reconnect.</p>
+                    <p className="text-white/30 mt-2 text-[11px]">Once linked, click <span className="text-white/50 font-medium">Refresh</span> to detect your Instagram account.</p>
                   </div>
-                  <button onClick={() => setShowIgInfo(false)} className="text-amber-400/60 hover:text-amber-200 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setShowIgInfo(false)} className="text-white/30 hover:text-white shrink-0"><X className="w-3.5 h-3.5" /></button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
 
           {/* ─── Channel rows ──────────────────────────────────────────────────────── */}
           <div className="space-y-3">
@@ -357,16 +343,16 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 </div>
                 {messengerConnected ? (
                   <div className="flex items-center gap-2 shrink-0">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold border border-white/15">
                       <Check className="w-3.5 h-3.5" /> {connectedPages.length > 1 ? `${connectedPages.length} Pages` : 'Connected'}
                     </div>
-                    <button onClick={handleAddPage} className="px-3 py-1.5 rounded-full bg-white/8 text-white/50 hover:bg-white/15 hover:text-white text-xs font-medium border border-white/12 transition-colors">
+                    <button onClick={handleAddPage} className="px-3 py-1.5 rounded-full bg-white/6 text-white/40 hover:bg-white/12 hover:text-white text-xs font-medium border border-white/10 transition-colors">
                       + Add Page
                     </button>
                   </div>
                 ) : availablePages.length > 0 ? (
-                  <button onClick={handleAddPage} className="inline-flex items-center px-4 py-2 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/40 text-xs font-semibold hover:bg-amber-500/30 transition-colors shrink-0">
-                    Finish Setup (Select Pages)
+                  <button onClick={handleAddPage} className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-white/70 border border-white/15 text-xs font-semibold hover:bg-white/15 transition-colors shrink-0">
+                    Select Page
                   </button>
                 ) : (
                   <a href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`} className="inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-colors shrink-0">
@@ -385,10 +371,10 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                           <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-white font-bold text-[10px] shrink-0">
                             {(pg.meta_page_name || '?').charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-xs text-white/80 font-medium truncate">{pg.meta_page_name || pg.meta_page_id}</span>
-                          {pg.is_primary && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/40 border border-white/10 shrink-0">Primary</span>}
+                          <span className="text-xs text-white/80 font-medium truncate">{pg.meta_page_name || 'Facebook Page'}</span>
+                          {pg.is_primary && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/8 text-white/35 border border-white/8 shrink-0">Primary</span>}
                           {pg.instagram_business_id && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[#E4405F]/15 text-[#E4405F] border border-[#E4405F]/25 shrink-0">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-white/8 text-white/60 border border-white/12 shrink-0">
                               <InstagramIcon className="w-2.5 h-2.5" /> IG
                             </span>
                           )}
@@ -396,7 +382,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                         <button
                           onClick={() => handleDisconnectPage(pg.meta_page_id)}
                           disabled={disconnectingPageId === pg.meta_page_id}
-                          className="text-red-400/60 hover:text-red-300 text-[11px] font-medium transition-colors disabled:opacity-40 shrink-0 ml-2"
+                          className="text-white/25 hover:text-red-300 text-[11px] font-medium transition-colors disabled:opacity-40 shrink-0 ml-2"
                         >
                           {disconnectingPageId === pg.meta_page_id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Remove'}
                         </button>
@@ -415,7 +401,11 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               <div className="flex-1 min-w-0">
                 <span className="font-semibold text-white text-sm block">Instagram DMs</span>
                 <p className="text-xs text-white/50 mt-0.5">
-                  {instagramConnected ? 'Instagram Business Account connected' : messengerConnected ? 'No Instagram linked to your connected Pages' : 'Connect via your Facebook Page'}
+                  {instagramConnected
+                    ? 'Instagram Business Account connected'
+                    : messengerConnected
+                      ? 'Link Instagram to your Facebook Page to activate'
+                      : 'Connect via your Facebook Page'}
                 </p>
               </div>
               {instagramConnected ? (
@@ -436,7 +426,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                     onClick={handleInstagramClick}
                     className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 border border-white/10 text-xs font-semibold transition-colors"
                   >
-                    Learn more
+                    How to link
                   </button>
                 </div>
               ) : (
@@ -448,11 +438,16 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 </button>
               )}
             </div>
-            {igDiagnostic && (
-              <div className="mt-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-300/80 font-mono break-all leading-relaxed">
-                {igDiagnostic}
-              </div>
-            )}
+
+            {/* Friendly nudge if Instagram not found after Refresh */}
+            <AnimatePresence>
+              {igNotFound && messengerConnected && !instagramConnected && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/8 text-[11px] text-white/45 leading-relaxed flex items-center justify-between gap-3">
+                  <span>No Instagram Business account found. Make sure it&apos;s linked to your Facebook Page first, then click Refresh.</span>
+                  <button onClick={() => setIgNotFound(false)} className="text-white/25 hover:text-white shrink-0"><X className="w-3 h-3" /></button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* WhatsApp */}
             <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${waConnected ? 'border-white/20 bg-white/7' : 'border-white/8 bg-white/3'}`}>
@@ -461,10 +456,10 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <span className="font-semibold text-white text-sm block">WhatsApp Business</span>
-                <p className="text-xs text-white/50 mt-0.5">{waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WABA Cloud API'}</p>
+                <p className="text-xs text-white/50 mt-0.5">{waConnected ? 'WhatsApp Cloud API connected' : 'Automate replies via WhatsApp Cloud API'}</p>
               </div>
               {waConnected ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 text-white text-xs font-semibold border border-white/18 shrink-0">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold border border-white/15 shrink-0">
                   <Check className="w-3.5 h-3.5" /> Connected
                 </div>
               ) : (
@@ -475,8 +470,8 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
             </div>
           </div>
 
-          <p className="mt-4 text-[11px] text-white/30 leading-relaxed">
-            Instagram DMs are auto-linked via your Facebook Page through Meta&apos;s API. Multiple Pages can be active simultaneously.
+          <p className="mt-4 text-[11px] text-white/25 leading-relaxed">
+            Instagram is linked automatically through your Facebook Page. You can manage all channels from your dashboard at any time.
           </p>
         </div>
       </div>
@@ -501,33 +496,25 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                 </div>
                 <button onClick={() => setShowWaModal(false)} className="text-white/30 hover:text-white p-1 rounded-lg hover:bg-white/8 transition-colors"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs text-white/40 mb-3 leading-relaxed">Requires a Meta Business Account with an approved WhatsApp Business Account (WABA). Not set up yet? Start here:</p>
+              <p className="text-xs text-white/40 mb-3 leading-relaxed">You&apos;ll need a WhatsApp Business Account (WABA) set up via Meta. Find your credentials in Meta Business Suite under WhatsApp settings.</p>
               <div className="flex flex-wrap gap-2 mb-5">
-                <a
-                  href="https://developers.facebook.com/apps/1012936751146812/whatsapp-business/api-setup/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/7 border border-white/12 text-white/60 hover:text-white hover:bg-white/12 text-[11px] font-semibold transition-colors"
-                >
-                  <WhatsAppIcon className="w-3 h-3" /> Get WhatsApp API Keys →
-                </a>
                 <a
                   href="https://business.facebook.com/latest/settings/whatsapp_account"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-white/35 hover:text-white/60 hover:border-white/18 text-[11px] font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/7 border border-white/12 text-white/60 hover:text-white hover:bg-white/12 text-[11px] font-semibold transition-colors"
                 >
-                  Meta Business Suite →
+                  <WhatsAppIcon className="w-3 h-3" /> Open Meta Business Suite →
                 </a>
               </div>
-              {waError && <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">{waError}</div>}
+              {waError && <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300/80">{waError}</div>}
               <div className="space-y-4">
                 <div><label className="block text-xs font-semibold text-white/70 mb-1.5">WABA ID <span className="text-white/35 font-normal">(optional)</span></label><input type="text" value={waWabaId} onChange={e => setWaWabaId(e.target.value)} placeholder="e.g. 123456789012345" className={inputCls} /></div>
-                <div><label className="block text-xs font-semibold text-white/70 mb-1.5">Phone Number ID <span className="text-red-400">*</span></label><input type="text" value={waPhoneId} onChange={e => setWaPhoneId(e.target.value)} placeholder="e.g. 987654321098765" className={inputCls} /></div>
-                <div><label className="block text-xs font-semibold text-white/70 mb-1.5">System User Access Token <span className="text-red-400">*</span></label><input type="password" value={waToken} onChange={e => setWaToken(e.target.value)} placeholder="EAAG..." className={inputCls} /></div>
+                <div><label className="block text-xs font-semibold text-white/70 mb-1.5">Phone Number ID <span className="text-white/45">*</span></label><input type="text" value={waPhoneId} onChange={e => setWaPhoneId(e.target.value)} placeholder="e.g. 987654321098765" className={inputCls} /></div>
+                <div><label className="block text-xs font-semibold text-white/70 mb-1.5">System User Access Token <span className="text-white/45">*</span></label><input type="password" value={waToken} onChange={e => setWaToken(e.target.value)} placeholder="EAAG..." className={inputCls} /></div>
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowWaModal(false)} className="flex-1 py-2.5 text-xs font-semibold text-white/60 bg-white/8 border border-white/12 rounded-xl hover:bg-white/12 transition-colors">Skip for now</button>
+                <button onClick={() => setShowWaModal(false)} className="flex-1 py-2.5 text-xs font-semibold text-white/50 bg-white/5 border border-white/10 rounded-xl hover:bg-white/8 transition-colors">Skip for now</button>
                 <button onClick={handleSaveWa} disabled={waSaving || !waPhoneId.trim() || !waToken.trim()} className="flex-1 py-2.5 text-xs font-semibold text-black bg-white rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed">
                   {waSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                 </button>
@@ -537,7 +524,7 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
         )}
       </AnimatePresence>
 
-      {/* ─── Page Picker Modal (checkbox multi-select) ──────────────────────────── */}
+      {/* ─── Page Picker Modal ──────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showPagePicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -546,13 +533,13 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               <div className="flex items-start justify-between mb-5">
                 <div>
                   <h3 className="font-bold text-lg text-white mb-1">Choose your Facebook Pages</h3>
-                  <p className="text-xs text-white/50 leading-relaxed max-w-sm">Select all Pages DullBot should manage. You can run multiple Pages simultaneously — useful if one ever gets restricted.</p>
+                  <p className="text-xs text-white/45 leading-relaxed max-w-sm">Select which Pages DullBot should manage. You can always add or change this later in settings.</p>
                 </div>
                 <button onClick={() => setShowPagePicker(false)} className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0 ml-3"><X className="w-4 h-4" /></button>
               </div>
 
               {pageError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300">{pageError}</div>
+                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300/80">{pageError}</div>
               )}
 
               <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-0.5">
@@ -569,9 +556,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                       }`}
                     >
                       {/* Checkbox */}
-                      <div className={`w-4.5 h-4.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                      <div className={`flex items-center justify-center shrink-0 transition-all ${
                         isSelected ? 'bg-white border-white' : 'border-white/25 bg-transparent'
-                      }`} style={{ width: 18, height: 18, borderRadius: 5 }}>
+                      }`} style={{ width: 18, height: 18, borderRadius: 5, border: isSelected ? 'none' : '1.5px solid rgba(255,255,255,0.25)' }}>
                         {isSelected && <Check className="w-2.5 h-2.5 text-black" />}
                       </div>
 
@@ -584,21 +571,12 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-white text-sm truncate">{pg.name}</div>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="text-[11px] text-white/35">ID: {pg.id}</span>
                           {pg.instagram_business_id ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/15 text-[10px] font-semibold text-white/70">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/8 border border-white/15 text-[10px] font-semibold text-white/60">
                               <InstagramIcon className="w-2.5 h-2.5" /> Instagram linked
                             </span>
                           ) : (
-                            <a
-                              href={`https://www.facebook.com/${pg.id}/settings/`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={e => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] text-white/35 hover:text-white/60 hover:border-white/20 transition-colors"
-                            >
-                              No Instagram · Link via Page Settings →
-                            </a>
+                            <span className="text-[10px] text-white/30">No Instagram linked yet</span>
                           )}
                         </div>
                       </div>
@@ -608,18 +586,9 @@ export default function StepChannels({ shop, onNext, onBack }: Props) {
               </div>
 
               <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3 min-w-0">
-                  <p className="text-[11px] text-white/35 leading-relaxed shrink-0">
-                    {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
-                  </p>
-                  <a
-                    href={`/api/auth/facebook/login?shopId=${shop.id}&source=onboarding`}
-                    onClick={() => { try { sessionStorage.removeItem(`dullbot_pages_${shop.id}`); } catch (_) {} }}
-                    className="text-[11px] text-white/25 hover:text-white/60 underline underline-offset-2 transition-colors"
-                  >
-                    Re-connect Facebook
-                  </a>
-                </div>
+                <p className="text-[11px] text-white/35 leading-relaxed">
+                  {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
+                </p>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-medium text-white/40 hover:text-white transition-colors">Cancel</button>
                   <button
