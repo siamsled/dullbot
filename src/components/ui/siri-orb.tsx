@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 
 export type AIState = 'idle' | 'listening' | 'thinking' | 'streaming' | 'done' | 'error';
 
@@ -52,6 +52,14 @@ export interface SiriOrbProps {
   amplitude?: number;
 }
 
+interface Point3D {
+  ux: number;
+  uy: number;
+  uz: number;
+  phi: number;
+  theta: number;
+}
+
 export const SiriOrb: React.FC<SiriOrbProps> = ({
   size = '36px',
   className,
@@ -59,6 +67,32 @@ export const SiriOrb: React.FC<SiriOrbProps> = ({
   amplitude = 0.2,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Generate 3D sphere lattice of particle dots (staggered ring distribution matching reference image)
+  const points = useMemo<Point3D[]>(() => {
+    const pts: Point3D[] = [];
+    const rings = 44;
+    const pointsPerRing = 56;
+
+    for (let i = 0; i < rings; i++) {
+      const theta = ((i + 0.5) / rings - 0.5) * Math.PI; // -PI/2 to PI/2
+      const cosTheta = Math.cos(theta);
+      const sinTheta = Math.sin(theta);
+      const ringPoints = Math.max(6, Math.floor(pointsPerRing * cosTheta));
+
+      for (let j = 0; j < ringPoints; j++) {
+        const phi = (j / ringPoints) * 2 * Math.PI + (i * 0.37);
+        pts.push({
+          ux: cosTheta * Math.cos(phi),
+          uy: sinTheta,
+          uz: cosTheta * Math.sin(phi),
+          phi,
+          theta,
+        });
+      }
+    }
+    return pts;
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,88 +121,119 @@ export const SiriOrb: React.FC<SiriOrbProps> = ({
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const baseRadius = width * 0.36;
+      const baseRadius = width * 0.38;
 
-      const speedMult = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.9;
-      time += 0.015 * speedMult;
+      const speedMult = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.85;
+      const ampMult = state === 'listening' ? 1.4 : state === 'streaming' ? 1.6 : 1.0;
+      time += 0.012 * speedMult;
 
-      // Draw non-round organic gaseous star flares & plasma surface layers
-      const layers = 5;
+      const rotY = time * 0.35;
+      const rotX = Math.sin(time * 0.2) * 0.22 + 0.15;
+      const rotZ = Math.cos(time * 0.15) * 0.08;
 
-      for (let l = 0; l < layers; l++) {
-        const layerRatio = (l + 1) / layers;
-        const layerRadius = baseRadius * (0.4 + layerRatio * 0.6);
-        const alpha = 0.35 + (1 - layerRatio) * 0.55;
+      const sinY = Math.sin(rotY), cosY = Math.cos(rotY);
+      const sinX = Math.sin(rotX), cosX = Math.cos(rotX);
+      const sinZ = Math.sin(rotZ), cosZ = Math.cos(rotZ);
 
-        ctx.beginPath();
-        const pointsCount = 72;
+      const projected = [];
 
-        for (let i = 0; i <= pointsCount; i++) {
-          const angle = (i / pointsCount) * Math.PI * 2;
+      for (let i = 0; i < points.length; i++) {
+        const pt = points[i];
 
-          // Solar noise displacement for coronal flares & wavy organic non-round contour
-          const n1 = Math.sin(angle * 4 + time * 1.5 + l * 0.8);
-          const n2 = Math.cos(angle * 7 - time * 2.1 + l * 1.2);
-          const n3 = Math.sin(angle * 11 + time * 2.8);
-          const flare = 0.15 * n1 + 0.1 * n2 + 0.06 * n3 + (amplitude * 0.12 * Math.sin(angle * 5 + time * 4));
+        // 3D Noise wave displacement (creates the wavy deformed organic non-spherical particle blob)
+        const w1 = Math.sin(2.2 * pt.ux + time * 1.3) * Math.cos(2.0 * pt.uy - time * 0.9);
+        const w2 = Math.cos(3.1 * pt.uy + time * 1.6) * Math.sin(2.8 * pt.uz + time * 1.1);
+        const w3 = Math.sin(4.2 * pt.ux - time * 1.0) * Math.cos(3.8 * pt.uz + time * 1.4);
+        const w4 = Math.sin(5.5 * pt.phi + time * 2.0) * 0.4;
 
-          const r = layerRadius * (1 + flare);
-          const x = centerX + Math.cos(angle) * r;
-          const y = centerY + Math.sin(angle) * r;
+        const displacement = (0.18 * w1 + 0.14 * w2 + 0.09 * w3 + 0.05 * w4 + (amplitude * 0.22 * ampMult * Math.sin(4 * pt.uy + time * 3)));
+        const radius = baseRadius * (1 + displacement);
 
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        ctx.closePath();
+        const x = pt.ux * radius;
+        const y = pt.uy * radius;
+        const z = pt.uz * radius;
 
-        // Color palette: Pure Magenta & Purple gradients ONLY (no black, no bright blue, no hot pink)
-        const radGrad = ctx.createRadialGradient(
-          centerX - baseRadius * 0.15,
-          centerY - baseRadius * 0.15,
-          0,
-          centerX,
-          centerY,
-          layerRadius * 1.25
-        );
+        // Apply Y rotation
+        const x1 = x * cosY - z * sinY;
+        const z1 = x * sinY + z * cosY;
 
-        if (state === 'error') {
-          radGrad.addColorStop(0, `rgba(239, 68, 68, ${alpha})`);
-          radGrad.addColorStop(0.6, `rgba(185, 28, 28, ${alpha * 0.7})`);
-          radGrad.addColorStop(1, 'rgba(127, 29, 29, 0)');
-        } else {
-          // Luminous Lavender/Magenta core -> Rich Pure Magenta -> Royal Purple -> Deep Violet edge fade
-          radGrad.addColorStop(0, `rgba(232, 121, 249, ${alpha})`);      // Luminous Lavender Magenta (#e879f9)
-          radGrad.addColorStop(0.4, `rgba(217, 70, 239, ${alpha * 0.95})`);  // Pure Magenta (#d946ef)
-          radGrad.addColorStop(0.75, `rgba(139, 92, 246, ${alpha * 0.7})`);  // Royal Violet Purple (#8b5cf6)
-          radGrad.addColorStop(1, 'rgba(88, 28, 135, 0)');                 // Deep Purple transparent fade (#581c87)
-        }
+        // Apply X rotation
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
 
-        ctx.fillStyle = radGrad;
-        ctx.fill();
+        // Apply Z rotation
+        const x3 = x1 * cosZ - y2 * sinZ;
+        const y3 = x1 * sinZ + y2 * cosZ;
+
+        // Perspective projection
+        const cameraDist = baseRadius * 3.5;
+        const scale = cameraDist / (cameraDist - z2);
+        const px = centerX + x3 * scale;
+        const py = centerY + y3 * scale;
+
+        projected.push({
+          px,
+          py,
+          pz: z2,
+          ny: y3 / baseRadius,
+          nx: x3 / baseRadius,
+          scale,
+        });
       }
 
-      // Add gaseous solar surface plasma dots
-      const particleCount = 180;
-      for (let p = 0; p < particleCount; p++) {
-        const pAngle = (p / particleCount) * Math.PI * 2 + Math.sin(p + time * 0.5);
-        const pDistRatio = 0.2 + 0.75 * Math.abs(Math.sin(p * 12.3 + time * 0.8));
+      // Sort points back-to-front for 3D depth layering
+      projected.sort((a, b) => a.pz - b.pz);
 
-        const pNoise = Math.sin(pAngle * 5 + time * 2.0) * 0.15;
-        const pr = baseRadius * pDistRatio * (1 + pNoise);
+      const dotBaseRadius = Math.max(0.65, width * 0.018);
 
-        const px = centerX + Math.cos(pAngle) * pr;
-        const py = centerY + Math.sin(pAngle) * pr;
-        const pSize = Math.max(0.5, width * (0.012 + 0.015 * Math.sin(p + time * 3)));
-        const pAlpha = Math.max(0.1, 0.8 * (1 - pDistRatio) * (0.6 + 0.4 * Math.sin(p * 3 + time * 2)));
+      for (let i = 0; i < projected.length; i++) {
+        const p = projected[i];
 
-        // Pure Magenta & Purple plasma particles
-        const pColor = p % 2 === 0 ? `rgba(232, 121, 249, ${pAlpha.toFixed(2)})` : `rgba(192, 132, 252, ${pAlpha.toFixed(2)})`;
-        ctx.fillStyle = pColor;
+        const isBack = p.pz < 0;
+        const depthAlpha = isBack
+          ? 0.18 + 0.35 * ((p.pz + baseRadius) / baseRadius)
+          : 0.55 + 0.45 * (p.pz / baseRadius);
+
+        const alpha = Math.max(0.08, Math.min(1.0, depthAlpha));
+        const currentDotRadius = Math.max(0.4, dotBaseRadius * (0.65 + 0.55 * Math.max(0, (p.pz / baseRadius) + 0.5)));
+
+        // Color mapping matching the exact reference image:
+        // Top-Right: Golden Yellow -> Upper-Mid: Magenta / Pink -> Lower-Mid: Violet -> Bottom: Electric Blue
+        let r = 240, g = 30, b = 150;
+
+        if (state === 'error') {
+          r = 239; g = 68; b = 68;
+        } else {
+          const normY = p.ny;
+          const normX = p.nx;
+
+          // Hybrid vertical & angle height factor to match top-right golden glow in image
+          const h = normY - normX * 0.3;
+
+          if (h < -0.3) {
+            // Top-right: Golden Peach Yellow (255, 210, 110) -> Magenta Pink (245, 55, 160)
+            const t = Math.min(1, Math.max(0, (h + 1.1) / 0.8));
+            r = Math.round(255 * (1 - t) + 245 * t);
+            g = Math.round(210 * (1 - t) + 55 * t);
+            b = Math.round(110 * (1 - t) + 160 * t);
+          } else if (h < 0.3) {
+            // Upper-mid: Magenta Pink (245, 55, 160) -> Rich Purple (155, 35, 215)
+            const t = Math.min(1, Math.max(0, (h + 0.3) / 0.6));
+            r = Math.round(245 * (1 - t) + 155 * t);
+            g = Math.round(55 * (1 - t) + 35 * t);
+            b = Math.round(160 * (1 - t) + 215 * t);
+          } else {
+            // Lower & Bottom: Rich Purple (155, 35, 215) -> Royal Electric Blue (45, 115, 255)
+            const t = Math.min(1, Math.max(0, (h - 0.3) / 0.7));
+            r = Math.round(155 * (1 - t) + 45 * t);
+            g = Math.round(35 * (1 - t) + 115 * t);
+            b = Math.round(215 * (1 - t) + 255 * t);
+          }
+        }
+
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(px, py, pSize, 0, Math.PI * 2);
+        ctx.arc(p.px, p.py, currentDotRadius, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -181,7 +246,7 @@ export const SiriOrb: React.FC<SiriOrbProps> = ({
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [state, amplitude, size]);
+  }, [points, state, amplitude, size]);
 
   return (
     <div
