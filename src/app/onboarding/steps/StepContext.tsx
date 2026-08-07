@@ -111,7 +111,7 @@ export default function StepContext({ shop, onNext, onBack }: Props) {
               <label className="block text-sm font-semibold text-white/80 mb-2">Vibe & Tone</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {VIBE_OPTIONS.map((v) => (
-                  <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3.5 rounded-2xl border text-left transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${vibe === v.id ? 'border-white/30 bg-white/12 shadow-sm' : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'}`}>
+                  <button key={v.id} type="button" onClick={() => setVibe(v.id as any)} className={`p-3.5 rounded-2xl border text-left transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${vibe === v.id ? 'border-white/30 bg-white/12 shadow-sm' : 'border-white/10 bg-white/4 hover:border-white/20 hover:bg-white/8'}`}>
                     <div className="text-xl mb-1">{v.emoji}</div>
                     <div className="font-semibold text-xs text-white">{v.label}</div>
                     <div className="text-[11px] text-white/50 leading-snug">{v.desc}</div>

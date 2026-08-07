@@ -55,7 +55,7 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
                 className={`p-5 rounded-2xl border text-left flex flex-col gap-3 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                   isSelected
                     ? 'border-white/30 bg-white/12 shadow-md shadow-black/40'
-                    : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'
+                    : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}><Truck className="w-4 h-4" /></div>

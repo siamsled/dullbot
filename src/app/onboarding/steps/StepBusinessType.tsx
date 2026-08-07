@@ -47,7 +47,7 @@ export default function StepBusinessType({ shop, onNext }: Props) {
                   className={`relative p-6 rounded-2xl border text-left flex flex-col gap-4 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                     isSelected
                       ? 'border-white/30 bg-white/12 shadow-md shadow-black/40'
-                      : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'
+                      : 'border-white/10 bg-white/4 hover:border-white/20 hover:bg-white/8'
                   }`}
                 >
                   {isSelected && (

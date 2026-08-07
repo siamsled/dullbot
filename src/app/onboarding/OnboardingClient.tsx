@@ -92,9 +92,9 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           ISLAND CARD
           - Fixed width: max-w-3xl (≈768px)
           - Fixed static height across steps: h-[640px]
-          - Apple visionOS / iOS 18 Glassmorphism
+          - True Frosted Glass (Apple HIG Glassmorphism)
         */}
-        <div className="w-full max-w-3xl bg-[rgba(15,18,28,0.38)] backdrop-blur-[40px] saturate-[210%] rounded-[28px] shadow-[0_32px_96px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.12),inset_0_1px_0_0_rgba(255,255,255,0.22),inset_0_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
+        <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
           <div className="flex items-center justify-between px-8 pt-6 pb-2">

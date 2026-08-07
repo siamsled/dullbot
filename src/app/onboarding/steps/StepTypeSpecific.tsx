@@ -18,7 +18,7 @@ function RetailBranch({ shop, onNext, onBack }: Props) {
       <div className="flex-1 overflow-y-auto pb-4 scroll-smooth">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-1">A few details specific to your industry.</h1>
         <p className="text-sm text-white/60 mb-5 leading-relaxed">Let DullBot know how to handle bulk pricing questions from your customers.</p>
-        <div className="bg-white/4 rounded-2xl border border-white/8 p-6 backdrop-blur-md">
+        <div className="bg-white/4 rounded-2xl border border-white/8 p-6">
           <div className="flex items-center justify-between">
             <div><h3 className="text-sm font-semibold text-white">Bulk pricing enabled</h3><p className="text-xs text-white/50 mt-0.5">AI will reference your pricing policy.</p></div>
             <button type="button" role="switch" aria-checked={bulkEnabled} onClick={() => setBulkEnabled(!bulkEnabled)} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ease-out shrink-0 ml-4 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${bulkEnabled ? 'bg-white' : 'bg-white/15'}`}>
@@ -75,7 +75,7 @@ function ServiceBranch({ shop, onNext, onBack }: Props) {
       <div className="flex-1 overflow-y-auto pb-4 scroll-smooth">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-1">A few details specific to your industry.</h1>
         <p className="text-sm text-white/60 mb-5 leading-relaxed">DullBot handles appointment bookings, service inquiries, and staff scheduling for you.</p>
-        <div className="bg-white/4 rounded-2xl border border-white/8 p-6 backdrop-blur-md">
+        <div className="bg-white/4 rounded-2xl border border-white/8 p-6">
           <h3 className="text-sm font-semibold text-white mb-3">Booking system included</h3>
           <ul className="space-y-2.5">{['Staff / resource availability management', 'Customer appointment booking via Messenger or WhatsApp', 'Automatic booking confirmations sent to customers', 'Deposit collection support (optional)'].map((point) => (
             <li key={point} className="flex items-start gap-2.5 text-sm text-white/60"><span className="w-5 h-5 rounded-full bg-white/10 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-white/15 shadow-sm">✓</span>{point}</li>

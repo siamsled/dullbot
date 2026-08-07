@@ -60,7 +60,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                   className={`w-full p-5 rounded-2xl border text-left flex items-center gap-4 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                     isSelected
                       ? 'border-white/30 bg-white/12 shadow-md shadow-black/40'
-                      : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'
+                      : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8'
                   }`}
                 >
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}>{opt.icon}</div>
