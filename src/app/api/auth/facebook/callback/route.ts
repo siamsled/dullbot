@@ -62,8 +62,8 @@ export async function GET(request: Request) {
     console.error('Failed to check token permissions:', e);
   }
 
-  // 2. Fetch User's Pages (with instagram_business_account field included directly)
-  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${userAccessToken}`);
+  // 2. Fetch User's Pages (with instagram_business_account and connected_whatsapp_account fields included directly)
+  const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account,connected_whatsapp_account&access_token=${userAccessToken}`);
   const pagesData = await pagesRes.json();
 
   if (!pagesData.data || pagesData.data.length === 0) {
@@ -73,10 +73,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}${errDest}`);
   }
 
-  // Extract IG business ID for a page item directly from the me/accounts response
+  // Extract IG and WhatsApp IDs for a page item directly from the me/accounts response
   const getIgId = (p: any): string | null => p?.instagram_business_account?.id || null;
+  const getWaId = (p: any): string | null => p?.connected_whatsapp_account?.id || null;
 
-  // If user manages MULTIPLE pages, pass IG info per page to client for selection
+  // If user manages MULTIPLE pages, pass IG & WA info per page to client for selection
   if (pagesData.data.length > 1) {
     const pagesWithIg = pagesData.data.map((p: any) => ({
       id: p.id,
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
       access_token: p.access_token,
       user_access_token: userAccessToken,
       instagram_business_id: getIgId(p),
+      whatsapp_business_account_id: getWaId(p),
     }));
     const encodedPages = encodeURIComponent(Buffer.from(JSON.stringify(pagesWithIg)).toString('base64'));
     const igMissingParam = !hasIgPermission ? '&ig_permission_missing=true' : '';
@@ -101,6 +103,7 @@ export async function GET(request: Request) {
   const isUUID = shopId.includes('-') && shopId.length === 36;
 
   const instagramBusinessId = getIgId(page);
+  const waBusinessId = getWaId(page);
 
   const payload = {
     meta_page_id: pageId,
@@ -109,30 +112,18 @@ export async function GET(request: Request) {
     meta_user_access_token: userAccessToken,    // store so Refresh can re-query without re-OAuth
     instagram_business_id: instagramBusinessId,
     instagram_access_token: instagramBusinessId ? pageAccessToken : null,
+    ...(waBusinessId ? { whatsapp_business_account_id: waBusinessId, whatsapp_access_token: userAccessToken } : {}),
   };
 
   // Resolve shop UUID for shop_meta_pages (needed whether shopId is UUID or slug)
   let resolvedShopId: string | null = null;
   if (isUUID) {
-    // Only update columns that exist in shops; meta_user_access_token is in shop_meta_pages
-    await supabaseAdmin.from('shops').update({
-      meta_page_id: pageId,
-      meta_page_name: pageName,
-      meta_page_access_token: pageAccessToken,
-      instagram_business_id: instagramBusinessId,
-      instagram_access_token: instagramBusinessId ? pageAccessToken : null,
-    }).eq('id', shopId);
+    await supabaseAdmin.from('shops').update(payload).eq('id', shopId);
     resolvedShopId = shopId;
   } else {
     const { data: shopRow } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId || 'dull-store').single();
     resolvedShopId = shopRow?.id || null;
-    if (resolvedShopId) await supabaseAdmin.from('shops').update({
-      meta_page_id: pageId,
-      meta_page_name: pageName,
-      meta_page_access_token: pageAccessToken,
-      instagram_business_id: instagramBusinessId,
-      instagram_access_token: instagramBusinessId ? pageAccessToken : null,
-    }).eq('id', resolvedShopId);
+    if (resolvedShopId) await supabaseAdmin.from('shops').update(payload).eq('id', resolvedShopId);
   }
 
   // Also upsert into shop_meta_pages for multi-page routing support
