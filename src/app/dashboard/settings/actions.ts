@@ -70,7 +70,6 @@ export async function selectPagesMeta(
     meta_page_id: page.id,
     meta_page_name: page.name,
     meta_page_access_token: page.access_token,
-    ...(page.user_access_token ? { meta_user_access_token: page.user_access_token } : {}),
     instagram_business_id: page.instagram_business_id || null,
     instagram_access_token: page.instagram_business_id ? page.access_token : null,
     is_primary: index === 0,
@@ -323,7 +322,7 @@ export async function checkInstagramForPage(shopId: string) {
 
   let { data: pages } = await supabaseAdmin
     .from('shop_meta_pages')
-    .select('meta_page_id, meta_page_name, meta_page_access_token, meta_user_access_token')
+    .select('meta_page_id, meta_page_name, meta_page_access_token')
     .eq('shop_id', resolvedId);
 
   // Fallback to shops table if shop_meta_pages has no entries for this shop yet
@@ -339,7 +338,6 @@ export async function checkInstagramForPage(shopId: string) {
         meta_page_id: shopRow.meta_page_id,
         meta_page_name: shopRow.meta_page_name || 'Primary Page',
         meta_page_access_token: shopRow.meta_page_access_token,
-        meta_user_access_token: null,
       }];
     }
   }
@@ -351,36 +349,21 @@ export async function checkInstagramForPage(shopId: string) {
   const results = await Promise.all(
     pages.map(async (pg) => {
       try {
-        if (pg.meta_user_access_token) {
-          const res = await fetch(
-            `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${pg.meta_user_access_token}`
-          );
-          const data = await res.json();
-          const matchedPage = data?.data?.find((p: any) => p.id === pg.meta_page_id);
-          return {
-            pageId: pg.meta_page_id,
-            pageName: pg.meta_page_name,
-            rawResponse: data,
-            instagramBusinessId: matchedPage?.instagram_business_account?.id || null,
-            error: data?.error?.message || null,
-          };
-        } else {
-          const res = await fetch(
-            `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
-          );
-          const data = await res.json();
-          let errMsg = data?.error?.message || null;
-          if (data?.error?.code === 100 || (errMsg && errMsg.includes('pages_read_engagement'))) {
-            errMsg = `Your Facebook token was granted under older permissions. Click '+ Add Page' → 'Re-connect Facebook' to refresh your authorization.`;
-          }
-          return {
-            pageId: pg.meta_page_id,
-            pageName: pg.meta_page_name,
-            rawResponse: data,
-            instagramBusinessId: data?.instagram_business_account?.id || null,
-            error: errMsg,
-          };
+        const res = await fetch(
+          `https://graph.facebook.com/v19.0/${pg.meta_page_id}?fields=instagram_business_account,name&access_token=${pg.meta_page_access_token}`
+        );
+        const data = await res.json();
+        let errMsg = data?.error?.message || null;
+        if (data?.error?.code === 100 || (errMsg && errMsg.includes('pages_read_engagement'))) {
+          errMsg = `Your Facebook token was granted under older permissions. Click '+ Add Page' → 'Re-connect Facebook' to refresh your authorization.`;
         }
+        return {
+          pageId: pg.meta_page_id,
+          pageName: pg.meta_page_name,
+          rawResponse: data,
+          instagramBusinessId: data?.instagram_business_account?.id || null,
+          error: errMsg,
+        };
       } catch (e: any) {
         return { pageId: pg.meta_page_id, pageName: pg.meta_page_name, rawResponse: null, instagramBusinessId: null, error: e.message };
       }

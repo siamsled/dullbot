@@ -109,7 +109,6 @@ export async function GET(request: Request) {
     meta_page_id: pageId,
     meta_page_name: pageName,
     meta_page_access_token: pageAccessToken,
-    meta_user_access_token: userAccessToken,    // store so Refresh can re-query without re-OAuth
     instagram_business_id: instagramBusinessId,
     instagram_access_token: instagramBusinessId ? pageAccessToken : null,
     ...(waBusinessId ? { whatsapp_business_account_id: waBusinessId, whatsapp_access_token: userAccessToken } : {}),
@@ -133,7 +132,6 @@ export async function GET(request: Request) {
       meta_page_id: pageId,
       meta_page_name: pageName,
       meta_page_access_token: pageAccessToken,
-      meta_user_access_token: userAccessToken,
       instagram_business_id: instagramBusinessId,
       instagram_access_token: instagramBusinessId ? pageAccessToken : null,
       is_primary: true,
