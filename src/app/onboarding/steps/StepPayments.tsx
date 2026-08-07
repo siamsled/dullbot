@@ -44,12 +44,12 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-sm focus:border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ease-out placeholder:text-white/30';
 
   return (
-    <motion.div key="step-payments" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
+    <motion.div key="step-payments" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full min-h-0 flex-1 overflow-hidden">
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-4 scroll-smooth">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">How would you like to accept payments?</h1>
-        <p className="text-sm text-white/60 mb-6 leading-relaxed">Choose how DullBot verifies payments before confirming orders.</p>
-        <div className="space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-2 pr-0.5 scroll-smooth">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-1">How would you like to accept payments?</h1>
+        <p className="text-sm text-white/60 mb-4 leading-relaxed">Choose how DullBot verifies payments before confirming orders.</p>
+        <div className="space-y-2.5">
           {OPTIONS.map((opt) => {
             const isSelected = choice === opt.id;
             return (
@@ -57,22 +57,22 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                 <button
                   type="button"
                   onClick={() => setChoice(opt.id)}
-                  className={`w-full p-5 rounded-2xl border text-left flex items-center gap-4 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                  className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left flex items-center gap-3.5 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                     isSelected
                       ? 'border-white/30 bg-white/12 shadow-md shadow-black/40'
                       : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8'
                   }`}
                 >
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}>{opt.icon}</div>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}>{opt.icon}</div>
                   <div className="flex-1"><h3 className="font-semibold text-sm text-white">{opt.title}</h3><p className="text-xs text-white/50 mt-0.5">{opt.desc}</p></div>
-                  {isSelected && <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm"><Check className="w-3.5 h-3.5 text-black stroke-[2.5]" /></div>}
+                  {isSelected && <div className="w-5.5 h-5.5 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm"><Check className="w-3.5 h-3.5 text-black stroke-[2.5]" /></div>}
                 </button>
                 <AnimatePresence>
                   {isSelected && opt.id === 'merchant_api' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2.5 p-5 bg-white/4 rounded-2xl border border-white/8 space-y-3 backdrop-blur-md">
+                      <div className="mt-2 p-4 bg-white/4 rounded-2xl border border-white/8 space-y-2.5">
                         <p className="text-xs text-white/50">Enter your bKash Merchant API credentials. You can also do this later from Settings.</p>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2.5">
                           <div><label className="block text-xs font-semibold text-white/80 mb-1">bKash API Key</label><input type="text" value={bkashAppKey} onChange={(e) => setBkashAppKey(e.target.value)} placeholder="API key" className={inputCls} /></div>
                           <div><label className="block text-xs font-semibold text-white/80 mb-1">API Secret</label><input type="password" value={bkashAppSecret} onChange={(e) => setBkashAppSecret(e.target.value)} placeholder="API secret" className={inputCls} /></div>
                           <div><label className="block text-xs font-semibold text-white/80 mb-1">Username</label><input type="text" value={bkashUsername} onChange={(e) => setBkashUsername(e.target.value)} placeholder="Username" className={inputCls} /></div>
@@ -83,20 +83,20 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                   )}
                   {isSelected && opt.id === 'companion_app' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2.5 p-5 bg-white/6 rounded-2xl border border-white/12 space-y-3 backdrop-blur-md">
-                        <p className="text-sm text-white/90">Install the DullBot companion Android app and enter this pairing code:</p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 bg-white/8 border border-white/15 rounded-xl px-4 py-3 flex-1 justify-center shadow-inner">
-                            {PAIRING_CODE.split(' ').map((digit, i) => <span key={i} className="text-2xl font-bold text-white font-mono">{digit}</span>)}
+                      <div className="mt-2 p-4 bg-white/6 rounded-2xl border border-white/12 space-y-2.5">
+                        <p className="text-xs sm:text-sm text-white/90">Install the DullBot companion Android app and enter this pairing code:</p>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-1.5 bg-white/8 border border-white/15 rounded-xl px-3 py-2 flex-1 justify-center shadow-inner">
+                            {PAIRING_CODE.split(' ').map((digit, i) => <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>)}
                           </div>
-                          <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"><Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}</button>
+                          <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"><Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}</button>
                         </div>
                       </div>
                     </motion.div>
                   )}
                   {isSelected && opt.id === 'skip' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2.5 p-5 bg-white/4 rounded-2xl border border-white/8 backdrop-blur-md"><p className="text-xs text-white/50 leading-relaxed">No problem — orders default to Cash on Delivery. You can wire up a gateway later from your dashboard.</p></div>
+                      <div className="mt-2 p-3.5 bg-white/4 rounded-2xl border border-white/8"><p className="text-xs text-white/50 leading-relaxed">No problem — orders default to Cash on Delivery. You can wire up a gateway later from your dashboard.</p></div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -106,7 +106,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
         </div>
       </div>
       {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
+      <div className="flex items-center justify-between pt-2 pb-0.5 shrink-0 border-t border-white/8 mt-1.5">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg px-1"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleContinue} disabled={!choice || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}

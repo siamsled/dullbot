@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export type AIState = 'idle' | 'listening' | 'thinking' | 'streaming' | 'done' | 'error';
 
@@ -38,33 +38,6 @@ function cn(...classes: Array<string | undefined | null | false>) {
   return classes.filter(Boolean).join(' ');
 }
 
-const SIZE_THRESHOLD_SMALL = 50;
-const SIZE_THRESHOLD_TINY = 30;
-const SIZE_THRESHOLD_MEDIUM = 100;
-const BLUR_MULTIPLIER_SMALL = 0.008;
-const BLUR_MIN_SMALL = 1;
-const BLUR_MULTIPLIER_LARGE = 0.015;
-const BLUR_MIN_LARGE = 4;
-const CONTRAST_MULTIPLIER_SMALL = 0.004;
-const CONTRAST_MIN_SMALL = 1.2;
-const CONTRAST_MULTIPLIER_LARGE = 0.008;
-const CONTRAST_MIN_LARGE = 1.5;
-const DOT_SIZE_MULTIPLIER_SMALL = 0.004;
-const DOT_SIZE_MIN_SMALL = 0.05;
-const DOT_SIZE_MULTIPLIER_LARGE = 0.008;
-const DOT_SIZE_MIN_LARGE = 0.1;
-const SHADOW_MULTIPLIER_SMALL = 0.004;
-const SHADOW_MIN_SMALL = 0.5;
-const SHADOW_MULTIPLIER_LARGE = 0.008;
-const SHADOW_MIN_LARGE = 2;
-const MASK_RADIUS_TINY = '0%';
-const MASK_RADIUS_SMALL = '5%';
-const MASK_RADIUS_MEDIUM = '15%';
-const MASK_RADIUS_LARGE = '25%';
-const CONTRAST_TINY = 1.1;
-const CONTRAST_MULTIPLIER_FINAL = 1.2;
-const CONTRAST_MIN_FINAL = 1.3;
-
 export interface SiriOrbProps {
   animationDuration?: number;
   className?: string;
@@ -82,199 +55,145 @@ export interface SiriOrbProps {
 export const SiriOrb: React.FC<SiriOrbProps> = ({
   size = '36px',
   className,
-  colors,
-  animationDuration = 16,
   state = 'idle',
   amplitude = 0.2,
 }) => {
-  const defaultColors = state === 'error' ? {
-    bg: 'rgba(15, 12, 16, 0.95)',
-    c1: 'oklch(60% 0.22 25)',
-    c2: 'oklch(65% 0.20 15)',
-    c3: 'oklch(55% 0.24 35)',
-  } : {
-    bg: 'rgba(12, 13, 20, 0.95)',
-    c1: 'oklch(75% 0.18 350)',
-    c2: 'oklch(75% 0.16 220)',
-    c3: 'oklch(75% 0.18 290)',
-  };
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const finalColors = { ...defaultColors, ...colors };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const sizeValue = Number.parseInt(size.replace('px', ''), 10) || 36;
+    let animId: number;
+    let time = 0;
 
-  const blurAmount =
-    sizeValue < SIZE_THRESHOLD_SMALL
-      ? Math.max(sizeValue * BLUR_MULTIPLIER_SMALL, BLUR_MIN_SMALL)
-      : Math.max(sizeValue * BLUR_MULTIPLIER_LARGE, BLUR_MIN_LARGE);
+    const render = () => {
+      const parsedSize = parseFloat(size) || 36;
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width > 0 ? rect.width : parsedSize;
+      const height = rect.height > 0 ? rect.height : parsedSize;
+      const dpr = Math.min(window.devicePixelRatio || 2, 2);
 
-  const contrastAmount =
-    sizeValue < SIZE_THRESHOLD_SMALL
-      ? Math.max(sizeValue * CONTRAST_MULTIPLIER_SMALL, CONTRAST_MIN_SMALL)
-      : Math.max(sizeValue * CONTRAST_MULTIPLIER_LARGE, CONTRAST_MIN_LARGE);
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
 
-  const dotSize =
-    sizeValue < SIZE_THRESHOLD_SMALL
-      ? Math.max(sizeValue * DOT_SIZE_MULTIPLIER_SMALL, DOT_SIZE_MIN_SMALL)
-      : Math.max(sizeValue * DOT_SIZE_MULTIPLIER_LARGE, DOT_SIZE_MIN_LARGE);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
 
-  const shadowSpread =
-    sizeValue < SIZE_THRESHOLD_SMALL
-      ? Math.max(sizeValue * SHADOW_MULTIPLIER_SMALL, SHADOW_MIN_SMALL)
-      : Math.max(sizeValue * SHADOW_MULTIPLIER_LARGE, SHADOW_MIN_LARGE);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseRadius = width * 0.36;
 
-  const getMaskRadius = (value: number) => {
-    if (value < SIZE_THRESHOLD_TINY) return MASK_RADIUS_TINY;
-    if (value < SIZE_THRESHOLD_SMALL) return MASK_RADIUS_SMALL;
-    if (value < SIZE_THRESHOLD_MEDIUM) return MASK_RADIUS_MEDIUM;
-    return MASK_RADIUS_LARGE;
-  };
+      const speedMult = state === 'listening' ? 1.8 : state === 'thinking' ? 1.4 : state === 'streaming' ? 2.2 : 0.9;
+      time += 0.015 * speedMult;
 
-  const maskRadius = getMaskRadius(sizeValue);
+      // Draw non-round organic gaseous star flares & plasma surface layers
+      const layers = 5;
 
-  const getFinalContrast = (value: number) => {
-    if (value < SIZE_THRESHOLD_TINY) return CONTRAST_TINY;
-    if (value < SIZE_THRESHOLD_SMALL) {
-      return Math.max(
-        contrastAmount * CONTRAST_MULTIPLIER_FINAL,
-        CONTRAST_MIN_FINAL
-      );
-    }
-    return contrastAmount;
-  };
+      for (let l = 0; l < layers; l++) {
+        const layerRatio = (l + 1) / layers;
+        const layerRadius = baseRadius * (0.4 + layerRatio * 0.6);
+        const alpha = 0.35 + (1 - layerRatio) * 0.55;
 
-  const finalContrast = getFinalContrast(sizeValue);
+        ctx.beginPath();
+        const pointsCount = 72;
 
-  // Speed up rotation duration when active/listening
-  const duration = state === 'listening' ? animationDuration * 0.4 : state === 'thinking' ? animationDuration * 0.6 : animationDuration;
+        for (let i = 0; i <= pointsCount; i++) {
+          const angle = (i / pointsCount) * Math.PI * 2;
+
+          // Solar noise displacement for coronal flares & wavy organic non-round contour
+          const n1 = Math.sin(angle * 4 + time * 1.5 + l * 0.8);
+          const n2 = Math.cos(angle * 7 - time * 2.1 + l * 1.2);
+          const n3 = Math.sin(angle * 11 + time * 2.8);
+          const flare = 0.15 * n1 + 0.1 * n2 + 0.06 * n3 + (amplitude * 0.12 * Math.sin(angle * 5 + time * 4));
+
+          const r = layerRadius * (1 + flare);
+          const x = centerX + Math.cos(angle) * r;
+          const y = centerY + Math.sin(angle) * r;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.closePath();
+
+        // Color palette: Pure Magenta & Purple gradients ONLY (no black, no bright blue, no hot pink)
+        const radGrad = ctx.createRadialGradient(
+          centerX - baseRadius * 0.15,
+          centerY - baseRadius * 0.15,
+          0,
+          centerX,
+          centerY,
+          layerRadius * 1.25
+        );
+
+        if (state === 'error') {
+          radGrad.addColorStop(0, `rgba(239, 68, 68, ${alpha})`);
+          radGrad.addColorStop(0.6, `rgba(185, 28, 28, ${alpha * 0.7})`);
+          radGrad.addColorStop(1, 'rgba(127, 29, 29, 0)');
+        } else {
+          // Luminous Lavender/Magenta core -> Rich Pure Magenta -> Royal Purple -> Deep Violet edge fade
+          radGrad.addColorStop(0, `rgba(232, 121, 249, ${alpha})`);      // Luminous Lavender Magenta (#e879f9)
+          radGrad.addColorStop(0.4, `rgba(217, 70, 239, ${alpha * 0.95})`);  // Pure Magenta (#d946ef)
+          radGrad.addColorStop(0.75, `rgba(139, 92, 246, ${alpha * 0.7})`);  // Royal Violet Purple (#8b5cf6)
+          radGrad.addColorStop(1, 'rgba(88, 28, 135, 0)');                 // Deep Purple transparent fade (#581c87)
+        }
+
+        ctx.fillStyle = radGrad;
+        ctx.fill();
+      }
+
+      // Add gaseous solar surface plasma dots
+      const particleCount = 180;
+      for (let p = 0; p < particleCount; p++) {
+        const pAngle = (p / particleCount) * Math.PI * 2 + Math.sin(p + time * 0.5);
+        const pDistRatio = 0.2 + 0.75 * Math.abs(Math.sin(p * 12.3 + time * 0.8));
+
+        const pNoise = Math.sin(pAngle * 5 + time * 2.0) * 0.15;
+        const pr = baseRadius * pDistRatio * (1 + pNoise);
+
+        const px = centerX + Math.cos(pAngle) * pr;
+        const py = centerY + Math.sin(pAngle) * pr;
+        const pSize = Math.max(0.5, width * (0.012 + 0.015 * Math.sin(p + time * 3)));
+        const pAlpha = Math.max(0.1, 0.8 * (1 - pDistRatio) * (0.6 + 0.4 * Math.sin(p * 3 + time * 2)));
+
+        // Pure Magenta & Purple plasma particles
+        const pColor = p % 2 === 0 ? `rgba(232, 121, 249, ${pAlpha.toFixed(2)})` : `rgba(192, 132, 252, ${pAlpha.toFixed(2)})`;
+        ctx.fillStyle = pColor;
+        ctx.beginPath();
+        ctx.arc(px, py, pSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, [state, amplitude, size]);
 
   return (
     <div
       aria-label={`AI State: ${state}`}
-      className={cn('siri-orb shrink-0', className)}
-      style={
-        {
-          width: size,
-          height: size,
-          minWidth: size,
-          minHeight: size,
-          '--bg': finalColors.bg,
-          '--c1': finalColors.c1,
-          '--c2': finalColors.c2,
-          '--c3': finalColors.c3,
-          '--animation-duration': `${duration}s`,
-          '--blur-amount': `${blurAmount}px`,
-          '--contrast-amount': finalContrast,
-          '--dot-size': `${dotSize}px`,
-          '--shadow-spread': `${shadowSpread}px`,
-          '--mask-radius': maskRadius,
-        } as React.CSSProperties
-      }
+      className={cn('relative flex items-center justify-center shrink-0 bg-transparent', className)}
+      style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
-      <style>{`
-        @property --angle {
-          syntax: "<angle>";
-          inherits: false;
-          initial-value: 0deg;
-        }
-
-        .siri-orb {
-          display: grid;
-          grid-template-areas: "stack";
-          overflow: hidden;
-          border-radius: 50%;
-          position: relative;
-        }
-
-        .siri-orb::before,
-        .siri-orb::after {
-          content: "";
-          display: block;
-          grid-area: stack;
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-        }
-
-        .siri-orb::before {
-          background:
-            conic-gradient(
-              from calc(var(--angle) * 2) at 25% 70%,
-              var(--c3),
-              transparent 20% 80%,
-              var(--c3)
-            ),
-            conic-gradient(
-              from calc(var(--angle) * 2) at 45% 75%,
-              var(--c2),
-              transparent 30% 60%,
-              var(--c2)
-            ),
-            conic-gradient(
-              from calc(var(--angle) * -3) at 80% 20%,
-              var(--c1),
-              transparent 40% 60%,
-              var(--c1)
-            ),
-            conic-gradient(
-              from calc(var(--angle) * 2) at 15% 5%,
-              var(--c2),
-              transparent 10% 90%,
-              var(--c2)
-            ),
-            conic-gradient(
-              from calc(var(--angle) * 1) at 20% 80%,
-              var(--c1),
-              transparent 10% 90%,
-              var(--c1)
-            ),
-            conic-gradient(
-              from calc(var(--angle) * -2) at 85% 10%,
-              var(--c3),
-              transparent 20% 80%,
-              var(--c3)
-            );
-          box-shadow: inset var(--bg) 0 0 var(--shadow-spread)
-            calc(var(--shadow-spread) * 0.2);
-          filter: blur(var(--blur-amount)) contrast(var(--contrast-amount));
-          animation: rotate var(--animation-duration) linear infinite;
-        }
-
-        .siri-orb::after {
-          background-image: radial-gradient(
-            circle at center,
-            var(--bg) var(--dot-size),
-            transparent var(--dot-size)
-          );
-          background-size: calc(var(--dot-size) * 2) calc(var(--dot-size) * 2);
-          backdrop-filter: blur(calc(var(--blur-amount) * 2))
-            contrast(calc(var(--contrast-amount) * 2));
-          mix-blend-mode: overlay;
-        }
-
-        .siri-orb[style*="--mask-radius: 0%"]::after {
-          mask-image: none;
-        }
-
-        .siri-orb:not([style*="--mask-radius: 0%"])::after {
-          mask-image: radial-gradient(
-            black var(--mask-radius),
-            transparent 75%
-          );
-        }
-
-        @keyframes rotate {
-          to {
-            --angle: 360deg;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .siri-orb::before {
-            animation: none;
-          }
-        }
-      `}</style>
+      <canvas
+        ref={canvasRef}
+        style={{ width: size, height: size, background: 'transparent' }}
+        className="w-full h-full block bg-transparent pointer-events-none"
+      />
     </div>
   );
 };
