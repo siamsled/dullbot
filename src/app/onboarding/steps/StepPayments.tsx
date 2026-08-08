@@ -256,75 +256,93 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                   )}
                   {isSelected && opt.id === 'companion_app' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-visible">
-                      <div className="mt-3 p-4 bg-white/8 rounded-2xl border border-white/15 space-y-3">
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                          {/* QR Code */}
-                          <div className="p-3 bg-white rounded-2xl shadow-lg shrink-0 flex flex-col items-center justify-center min-w-[124px] min-h-[124px]">
-                            {mounted ? (
-                              <QRCodeSVG
-                                value={JSON.stringify({
-                                  url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
-                                  code: pairingCode,
-                                  shop_id: shop.id,
-                                  shop_name: shop.name || 'DullBot Shop'
-                                })}
-                                size={108}
-                                level="M"
-                                bgColor="#FFFFFF"
-                                fgColor="#000000"
-                                includeMargin={false}
-                              />
-                            ) : (
-                              <div className="w-[108px] h-[108px] bg-neutral-100 rounded flex items-center justify-center text-neutral-400">
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                              </div>
-                            )}
-                            <span className="text-[10px] font-bold text-neutral-900 mt-1.5 uppercase tracking-wider flex items-center gap-1">
-                              <QrCode className="w-3 h-3 text-neutral-900" /> Scan in App
-                            </span>
-                          </div>
+                      <div className="mt-3">
+                        <AnimatePresence mode="wait">
+                          {!pairedDeviceName ? (
+                            <motion.div
+                              key="unpaired-qr-card"
+                              initial={{ opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
+                              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 0.94, filter: 'blur(8px)', transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } }}
+                              className="p-4 bg-white/8 rounded-2xl border border-white/15 space-y-3"
+                            >
+                              <div className="flex flex-col sm:flex-row items-center gap-4">
+                                {/* QR Code */}
+                                <div className="p-3 bg-white rounded-2xl shadow-lg shrink-0 flex flex-col items-center justify-center min-w-[124px] min-h-[124px]">
+                                  {mounted ? (
+                                    <QRCodeSVG
+                                      value={JSON.stringify({
+                                        url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
+                                        code: pairingCode,
+                                        shop_id: shop.id,
+                                        shop_name: shop.name || 'DullBot Shop'
+                                      })}
+                                      size={108}
+                                      level="M"
+                                      bgColor="#FFFFFF"
+                                      fgColor="#000000"
+                                      includeMargin={false}
+                                    />
+                                  ) : (
+                                    <div className="w-[108px] h-[108px] bg-neutral-100 rounded flex items-center justify-center text-neutral-400">
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                    </div>
+                                  )}
+                                  <span className="text-[10px] font-bold text-neutral-900 mt-1.5 uppercase tracking-wider flex items-center gap-1">
+                                    <QrCode className="w-3 h-3 text-neutral-900" /> Scan in App
+                                  </span>
+                                </div>
 
-                          {/* 6-Digit Code */}
-                          <div className="flex-1 space-y-2 text-left w-full sm:w-auto">
-                            <p className="text-xs text-white/90 font-medium leading-relaxed">
-                              Scan this QR code with the DullBot Companion App camera, or enter the 6-digit pairing code:
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 flex-1 justify-center shadow-inner tracking-[0.2em]">
-                                {pairingCode.split('').map((digit, i) => (
-                                  <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>
-                                ))}
+                                {/* 6-Digit Code */}
+                                <div className="flex-1 space-y-2 text-left w-full sm:w-auto">
+                                  <p className="text-xs text-white/90 font-medium leading-relaxed">
+                                    Scan this QR code with the DullBot Companion App camera, or enter the 6-digit pairing code:
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 flex-1 justify-center shadow-inner tracking-[0.2em]">
+                                      {pairingCode.split('').map((digit, i) => (
+                                        <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>
+                                      ))}
+                                    </div>
+                                    <button
+                                      onClick={handleCopy}
+                                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all shrink-0"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                              <button
-                                onClick={handleCopy}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all shrink-0"
-                              >
-                                <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {pairedDeviceName && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-lg"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-6.5 h-6.5 rounded-full bg-emerald-500/30 text-emerald-300 flex items-center justify-center shrink-0">
-                                <Check className="w-4 h-4 text-emerald-300 font-bold" />
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="paired-connected-card"
+                              initial={{ opacity: 0, scale: 0.94, y: 10, filter: 'blur(8px)' }}
+                              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 0.94, filter: 'blur(6px)' }}
+                              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                              className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-emerald-500/15 to-emerald-600/10 border border-emerald-500/35 text-emerald-200 text-xs flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-md"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <div className="relative flex items-center justify-center shrink-0">
+                                  <span className="absolute inline-flex h-10 w-10 rounded-full bg-emerald-400/30 animate-ping" />
+                                  <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-black flex items-center justify-center shadow-lg font-bold">
+                                    <Smartphone className="w-5 h-5 text-black" />
+                                  </div>
+                                </div>
+                                <div className="text-left space-y-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-serif font-bold text-sm text-white">{pairedDeviceName}</p>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase tracking-widest">
+                                      • Live Relay Active
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-emerald-200/80">Encrypted MFS sync connected. Automatically verifying bKash & Nagad payments.</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-emerald-200 text-xs">Device Connected & Paired!</p>
-                                <p className="text-[11px] text-emerald-300/80">{pairedDeviceName} is live and relaying MFS notifications</p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-400/25 text-emerald-300 border border-emerald-400/40 uppercase tracking-widest animate-pulse">
-                              LIVE
-                            </span>
-                          </motion.div>
-                        )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
