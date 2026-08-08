@@ -35,6 +35,8 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [bkashSandbox, setBkashSandbox] = useState<boolean>(initialBkashConfig.sandbox ?? false);
   const [pairingCode, setPairingCode] = useState<string>('718087');
   const [pairedDeviceName, setPairedDeviceName] = useState<string | null>(null);
+  const [pairedDeviceId, setPairedDeviceId] = useState<string | null>(null);
+  const [userHasManuallyChosen, setUserHasManuallyChosen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -58,9 +60,17 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
     const checkStatus = async () => {
       try {
         const status = await checkCompanionDeviceStatusAction(shop.id);
-        if (isMounted && status.isPaired) {
-          setPairedDeviceName(status.deviceName || 'Android Companion Device');
-          setChoice('companion_app');
+        if (isMounted) {
+          if (status.isPaired) {
+            setPairedDeviceName(status.deviceName || 'Android Companion Device');
+            setPairedDeviceId(status.deviceId || null);
+            if (!userHasManuallyChosen) {
+              setChoice(prev => prev || 'companion_app');
+            }
+          } else {
+            setPairedDeviceName(null);
+            setPairedDeviceId(null);
+          }
         }
       } catch (e) {}
     };
@@ -72,7 +82,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [shop.id]);
+  }, [shop.id, userHasManuallyChosen]);
 
   const OPTIONS = [
     { id: 'merchant_api' as const, icon: <BkashLogo className="w-6 h-6 shrink-0" />, title: 'bKash Merchant API', desc: 'Tokenized Checkout v1.2.0 API' },
@@ -161,6 +171,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                 <button
                   type="button"
                   onClick={() => {
+                    setUserHasManuallyChosen(true);
                     setChoice(opt.id);
                     setApiError(null);
                   }}
@@ -201,31 +212,20 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                             <button
                               type="button"
                               onClick={() => { setBkashSandbox(true); setApiError(null); }}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${bkashSandbox ? 'bg-amber-400 text-black shadow-sm' : 'text-white/60 hover:text-white'}`}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${bkashSandbox ? 'bg-[#E2136E] text-white shadow-sm' : 'text-white/60 hover:text-white'}`}
                             >
                               Sandbox
                             </button>
                           </div>
                         </div>
 
-                        {/* bKash Merchant Number */}
-                        <div>
-                          <label className="block text-xs font-semibold text-white/80 mb-1">
-                            bKash Merchant Number <span className="text-white/40 font-normal">(for customer payments)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={bkashNumber}
-                            onChange={(e) => { setBkashNumber(e.target.value); setApiError(null); }}
-                            placeholder="e.g. 01712345678"
-                            className={inputCls}
-                          />
-                        </div>
-
-                        {/* API Credentials Grid */}
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-semibold text-white/80 mb-1">bKash Merchant / Agent Number</label>
+                            <input type="text" value={bkashNumber} onChange={(e) => { setBkashNumber(e.target.value); setApiError(null); }} placeholder="e.g. 01700000000" className={inputCls} />
+                          </div>
                           <div>
-                            <label className="block text-xs font-semibold text-white/80 mb-1">bKash App Key</label>
+                            <label className="block text-xs font-semibold text-white/80 mb-1">App Key</label>
                             <input type="text" value={bkashAppKey} onChange={(e) => { setBkashAppKey(e.target.value); setApiError(null); }} placeholder="App Key" className={inputCls} />
                           </div>
                           <div>
@@ -326,23 +326,40 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                               transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                               className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-emerald-500/15 to-emerald-600/10 border border-emerald-500/35 text-emerald-200 text-xs flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-md"
                             >
-                              <div className="flex items-center gap-3.5">
+                              <div className="flex items-center gap-3.5 min-w-0 flex-1">
                                 <div className="relative flex items-center justify-center shrink-0">
                                   <span className="absolute inline-flex h-10 w-10 rounded-full bg-emerald-400/30 animate-ping" />
                                   <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-black flex items-center justify-center shadow-lg font-bold">
                                     <Smartphone className="w-5 h-5 text-black" />
                                   </div>
                                 </div>
-                                <div className="text-left space-y-0.5">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-serif font-bold text-sm text-white">{pairedDeviceName}</p>
+                                <div className="text-left space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-serif font-bold text-sm text-white truncate">{pairedDeviceName}</p>
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase tracking-widest">
                                       • Live Relay Active
                                     </span>
                                   </div>
-                                  <p className="text-xs text-emerald-200/80">Encrypted MFS sync connected. Automatically verifying bKash & Nagad payments.</p>
+                                  <p className="text-xs text-emerald-200/80">Encrypted MFS sync connected. Automatically verifying bKash &amp; Nagad payments.</p>
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (pairedDeviceId) {
+                                    const { revokeCompanionDeviceAction } = await import('../../dashboard/actions');
+                                    await revokeCompanionDeviceAction(shop.id, pairedDeviceId);
+                                  }
+                                  setPairedDeviceName(null);
+                                  setPairedDeviceId(null);
+                                  setUserHasManuallyChosen(true);
+                                  setChoice(null);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-rose-500/25 hover:text-rose-200 text-white/80 border border-white/20 text-xs font-semibold transition-all shrink-0 active:scale-[0.98]"
+                              >
+                                Unpair Device
+                              </button>
                             </motion.div>
                           )}
                         </AnimatePresence>

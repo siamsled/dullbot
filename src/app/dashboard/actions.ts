@@ -214,6 +214,14 @@ export async function checkCompanionDeviceStatusAction(shopId: string) {
   return { isPaired: false, deviceName: null };
 }
 
+export async function revokeCompanionDeviceAction(shopId: string, deviceId: string) {
+  const { revokeCompanionDevice } = await import('@/lib/companion-registry');
+  const res = await revokeCompanionDevice(deviceId, shopId);
+  revalidatePath('/onboarding');
+  revalidatePath('/dashboard');
+  return res;
+}
+
 /**
  * Save courier choice during onboarding (Step 6).
  * provider: one of the 5 couriers or 'none' (manual)
