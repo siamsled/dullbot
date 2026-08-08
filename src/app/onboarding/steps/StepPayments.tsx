@@ -34,8 +34,10 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     let isMounted = true;
     (async () => {
       try {
@@ -232,41 +234,49 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                     </motion.div>
                   )}
                   {isSelected && opt.id === 'companion_app' && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2 p-3.5 sm:p-4 bg-white/6 rounded-2xl border border-white/12 space-y-3">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-visible">
+                      <div className="mt-3 p-4 bg-white/8 rounded-2xl border border-white/15 space-y-3">
                         <div className="flex flex-col sm:flex-row items-center gap-4">
                           {/* QR Code */}
-                          <div className="p-2 bg-white rounded-xl shadow-md shrink-0 flex flex-col items-center justify-center">
-                            <QRCodeSVG
-                              value={JSON.stringify({
-                                url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
-                                code: pairingCode,
-                                shop_id: shop.id,
-                                shop_name: shop.name || 'DullBot Shop'
-                              })}
-                              size={100}
-                              level="M"
-                              includeMargin={false}
-                            />
-                            <span className="text-[9px] font-bold text-black/70 mt-1 uppercase tracking-wider flex items-center gap-1">
-                              <QrCode className="w-2.5 h-2.5 text-black" /> Scan in App
+                          <div className="p-3 bg-white rounded-2xl shadow-lg shrink-0 flex flex-col items-center justify-center min-w-[124px] min-h-[124px]">
+                            {mounted ? (
+                              <QRCodeSVG
+                                value={JSON.stringify({
+                                  url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
+                                  code: pairingCode,
+                                  shop_id: shop.id,
+                                  shop_name: shop.name || 'DullBot Shop'
+                                })}
+                                size={108}
+                                level="M"
+                                bgColor="#FFFFFF"
+                                fgColor="#000000"
+                                includeMargin={false}
+                              />
+                            ) : (
+                              <div className="w-[108px] h-[108px] bg-neutral-100 rounded flex items-center justify-center text-neutral-400">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              </div>
+                            )}
+                            <span className="text-[10px] font-bold text-neutral-900 mt-1.5 uppercase tracking-wider flex items-center gap-1">
+                              <QrCode className="w-3 h-3 text-neutral-900" /> Scan in App
                             </span>
                           </div>
 
                           {/* 6-Digit Code */}
                           <div className="flex-1 space-y-2 text-left w-full sm:w-auto">
                             <p className="text-xs text-white/90 font-medium leading-relaxed">
-                              Scan the QR code or enter this 6-digit pairing code in your DullBot Android Companion app:
+                              Scan this QR code with the DullBot Companion App camera, or enter the 6-digit pairing code:
                             </p>
                             <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 bg-white/8 border border-white/15 rounded-xl px-3 py-2 flex-1 justify-center shadow-inner tracking-[0.18em]">
+                              <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 flex-1 justify-center shadow-inner tracking-[0.2em]">
                                 {pairingCode.split('').map((digit, i) => (
                                   <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>
                                 ))}
                               </div>
                               <button
                                 onClick={handleCopy}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all shrink-0"
                               >
                                 <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
                               </button>
