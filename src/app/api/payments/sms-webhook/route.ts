@@ -167,3 +167,33 @@ export async function POST(request: Request) {
     return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Internal Server Error' }), { status: 500 });
   }
 }
+
+/**
+ * GET health check for Companion app to verify pairing token status.
+ * Returns 401 if device secret token is invalid or revoked.
+ */
+export async function GET(request: Request) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+
+    if (!bearerToken) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Device secret required' }, { status: 401 });
+    }
+
+    const authResult = await verifyCompanionDeviceSecret(bearerToken);
+    if (!authResult.valid || !authResult.shopId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Invalid or revoked companion device secret' }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      status: 'active',
+      shop_id: authResult.shopId,
+      device_id: authResult.deviceId,
+      device_name: authResult.deviceName
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
