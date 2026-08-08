@@ -330,6 +330,22 @@ export async function logCompanionTransaction(params: {
   isMatched?: boolean;
   matchedOrderId?: string;
 }) {
+  // Deduplicate: Suppress duplicate transaction logs for the same shop and transaction ID
+  if (params.trxId && params.trxId !== 'UNKNOWN') {
+    const { data: existing } = await supabaseAdmin
+      .from('audit_logs')
+      .select('id')
+      .eq('action', 'companion_transaction_received')
+      .eq('target_shop_id', params.shopId)
+      .eq('metadata->>trx_id', params.trxId)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log(`[COMPANION REGISTRY] Duplicate transaction ${params.trxId} suppressed for shop ${params.shopId}`);
+      return { success: true, id: existing[0].id, duplicate: true };
+    }
+  }
+
   const now = new Date().toISOString();
 
   const { data, error } = await supabaseAdmin
@@ -359,6 +375,7 @@ export async function logCompanionTransaction(params: {
 /**
  * Lists all companion transactions received for a shop (isolated strictly by shopId).
  * Retained permanently in dashboard database regardless of device status.
+ * Deduplicated by trx_id to clean up any past duplicate sync logs.
  */
 export async function listShopCompanionTransactions(shopId: string): Promise<CompanionTransaction[]> {
   let resolvedId = shopId;
@@ -377,18 +394,31 @@ export async function listShopCompanionTransactions(shopId: string): Promise<Com
 
   if (error || !logs) return [];
 
-  return logs.map(l => ({
-    id: l.id,
-    shop_id: resolvedId,
-    device_id: l.metadata?.device_id || '',
-    device_name: l.metadata?.device_name || 'Android Gateway',
-    trx_id: l.metadata?.trx_id || 'UNKNOWN',
-    amount: parseFloat(l.metadata?.amount || '0'),
-    sender: l.metadata?.sender || 'Unknown',
-    provider: (l.metadata?.provider || 'bkash').toLowerCase(),
-    raw_message: l.metadata?.raw_message || '',
-    is_matched: l.metadata?.is_matched === true || l.metadata?.is_matched === 'true',
-    matched_order_id: l.metadata?.matched_order_id || null,
-    received_at: l.metadata?.received_at || l.created_at,
-  }));
+  const seenTrxIds = new Set<string>();
+  const uniqueTransactions: CompanionTransaction[] = [];
+
+  for (const l of logs) {
+    const trxId = l.metadata?.trx_id || 'UNKNOWN';
+    if (trxId !== 'UNKNOWN') {
+      if (seenTrxIds.has(trxId)) continue;
+      seenTrxIds.add(trxId);
+    }
+
+    uniqueTransactions.push({
+      id: l.id,
+      shop_id: resolvedId,
+      device_id: l.metadata?.device_id || '',
+      device_name: l.metadata?.device_name || 'Android Gateway',
+      trx_id: trxId,
+      amount: parseFloat(l.metadata?.amount || '0'),
+      sender: l.metadata?.sender || 'Unknown',
+      provider: (l.metadata?.provider || 'bkash').toLowerCase(),
+      raw_message: l.metadata?.raw_message || '',
+      is_matched: l.metadata?.is_matched === true || l.metadata?.is_matched === 'true',
+      matched_order_id: l.metadata?.matched_order_id || null,
+      received_at: l.metadata?.received_at || l.created_at,
+    });
+  }
+
+  return uniqueTransactions;
 }
