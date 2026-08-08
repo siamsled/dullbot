@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Loader2, Smartphone, Package, Check, Copy, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Smartphone, Package, Check, Copy, AlertCircle, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { savePaymentChoice, testBkashConnection, getPairingCodeAction } from '../../dashboard/actions';
 
 const COMPANION_NUDGE_KEY = 'dullbot_companion_nudge';
@@ -232,13 +233,45 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                   )}
                   {isSelected && opt.id === 'companion_app' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-2 p-4 bg-white/6 rounded-2xl border border-white/12 space-y-2.5">
-                        <p className="text-xs sm:text-sm text-white/90">Install the DullBot companion Android app and enter this pairing code:</p>
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex items-center gap-2 bg-white/8 border border-white/15 rounded-xl px-4 py-2.5 flex-1 justify-center shadow-inner tracking-[0.2em]">
-                            {pairingCode.split('').map((digit, i) => <span key={i} className="text-2xl font-bold text-white font-mono">{digit}</span>)}
+                      <div className="mt-2 p-3.5 sm:p-4 bg-white/6 rounded-2xl border border-white/12 space-y-3">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          {/* QR Code */}
+                          <div className="p-2 bg-white rounded-xl shadow-md shrink-0 flex flex-col items-center justify-center">
+                            <QRCodeSVG
+                              value={JSON.stringify({
+                                url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
+                                code: pairingCode,
+                                shop_id: shop.id,
+                                shop_name: shop.name || 'DullBot Shop'
+                              })}
+                              size={100}
+                              level="M"
+                              includeMargin={false}
+                            />
+                            <span className="text-[9px] font-bold text-black/70 mt-1 uppercase tracking-wider flex items-center gap-1">
+                              <QrCode className="w-2.5 h-2.5 text-black" /> Scan in App
+                            </span>
                           </div>
-                          <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"><Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}</button>
+
+                          {/* 6-Digit Code */}
+                          <div className="flex-1 space-y-2 text-left w-full sm:w-auto">
+                            <p className="text-xs text-white/90 font-medium leading-relaxed">
+                              Scan the QR code or enter this 6-digit pairing code in your DullBot Android Companion app:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 bg-white/8 border border-white/15 rounded-xl px-3 py-2 flex-1 justify-center shadow-inner tracking-[0.18em]">
+                                {pairingCode.split('').map((digit, i) => (
+                                  <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>
+                                ))}
+                              </div>
+                              <button
+                                onClick={handleCopy}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all"
+                              >
+                                <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>

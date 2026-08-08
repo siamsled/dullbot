@@ -9,6 +9,7 @@ import {
   MessageSquare, Check, Copy, ChevronDown, Pencil, Sparkles,
   BookOpen, Palette, Truck,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 
@@ -613,6 +614,37 @@ export default function SettingsClient({ shop }: { shop: any }) {
                   <input type="text"   value={nagadMerchantId} onChange={e => setNagadMerchantId(e.target.value)} placeholder="Nagad Merchant ID"              className={inputCls} />
                   <textarea           value={nagadPrivateKey}  onChange={e => setNagadPrivateKey(e.target.value)}  placeholder="Nagad Private Key (PEM format)" rows={3} className={`${inputCls} resize-none`} />
                   <textarea           value={nagadPublicKey}   onChange={e => setNagadPublicKey(e.target.value)}   placeholder="Nagad Public Key (PEM format)"  rows={3} className={`${inputCls} resize-none`} />
+                </div>
+              </div>
+            </div>
+          )}
+          {paymentVerificationMethod === 'notification_app' && (
+            <div className="border-t border-dove/10 pt-5 space-y-4">
+              <h4 className="text-xs font-semibold text-ink">Android Companion App Pairing</h4>
+              <div className="p-4 bg-fog rounded-2xl border border-dove/20 flex flex-col sm:flex-row items-center gap-4">
+                <div className="p-2.5 bg-white rounded-xl shadow-xs shrink-0 flex flex-col items-center justify-center">
+                  <QRCodeSVG
+                    value={JSON.stringify({
+                      url: typeof window !== 'undefined' ? window.location.origin : 'https://dullbot.vercel.app',
+                      code: '718087',
+                      shop_id: shop?.id,
+                      shop_name: shop?.name || 'DullBot Shop'
+                    })}
+                    size={110}
+                    level="M"
+                  />
+                  <span className="text-[9px] font-bold text-ash mt-1 uppercase tracking-wider">Scan with App</span>
+                </div>
+                <div className="flex-1 space-y-2 text-left">
+                  <p className="text-xs text-graphite font-medium leading-relaxed">
+                    Scan this QR code with your DullBot Companion App camera, or enter your pairing code in the companion app:
+                  </p>
+                  <div className="p-3 bg-white border border-dove/30 rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                    <span className="text-xs text-ash font-medium">Tunnel Status:</span>
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2.5 py-0.5">
+                      Encrypted Relay Active
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
