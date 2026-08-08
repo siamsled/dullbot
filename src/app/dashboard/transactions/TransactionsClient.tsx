@@ -126,13 +126,23 @@ export default function TransactionsClient({
             {isRefreshing ? 'Syncing...' : 'Refresh Logs'}
           </button>
 
-          <Link
-            href="/dashboard/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-black transition-all shadow-xs"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            Pair Companion App
-          </Link>
+          {devices.length > 0 ? (
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-all shadow-xs"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              {devices[0].device_name || 'Companion Device'} Active
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-black transition-all shadow-xs"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              Pair Companion App
+            </Link>
+          )}
         </div>
       </div>
 
@@ -163,18 +173,15 @@ export default function TransactionsClient({
         </div>
       </div>
 
-      {/* ── Security Retention Banner ──────────────────────────── */}
-      <div className="p-4 rounded-2xl bg-fog/80 border border-dove/30 text-xs text-graphite flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-          <p>
-            <strong className="text-ink font-semibold">Strict Multi-Tenant Isolation & Permanent Retention:</strong>{' '}
-            Transaction logs fetched from your Companion App belong exclusively to <span className="font-semibold text-ink">{shop.name}</span>. Logs remain permanently stored in your dashboard database even if your phone is disconnected or sync is paused.
-          </p>
-        </div>
+      {/* ── Isolation & Retention Banner ──────────────────────── */}
+      <div className="p-4 bg-emerald-50/50 border border-emerald-200/60 rounded-2xl text-xs text-emerald-900 flex items-start sm:items-center gap-3 shadow-xs">
+        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+        <p className="leading-relaxed">
+          <strong className="font-semibold">Strict Multi-Tenant Isolation &amp; Permanent Retention:</strong> Transaction logs fetched from your Companion App belong exclusively to <strong className="font-semibold">{shop?.name || 'Your Shop'}</strong>. Logs remain permanently stored in your dashboard database even if your phone is disconnected or sync is paused.
+        </p>
       </div>
 
-      {/* ── Filters & Search ──────────────────────────────────── */}
+      {/* ── Search & Filter Controls ─────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-ash absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -182,17 +189,25 @@ export default function TransactionsClient({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by TrxID, sender, device name, or SMS body..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-dove/30 rounded-xl text-xs text-ink placeholder:text-ash focus:outline-none focus:border-ink transition-colors"
+            placeholder="Search by TrxID, sender number, device name..."
+            className="w-full pl-10 pr-4 py-2 bg-white border border-dove/25 rounded-xl text-xs text-ink focus:outline-none focus:border-ink transition-colors shadow-xs"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ash hover:text-ink text-xs font-bold"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Filter className="w-3.5 h-3.5 text-ash" />
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-ash shrink-0" />
           <select
             value={filterProvider}
             onChange={(e) => setFilterProvider(e.target.value)}
-            className="px-3 py-2 bg-white border border-dove/30 rounded-xl text-xs text-ink font-medium focus:outline-none focus:border-ink transition-colors"
+            className="px-3 py-2 bg-white border border-dove/25 rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-ink shadow-xs cursor-pointer"
           >
             <option value="all">All Gateways</option>
             <option value="bkash">bKash</option>
@@ -211,15 +226,27 @@ export default function TransactionsClient({
             <h3 className="text-sm font-semibold text-ink">No Transaction Logs Found</h3>
             <p className="text-xs text-ash max-w-sm mx-auto leading-relaxed">
               {search || filterProvider !== 'all'
-                ? 'No transactions match your current search filters.'
+                ? 'No transactions match your current search query or gateway filters.'
+                : devices.length > 0
+                ? 'Your companion app is paired and live. Waiting for new incoming bKash/Nagad SMS payment receipts.'
                 : 'Install and pair the DullBot Companion Android app to automatically stream live bKash/Nagad SMS receipts into your dashboard.'}
             </p>
-            <Link
-              href="/dashboard/settings"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-black transition-all mt-2"
-            >
-              Set up Companion App →
-            </Link>
+            {search || filterProvider !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => { setSearch(''); setFilterProvider('all'); }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-dove/30 text-ink text-xs font-semibold hover:border-ink transition-all mt-2 shadow-xs"
+              >
+                Clear Search Filter
+              </button>
+            ) : devices.length === 0 ? (
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-black transition-all mt-2"
+              >
+                Set up Companion App →
+              </Link>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-x-auto">
