@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import Link from 'next/link';
 import {
   MessageSquare, Send, Trash2, Package, Plus, ExternalLink,
-  ToggleLeft, ToggleRight, ChevronRight, ChevronDown, Loader2,
-  X, Settings, AlertTriangle, CheckCircle2, Megaphone, RefreshCw,
-  Eye, Image as ImageIcon
+  ChevronRight, ChevronDown, Loader2, X, Settings, AlertTriangle,
+  Megaphone, RefreshCw, Image as ImageIcon, CheckCircle2, Sparkles
 } from 'lucide-react';
 import {
   upsertPostAutomation,
   deletePostAutomation,
   fetchPostPreview,
   getCommentStats,
+  fetchConnectedSocialPosts,
+  ConnectedPostItem,
 } from './actions';
 
 type Product = {
@@ -120,7 +122,7 @@ function PostConfigPanel({
       if (result.success) {
         setSaveState('saved');
         onSaved(config);
-        setTimeout(() => setSaveState('idle'), 2000);
+        setTimeout(() => setSaveState('idle'), 3000);
       } else {
         setSaveState('error');
         setTimeout(() => setSaveState('idle'), 3000);
@@ -178,189 +180,198 @@ function PostConfigPanel({
       </div>
 
       {/* Comment stats */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={loadStats}
-          disabled={loadingStats}
-          className="flex items-center gap-1.5 text-[10px] text-graphite hover:text-ink transition-colors"
-        >
-          {loadingStats ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
-          Load stats
-        </button>
-        {stats && (
-          <div className="flex items-center gap-3 text-[10px] text-graphite">
-            <span><strong className="text-ink">{stats.total}</strong> comments</span>
-            <span><strong className="text-ink">{stats.replied}</strong> replied</span>
-            <span><strong className="text-ink">{stats.privateReplied}</strong> private</span>
-            <span><strong className="text-ink">{stats.deleted}</strong> deleted</span>
+      <div className="bg-fog/50 rounded-inputs p-3 border border-dove/10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold text-graphite uppercase tracking-wider">Comment Stats</span>
+          <button
+            type="button"
+            onClick={loadStats}
+            disabled={loadingStats}
+            className="text-[10px] text-ash hover:text-ink flex items-center gap-1 transition-colors"
+          >
+            <RefreshCw className={`w-3 h-3 ${loadingStats ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+        {stats ? (
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-white p-2 rounded border border-dove/10">
+              <p className="text-base font-serif font-semibold text-ink">{stats.total}</p>
+              <p className="text-[9px] text-ash">Total</p>
+            </div>
+            <div className="bg-white p-2 rounded border border-dove/10">
+              <p className="text-base font-serif font-semibold text-green-700">{stats.replied}</p>
+              <p className="text-[9px] text-ash">Replied</p>
+            </div>
+            <div className="bg-white p-2 rounded border border-dove/10">
+              <p className="text-base font-serif font-semibold text-blue-700">{stats.privateReplied}</p>
+              <p className="text-[9px] text-ash">Private DMs</p>
+            </div>
+            <div className="bg-white p-2 rounded border border-dove/10">
+              <p className="text-base font-serif font-semibold text-red-700">{stats.deleted}</p>
+              <p className="text-[9px] text-ash">Moderated</p>
+            </div>
           </div>
+        ) : (
+          <p className="text-[11px] text-ash italic">Click refresh to load live comment stats for this post.</p>
         )}
       </div>
 
-      {/* 1. Reply as Comment */}
-      <div className="flex items-start justify-between gap-4 py-3 border-b border-dove/10">
-        <div>
-          <p className="text-sm font-semibold text-ink flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-graphite" /> Reply as Comment
-          </p>
-          <p className="text-xs text-ash mt-0.5">AI replies publicly to comments on this post with intent-aware responses</p>
+      {/* Toggles */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between py-2 border-b border-dove/10">
+          <div>
+            <p className="text-xs font-semibold text-ink">Public Comment Replies</p>
+            <p className="text-[11px] text-ash">AI will reply publicly to customer comments on this post</p>
+          </div>
+          <Toggle value={config.reply_as_comment} onChange={v => setConfig(prev => ({ ...prev, reply_as_comment: v }))} />
         </div>
-        <Toggle value={config.reply_as_comment} onChange={v => setConfig(c => ({ ...c, reply_as_comment: v }))} />
+
+        <div className="flex items-center justify-between py-2 border-b border-dove/10">
+          <div>
+            <p className="text-xs font-semibold text-ink">Private Messenger Reply</p>
+            <p className="text-[11px] text-ash">Send a private Messenger DM when someone comments on this post</p>
+          </div>
+          <Toggle value={config.send_as_messenger} onChange={v => setConfig(prev => ({ ...prev, send_as_messenger: v }))} />
+        </div>
+
+        <div className="flex items-center justify-between py-2 border-b border-dove/10">
+          <div>
+            <p className="text-xs font-semibold text-ink">Auto-Delete Spam / Hate</p>
+            <p className="text-[11px] text-ash">Automatically delete negative, abusive, or competitor spam comments</p>
+          </div>
+          <Toggle value={config.delete_negative} onChange={v => setConfig(prev => ({ ...prev, delete_negative: v }))} />
+        </div>
       </div>
 
-      {/* 2. Instructions */}
-      {config.reply_as_comment && (
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-graphite uppercase tracking-wider block">Reply instructions</label>
-          <textarea
-            rows={4}
-            value={config.instructions || ''}
-            onChange={e => setConfig(c => ({ ...c, instructions: e.target.value }))}
-            placeholder={`Describe how to reply. Include example intent pairs:\n"Pp" → price inquiry (send the price)\n"Interested" → send product link\n"Koto porbe" → price inquiry in Bangla`}
-            className="w-full px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink transition-all resize-none leading-relaxed"
-          />
-          <p className="text-[10px] text-ash">The AI treats these as illustrative examples of intent categories — misspellings and variants will still match.</p>
+      {/* Specific instructions */}
+      <div>
+        <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">
+          Post-Specific AI Instructions (Optional)
+        </label>
+        <textarea
+          rows={2}
+          value={config.instructions || ''}
+          onChange={e => setConfig(prev => ({ ...prev, instructions: e.target.value }))}
+          placeholder="e.g. Highlight the 20% Eid discount or mention free shipping for this product..."
+          className="w-full px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors resize-none"
+        />
+      </div>
+
+      {/* Delete examples */}
+      {config.delete_negative && (
+        <div>
+          <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">
+            Phrases to Auto-Delete
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newDeleteExample}
+              onChange={e => setNewDeleteExample(e.target.value)}
+              placeholder="e.g. fake product, scam"
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDeleteExample())}
+              className="flex-1 px-3 py-1.5 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink"
+            />
+            <button
+              type="button"
+              onClick={addDeleteExample}
+              className="px-3 py-1.5 bg-ink text-white rounded-inputs text-xs font-semibold hover:bg-black transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          {config.delete_examples?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {config.delete_examples.map((ex, i) => (
+                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded-full text-[10px] font-medium">
+                  {ex}
+                  <button type="button" onClick={() => removeDeleteExample(i)} className="hover:text-red-900 font-bold">×</button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* 3. Delete negative comments */}
-      <div className="space-y-3 py-3 border-b border-dove/10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-ink flex items-center gap-2">
-              <Trash2 className="w-4 h-4 text-graphite" /> Delete negative comments
-            </p>
-            <p className="text-xs text-ash mt-0.5">
-              AI deletes only when confidence ≥ 85%. Ambiguous comments are always left alone.
-              Requires <code className="bg-fog px-1 rounded text-[10px]">pages_manage_engagement</code> permission.
-            </p>
-          </div>
-          <Toggle value={config.delete_negative} onChange={v => setConfig(c => ({ ...c, delete_negative: v }))} />
-        </div>
-
-        {config.delete_negative && (
-          <div className="space-y-2 pl-2">
-            <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">
-              Example comments to delete
-            </label>
-            <div className="flex flex-col gap-1.5">
-              {(config.delete_examples || []).map((ex, i) => (
-                <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-apricot-wash rounded-inputs border border-rust/10 text-xs">
-                  <span className="flex-1 text-ink">{ex}</span>
-                  <button onClick={() => removeDeleteExample(i)} className="text-rust hover:text-red-800">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newDeleteExample}
-                onChange={e => setNewDeleteExample(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDeleteExample())}
-                placeholder="Add example comment to delete..."
-                className="flex-1 px-3 py-1.5 bg-fog border border-dove/20 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all"
-              />
-              <button
-                onClick={addDeleteExample}
-                className="px-3 py-1.5 bg-ink text-white rounded-inputs text-xs font-semibold hover:bg-black transition-colors"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 4. Send as Messenger */}
-      <div className="flex items-start justify-between gap-4 py-3 border-b border-dove/10">
+      {/* Linked Products */}
+      {products.length > 0 && (
         <div>
-          <p className="text-sm font-semibold text-ink flex items-center gap-2">
-            <Send className="w-4 h-4 text-graphite" /> Send as Messenger
-          </p>
-          <p className="text-xs text-ash mt-0.5">
-            Sends a private reply to the commenter via Messenger DM (one-shot per comment, within 7 days of the comment).
-            The conversation then appears in your Live Inbox.
-          </p>
-        </div>
-        <Toggle value={config.send_as_messenger} onChange={v => setConfig(c => ({ ...c, send_as_messenger: v }))} />
-      </div>
-
-      {/* 5. Products */}
-      <div className="space-y-2 py-3 border-b border-dove/10">
-        <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-graphite" />
-          <p className="text-sm font-semibold text-ink">Attached products <span className="text-graphite font-normal text-xs">(optional)</span></p>
-        </div>
-        <p className="text-xs text-ash">AI will reference these products by name and price when generating replies.</p>
-        {products.length === 0 ? (
-          <p className="text-xs text-ash italic">No products in your catalog.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto">
+          <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">
+            Linked Products (AI uses these for pricing/stock answers)
+          </label>
+          <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-fog rounded-inputs border border-dove/10">
             {products.map(p => {
-              const selected = config.product_ids.includes(p.id);
+              const isSelected = config.product_ids.includes(p.id);
               return (
                 <button
+                  type="button"
                   key={p.id}
                   onClick={() => toggleProduct(p.id)}
-                  className={`flex items-center gap-2.5 px-2.5 py-2 rounded-inputs border text-left transition-all text-xs ${
-                    selected
-                      ? 'bg-ink/5 border-ink/20 text-ink'
-                      : 'bg-fog border-dove/15 text-graphite hover:border-dove/30'
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-inputs text-xs font-medium border transition-all ${
+                    isSelected
+                      ? 'bg-ink text-white border-ink'
+                      : 'bg-white text-graphite border-dove/20 hover:border-dove/40'
                   }`}
                 >
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} className="w-6 h-6 object-cover rounded shrink-0" />
-                  ) : (
-                    <div className="w-6 h-6 bg-dove/20 rounded shrink-0" />
-                  )}
-                  <span className="flex-1 truncate font-medium">{p.name}</span>
-                  <span className="text-[10px] font-mono text-graphite shrink-0">৳{p.price.toLocaleString()}</span>
-                  {selected && <CheckCircle2 className="w-3.5 h-3.5 text-ink shrink-0" />}
+                  <Package className="w-3 h-3" />
+                  {p.name} — {p.currency} {p.price}
                 </button>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Save / Delete */}
-      <div className="flex items-center justify-between pt-1">
+      {/* Action buttons */}
+      <div className="flex items-center justify-between pt-2 border-t border-dove/10">
         <button
+          type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="text-xs text-rust hover:underline disabled:opacity-40"
+          className="text-xs font-semibold text-rust hover:text-red-700 flex items-center gap-1 transition-colors"
         >
-          Remove automation
+          <Trash2 className="w-3.5 h-3.5" />
+          Delete Automation
         </button>
-        <button
-          onClick={handleSave}
-          disabled={isPending}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-buttons text-xs font-semibold transition-all shadow-subtle disabled:opacity-40 ${
-            saveState === 'saved'
-              ? 'bg-green-600 text-white'
-              : saveState === 'error'
-              ? 'bg-rust text-white'
-              : 'bg-ink text-white hover:bg-black'
-          }`}
-        >
-          {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-          {saveState === 'saved' ? '✓ Saved' : saveState === 'error' ? 'Error — retry' : 'Save'}
-        </button>
+
+        <div className="flex items-center gap-2">
+          {saveState === 'saved' && (
+            <span className="text-xs font-semibold text-green-700 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Saved!
+            </span>
+          )}
+          {saveState === 'error' && (
+            <span className="text-xs font-semibold text-rust">Error saving</span>
+          )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isPending}
+            className="px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1.5 shadow-subtle"
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Add Post modal ─────────────────────────────────────────────────────────
+// ─── Add Post Modal ──────────────────────────────────────────────────────────
 function AddPostModal({
+  connectedPosts,
+  isConnected,
   onClose,
   onAdded,
 }: {
+  connectedPosts: ConnectedPostItem[];
+  isConnected: boolean | null;
   onClose: () => void;
   onAdded: (automation: PostAutomation) => void;
 }) {
+  const [tab, setTab] = useState<'connected' | 'url'>(isConnected && connectedPosts.length > 0 ? 'connected' : 'url');
   const [url, setUrl] = useState('');
   const [platform, setPlatform] = useState<'facebook' | 'instagram'>('facebook');
   const [fetching, setFetching] = useState(false);
@@ -374,13 +385,46 @@ function AddPostModal({
     const result = await fetchPostPreview(url.trim());
     setFetching(false);
     if (!result) {
-      setError('Could not fetch post. Check the URL and make sure your Facebook page is connected in Settings.');
+      setError('Could not fetch post. Make sure your Facebook page is connected in Settings.');
       return;
     }
     setPreview({ ...result, post_preview_text: result.post_preview_text || '' });
   };
 
-  const handleAdd = async () => {
+  const handleSelectPost = async (post: ConnectedPostItem) => {
+    setSaving(true);
+    const result = await upsertPostAutomation({
+      post_id: post.post_id,
+      post_platform: post.platform,
+      post_preview_text: post.preview_text,
+      post_thumbnail_url: post.thumbnail_url || undefined,
+      reply_as_comment: false,
+      delete_negative: false,
+      send_as_messenger: false,
+      product_ids: [],
+    });
+    setSaving(false);
+    if (!result.success) {
+      setError(result.error || 'Failed to add automation');
+      return;
+    }
+    onAdded({
+      id: '',
+      post_id: post.post_id,
+      post_platform: post.platform,
+      post_preview_text: post.preview_text,
+      post_thumbnail_url: post.thumbnail_url,
+      reply_as_comment: false,
+      instructions: null,
+      delete_negative: false,
+      delete_examples: [],
+      send_as_messenger: false,
+      product_ids: [],
+      updated_at: new Date().toISOString(),
+    });
+  };
+
+  const handleAddManual = async () => {
     if (!preview) return;
     setSaving(true);
     const result = await upsertPostAutomation({
@@ -415,84 +459,166 @@ function AddPostModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-cards shadow-2xl border border-dove/15 w-full max-w-md mx-4 p-6 space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-cards shadow-2xl border border-dove/15 w-full max-w-lg p-6 space-y-4 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between shrink-0">
           <h3 className="text-lg font-serif text-ink">Add Post Automation</h3>
           <button onClick={onClose} className="p-1 text-ash hover:text-ink rounded-full hover:bg-fog transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Platform</label>
-            <div className="flex gap-2">
-              {(['facebook', 'instagram'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPlatform(p)}
-                  className={`flex-1 py-2 rounded-inputs border text-xs font-semibold capitalize transition-all ${
-                    platform === p ? 'bg-ink text-white border-ink' : 'bg-fog border-dove/20 text-graphite hover:border-dove/40'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Tab Selector */}
+        <div className="flex border-b border-dove/20 shrink-0">
+          <button
+            onClick={() => setTab('connected')}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+              tab === 'connected' ? 'border-ink text-ink' : 'border-transparent text-ash hover:text-ink'
+            }`}
+          >
+            Import Connected Social Posts ({connectedPosts.length})
+          </button>
+          <button
+            onClick={() => setTab('url')}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+              tab === 'url' ? 'border-ink text-ink' : 'border-transparent text-ash hover:text-ink'
+            }`}
+          >
+            Paste Post URL
+          </button>
+        </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Post URL</label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={e => setUrl(e.target.value)}
-                placeholder="https://www.facebook.com/photo?..."
-                className="flex-1 px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all"
-              />
+        {tab === 'connected' && (
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-[250px]">
+            {connectedPosts.length === 0 ? (
+              <div className="text-center py-8 space-y-2">
+                <Megaphone className="w-6 h-6 text-ash mx-auto opacity-40" />
+                <p className="text-xs font-semibold text-ink">No published posts fetched</p>
+                <p className="text-[11px] text-ash max-w-xs mx-auto">
+                  {isConnected
+                    ? 'Make sure you have published posts on your connected Facebook Page or Instagram.'
+                    : 'Connect your Facebook Page or Instagram in Settings to auto-import published posts.'}
+                </p>
+                {!isConnected && (
+                  <Link
+                    href="/dashboard/settings"
+                    className="inline-block px-3 py-1.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors mt-2"
+                  >
+                    Connect Social Accounts →
+                  </Link>
+                )}
+              </div>
+            ) : (
+              connectedPosts.map((p) => (
+                <div key={p.post_id} className="flex items-center gap-3 p-3 bg-fog rounded-inputs border border-dove/10 hover:border-dove/30 transition-all">
+                  {p.thumbnail_url ? (
+                    <img src={p.thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-inputs shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-dove/20 rounded-inputs shrink-0 flex items-center justify-center">
+                      <ImageIcon className="w-4 h-4 text-graphite" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-ink line-clamp-2">{p.preview_text}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                        p.platform === 'instagram'
+                          ? 'bg-pink-50 text-pink-700 border-pink-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}>
+                        {p.platform}
+                      </span>
+                      <span className="text-[10px] text-ash">
+                        {new Date(p.created_time).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPost(p)}
+                    disabled={saving}
+                    className="px-3 py-1.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors shrink-0 flex items-center gap-1 shadow-subtle"
+                  >
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    Automate
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'url' && (
+          <div className="space-y-3 shrink-0">
+            <div>
+              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Platform</label>
+              <div className="flex gap-2">
+                {(['facebook', 'instagram'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPlatform(p)}
+                    className={`flex-1 py-2 rounded-inputs border text-xs font-semibold capitalize transition-all ${
+                      platform === p ? 'bg-ink text-white border-ink' : 'bg-fog border-dove/20 text-graphite hover:border-dove/40'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Post URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder="https://www.facebook.com/photo?..."
+                  className="flex-1 px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all"
+                />
+                <button
+                  onClick={handleFetch}
+                  disabled={!url.trim() || fetching}
+                  className="px-3 py-2 bg-ink text-white rounded-inputs text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  {fetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Fetch
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="text-xs text-rust">{error}</p>}
+
+            {preview && (
+              <div className="flex items-start gap-3 p-3 bg-fog rounded-inputs border border-dove/10">
+                {preview.post_thumbnail_url ? (
+                  <img src={preview.post_thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 bg-dove/20 rounded shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-ink line-clamp-3">{preview.post_preview_text || '(no caption)'}</p>
+                  <p className="text-[10px] text-graphite font-mono mt-0.5">{preview.post_id}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-ash hover:text-ink transition-colors">
+                Cancel
+              </button>
               <button
-                onClick={handleFetch}
-                disabled={!url.trim() || fetching}
-                className="px-3 py-2 bg-ink text-white rounded-inputs text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1"
+                onClick={handleAddManual}
+                disabled={!preview || saving}
+                className="px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1.5"
               >
-                {fetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                Fetch
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Add automation
               </button>
             </div>
           </div>
-
-          {error && <p className="text-xs text-rust">{error}</p>}
-
-          {preview && (
-            <div className="flex items-start gap-3 p-3 bg-fog rounded-inputs border border-dove/10">
-              {preview.post_thumbnail_url ? (
-                <img src={preview.post_thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded shrink-0" />
-              ) : (
-                <div className="w-12 h-12 bg-dove/20 rounded shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-ink line-clamp-3">{preview.post_preview_text || '(no caption)'}</p>
-                <p className="text-[10px] text-graphite font-mono mt-0.5">{preview.post_id}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-ash hover:text-ink transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={handleAdd}
-            disabled={!preview || saving}
-            className="px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1.5"
-          >
-            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Add automation
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -510,6 +636,23 @@ export default function SocialClient({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Auto-fetched connected posts
+  const [connectedPosts, setConnectedPosts] = useState<ConnectedPostItem[]>([]);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+
+  const loadConnectedPosts = async () => {
+    setLoadingPosts(true);
+    const res = await fetchConnectedSocialPosts();
+    setIsConnected(res.connected);
+    setConnectedPosts(res.posts);
+    setLoadingPosts(false);
+  };
+
+  useEffect(() => {
+    loadConnectedPosts();
+  }, []);
+
   const handleAdded = (a: PostAutomation) => {
     setAutomations(prev => [a, ...prev.filter(x => x.post_id !== a.post_id)]);
     setExpandedId(a.post_id);
@@ -526,6 +669,7 @@ export default function SocialClient({
   };
 
   const activeCount = automations.filter(a => a.reply_as_comment || a.send_as_messenger || a.delete_negative).length;
+  const automatedPostIds = new Set(automations.map(a => a.post_id));
 
   return (
     <div className="flex-1 overflow-y-auto h-full w-full">
@@ -569,21 +713,109 @@ export default function SocialClient({
           </div>
         </div>
 
-        {/* Post list */}
+        {/* ── AUTO-SYNCED CONNECTED SOCIAL POSTS FEED ────────────────────── */}
+        <div className="bg-white rounded-cards border border-dove/10 shadow-subtle p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-rust" />
+              <h3 className="text-sm font-semibold text-ink">Published Posts from Connected Socials</h3>
+            </div>
+            <button
+              onClick={loadConnectedPosts}
+              disabled={loadingPosts}
+              className="text-xs text-ash hover:text-ink flex items-center gap-1 font-medium transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingPosts ? 'animate-spin' : ''}`} />
+              Sync Posts
+            </button>
+          </div>
+
+          {loadingPosts ? (
+            <div className="py-8 text-center text-xs text-ash flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-ink" />
+              Fetching recent published posts from Meta Graph API...
+            </div>
+          ) : !isConnected ? (
+            <div className="p-4 bg-fog rounded-inputs border border-dove/10 text-center space-y-2">
+              <p className="text-xs font-semibold text-ink">No Social Accounts Connected</p>
+              <p className="text-[11px] text-ash max-w-sm mx-auto">
+                Connect your Facebook Page or Instagram in Settings to automatically sync published posts for 1-click comment automation.
+              </p>
+              <Link
+                href="/dashboard/settings"
+                className="inline-block px-3 py-1.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors"
+              >
+                Connect Social Accounts in Settings →
+              </Link>
+            </div>
+          ) : connectedPosts.length === 0 ? (
+            <p className="text-xs text-ash italic text-center py-4">
+              No recent published posts found on your connected Facebook Page or Instagram.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+              {connectedPosts.map((post) => {
+                const isAlreadyAdded = automatedPostIds.has(post.post_id);
+                return (
+                  <div key={post.post_id} className="p-3 bg-fog/60 rounded-inputs border border-dove/10 flex items-start gap-3 hover:border-dove/30 transition-all">
+                    {post.thumbnail_url ? (
+                      <img src={post.thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-inputs shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 bg-dove/20 rounded-inputs shrink-0 flex items-center justify-center">
+                        <ImageIcon className="w-4 h-4 text-graphite" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-ink line-clamp-2 leading-snug">{post.preview_text}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                          post.platform === 'instagram'
+                            ? 'bg-pink-50 text-pink-700 border-pink-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}>
+                          {post.platform}
+                        </span>
+
+                        {isAlreadyAdded ? (
+                          <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-green-600" /> Active
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddModal(true);
+                            }}
+                            className="text-[10px] font-bold text-ink hover:underline flex items-center gap-0.5"
+                          >
+                            + Automate
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Configured Post list */}
         {automations.length === 0 ? (
-          <div className="bg-white rounded-cards border border-dove/10 shadow-subtle p-16 text-center">
+          <div className="bg-white rounded-cards border border-dove/10 shadow-subtle p-12 text-center">
             <Megaphone className="w-8 h-8 text-graphite mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-semibold text-ink mb-1">No posts automated yet</p>
-            <p className="text-xs text-ash max-w-xs mx-auto">Add a Facebook or Instagram post URL to start configuring per-post comment automation.</p>
+            <p className="text-sm font-semibold text-ink mb-1">No post automations active yet</p>
+            <p className="text-xs text-ash max-w-xs mx-auto">Select a published post from above or click Add Post to configure AI comment &amp; DM replies.</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors"
             >
-              Add your first post
+              Add post automation
             </button>
           </div>
         ) : (
           <div className="space-y-3">
+            <h3 className="text-xs font-bold text-graphite uppercase tracking-wider px-1">Configured Automations ({automations.length})</h3>
             {automations.map(a => {
               const isExpanded = expandedId === a.post_id;
               const activeToggles = [a.reply_as_comment, a.send_as_messenger, a.delete_negative].filter(Boolean).length;
@@ -650,6 +882,8 @@ export default function SocialClient({
 
       {showAddModal && (
         <AddPostModal
+          connectedPosts={connectedPosts}
+          isConnected={isConnected}
           onClose={() => setShowAddModal(false)}
           onAdded={handleAdded}
         />

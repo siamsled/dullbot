@@ -141,3 +141,87 @@ export async function getCommentStats(postId: string) {
     deleted: data.filter(c => c.deleted_at).length,
   };
 }
+
+export type ConnectedPostItem = {
+  post_id: string;
+  platform: 'facebook' | 'instagram';
+  preview_text: string;
+  thumbnail_url: string | null;
+  permalink_url: string | null;
+  created_time: string;
+};
+
+export async function fetchConnectedSocialPosts() {
+  const shopId = await getShopId();
+  if (!shopId) return { connected: false, posts: [] as ConnectedPostItem[] };
+
+  const { data: shop } = await supabaseAdmin
+    .from('shops')
+    .select('meta_page_id, meta_page_access_token, meta_ig_id')
+    .eq('id', shopId)
+    .single();
+
+  if (!shop?.meta_page_access_token || (!shop.meta_page_id && !shop.meta_ig_id)) {
+    return { connected: false, posts: [] as ConnectedPostItem[] };
+  }
+
+  const posts: ConnectedPostItem[] = [];
+
+  // 1. Fetch Facebook Page Published Posts
+  if (shop.meta_page_id) {
+    try {
+      const fbRes = await fetch(
+        `https://graph.facebook.com/v19.0/${shop.meta_page_id}/published_posts?fields=id,message,full_picture,permalink_url,created_time&limit=20&access_token=${shop.meta_page_access_token}`
+      );
+      const fbData = await fbRes.json();
+      if (fbData.data && Array.isArray(fbData.data)) {
+        for (const p of fbData.data) {
+          posts.push({
+            post_id: p.id,
+            platform: 'facebook',
+            preview_text: p.message || '(Facebook Post)',
+            thumbnail_url: p.full_picture || null,
+            permalink_url: p.permalink_url || `https://www.facebook.com/${p.id}`,
+            created_time: p.created_time || new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[SOCIAL POSTS] Error fetching Facebook page posts:', err);
+    }
+  }
+
+  // 2. Fetch Instagram Media
+  if (shop.meta_ig_id) {
+    try {
+      const igRes = await fetch(
+        `https://graph.facebook.com/v19.0/${shop.meta_ig_id}/media?fields=id,caption,media_url,thumbnail_url,permalink,timestamp&limit=20&access_token=${shop.meta_page_access_token}`
+      );
+      const igData = await igRes.json();
+      if (igData.data && Array.isArray(igData.data)) {
+        for (const m of igData.data) {
+          posts.push({
+            post_id: m.id,
+            platform: 'instagram',
+            preview_text: m.caption || '(Instagram Post)',
+            thumbnail_url: m.media_url || m.thumbnail_url || null,
+            permalink_url: m.permalink || null,
+            created_time: m.timestamp || new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[SOCIAL POSTS] Error fetching Instagram posts:', err);
+    }
+  }
+
+  // Sort newest first
+  posts.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
+
+  return {
+    connected: true,
+    hasPage: !!shop.meta_page_id,
+    hasIg: !!shop.meta_ig_id,
+    posts,
+  };
+}
