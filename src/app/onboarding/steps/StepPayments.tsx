@@ -8,11 +8,14 @@ import { savePaymentChoice, testBkashConnection, getPairingCodeAction, checkComp
 
 const COMPANION_NUDGE_KEY = 'dullbot_companion_nudge';
 
-function BkashBadge({ className = 'w-4 h-4' }: { className?: string }) {
+export function BkashLogo({ className = 'w-6 h-6' }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center justify-center font-bold font-sans text-[10px] bg-[#E2136E] text-white rounded-md leading-none ${className}`}>
-      bK
-    </span>
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 48L68 8L48 92L30 58L12 48Z" fill="#E2136E" />
+      <path d="M68 8L92 48L48 92L68 8Z" fill="#AD1457" />
+      <path d="M68 8L30 58L48 92L68 8Z" fill="#C2185B" />
+      <path d="M68 8L40 32L12 48L68 8Z" fill="#F06292" />
+    </svg>
   );
 }
 
@@ -72,9 +75,9 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   }, [shop.id]);
 
   const OPTIONS = [
-    { id: 'merchant_api' as const, icon: <BkashBadge className="w-5 h-5 text-xs font-black" />, title: 'bKash Merchant API', desc: 'Tokenized Checkout v1.2.0 API' },
-    { id: 'companion_app' as const, icon: <Smartphone className="w-4.5 h-4.5" />, title: 'Companion App', desc: 'Android notification listener' },
-    { id: 'skip' as const, icon: <Package className="w-4.5 h-4.5" />, title: 'Cash on Delivery', desc: 'Skip payment setup for now' },
+    { id: 'merchant_api' as const, icon: <BkashLogo className="w-6 h-6 shrink-0" />, title: 'bKash Merchant API', desc: 'Tokenized Checkout v1.2.0 API' },
+    { id: 'companion_app' as const, icon: <Smartphone className="w-5 h-5" />, title: 'Companion App', desc: 'Android notification listener' },
+    { id: 'skip' as const, icon: <Package className="w-5 h-5" />, title: 'Cash on Delivery', desc: 'Skip payment setup for now' },
   ];
 
   const handleCopy = () => { navigator.clipboard.writeText(pairingCode.replace(/ /g, '')); setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -180,7 +183,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/8 pb-2.5">
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <BkashBadge className="w-4 h-4" />
+                              <BkashLogo className="w-4 h-4 shrink-0" />
                               <h4 className="text-xs font-bold text-white uppercase tracking-wider">bKash Checkout v1.2 API</h4>
                             </div>
                             <p className="text-[11px] text-white/50 mt-0.5">Enter your bKash merchant portal credentials to verify payments.</p>

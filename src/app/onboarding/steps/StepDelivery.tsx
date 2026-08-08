@@ -5,12 +5,71 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Loader2, Truck, Check, Package } from 'lucide-react';
 import { saveCourierChoice } from '../../dashboard/actions';
 
+function SteadfastLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 68L48 16H84L58 68H22Z" fill="#00B074" />
+      <path d="M48 44L72 16H84L60 44H48Z" fill="#34D399" />
+      <path d="M12 84L36 36H56L32 84H12Z" fill="#059669" />
+    </svg>
+  );
+}
+
+function PathaoLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 54C15 32 30 14 54 14C74 14 88 28 88 46C88 62 76 74 60 74H42L26 90V74H23C18 74 15 68 15 54Z" fill="#E2133A" />
+      <path d="M52 28C40 28 30 36 30 48C30 58 38 64 52 64C64 64 72 58 72 48C72 38 64 28 52 28Z" fill="#FFFFFF" />
+      <path d="M52 38C46 38 42 42 42 48C42 54 46 56 52 56C58 56 62 54 62 48C62 42 58 38 52 38Z" fill="#E2133A" />
+    </svg>
+  );
+}
+
+function RedXLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 16H52C68 16 78 24 78 40C78 52 70 60 58 62L82 88H58L36 62H28V88H12V16ZM28 46H50C56 46 60 43 60 40C60 37 56 32 50 32H28V46Z" fill="#E50914" />
+      <path d="M68 16L88 36L80 44L60 24L68 16Z" fill="#FF4D4D" />
+    </svg>
+  );
+}
+
+function ECourierLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="42" fill="#00ACC1" />
+      <path d="M58 68H40V60H58V68ZM68 52H36V44C36 35 43 28 52 28C61 28 68 35 68 44V52ZM44 44H60C60 39.5 56.4 36 52 36C47.6 36 44 39.5 44 44Z" fill="#FFFFFF" />
+      <path d="M72 26L86 12M82 36H94" stroke="#00E5FF" strokeWidth="8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PaperflyLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 48L88 12L52 88L40 56L10 48Z" fill="#FF6D00" />
+      <path d="M40 56L88 12L52 88L40 56Z" fill="#FFA000" />
+      <path d="M40 56V80L52 68" fill="#D84315" />
+    </svg>
+  );
+}
+
+function ManualLogo({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+
 const COURIERS = [
-  { id: 'steadfast', name: 'Steadfast Courier', desc: 'Nationwide · fast', fields: ['api_key', 'secret_key'], fieldLabels: { api_key: 'API Key', secret_key: 'Secret Key' } },
-  { id: 'pathao', name: 'Pathao Courier', desc: 'Dhaka + major cities', fields: ['client_id', 'client_secret', 'username', 'password'], fieldLabels: { client_id: 'Client ID', client_secret: 'Client Secret', username: 'Username', password: 'Password' } },
-  { id: 'redx', name: 'RedX', desc: 'Nationwide', fields: ['api_key'], fieldLabels: { api_key: 'API Key' } },
-  { id: 'ecourier', name: 'eCourier', desc: 'Reliable inter-city', fields: ['api_key', 'api_secret', 'username', 'password'], fieldLabels: { api_key: 'API Key', api_secret: 'API Secret', username: 'Username', password: 'Password' } },
-  { id: 'paperfly', name: 'Paperfly', desc: '500+ locations', fields: ['store_id', 'api_key'], fieldLabels: { store_id: 'Store ID', api_key: 'API Key' } },
+  { id: 'steadfast', name: 'Steadfast Courier', desc: 'Nationwide · fast', icon: SteadfastLogo, fields: ['api_key', 'secret_key'], fieldLabels: { api_key: 'API Key', secret_key: 'Secret Key' } },
+  { id: 'pathao', name: 'Pathao Courier', desc: 'Dhaka + major cities', icon: PathaoLogo, fields: ['client_id', 'client_secret', 'username', 'password'], fieldLabels: { client_id: 'Client ID', client_secret: 'Client Secret', username: 'Username', password: 'Password' } },
+  { id: 'redx', name: 'RedX', desc: 'Nationwide', icon: RedXLogo, fields: ['api_key'], fieldLabels: { api_key: 'API Key' } },
+  { id: 'ecourier', name: 'eCourier', desc: 'Reliable inter-city', icon: ECourierLogo, fields: ['api_key', 'api_secret', 'username', 'password'], fieldLabels: { api_key: 'API Key', api_secret: 'API Secret', username: 'Username', password: 'Password' } },
+  { id: 'paperfly', name: 'Paperfly', desc: '500+ locations', icon: PaperflyLogo, fields: ['store_id', 'api_key'], fieldLabels: { store_id: 'Store ID', api_key: 'API Key' } },
 ];
 
 interface Props { shop: any; onNext: () => void; onBack: () => void; }
@@ -58,6 +117,7 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           {COURIERS.map((c) => {
             const isSelected = selected === c.id;
+            const LogoComponent = c.icon;
             return (
               <button
                 key={c.id}
@@ -69,9 +129,11 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
                     : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8'
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}><Truck className="w-4 h-4" /></div>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${isSelected ? 'bg-white/15 shadow-inner' : 'bg-white/8'}`}>
+                  <LogoComponent className="w-6 h-6 shrink-0" />
+                </div>
                 <div><h3 className="font-semibold text-xs text-white">{c.name}</h3><p className="text-[11px] text-white/50 mt-0.5">{c.desc}</p></div>
-                {isSelected && <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center self-end shadow-sm"><Check className="w-3 h-3 text-black stroke-[2.5]" /></div>}
+                {isSelected && <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center self-end shadow-sm"><Check className="w-3.5 h-3.5 text-black stroke-[2.5]" /></div>}
               </button>
             );
           })}
@@ -84,9 +146,11 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
                 : 'border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/8 backdrop-blur-md'
             }`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${selected === 'manual' ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}><Package className="w-4 h-4" /></div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${selected === 'manual' ? 'bg-white/15 shadow-inner' : 'bg-white/8'}`}>
+              <ManualLogo className="w-5 h-5 text-white/80 shrink-0" />
+            </div>
             <div><h3 className="font-semibold text-xs text-white">Manual / Own Delivery</h3><p className="text-[11px] text-white/50 mt-0.5">You handle shipping</p></div>
-            {selected === 'manual' && <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center self-end shadow-sm"><Check className="w-3 h-3 text-black stroke-[2.5]" /></div>}
+            {selected === 'manual' && <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center self-end shadow-sm"><Check className="w-3.5 h-3.5 text-black stroke-[2.5]" /></div>}
           </button>
         </div>
         <AnimatePresence>
