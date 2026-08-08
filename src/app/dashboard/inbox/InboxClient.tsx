@@ -43,6 +43,38 @@ function formatMessageDate(dateString: string) {
   }
 }
 
+function getConvChannel(conv: any): 'messenger' | 'instagram' | 'whatsapp' | 'web' {
+  if (!conv) return 'messenger';
+  if (conv.channel === 'whatsapp' || conv.whatsapp_session_expires_at) return 'whatsapp';
+  if (conv.channel === 'instagram') return 'instagram';
+  if (conv.is_test) return 'web';
+  return 'messenger';
+}
+
+function ChannelIcon({ channel, className = "w-3.5 h-3.5" }: { channel?: string; className?: string }) {
+  if (channel === 'whatsapp') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.572-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.05 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    );
+  }
+  if (channel === 'instagram') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+    );
+  }
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.082.3 2.23.464 3.443.464 6.627 0 12-4.975 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26 6.559-6.963 3.13 3.26 5.888-3.26-6.559 6.963z"/>
+    </svg>
+  );
+}
+
 function renderOrganizedList(text: string) {
   if (!text) return null;
   const lines = text
@@ -291,6 +323,7 @@ export default function InboxClient({
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed' | 'test'>('all');
+  const [channelFilter, setChannelFilter] = useState<'all' | 'messenger' | 'instagram' | 'whatsapp'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; mid?: string } | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
@@ -709,11 +742,55 @@ export default function InboxClient({
                 className="w-full pl-9 pr-4 py-2 bg-fog rounded-inputs text-sm text-ink border-transparent focus:border-dove focus:ring-0 transition-colors"
               />
             </div>
-            {/* Filter Toggles */}
-            <div className="flex mt-3 overflow-x-auto pb-1">
+
+            {/* Dedicated Channel Filter Switcher Bar */}
+            <div className="flex items-center gap-1 p-1 bg-fog rounded-inputs border border-dove/10 mt-3.5">
+              <button
+                type="button"
+                onClick={() => setChannelFilter('all')}
+                className={`flex-1 py-1.5 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
+                  channelFilter === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+                }`}
+              >
+                All ({conversations.filter(c => !c.is_test).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelFilter('messenger')}
+                className={`flex-1 py-1.5 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
+                  channelFilter === 'messenger' ? 'bg-[#0084FF] text-white shadow-xs' : 'text-ash hover:text-[#0084FF]'
+                }`}
+              >
+                <ChannelIcon channel="messenger" className="w-3 h-3 shrink-0" />
+                FB ({conversations.filter(c => !c.is_test && getConvChannel(c) === 'messenger').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelFilter('instagram')}
+                className={`flex-1 py-1.5 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
+                  channelFilter === 'instagram' ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white shadow-xs' : 'text-ash hover:text-pink-600'
+                }`}
+              >
+                <ChannelIcon channel="instagram" className="w-3 h-3 shrink-0" />
+                IG ({conversations.filter(c => !c.is_test && getConvChannel(c) === 'instagram').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelFilter('whatsapp')}
+                className={`flex-1 py-1.5 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
+                  channelFilter === 'whatsapp' ? 'bg-[#25D366] text-white shadow-xs' : 'text-ash hover:text-[#25D366]'
+                }`}
+              >
+                <ChannelIcon channel="whatsapp" className="w-3 h-3 shrink-0" />
+                WA ({conversations.filter(c => !c.is_test && getConvChannel(c) === 'whatsapp').length})
+              </button>
+            </div>
+
+            {/* Status Filter Toggles */}
+            <div className="flex mt-2.5 overflow-x-auto pb-1">
               <UiverseTabs
                 tabs={[
-                  { id: 'all', label: 'All' },
+                  { id: 'all', label: 'All Status' },
                   { id: 'tickets', label: 'Tickets' },
                   { id: 'confirmed', label: 'Orders' },
                   ...(process.env.NODE_ENV === 'development' ? [{ id: 'test', label: 'Test Data' }] : [])
@@ -752,7 +829,13 @@ export default function InboxClient({
                   if (conv.is_test) return false;
                 }
 
-                // 2. Tab filter
+                // 2. Channel Filter
+                if (channelFilter !== 'all') {
+                  const ch = getConvChannel(conv);
+                  if (ch !== channelFilter) return false;
+                }
+
+                // 3. Tab filter
                 if (filter === 'tickets') {
                   const isTicket = conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
                   if (!isTicket) return false;
@@ -762,7 +845,7 @@ export default function InboxClient({
                   if (!hasConfirmedOrder) return false;
                 }
 
-                // 3. Search query (scans name, phone, last message preview, and loaded message contents)
+                // 4. Search query
                 if (searchQuery.trim()) {
                   const query = searchQuery.toLowerCase();
                   const nameMatch = (profiles[conv.customer_phone]?.customer_name || '').toLowerCase().includes(query) ||
@@ -786,7 +869,7 @@ export default function InboxClient({
               return filteredConversations.map(conv => {
                 const hasUnread = conv.unread_count > 0 && conv.id !== activeId;
                 const snippet = conv.last_message_content || '';
-                const isAssignedToMe = activeConv?.assigned_to_id === 'me' && conv.id === activeId;
+                const chType = getConvChannel(conv);
 
                 let previewText = 'No messages';
                 if (snippet) {
@@ -802,22 +885,31 @@ export default function InboxClient({
                     className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
                       }`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-dove/20 flex flex-shrink-0 items-center justify-center text-ink font-medium overflow-hidden">
-                      {conv.channel === 'whatsapp' ? (
-                        (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
-                      ) : profiles[conv.customer_phone]?.profile_pic_url ? (
-                        <img
-                          src={profiles[conv.customer_phone].profile_pic_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
-                      )}
+                    {/* Avatar with Channel Overlay Badge */}
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
+                        {chType === 'whatsapp' ? (
+                          (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                        ) : profiles[conv.customer_phone]?.profile_pic_url ? (
+                          <img
+                            src={profiles[conv.customer_phone].profile_pic_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                        )}
+                      </div>
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] shadow-xs border border-white ${
+                        chType === 'whatsapp' ? 'bg-[#25D366]' : chType === 'instagram' ? 'bg-gradient-to-r from-purple-600 to-pink-500' : 'bg-[#0084FF]'
+                      }`}>
+                        <ChannelIcon channel={chType} className="w-2.5 h-2.5" />
+                      </div>
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-1">
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -835,6 +927,23 @@ export default function InboxClient({
                       </p>
 
                       <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Distinct Channel Pill */}
+                        {chType === 'whatsapp' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20">
+                            <ChannelIcon channel="whatsapp" className="w-2.5 h-2.5" /> WhatsApp
+                          </span>
+                        )}
+                        {chType === 'instagram' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-50 text-pink-700 border border-pink-200">
+                            <ChannelIcon channel="instagram" className="w-2.5 h-2.5" /> Instagram
+                          </span>
+                        )}
+                        {chType === 'messenger' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#0084FF]/10 text-[#0084FF] border border-[#0084FF]/20">
+                            <ChannelIcon channel="messenger" className="w-2.5 h-2.5" /> Messenger
+                          </span>
+                        )}
+
                         {conv.status === 'human_takeover' ? (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-apricot-wash text-rust border border-rust/10">
                             <UserCog className="w-2.5 h-2.5" /> Human

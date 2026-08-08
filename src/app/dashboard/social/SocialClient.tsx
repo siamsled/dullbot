@@ -5,7 +5,8 @@ import Link from 'next/link';
 import {
   MessageSquare, Send, Trash2, Package, Plus, ExternalLink,
   ChevronRight, ChevronDown, Loader2, X, Settings, AlertTriangle,
-  Megaphone, RefreshCw, Image as ImageIcon, CheckCircle2, Sparkles
+  Megaphone, RefreshCw, Image as ImageIcon, CheckCircle2, Sparkles,
+  ArrowDown, ArrowUp
 } from 'lucide-react';
 import {
   upsertPostAutomation,
@@ -13,6 +14,7 @@ import {
   fetchPostPreview,
   getCommentStats,
   fetchConnectedSocialPosts,
+  togglePostAutomationStatus,
   ConnectedPostItem,
 } from './actions';
 
@@ -624,6 +626,39 @@ function AddPostModal({
   );
 }
 
+// ─── Channel Icon ──────────────────────────────────────────────────────────
+function ChannelIcon({ channel, className = "w-3.5 h-3.5" }: { channel?: string; className?: string }) {
+  if (channel === 'instagram') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+    );
+  }
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.082.3 2.23.464 3.443.464 6.627 0 12-4.975 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26 6.559-6.963 3.13 3.26 5.888-3.26-6.559 6.963z"/>
+    </svg>
+  );
+}
+
+// ─── iOS Green Toggle Switch ───────────────────────────────────────────────
+function IosGreenSwitch({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={() => !disabled && onChange(!value)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+        value ? 'bg-[#22C55E]' : 'bg-dove/30'
+      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${value ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
+    </button>
+  );
+}
+
 // ─── Main SocialClient ──────────────────────────────────────────────────────
 export default function SocialClient({
   initialAutomations,
@@ -636,22 +671,48 @@ export default function SocialClient({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Platform & Sort filters
+  const [platformFilter, setPlatformFilter] = useState<'all' | 'facebook' | 'instagram'>('all');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
   // Auto-fetched connected posts
   const [connectedPosts, setConnectedPosts] = useState<ConnectedPostItem[]>([]);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [shopName, setShopName] = useState<string>('My Store');
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
 
   const loadConnectedPosts = async () => {
     setLoadingPosts(true);
     const res = await fetchConnectedSocialPosts();
     setIsConnected(res.connected);
-    setConnectedPosts(res.posts);
+    if (res.shopName) setShopName(res.shopName);
+    setConnectedPosts(res.posts || []);
     setLoadingPosts(false);
   };
 
   useEffect(() => {
     loadConnectedPosts();
   }, []);
+
+  const handleToggleAutomation = async (post: ConnectedPostItem, targetEnabled: boolean) => {
+    setTogglingPostId(post.post_id);
+    const res = await togglePostAutomationStatus(post.post_id, targetEnabled, {
+      platform: post.platform,
+      preview_text: post.preview_text,
+      thumbnail_url: post.thumbnail_url || undefined,
+    });
+    setTogglingPostId(null);
+
+    if (res.success) {
+      if (res.enabled && res.data) {
+        setAutomations(prev => [res.data, ...prev.filter(x => x.post_id !== post.post_id)]);
+      } else {
+        setAutomations(prev => prev.filter(x => x.post_id !== post.post_id));
+        if (expandedId === post.post_id) setExpandedId(null);
+      }
+    }
+  };
 
   const handleAdded = (a: PostAutomation) => {
     setAutomations(prev => [a, ...prev.filter(x => x.post_id !== a.post_id)]);
@@ -668,208 +729,241 @@ export default function SocialClient({
     if (expandedId === postId) setExpandedId(null);
   };
 
-  const activeCount = automations.filter(a => a.reply_as_comment || a.send_as_messenger || a.delete_negative).length;
-  const automatedPostIds = new Set(automations.map(a => a.post_id));
+  const fbCount = connectedPosts.filter(p => p.platform === 'facebook').length;
+  const igCount = connectedPosts.filter(p => p.platform === 'instagram').length;
+
+  // Filtered & Sorted Feed
+  const filteredPosts = connectedPosts
+    .filter(p => {
+      if (platformFilter === 'facebook') return p.platform === 'facebook';
+      if (platformFilter === 'instagram') return p.platform === 'instagram';
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.created_time).getTime();
+      const timeB = new Date(b.created_time).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+
+  const automationMap = new Map(automations.map(a => [a.post_id, a]));
 
   return (
-    <div className="flex-1 overflow-y-auto h-full w-full">
-      <div className="max-w-[860px] mx-auto py-8 px-4 sm:px-6 space-y-8">
+    <div className="flex-1 overflow-y-auto h-full w-full bg-fog/30">
+      <div className="max-w-[760px] mx-auto py-8 px-4 sm:px-6 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Social Automation</h1>
-            <p className="text-ash text-sm">AI replies, private DMs, and comment moderation — per post, not globally.</p>
+            <h1 className="text-[36px] font-serif text-ink tracking-tight leading-none mb-1.5">Social Automation</h1>
+            <p className="text-ash text-xs sm:text-sm">Manage AI comment replies, private Messenger DMs, and auto-moderation for your published posts.</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-all shadow-subtle self-start sm:self-auto"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-all shadow-subtle self-start sm:self-auto"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add post
+            Paste Post URL
           </button>
         </div>
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Automated posts', value: automations.length, sub: 'configured' },
-            { label: 'Active automations', value: activeCount, sub: 'with at least one toggle on' },
-            { label: 'Channels supported', value: 2, sub: 'Facebook · Instagram' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-cards border border-dove/10 shadow-subtle px-4 py-3">
-              <p className="text-2xl font-serif font-medium text-ink">{s.value}</p>
-              <p className="text-[10px] font-bold text-graphite uppercase tracking-wider mt-0.5">{s.label}</p>
-              <p className="text-[10px] text-ash">{s.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Guardrail notice */}
-        <div className="flex items-start gap-3 p-4 rounded-cards bg-amber-50 border border-amber-200">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-800 leading-relaxed">
-            <strong>System guardrail (not overridable):</strong> Public comment replies will never include order details, payment status, or personal customer information — regardless of your instructions. If a reply would require it, the AI deflects to "please check your inbox" and handles specifics via private DM.
+        {/* Control & Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2 bg-white rounded-cards border border-dove/10 shadow-subtle">
+          {/* Platform Filter Switcher */}
+          <div className="flex items-center gap-1 bg-fog p-1 rounded-inputs border border-dove/10 w-full sm:w-auto">
+            <button
+              onClick={() => setPlatformFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                platformFilter === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+              }`}
+            >
+              All ({connectedPosts.length})
+            </button>
+            <button
+              onClick={() => setPlatformFilter('facebook')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                platformFilter === 'facebook' ? 'bg-[#0084FF] text-white shadow-xs' : 'text-ash hover:text-[#0084FF]'
+              }`}
+            >
+              <ChannelIcon channel="facebook" className="w-3.5 h-3.5" />
+              Facebook ({fbCount})
+            </button>
+            <button
+              onClick={() => setPlatformFilter('instagram')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                platformFilter === 'instagram' ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white shadow-xs' : 'text-ash hover:text-pink-600'
+              }`}
+            >
+              <ChannelIcon channel="instagram" className="w-3.5 h-3.5" />
+              Instagram ({igCount})
+            </button>
           </div>
-        </div>
 
-        {/* ── AUTO-SYNCED CONNECTED SOCIAL POSTS FEED ────────────────────── */}
-        <div className="bg-white rounded-cards border border-dove/10 shadow-subtle p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-rust" />
-              <h3 className="text-sm font-semibold text-ink">Published Posts from Connected Socials</h3>
-            </div>
+          {/* Sort Order Control */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="px-3 py-1.5 bg-white border border-dove/20 text-ink rounded-lg text-xs font-semibold hover:border-ink transition-all flex items-center gap-1.5 shadow-xs"
+            >
+              {sortOrder === 'desc' ? (
+                <>
+                  <ArrowDown className="w-3.5 h-3.5 text-rust" /> Newest First
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> Oldest First
+                </>
+              )}
+            </button>
+
             <button
               onClick={loadConnectedPosts}
               disabled={loadingPosts}
-              className="text-xs text-ash hover:text-ink flex items-center gap-1 font-medium transition-colors"
+              className="p-2 bg-white border border-dove/20 text-ash hover:text-ink rounded-lg transition-all shadow-xs"
+              title="Refresh Published Posts"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingPosts ? 'animate-spin' : ''}`} />
-              Sync Posts
             </button>
           </div>
-
-          {loadingPosts ? (
-            <div className="py-8 text-center text-xs text-ash flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-ink" />
-              Fetching recent published posts from Meta Graph API...
-            </div>
-          ) : !isConnected ? (
-            <div className="p-4 bg-fog rounded-inputs border border-dove/10 text-center space-y-2">
-              <p className="text-xs font-semibold text-ink">No Social Accounts Connected</p>
-              <p className="text-[11px] text-ash max-w-sm mx-auto">
-                Connect your Facebook Page or Instagram in Settings to automatically sync published posts for 1-click comment automation.
-              </p>
-              <Link
-                href="/dashboard/settings"
-                className="inline-block px-3 py-1.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors"
-              >
-                Connect Social Accounts in Settings →
-              </Link>
-            </div>
-          ) : connectedPosts.length === 0 ? (
-            <p className="text-xs text-ash italic text-center py-4">
-              No recent published posts found on your connected Facebook Page or Instagram.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-              {connectedPosts.map((post) => {
-                const isAlreadyAdded = automatedPostIds.has(post.post_id);
-                return (
-                  <div key={post.post_id} className="p-3 bg-fog/60 rounded-inputs border border-dove/10 flex items-start gap-3 hover:border-dove/30 transition-all">
-                    {post.thumbnail_url ? (
-                      <img src={post.thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-inputs shrink-0" />
-                    ) : (
-                      <div className="w-12 h-12 bg-dove/20 rounded-inputs shrink-0 flex items-center justify-center">
-                        <ImageIcon className="w-4 h-4 text-graphite" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-ink line-clamp-2 leading-snug">{post.preview_text}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                          post.platform === 'instagram'
-                            ? 'bg-pink-50 text-pink-700 border-pink-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}>
-                          {post.platform}
-                        </span>
-
-                        {isAlreadyAdded ? (
-                          <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-green-600" /> Active
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAddModal(true);
-                            }}
-                            className="text-[10px] font-bold text-ink hover:underline flex items-center gap-0.5"
-                          >
-                            + Automate
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
 
-        {/* Configured Post list */}
-        {automations.length === 0 ? (
-          <div className="bg-white rounded-cards border border-dove/10 shadow-subtle p-12 text-center">
-            <Megaphone className="w-8 h-8 text-graphite mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-semibold text-ink mb-1">No post automations active yet</p>
-            <p className="text-xs text-ash max-w-xs mx-auto">Select a published post from above or click Add Post to configure AI comment &amp; DM replies.</p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="mt-4 px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors"
+        {/* Feed State */}
+        {loadingPosts ? (
+          <div className="bg-white rounded-cards border border-dove/10 p-12 text-center text-xs text-ash flex flex-col items-center justify-center gap-3 shadow-subtle">
+            <Loader2 className="w-6 h-6 animate-spin text-ink" />
+            <p className="font-semibold text-ink">Syncing published posts from Facebook & Instagram...</p>
+          </div>
+        ) : !isConnected ? (
+          <div className="bg-white rounded-cards border border-dove/10 p-8 text-center space-y-3 shadow-subtle">
+            <Megaphone className="w-8 h-8 text-ash mx-auto opacity-40" />
+            <p className="text-sm font-semibold text-ink">No Social Accounts Connected</p>
+            <p className="text-xs text-ash max-w-sm mx-auto">
+              Connect your Facebook Page or Instagram Business account in Settings to automatically sync published posts for 1-click comment automation.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="inline-block px-4 py-2 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-colors"
             >
-              Add post automation
-            </button>
+              Connect Social Accounts in Settings →
+            </Link>
+          </div>
+        ) : filteredPosts.length === 0 ? (
+          <div className="bg-white rounded-cards border border-dove/10 p-12 text-center text-xs text-ash space-y-2 shadow-subtle">
+            <p className="font-semibold text-ink text-sm">No published posts found</p>
+            <p className="text-ash max-w-xs mx-auto">Publish a post on Facebook or Instagram, or paste a post URL manually to set up AI automations.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold text-graphite uppercase tracking-wider px-1">Configured Automations ({automations.length})</h3>
-            {automations.map(a => {
-              const isExpanded = expandedId === a.post_id;
-              const activeToggles = [a.reply_as_comment, a.send_as_messenger, a.delete_negative].filter(Boolean).length;
+          <div className="space-y-5">
+            {filteredPosts.map(post => {
+              const auto = automationMap.get(post.post_id);
+              const isEnabled = !!auto;
+              const isExpanded = expandedId === post.post_id;
+              const isToggling = togglingPostId === post.post_id;
 
               return (
-                <div key={a.post_id} className="bg-white rounded-cards border border-dove/10 shadow-subtle overflow-hidden">
-                  {/* Row header */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : a.post_id)}
-                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-fog/40 transition-colors text-left"
-                  >
-                    {a.post_thumbnail_url ? (
-                      <img src={a.post_thumbnail_url} alt="Post" className="w-10 h-10 object-cover rounded-inputs shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 bg-fog rounded-inputs shrink-0 flex items-center justify-center">
-                        <ImageIcon className="w-4 h-4 text-graphite" />
+                <div key={post.post_id} className="bg-white rounded-cards border border-dove/15 shadow-subtle overflow-hidden transition-all hover:border-dove/30">
+                  {/* Social Post Header */}
+                  <div className="p-4 border-b border-dove/10 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-xs ${
+                        post.platform === 'instagram'
+                          ? 'bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600'
+                          : 'bg-[#0084FF]'
+                      }`}>
+                        <ChannelIcon channel={post.platform} className="w-5 h-5" />
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink leading-snug truncate">
-                        {a.post_preview_text || 'Post ' + a.post_id.slice(0, 12) + '...'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                          a.post_platform === 'instagram'
-                            ? 'bg-pink-50 text-pink-700 border-pink-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}>{a.post_platform}</span>
-                        {activeToggles > 0 && (
-                          <span className="text-[9px] font-semibold text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">
-                            {activeToggles} active
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-ink truncate">{shopName}</h4>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            post.platform === 'instagram'
+                              ? 'bg-pink-50 text-pink-700 border-pink-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}>
+                            {post.platform}
                           </span>
-                        )}
-                        {/* Mini toggle indicators */}
-                        {a.reply_as_comment && <MessageSquare className="w-3 h-3 text-graphite" />}
-                        {a.send_as_messenger && <Send className="w-3 h-3 text-graphite" />}
-                        {a.delete_negative && <Trash2 className="w-3 h-3 text-graphite" />}
-                        {a.product_ids.length > 0 && <Package className="w-3 h-3 text-graphite" />}
+                        </div>
+                        <p className="text-[11px] text-ash mt-0.5">
+                          {new Date(post.created_time).toLocaleDateString([], {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
                       </div>
                     </div>
-                    <Settings className="w-4 h-4 text-graphite shrink-0" />
-                    {isExpanded
-                      ? <ChevronDown className="w-4 h-4 text-graphite shrink-0" />
-                      : <ChevronRight className="w-4 h-4 text-graphite shrink-0" />}
-                  </button>
 
-                  {/* Expanded config */}
-                  {isExpanded && (
-                    <div className="px-5 pb-5 border-t border-dove/10 pt-4">
+                    {post.permalink_url && (
+                      <a
+                        href={post.permalink_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-ash hover:text-ink transition-colors rounded-full hover:bg-fog shrink-0"
+                        title="View original post on Meta"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Post Caption Body */}
+                  <div className="p-4">
+                    <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">
+                      {post.preview_text}
+                    </p>
+                  </div>
+
+                  {/* Post Image Thumbnail */}
+                  {post.thumbnail_url && (
+                    <div className="px-4 pb-4">
+                      <div className="max-h-96 w-full rounded-inputs overflow-hidden bg-fog border border-dove/10">
+                        <img src={post.thumbnail_url} alt="Post media" className="w-full h-full object-cover max-h-96" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Bar with iOS Green Switch */}
+                  <div className="p-4 bg-fog/40 border-t border-dove/10 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <IosGreenSwitch
+                        value={isEnabled}
+                        disabled={isToggling}
+                        onChange={(val) => handleToggleAutomation(post, val)}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                          {isEnabled ? 'Automate Comments: ON' : 'Automate Comments: OFF'}
+                          {isToggling && <Loader2 className="w-3 h-3 animate-spin text-ash" />}
+                        </span>
+                        <span className="text-[10px] text-ash">
+                          {isEnabled
+                            ? 'AI handles public replies & private Messenger/IG DMs'
+                            : 'Toggle switch green to enable AI replies for this post'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {isEnabled && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(isExpanded ? null : post.post_id)}
+                        className="px-3 py-1.5 bg-white border border-dove/20 text-graphite hover:text-ink rounded-buttons text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all shrink-0"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
+                        {isExpanded ? 'Hide Controls' : 'AI Instructions'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Expanded AI Settings */}
+                  {isEnabled && isExpanded && auto && (
+                    <div className="p-5 border-t border-dove/10 bg-white">
                       <PostConfigPanel
-                        automation={a}
+                        automation={auto}
                         products={products}
-                        onSaved={updated => handleSaved(a.post_id, updated)}
-                        onDeleted={() => handleDeleted(a.post_id)}
+                        onSaved={updated => handleSaved(post.post_id, updated)}
+                        onDeleted={() => handleDeleted(post.post_id)}
                       />
                     </div>
                   )}
