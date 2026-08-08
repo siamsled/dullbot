@@ -138,6 +138,10 @@ export async function GET(request: Request) {
     }, { onConflict: 'shop_id,meta_page_id' });
   }
 
+  // Subscribe page to Meta webhooks
+  const { subscribePageToWebhooks } = await import('@/lib/meta-api');
+  await subscribePageToWebhooks(pageId, pageAccessToken);
+
   // Determine redirection
   const igParam = instagramBusinessId ? '&instagram=connected' : '';
   const igMissingParam = !hasIgPermission ? '&ig_permission_missing=true' : '';

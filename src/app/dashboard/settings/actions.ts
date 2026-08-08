@@ -102,7 +102,15 @@ export async function selectPagesMeta(
     return { success: false, error: `Shop sync error: ${shopErr.message}` };
   }
 
-  // 3. Delete de-selected pages ONLY after upsert & shop sync succeed
+  // 3. Subscribe all selected pages to Meta webhooks
+  const { subscribePageToWebhooks } = await import('@/lib/meta-api');
+  for (const page of pages) {
+    if (page.id && page.access_token) {
+      await subscribePageToWebhooks(page.id, page.access_token);
+    }
+  }
+
+  // 4. Delete de-selected pages ONLY after upsert & shop sync succeed
   const { data: currentPages } = await supabaseAdmin
     .from('shop_meta_pages')
     .select('meta_page_id')

@@ -4,6 +4,24 @@ import { supabaseAdmin } from './supabase-admin';
  * Unified Meta Graph API service for Messenger, Instagram DM, and WhatsApp.
  */
 
+/**
+ * Subscribe a Facebook Page to Meta App Webhooks for Messenger & Instagram DMs.
+ */
+export async function subscribePageToWebhooks(pageId: string, pageAccessToken: string) {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads,feed&access_token=${pageAccessToken}`,
+      { method: 'POST' }
+    );
+    const data = await res.json();
+    console.log(`[Meta Webhook Sub] Page ${pageId} response:`, data);
+    return { success: res.ok, data };
+  } catch (e: any) {
+    console.error(`[Meta Webhook Sub] Error subscribing page ${pageId}:`, e);
+    return { success: false, error: e.message };
+  }
+}
+
 // ─── Messenger / Instagram DM ──────────────────────────────────────────────
 
 /**
