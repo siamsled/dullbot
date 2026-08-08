@@ -39,9 +39,9 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
   const inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-sm focus:border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ease-out placeholder:text-white/30';
 
   return (
-    <motion.div key="step-delivery" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
+    <motion.div key="step-delivery" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full min-h-0 flex-1 overflow-hidden">
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto pr-1 pb-4 scroll-smooth min-h-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Which courier handles your deliveries?</h1>
         <p className="text-sm text-white/60 mb-6 leading-relaxed">Connect a courier for automated shipment booking, or choose manual fulfillment.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
@@ -97,7 +97,7 @@ export default function StepDelivery({ shop, onNext, onBack }: Props) {
         </AnimatePresence>
       </div>
       {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
+      <div className="flex items-center justify-between pt-3 pb-2 shrink-0 border-t border-white/8 mt-auto z-20">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg px-1"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleContinue} disabled={!hasSelection || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}

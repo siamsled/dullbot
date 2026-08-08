@@ -45,9 +45,9 @@ export default function StepDemo({ shop, onBack }: Props) {
   const channels = [shop.meta_page_access_token && 'Messenger', shop.instagram_business_id && 'Instagram', shop.whatsapp_phone_number_id && 'WhatsApp'].filter(Boolean).join(' · ') || 'None connected yet';
 
   return (
-    <motion.div key="step-demo" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
+    <motion.div key="step-demo" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full min-h-0 flex-1 overflow-hidden">
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto pb-4 scroll-smooth min-h-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">Say hello to your new teammate.</h1>
         <p className="text-sm text-white/60 mb-5 leading-relaxed">Here&apos;s a live preview. Send a message to see how your AI assistant responds.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -92,7 +92,7 @@ export default function StepDemo({ shop, onBack }: Props) {
         </div>
       </div>
       {/* Pinned nav */}
-      <div className="flex items-center justify-between pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
+      <div className="flex items-center justify-between pt-3 pb-2 shrink-0 border-t border-white/8 mt-auto z-20">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg px-1"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button onClick={handleDeploy} disabled={completing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
           {completing ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <><Rocket className="w-4 h-4" /> Deploy Assistant</>}

@@ -85,18 +85,18 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         className="absolute inset-0 size-full text-white"
       />
       {/* Full-screen centered layout */}
-      <div className="fixed inset-0 w-full h-full flex items-center justify-center p-4 sm:p-8 select-none font-sans pointer-events-none z-10">
+      <div className="fixed inset-0 w-full h-full flex items-center justify-center p-3 sm:p-6 md:p-8 select-none font-sans pointer-events-none z-10 overflow-y-auto">
 
         {/*
           ISLAND CARD
-          - Fixed width: max-w-3xl (≈768px)
-          - Fixed static height across steps: h-[640px]
+          - Responsive width: max-w-3xl (≈768px)
+          - Dynamic responsive height: max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px]
           - True Frosted Glass (Apple HIG Glassmorphism)
         */}
-        <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col h-[640px] min-h-[640px] max-h-[640px] overflow-hidden text-white pointer-events-auto">
+        <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
-          <div className="flex items-center justify-between px-8 pt-6 pb-2">
+          <div className="flex items-center justify-between px-8 pt-6 pb-2 shrink-0">
             <div className="flex items-center gap-3.5">
               {/* Siri Orb (Bigger 36px size) */}
               <SiriOrb size="36px" state="listening" className="mr-0.5" />
@@ -129,7 +129,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Modern Continuous Progress Track with Glow ────── */}
-          <div className="px-8 pt-1 pb-3">
+          <div className="px-8 pt-1 pb-3 shrink-0">
             <div className="relative w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-white/60 via-white to-white shadow-[0_0_12px_rgba(255,255,255,0.8)]"
@@ -141,7 +141,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           </div>
 
           {/* ── Step Content area (each step handles its own scroll + pinned nav) */}
-          <div className="px-8 pt-2 pb-1 flex-1 overflow-hidden flex flex-col min-h-0">
+          <div className="px-8 pt-2 pb-2 flex-1 overflow-hidden flex flex-col min-h-0">
             {/* Eyebrow */}
             <p className="text-[11px] font-bold tracking-widest text-white/50 uppercase mb-2 shrink-0">{eyebrow}</p>
 

@@ -28,7 +28,7 @@ export default function StepBusinessType({ shop, onNext }: Props) {
   };
 
   return (
-    <motion.div key="step-business-type" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full">
+    <motion.div key="step-business-type" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }} className="flex flex-col h-full min-h-0 flex-1 overflow-hidden">
       {/* Scrollable content */}
       <div className="relative flex-1 min-h-0">
         <div className="h-full overflow-y-auto pb-4 scroll-smooth">
@@ -69,7 +69,7 @@ export default function StepBusinessType({ shop, onNext }: Props) {
         </div>
       </div>
       {/* Pinned nav (No Back button on Step 1) */}
-      <div className="flex items-center justify-end pt-3 pb-0.5 shrink-0 border-t border-white/8 mt-2">
+      <div className="flex items-center justify-end pt-3 pb-2 shrink-0 border-t border-white/8 mt-auto z-20">
         <button
           onClick={handleContinue}
           disabled={!selected || loading}
