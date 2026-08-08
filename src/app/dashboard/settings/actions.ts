@@ -400,3 +400,29 @@ export async function checkInstagramForPage(shopId: string) {
 
   return { success: true, results };
 }
+
+// ─── Companion Device Management Actions ──────────────────────────────────
+export async function createCompanionDeviceAction(shopId: string, deviceName: string) {
+  const { createCompanionDevice } = await import('@/lib/companion-registry');
+  const res = await createCompanionDevice(shopId, deviceName);
+  try {
+    revalidatePath('/dashboard/settings');
+  } catch (e) {}
+  return res;
+}
+
+export async function listCompanionDevicesAction(shopId: string) {
+  const { listCompanionDevices } = await import('@/lib/companion-registry');
+  const devices = await listCompanionDevices(shopId);
+  return { success: true, devices };
+}
+
+export async function revokeCompanionDeviceAction(deviceId: string, shopId: string) {
+  const { revokeCompanionDevice } = await import('@/lib/companion-registry');
+  const res = await revokeCompanionDevice(deviceId, shopId);
+  try {
+    revalidatePath('/dashboard/settings');
+  } catch (e) {}
+  return res;
+}
+

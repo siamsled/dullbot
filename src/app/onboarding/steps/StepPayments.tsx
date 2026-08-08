@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Loader2, Smartphone, Package, Check, Copy, AlertCircle } from 'lucide-react';
-import { savePaymentChoice, testBkashConnection } from '../../dashboard/actions';
+import { savePaymentChoice, testBkashConnection, getPairingCodeAction } from '../../dashboard/actions';
 
 const COMPANION_NUDGE_KEY = 'dullbot_companion_nudge';
-const PAIRING_CODE = Math.floor(100000 + Math.random() * 900000).toString().split('').join(' ');
 
 function BkashBadge({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -30,9 +29,23 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [bkashUsername, setBkashUsername] = useState(initialBkashConfig.username || '');
   const [bkashPassword, setBkashPassword] = useState(initialBkashConfig.password || '');
   const [bkashSandbox, setBkashSandbox] = useState<boolean>(initialBkashConfig.sandbox ?? false);
+  const [pairingCode, setPairingCode] = useState<string>('718087');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await getPairingCodeAction(shop.id);
+        if (isMounted && res.success && res.code) {
+          setPairingCode(res.code);
+        }
+      } catch (e) {}
+    })();
+    return () => { isMounted = false; };
+  }, [shop.id]);
 
   const OPTIONS = [
     { id: 'merchant_api' as const, icon: <BkashBadge className="w-5 h-5 text-xs font-black" />, title: 'bKash Merchant API', desc: 'Tokenized Checkout v1.2.0 API' },
@@ -40,7 +53,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
     { id: 'skip' as const, icon: <Package className="w-4.5 h-4.5" />, title: 'Cash on Delivery', desc: 'Skip payment setup for now' },
   ];
 
-  const handleCopy = () => { navigator.clipboard.writeText(PAIRING_CODE.replace(/ /g, '')); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  const handleCopy = () => { navigator.clipboard.writeText(pairingCode.replace(/ /g, '')); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 
   const handleContinue = async () => {
     if (!choice) return;
@@ -222,8 +235,8 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                       <div className="mt-2 p-4 bg-white/6 rounded-2xl border border-white/12 space-y-2.5">
                         <p className="text-xs sm:text-sm text-white/90">Install the DullBot companion Android app and enter this pairing code:</p>
                         <div className="flex items-center gap-2.5">
-                          <div className="flex items-center gap-1.5 bg-white/8 border border-white/15 rounded-xl px-3 py-2 flex-1 justify-center shadow-inner">
-                            {PAIRING_CODE.split(' ').map((digit, i) => <span key={i} className="text-xl font-bold text-white font-mono">{digit}</span>)}
+                          <div className="flex items-center gap-2 bg-white/8 border border-white/15 rounded-xl px-4 py-2.5 flex-1 justify-center shadow-inner tracking-[0.2em]">
+                            {pairingCode.split('').map((digit, i) => <span key={i} className="text-2xl font-bold text-white font-mono">{digit}</span>)}
                           </div>
                           <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"><Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}</button>
                         </div>

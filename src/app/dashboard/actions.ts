@@ -182,6 +182,23 @@ export async function testBkashConnection(config: { app_key: string; app_secret:
   }
 }
 
+export async function getPairingCodeAction(shopId: string) {
+  const { getOrCreatePairingCode } = await import('@/lib/companion-registry');
+  return await getOrCreatePairingCode(shopId);
+}
+
+export async function getShopTransactionsAction() {
+  const { getCurrentShop } = await import('@/lib/supabase-admin');
+  const shop = await getCurrentShop();
+  if (!shop) return { success: false, error: 'Unauthorized', transactions: [], devices: [] };
+
+  const { listShopCompanionTransactions, listCompanionDevices } = await import('@/lib/companion-registry');
+  const transactions = await listShopCompanionTransactions(shop.id);
+  const devices = await listCompanionDevices(shop.id);
+
+  return { success: true, shop, transactions, devices };
+}
+
 /**
  * Save courier choice during onboarding (Step 6).
  * provider: one of the 5 couriers or 'none' (manual)
