@@ -86,14 +86,15 @@ export async function selectPagesMeta(
 
   // 2. Keep shops table in sync with primary page (backward compat)
   const primary = pages[0];
+  const pageWithIg = pages.find((p) => !!p.instagram_business_id);
   const { error: shopErr } = await supabaseAdmin
     .from('shops')
     .update({
       meta_page_id: primary.id,
       meta_page_name: primary.name,
       meta_page_access_token: primary.access_token,
-      instagram_business_id: primary.instagram_business_id || null,
-      instagram_access_token: primary.instagram_business_id ? primary.access_token : null,
+      instagram_business_id: primary.instagram_business_id || pageWithIg?.instagram_business_id || null,
+      instagram_access_token: primary.instagram_business_id ? primary.access_token : (pageWithIg?.access_token || null),
     })
     .eq('id', resolvedId);
   if (shopErr) {

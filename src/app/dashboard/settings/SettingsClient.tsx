@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   Settings, MessageCircle, Link2, ShieldCheck, CreditCard,
   ChevronRight, Lock, Globe, Smartphone, AtSign,
   MessageSquare, Check, Copy, ChevronDown, Pencil, Sparkles,
-  BookOpen, Palette, Truck,
+  BookOpen, Palette, Truck, X, Loader2,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig } from './actions';
+import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 
 /* ─── constants ─────────────────────────────────────────── */
@@ -136,6 +136,66 @@ export default function SettingsClient({ shop }: { shop: any }) {
     formal:    'Formal & polite tone',
     technical: 'Technical explainer tone',
     wholesale: 'Wholesale & direct tone',
+  };
+
+  /* multi-page meta channels */
+  const [connectedPages, setConnectedPages] = useState<any[]>([]);
+  const [availablePages, setAvailablePages] = useState<any[]>([]);
+  const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
+  const [showPagePicker, setShowPagePicker] = useState(false);
+  const [savingPages, setSavingPages] = useState(false);
+  const [pageError, setPageError] = useState('');
+
+  const loadConnectedPages = async () => {
+    try {
+      const pages = await getConnectedPages(shop.id);
+      setConnectedPages(pages || []);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadConnectedPages();
+  }, [shop.id]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'NoPagesFound') {
+      setPageError('No Facebook Pages found. Make sure you are an Admin of the Page you want to connect.');
+    }
+    if (params.get('select_page') === 'true' && params.get('pages')) {
+      try {
+        const raw = decodeURIComponent(params.get('pages')!);
+        const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAvailablePages(parsed);
+          setSelectedPageIds(new Set(parsed.map((p: any) => p.id)));
+          setShowPagePicker(true);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const togglePageSelection = (id: string) => {
+    setSelectedPageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleConnectSelectedPages = async () => {
+    setSavingPages(true);
+    setPageError('');
+    const pagesToSave = availablePages.filter(p => selectedPageIds.has(p.id));
+    const res = await selectPagesMeta(shop.id, pagesToSave);
+    setSavingPages(false);
+    if (res.success) {
+      setShowPagePicker(false);
+      await loadConnectedPages();
+    } else {
+      setPageError(res.error || 'Failed to save selected pages');
+    }
   };
 
   /* ── handlers ── */
@@ -348,46 +408,79 @@ export default function SettingsClient({ shop }: { shop: any }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
           {/* Facebook */}
-          <SettingsCard className="min-h-[160px]">
+          <SettingsCard className="min-h-[180px]">
             <div className="w-9 h-9 rounded-xl bg-sky-wash flex items-center justify-center mb-3 flex-shrink-0">
               <MessageSquare className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-sm font-semibold text-ink mb-1">Facebook</p>
+            <p className="text-sm font-semibold text-ink mb-1">Facebook Pages</p>
             <div className="mt-auto pt-3 flex flex-col gap-2">
-              <StatusBadge connected={!!shop?.meta_page_name} />
-              {shop?.meta_page_name ? (
-                <>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    {shop?.meta_page_id && (
-                      <img
-                        src={`https://graph.facebook.com/${shop.meta_page_id}/picture?type=square`}
-                        alt={shop.meta_page_name}
-                        className="w-4 h-4 rounded-md object-cover bg-fog shrink-0 border border-dove/20"
-                      />
-                    )}
-                    <p className="text-[10px] text-ash truncate font-medium">{shop.meta_page_name}</p>
+              <StatusBadge connected={connectedPages.length > 0 || !!shop?.meta_page_name} />
+              {connectedPages.length > 0 ? (
+                <div className="space-y-1.5 mt-1">
+                  {connectedPages.map(p => (
+                    <div key={p.meta_page_id} className="flex items-center justify-between text-[11px] bg-fog px-2.5 py-1.5 rounded-lg border border-dove/10">
+                      <span className="font-semibold text-ink truncate max-w-[110px]">{p.meta_page_name}</span>
+                      {p.instagram_business_id ? (
+                        <span className="text-[9px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded shrink-0">
+                          + IG
+                        </span>
+                      ) : p.is_primary ? (
+                        <span className="text-[9px] font-bold text-ash bg-white border border-dove/20 px-1.5 py-0.5 rounded shrink-0">
+                          Primary
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                  <div className="flex gap-2 pt-1">
+                    <Link
+                      href={`/api/auth/facebook/login?shopId=${shop.id}`}
+                      className="text-[11px] font-semibold text-ink border border-dove/30 hover:border-ink rounded-lg px-2 py-1 text-center transition-colors flex-1"
+                    >
+                      Manage Pages
+                    </Link>
+                    <button
+                      onClick={handleDisconnect}
+                      disabled={isPending}
+                      className="text-[11px] text-rust hover:text-red-700 font-medium px-2 py-1 transition-colors disabled:opacity-50 shrink-0"
+                    >
+                      Disconnect
+                    </button>
                   </div>
-                  <button
-                    onClick={handleDisconnect}
-                    disabled={isPending}
-                    className="text-[11px] text-rust hover:text-red-700 font-medium text-left transition-colors disabled:opacity-50"
-                  >
-                    {isPending ? 'Disconnecting…' : 'Disconnect'}
-                  </button>
-                </>
+                </div>
+              ) : shop?.meta_page_name ? (
+                <div className="space-y-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="text-[11px] font-semibold text-ink truncate">{shop.meta_page_name}</p>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Link
+                      href={`/api/auth/facebook/login?shopId=${shop.id}`}
+                      className="text-[11px] font-semibold text-ink border border-dove/30 hover:border-ink rounded-lg px-2.5 py-1 text-center transition-colors flex-1"
+                    >
+                      Manage Pages
+                    </Link>
+                    <button
+                      onClick={handleDisconnect}
+                      disabled={isPending}
+                      className="text-[11px] text-rust hover:text-red-700 font-medium px-2 py-1 transition-colors disabled:opacity-50"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <Link
                   href={`/api/auth/facebook/login?shopId=${shop.id}`}
-                  className="text-[11px] font-semibold text-ink border border-dove/30 hover:border-ink rounded-lg px-3 py-1.5 text-center transition-colors"
+                  className="text-[11px] font-semibold text-ink border border-dove/30 hover:border-ink rounded-lg px-3 py-1.5 text-center transition-colors mt-1"
                 >
-                  Connect
+                  Connect Facebook Pages
                 </Link>
               )}
             </div>
           </SettingsCard>
 
           {/* WhatsApp */}
-          <SettingsCard className="min-h-[160px] md:col-span-2 lg:col-span-1">
+          <SettingsCard className="min-h-[180px] md:col-span-2 lg:col-span-1">
             <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center mb-3 flex-shrink-0">
               <Smartphone className="w-5 h-5 text-green-600" />
             </div>
@@ -429,22 +522,44 @@ export default function SettingsClient({ shop }: { shop: any }) {
           </SettingsCard>
 
           {/* Instagram */}
-          <SettingsCard className="min-h-[160px]">
+          <SettingsCard className="min-h-[180px]">
             <div className="w-9 h-9 rounded-xl bg-pink-50 flex items-center justify-center mb-3 flex-shrink-0">
               <AtSign className="w-5 h-5 text-pink-600" />
             </div>
             <p className="text-sm font-semibold text-ink mb-1">Instagram</p>
             <div className="mt-auto pt-3 flex flex-col gap-2">
-              <StatusBadge connected={!!shop?.meta_page_name} />
-              {shop?.meta_page_name ? (
-                <p className="text-[10px] text-ash mt-1 leading-relaxed">
-                  Instagram DMs are handled automatically via your connected Facebook Page webhook. Make sure Instagram DM access is allowed in Meta Business Suite.
-                </p>
-              ) : (
-                <p className="text-[10px] text-ash mt-1 leading-relaxed">
-                  Connect your Facebook Page first to enable Instagram DMs.
-                </p>
-              )}
+              {(() => {
+                const igPage = connectedPages.find(p => !!p.instagram_business_id);
+                const isIgConnected = !!igPage || !!shop?.instagram_business_id;
+
+                return (
+                  <>
+                    <StatusBadge connected={isIgConnected} />
+                    {isIgConnected ? (
+                      <div className="space-y-1.5 mt-1">
+                        <p className="text-[11px] text-ink font-semibold flex items-center gap-1">
+                          Linked via: <span className="text-pink-600">{igPage?.meta_page_name || shop?.meta_page_name || 'Facebook Page'}</span>
+                        </p>
+                        <p className="text-[10px] text-ash leading-relaxed">
+                          Instagram DMs and comment automations are enabled.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 mt-1">
+                        <p className="text-[10px] text-ash leading-relaxed">
+                          Connect an Instagram Business account linked to your Facebook Page to enable IG DMs & comment automation.
+                        </p>
+                        <Link
+                          href={`/api/auth/facebook/login?shopId=${shop.id}`}
+                          className="block text-[11px] font-semibold text-pink-700 bg-pink-50 border border-pink-200 hover:bg-pink-100 rounded-lg px-3 py-1.5 text-center transition-colors"
+                        >
+                          Connect Instagram Account →
+                        </Link>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </SettingsCard>
 
@@ -724,6 +839,82 @@ export default function SettingsClient({ shop }: { shop: any }) {
           <ChevronRight className="w-4 h-4" />
         </button>
       </motion.div>
+
+      {/* ── Page Selection Modal for Multi-Page Facebook & Instagram Connections ── */}
+      <AnimatePresence>
+        {showPagePicker && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }} className="bg-white rounded-cards border border-dove/20 shadow-xl w-full max-w-lg p-6 text-ink">
+
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-base text-ink mb-1">Choose Facebook Pages & Instagram Accounts</h3>
+                  <p className="text-xs text-ash leading-relaxed">Select which Facebook Pages and Instagram accounts DullBot should manage.</p>
+                </div>
+                <button onClick={() => setShowPagePicker(false)} className="text-ash hover:text-ink p-1 rounded-lg hover:bg-fog transition-colors shrink-0 ml-3"><X className="w-4 h-4" /></button>
+              </div>
+
+              {pageError && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-rust font-medium">{pageError}</div>
+              )}
+
+              <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-0.5">
+                {availablePages.map((pg) => {
+                  const isSelected = selectedPageIds.has(pg.id);
+                  return (
+                    <button
+                      key={pg.id}
+                      onClick={() => togglePageSelection(pg.id)}
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-inputs border text-left transition-all ${
+                        isSelected
+                          ? 'border-ink bg-fog'
+                          : 'border-dove/20 hover:bg-fog/50 hover:border-dove/40'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <div className={`flex items-center justify-center shrink-0 transition-all w-4 h-4 rounded ${
+                        isSelected ? 'bg-ink border-ink text-white' : 'border border-dove/40 bg-white'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-ink text-sm truncate">{pg.name}</div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {pg.instagram_business_id ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-pink-50 border border-pink-200 text-[10px] font-bold text-pink-700">
+                              <AtSign className="w-2.5 h-2.5" /> Instagram Linked
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-ash">No Instagram linked</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-dove/10 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-ash font-medium">
+                  {selectedPageIds.size === 0 ? 'Select at least one Page' : `${selectedPageIds.size} Page${selectedPageIds.size > 1 ? 's' : ''} selected`}
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => setShowPagePicker(false)} className="px-4 py-2 text-xs font-medium text-ash hover:text-ink transition-colors">Cancel</button>
+                  <button
+                    onClick={handleConnectSelectedPages}
+                    disabled={savingPages || selectedPageIds.size === 0}
+                    className="px-5 py-2.5 rounded-buttons bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {savingPages ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : `Save & Connect (${selectedPageIds.size})`}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   </div>
