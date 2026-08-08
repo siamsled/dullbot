@@ -101,42 +101,71 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto">
 
           {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
-          <div className="flex items-center justify-between px-8 pt-6 pb-2 shrink-0">
-            <div className="flex items-center gap-3.5">
-              {/* Siri Orb (Bigger 36px size) */}
-              <SiriOrb size="36px" state="listening" className="mr-0.5" />
-              
-              <div className="flex items-baseline gap-2.5">
-                <span
-                  style={{
-                    fontFamily: 'Georgia, serif',
-                    fontSize: 30,
-                    fontWeight: 300,
-                    letterSpacing: '-0.03em',
-                    color: '#ffffff',
-                  }}
-                >
-                  dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 18, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
-                </span>
-                {/* Creative Merchant text placement (sleek gradient typography) */}
-                <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
-                  for merchants
-                </span>
-              </div>
-            </div>
+          <div className="relative flex items-center justify-between px-8 pt-6 pb-2 shrink-0">
+            {isLaunchScreen ? (
+              <>
+                {/* Invisible spacer for symmetrical centering */}
+                <div className="w-20 shrink-0 hidden sm:block" />
 
-            {/* Sleek Step Counter (No 'Step' text, no green dot) */}
-            <div className="flex items-center">
-              <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
-                {isLaunchScreen ? (
-                  <span className="text-emerald-400 font-bold text-xs bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider">✓ READY</span>
-                ) : (
-                  <>
+                {/* Centered Logo + Siri Orb */}
+                <div className="flex items-center gap-3 mx-auto sm:mx-0">
+                  <SiriOrb size="34px" state="listening" />
+                  <div className="flex items-baseline gap-2">
+                    <span
+                      style={{
+                        fontFamily: 'Georgia, serif',
+                        fontSize: 28,
+                        fontWeight: 300,
+                        letterSpacing: '-0.03em',
+                        color: '#ffffff',
+                      }}
+                    >
+                      dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 17, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                    </span>
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-white/40">
+                      for merchants
+                    </span>
+                  </div>
+                </div>
+
+                {/* Borderless Sleek Ready Text */}
+                <div className="w-20 flex justify-end shrink-0">
+                  <span className="inline-flex items-center gap-1.5 text-emerald-400 font-extrabold text-[11px] uppercase tracking-widest">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    READY
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3.5">
+                  <SiriOrb size="36px" state="listening" className="mr-0.5" />
+                  
+                  <div className="flex items-baseline gap-2.5">
+                    <span
+                      style={{
+                        fontFamily: 'Georgia, serif',
+                        fontSize: 30,
+                        fontWeight: 300,
+                        letterSpacing: '-0.03em',
+                        color: '#ffffff',
+                      }}
+                    >
+                      dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 18, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
+                    </span>
+                    <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
+                      for merchants
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
                     <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {MAIN_STEPS.length}
-                  </>
-                )}
-              </span>
-            </div>
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── Modern Continuous Progress Track with Glow ────── */}

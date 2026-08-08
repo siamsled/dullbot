@@ -60,17 +60,13 @@ export default function StepDemo({ shop, onBack }: Props) {
             </p>
           </div>
 
-          {/* Minimalist Summary Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
-              Tone: <strong className="text-white font-semibold capitalize">{shop.tone_template || 'Warm'}</strong>
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
-              Channels: <strong className="text-white font-semibold">{channelsDisplay}</strong>
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
-              Courier: <strong className="text-white font-semibold">{shop.courier_provider ? shop.courier_provider : 'Manual'}</strong>
-            </span>
+          {/* Minimalist Borderless Summary Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs text-white/50">
+            <span>Tone: <strong className="text-white font-semibold capitalize">{shop.tone_template || 'Warm'}</strong></span>
+            <span className="text-white/20">•</span>
+            <span>Channels: <strong className="text-white font-semibold">{channelsDisplay}</strong></span>
+            <span className="text-white/20">•</span>
+            <span>Courier: <strong className="text-white font-semibold">{shop.courier_provider ? shop.courier_provider : 'Manual'}</strong></span>
           </div>
 
         </div>
@@ -88,7 +84,7 @@ export default function StepDemo({ shop, onBack }: Props) {
         <button
           onClick={handleDeploy}
           disabled={completing}
-          className="group inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-semibold text-xs sm:text-sm text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out disabled:opacity-40 shadow-[0_0_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          className="group inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-semibold text-xs sm:text-sm text-black bg-white hover:bg-white/95 active:scale-[0.98] transition-all duration-200 ease-out disabled:opacity-40 shadow-[0_0_24px_rgba(255,255,255,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
         >
           {completing ? (
             <>
@@ -97,7 +93,7 @@ export default function StepDemo({ shop, onBack }: Props) {
             </>
           ) : (
             <>
-              Open Dashboard <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+              Open Merchant Dashboard <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </>
           )}
         </button>
