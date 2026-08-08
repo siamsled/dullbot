@@ -14,6 +14,10 @@ import StepDemo from './steps/StepDemo';
 
 type WizardStep = 'business_type' | 'channels' | 'context' | 'payments' | 'delivery' | 'demo';
 
+const MAIN_STEPS: WizardStep[] = [
+  'business_type', 'channels', 'context', 'payments', 'delivery',
+];
+
 const STEP_ORDER: WizardStep[] = [
   'business_type', 'channels', 'context', 'payments', 'delivery', 'demo',
 ];
@@ -24,7 +28,7 @@ const STEP_LABELS: Record<WizardStep, string> = {
   context:       'YOUR IDENTITY',
   payments:      'PAYMENT SETUP',
   delivery:      'SHIPPING & DELIVERY',
-  demo:          'TEST DRIVE · ALMOST THERE',
+  demo:          'SETUP COMPLETE · READY TO LAUNCH',
 };
 
 function resolveInitialStep(shop: any): WizardStep {
@@ -60,7 +64,8 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
     }
   }, [searchParams]);
 
-  const currentIndex = STEP_ORDER.indexOf(step);
+  const isLaunchScreen = step === 'demo';
+  const currentIndex = isLaunchScreen ? MAIN_STEPS.length - 1 : MAIN_STEPS.indexOf(step);
   const eyebrow = STEP_LABELS[step];
 
   const goNext = () => {
@@ -123,7 +128,13 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
             {/* Sleek Step Counter (No 'Step' text, no green dot) */}
             <div className="flex items-center">
               <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
-                <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {STEP_ORDER.length}
+                {isLaunchScreen ? (
+                  <span className="text-emerald-400 font-bold text-xs bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider">✓ READY</span>
+                ) : (
+                  <>
+                    <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {MAIN_STEPS.length}
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -134,7 +145,7 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-white/60 via-white to-white shadow-[0_0_12px_rgba(255,255,255,0.8)]"
                 initial={{ width: 0 }}
-                animate={{ width: `${((currentIndex + 1) / STEP_ORDER.length) * 100}%` }}
+                animate={{ width: isLaunchScreen ? '100%' : `${((currentIndex + 1) / MAIN_STEPS.length) * 100}%` }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
