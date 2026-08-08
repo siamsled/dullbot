@@ -124,7 +124,8 @@ export async function saveRestaurantLocation(
 export async function savePaymentChoice(
   shopId: string,
   choice: 'merchant_api' | 'companion_app' | 'skip',
-  bkashConfig?: any
+  bkashConfig?: any,
+  bkashNumber?: string
 ) {
   try {
     const { encrypt } = await import('@/lib/encryption');
@@ -133,6 +134,7 @@ export async function savePaymentChoice(
     };
     if (choice === 'merchant_api' && bkashConfig) {
       updatePayload.bkash_config_encrypted = encrypt(JSON.stringify(bkashConfig));
+      if (bkashNumber) updatePayload.bkash_number = bkashNumber;
     }
     const { error } = await supabaseAdmin.from('shops').update(updatePayload).eq('id', shopId);
     if (error) return { success: false, error: error.message };
@@ -141,6 +143,42 @@ export async function savePaymentChoice(
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
+  }
+}
+
+export async function testBkashConnection(config: { app_key: string; app_secret: string; username: string; password: string; sandbox: boolean }) {
+  try {
+    if (!config.app_key || !config.app_secret || !config.username || !config.password) {
+      return { success: false, error: 'Please fill in all bKash API credentials before testing.' };
+    }
+    const baseUrl = config.sandbox 
+      ? 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized' 
+      : 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized';
+    
+    const authRes = await fetch(`${baseUrl}/checkout/token/grant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'username': config.username,
+        'password': config.password
+      },
+      body: JSON.stringify({
+        app_key: config.app_key,
+        app_secret: config.app_secret
+      })
+    });
+
+    const authData = await authRes.json().catch(() => ({}));
+    if (authRes.ok && authData.id_token) {
+      return { success: true, message: 'bKash Merchant API connection verified successfully!' };
+    }
+
+    return { 
+      success: false, 
+      error: authData.statusMessage || authData.message || `bKash auth failed (HTTP ${authRes.status})`
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Error connecting to bKash API.' };
   }
 }
 
