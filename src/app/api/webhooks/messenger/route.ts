@@ -74,12 +74,12 @@ export async function POST(request: Request) {
       for (const entry of body.entry) {
         const pageId = entry.id;
 
-        // Look up via shop_meta_pages for multi-page routing
+        // Look up via shop_meta_pages for multi-page routing (matches meta_page_id OR instagram_business_id)
         const { data: pageRow } = await supabaseAdmin
           .from('shop_meta_pages')
           .select('shop_id, meta_page_access_token, instagram_business_id, instagram_access_token')
-          .eq('meta_page_id', pageId)
-          .single();
+          .or(`meta_page_id.eq.${pageId},instagram_business_id.eq.${pageId}`)
+          .maybeSingle();
 
         let shop: any = null;
         if (pageRow) {
@@ -89,21 +89,28 @@ export async function POST(request: Request) {
             .eq('id', pageRow.shop_id)
             .single();
           if (shopData) {
-            // Override with the specific page's token for this message
-            shop = { ...shopData, meta_page_access_token: pageRow.meta_page_access_token };
+            const tokenToUse = (incomingChannel === 'instagram' && pageRow.instagram_access_token)
+              ? pageRow.instagram_access_token
+              : pageRow.meta_page_access_token;
+            shop = { ...shopData, meta_page_access_token: tokenToUse };
           }
         } else {
-          // Fallback: direct shops lookup (backward compat)
+          // Fallback: direct shops lookup (matches meta_page_id OR instagram_business_id)
           const { data: shopData } = await supabaseAdmin
             .from('shops')
             .select('*')
-            .eq('meta_page_id', pageId)
-            .single();
-          shop = shopData;
+            .or(`meta_page_id.eq.${pageId},instagram_business_id.eq.${pageId}`)
+            .maybeSingle();
+          if (shopData) {
+            const tokenToUse = (incomingChannel === 'instagram' && shopData.instagram_access_token)
+              ? shopData.instagram_access_token
+              : shopData.meta_page_access_token;
+            shop = { ...shopData, meta_page_access_token: tokenToUse };
+          }
         }
 
         if (!shop) {
-          console.warn(`No shop found for page ID: ${pageId}`);
+          console.warn(`No shop found for page/IG ID: ${pageId} (channel: ${incomingChannel})`);
           continue;
         }
 
@@ -146,14 +153,19 @@ export async function POST(request: Request) {
                   .select()
                   .single();
                 conversation = newConv;
-              } else if (conversation.status === 'closed') {
-                const { data: updatedConv } = await supabaseAdmin
-                  .from('conversations')
-                  .update({ status: 'bot_active' })
-                  .eq('id', conversation.id)
-                  .select()
-                  .single();
-                conversation = updatedConv || conversation;
+              } else {
+                const updateData: any = {};
+                if (conversation.channel !== incomingChannel) updateData.channel = incomingChannel;
+                if (conversation.status === 'closed') updateData.status = 'bot_active';
+                if (Object.keys(updateData).length > 0) {
+                  const { data: updatedConv } = await supabaseAdmin
+                    .from('conversations')
+                    .update(updateData)
+                    .eq('id', conversation.id)
+                    .select()
+                    .single();
+                  conversation = updatedConv || { ...conversation, ...updateData };
+                }
               }
 
               if (!conversation) continue;

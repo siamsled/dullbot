@@ -37,7 +37,7 @@ export async function sendMessage(
   // 1. Fetch conversation and shop details to get the access token and customer ID
   const { data: conversation } = await supabaseAdmin
     .from('conversations')
-    .select('customer_phone, shop_id')
+    .select('customer_phone, shop_id, channel')
     .eq('id', conversationId)
     .single();
 
@@ -48,12 +48,12 @@ export async function sendMessage(
 
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('meta_page_access_token')
+    .select('slug, meta_page_access_token, instagram_access_token')
     .eq('id', conversation.shop_id)
     .single();
 
-  if (!shop || !shop.meta_page_access_token) {
-    console.error('Shop or page access token not found');
+  if (!shop) {
+    console.error('Shop not found');
     return null;
   }
 
@@ -100,7 +100,28 @@ export async function sendMessage(
     })
     .eq('id', conversationId);
 
-  // 3. Send out to Facebook (Blocking)
+  // 3. Channel Outbound Dispatch
+  if (conversation.channel === 'whatsapp') {
+    const { sendWhatsAppMessage } = await import('@/lib/meta-api');
+    const waRes = await sendWhatsAppMessage(conversation.customer_phone, content, shop.slug);
+    if (!waRes.success) {
+      await supabaseAdmin.from('messages').delete().eq('id', data.id);
+      return { error: waRes.error || 'WhatsApp API Error' };
+    }
+    return data;
+  }
+
+  // Meta Graph API (Messenger & Instagram)
+  const tokenToUse = (conversation.channel === 'instagram' && shop.instagram_access_token)
+    ? shop.instagram_access_token
+    : shop.meta_page_access_token;
+
+  if (!tokenToUse) {
+    console.error('Page or Instagram Access Token not found');
+    await supabaseAdmin.from('messages').delete().eq('id', data.id);
+    return { error: 'Access Token missing' };
+  }
+
   const payload: any = {
     messaging_type: "RESPONSE",
     recipient: { id: conversation.customer_phone },
@@ -120,7 +141,7 @@ export async function sendMessage(
     payload.reply_to = { mid: replyToMid };
   }
 
-  const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${shop.meta_page_access_token}`, {
+  const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${tokenToUse}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -135,22 +156,16 @@ export async function sendMessage(
     } catch (e) {
       errData = { error: { message: `HTTP ${fbRes.status}` } };
     }
-    console.error('Facebook API Error:', errData);
+    console.error('Meta API Error:', errData);
     await supabaseAdmin.from('messages').delete().eq('id', data.id);
-    return { error: errData.error?.message || 'Facebook API Error' };
+    return { error: errData.error?.message || 'Meta API Error' };
   }
 
-  let fbData: any = {};
-  try {
-    fbData = await fbRes.json();
-  } catch (e) {
-    console.error('Failed to parse Facebook success response');
-  }
-
-  if (fbData.message_id && data) {
+  const resJson = await fbRes.json();
+  if (resJson.message_id) {
     await supabaseAdmin
       .from('messages')
-      .update({ fb_message_ids: [fbData.message_id] })
+      .update({ fb_message_ids: [resJson.message_id] })
       .eq('id', data.id);
   }
 
