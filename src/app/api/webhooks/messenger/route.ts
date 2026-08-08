@@ -66,6 +66,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('[Meta Webhook Incoming Payload]:', JSON.stringify(body, null, 2));
 
     // Accept both 'page' (Messenger + Facebook feed) and 'instagram' (Instagram DM) objects
     if (body.object === 'page' || body.object === 'instagram') {
