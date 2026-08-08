@@ -115,8 +115,13 @@ export async function POST(request: Request) {
           continue;
         }
 
-        if (entry.messaging) {
-          for (const webhookEvent of entry.messaging) {
+        const eventsToProcess = [
+          ...(entry.messaging || []),
+          ...(entry.changes?.filter((c: any) => c.field === 'messages').map((c: any) => c.value) || [])
+        ];
+
+        if (eventsToProcess.length > 0) {
+          for (const webhookEvent of eventsToProcess) {
             if (webhookEvent.message?.is_echo) {
               console.log("Ignoring echo message");
               continue;
