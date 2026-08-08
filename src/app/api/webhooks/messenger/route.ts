@@ -76,11 +76,16 @@ export async function POST(request: Request) {
         const pageId = entry.id;
 
         // Look up via shop_meta_pages for multi-page routing (matches meta_page_id OR instagram_business_id)
-        const { data: pageRow } = await supabaseAdmin
+        // ORDER by instagram_business_id nulls-last so the row WITH IG wins when the same page exists in multiple shops
+        const { data: pageRows } = await supabaseAdmin
           .from('shop_meta_pages')
           .select('shop_id, meta_page_access_token, instagram_business_id, instagram_access_token')
           .or(`meta_page_id.eq.${pageId},instagram_business_id.eq.${pageId}`)
-          .maybeSingle();
+          .order('instagram_business_id', { ascending: false, nullsFirst: false });
+        // For Instagram channel, prefer the row with instagram_business_id set; else pick first
+        const pageRow = incomingChannel === 'instagram'
+          ? (pageRows?.find(r => r.instagram_business_id) ?? pageRows?.[0] ?? null)
+          : (pageRows?.[0] ?? null);
 
         let shop: any = null;
         if (pageRow) {
@@ -97,11 +102,14 @@ export async function POST(request: Request) {
           }
         } else {
           // Fallback: direct shops lookup (matches meta_page_id OR instagram_business_id)
-          const { data: shopData } = await supabaseAdmin
+          const { data: shopDataRows } = await supabaseAdmin
             .from('shops')
             .select('*')
             .or(`meta_page_id.eq.${pageId},instagram_business_id.eq.${pageId}`)
-            .maybeSingle();
+            .order('instagram_business_id', { ascending: false, nullsFirst: false });
+          const shopData = incomingChannel === 'instagram'
+            ? (shopDataRows?.find(r => r.instagram_business_id) ?? shopDataRows?.[0] ?? null)
+            : (shopDataRows?.[0] ?? null);
           if (shopData) {
             const tokenToUse = (incomingChannel === 'instagram' && shopData.instagram_access_token)
               ? shopData.instagram_access_token
