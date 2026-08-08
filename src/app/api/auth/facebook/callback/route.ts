@@ -125,8 +125,16 @@ export async function GET(request: Request) {
     if (resolvedShopId) await supabaseAdmin.from('shops').update(payload).eq('id', resolvedShopId);
   }
 
-  // Also upsert into shop_meta_pages for multi-page routing support
+  // Also upsert into shop_meta_pages for multi-page routing support.
+  // Guard: delete any stale row where this page_id belongs to a DIFFERENT shop
+  // (prevents cross-shop duplicates that cause PGRST116 webhook routing failures).
   if (resolvedShopId) {
+    await supabaseAdmin
+      .from('shop_meta_pages')
+      .delete()
+      .eq('meta_page_id', pageId)
+      .neq('shop_id', resolvedShopId);
+
     await supabaseAdmin.from('shop_meta_pages').upsert({
       shop_id: resolvedShopId,
       meta_page_id: pageId,

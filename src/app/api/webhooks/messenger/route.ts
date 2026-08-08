@@ -120,6 +120,17 @@ export async function POST(request: Request) {
 
         if (!shop) {
           console.warn(`No shop found for page/IG ID: ${pageId} (channel: ${incomingChannel})`);
+          try {
+            await supabaseAdmin.from('webhook_dead_letters').insert({
+              object: body.object,
+              page_id: pageId,
+              channel: incomingChannel,
+              raw_payload: entry,
+              error_reason: `No shop found for page/IG ID: ${pageId}`
+            });
+          } catch (dlErr) {
+            console.error('Failed to log dead letter:', dlErr);
+          }
           continue;
         }
 

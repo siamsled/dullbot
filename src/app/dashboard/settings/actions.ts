@@ -75,6 +75,17 @@ export async function selectPagesMeta(
     is_primary: index === 0,
   }));
 
+  // Delete any stale rows where selected pages belong to a DIFFERENT shop
+  // (prevents cross-shop duplicates that break webhook routing)
+  const selectedPageIds = pages.map(p => p.id);
+  if (selectedPageIds.length > 0) {
+    await supabaseAdmin
+      .from('shop_meta_pages')
+      .delete()
+      .in('meta_page_id', selectedPageIds)
+      .neq('shop_id', resolvedId);
+  }
+
   // 1. Upsert all selected pages in a single atomic batch statement
   const { error: upsertErr } = await supabaseAdmin
     .from('shop_meta_pages')
