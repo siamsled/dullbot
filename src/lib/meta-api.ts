@@ -6,21 +6,58 @@ import { supabaseAdmin } from './supabase-admin';
 
 /**
  * Subscribe a Facebook Page to Meta App Webhooks for Messenger & Instagram DMs.
+ * Also ensures the app-level instagram object subscription exists (required for IG DMs).
  */
 export async function subscribePageToWebhooks(pageId: string, pageAccessToken: string) {
   try {
+    // 1. Subscribe the specific Page to receive webhook events
     const res = await fetch(
-      `https://graph.facebook.com/v19.0/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads,feed&access_token=${pageAccessToken}`,
-      { method: 'POST' }
+      `https://graph.facebook.com/v19.0/${pageId}/subscribed_apps`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          subscribed_fields: 'messages,messaging_postbacks,message_deliveries,message_reads,feed,standby',
+          access_token: pageAccessToken,
+        }),
+      }
     );
     const data = await res.json();
     console.log(`[Meta Webhook Sub] Page ${pageId} response:`, data);
+
+    // 2. Ensure the app-level instagram object subscription exists (required for IG DMs).
+    //    This is idempotent — calling it multiple times is safe.
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+    const verifyToken = process.env.META_GLOBAL_VERIFY_TOKEN;
+    const callbackUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/messenger`;
+
+    if (appId && appSecret && verifyToken && callbackUrl) {
+      const appToken = `${appId}|${appSecret}`;
+      const igSubRes = await fetch(
+        `https://graph.facebook.com/v19.0/${appId}/subscriptions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            object: 'instagram',
+            callback_url: callbackUrl,
+            verify_token: verifyToken,
+            fields: 'messages,messaging_postbacks,message_reactions',
+            access_token: appToken,
+          }),
+        }
+      );
+      const igSubData = await igSubRes.json();
+      console.log(`[Meta Webhook Sub] Instagram object subscription:`, igSubData);
+    }
+
     return { success: res.ok, data };
   } catch (e: any) {
     console.error(`[Meta Webhook Sub] Error subscribing page ${pageId}:`, e);
     return { success: false, error: e.message };
   }
 }
+
 
 // ─── Messenger / Instagram DM ──────────────────────────────────────────────
 
