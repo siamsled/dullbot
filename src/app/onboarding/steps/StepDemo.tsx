@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ArrowLeft, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { completeOnboarding } from '../../dashboard/actions';
 import { useRouter } from 'next/navigation';
-import SiriOrb from '@/components/ui/siri-orb';
 
 interface Props {
   shop: any;
@@ -27,7 +26,7 @@ export default function StepDemo({ shop, onBack }: Props) {
     setShowDeployModal(true);
     setTimeout(() => {
       router.push('/dashboard?unlocked=1');
-    }, 1800);
+    }, 1600);
   };
 
   const channelList = [
@@ -50,32 +49,27 @@ export default function StepDemo({ shop, onBack }: Props) {
     >
       {/* Editorial Content */}
       <div className="flex-1 overflow-y-auto pr-1 pb-4 scroll-smooth min-h-0 flex flex-col justify-center items-center text-center px-4">
-        <div className="max-w-md space-y-6 flex flex-col items-center my-auto py-6">
+        <div className="max-w-lg space-y-6 flex flex-col items-center my-auto py-8">
           
-          {/* Siri Orb */}
-          <div className="relative flex items-center justify-center py-2">
-            <SiriOrb size="56px" state="listening" />
-          </div>
-
-          <div className="space-y-2.5">
-            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight leading-tight">
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight leading-[1.15]">
               DullBot is ready for {shopName}.
             </h1>
-            <p className="text-sm text-white/60 leading-relaxed max-w-sm mx-auto">
+            <p className="text-sm text-white/60 leading-relaxed max-w-md mx-auto font-sans">
               Your AI shop assistant is online and prepared to answer customer inquiries, manage orders, and verify payments.
             </p>
           </div>
 
           {/* Minimalist Summary Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/6 border border-white/12 text-xs font-medium text-white/70">
-              Tone: <strong className="text-white capitalize">{shop.tone_template || 'Warm'}</strong>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
+              Tone: <strong className="text-white font-semibold capitalize">{shop.tone_template || 'Warm'}</strong>
             </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/6 border border-white/12 text-xs font-medium text-white/70">
-              Channels: <strong className="text-white">{channelsDisplay}</strong>
+            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
+              Channels: <strong className="text-white font-semibold">{channelsDisplay}</strong>
             </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/6 border border-white/12 text-xs font-medium text-white/70">
-              Gateway: <strong className="text-white">{shop.courier_provider ? shop.courier_provider : 'Manual'}</strong>
+            <span className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-normal text-white/60">
+              Courier: <strong className="text-white font-semibold">{shop.courier_provider ? shop.courier_provider : 'Manual'}</strong>
             </span>
           </div>
 
@@ -94,7 +88,7 @@ export default function StepDemo({ shop, onBack }: Props) {
         <button
           onClick={handleDeploy}
           disabled={completing}
-          className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-sm text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out disabled:opacity-40 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          className="group inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-semibold text-xs sm:text-sm text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all duration-200 ease-out disabled:opacity-40 shadow-[0_0_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
         >
           {completing ? (
             <>
@@ -103,7 +97,7 @@ export default function StepDemo({ shop, onBack }: Props) {
             </>
           ) : (
             <>
-              Open Merchant Dashboard →
+              Open Dashboard <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </>
           )}
         </button>
