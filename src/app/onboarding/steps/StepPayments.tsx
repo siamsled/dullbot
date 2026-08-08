@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Loader2, Smartphone, Package, Check, Copy, AlertCircle, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { savePaymentChoice, testBkashConnection, getPairingCodeAction } from '../../dashboard/actions';
+import { savePaymentChoice, testBkashConnection, getPairingCodeAction, checkCompanionDeviceStatusAction } from '../../dashboard/actions';
 
 const COMPANION_NUDGE_KEY = 'dullbot_companion_nudge';
 
@@ -31,6 +31,7 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   const [bkashPassword, setBkashPassword] = useState(initialBkashConfig.password || '');
   const [bkashSandbox, setBkashSandbox] = useState<boolean>(initialBkashConfig.sandbox ?? false);
   const [pairingCode, setPairingCode] = useState<string>('718087');
+  const [pairedDeviceName, setPairedDeviceName] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -39,6 +40,8 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
   useEffect(() => {
     setMounted(true);
     let isMounted = true;
+
+    // Initial pairing code fetch
     (async () => {
       try {
         const res = await getPairingCodeAction(shop.id);
@@ -47,7 +50,25 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
         }
       } catch (e) {}
     })();
-    return () => { isMounted = false; };
+
+    // Poll for companion device pairing status every 2 seconds
+    const checkStatus = async () => {
+      try {
+        const status = await checkCompanionDeviceStatusAction(shop.id);
+        if (isMounted && status.isPaired) {
+          setPairedDeviceName(status.deviceName || 'Android Companion Device');
+          setChoice('companion_app');
+        }
+      } catch (e) {}
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 2000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [shop.id]);
 
   const OPTIONS = [
@@ -283,6 +304,27 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
                             </div>
                           </div>
                         </div>
+
+                        {pairedDeviceName && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-lg"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-6.5 h-6.5 rounded-full bg-emerald-500/30 text-emerald-300 flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-emerald-300 font-bold" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-emerald-200 text-xs">Device Connected & Paired!</p>
+                                <p className="text-[11px] text-emerald-300/80">{pairedDeviceName} is live and relaying MFS notifications</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-400/25 text-emerald-300 border border-emerald-400/40 uppercase tracking-widest animate-pulse">
+                              LIVE
+                            </span>
+                          </motion.div>
+                        )}
                       </div>
                     </motion.div>
                   )}

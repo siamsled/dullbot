@@ -199,6 +199,21 @@ export async function getShopTransactionsAction() {
   return { success: true, shop, transactions, devices };
 }
 
+export async function checkCompanionDeviceStatusAction(shopId: string) {
+  const { listCompanionDevices } = await import('@/lib/companion-registry');
+  const devices = await listCompanionDevices(shopId);
+  if (devices && devices.length > 0) {
+    const latestDevice = devices[devices.length - 1];
+    return {
+      isPaired: true,
+      deviceName: latestDevice.device_name || 'Android Companion',
+      deviceId: latestDevice.id,
+      connectedAt: latestDevice.created_at,
+    };
+  }
+  return { isPaired: false, deviceName: null };
+}
+
 /**
  * Save courier choice during onboarding (Step 6).
  * provider: one of the 5 couriers or 'none' (manual)
