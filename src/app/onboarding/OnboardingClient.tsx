@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { LogOut } from 'lucide-react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
 import SiriOrb from '@/components/ui/siri-orb';
 import StepBusinessType from './steps/StepBusinessType';
@@ -47,6 +49,31 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   const searchParams = useSearchParams();
   const [shop, setShop] = useState(initialShop);
   const [step, setStep] = useState<WizardStep>(() => resolveInitialStep(initialShop));
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    supabaseBrowser.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) {
+        setUserEmail(data.user.email);
+      }
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'dummy';
+      const key = `sb-${projectRef}-auth-token`;
+      document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      await supabaseBrowser.auth.signOut();
+    } catch (e) {
+      console.error('Sign out error:', e);
+    } finally {
+      window.location.href = '/login?prompt=select_account&switched=true';
+    }
+  };
 
   useEffect(() => {
     const stepParam = searchParams.get('step');
@@ -100,15 +127,11 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         */}
         <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto">
 
-          {/* ── Card Header: Siri Orb + Logo + Creative Merchant Badge + Sleek Step Counter ── */}
-          <div className="relative flex items-center justify-between px-8 pt-6 pb-2 shrink-0">
+          {/* ── Card Header: Siri Orb + Logo + Merchant Badge + Switch Account + Step Counter ── */}
+          <div className="relative flex items-center justify-between px-6 sm:px-8 pt-6 pb-2 shrink-0 gap-2">
             {isLaunchScreen ? (
               <>
-                {/* Invisible spacer for symmetrical centering */}
-                <div className="w-20 shrink-0 hidden sm:block" />
-
-                {/* Centered Logo + Siri Orb */}
-                <div className="flex items-center gap-3 mx-auto sm:mx-0">
+                <div className="flex items-center gap-3">
                   <SiriOrb size="34px" state="listening" />
                   <div className="flex items-baseline gap-2">
                     <span
@@ -122,30 +145,48 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                     >
                       dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 17, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                     </span>
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-white/40">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-white/40 hidden xs:inline">
                       for merchants
                     </span>
                   </div>
                 </div>
 
-                {/* Borderless Sleek Ready Text */}
-                <div className="w-20 flex justify-end shrink-0">
-                  <span className="inline-flex items-center gap-1.5 text-emerald-400 font-extrabold text-[11px] uppercase tracking-widest">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-emerald-400 font-extrabold text-[11px] uppercase tracking-widest shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     READY
                   </span>
+
+                  <div className="h-3.5 w-[1px] bg-white/15 shrink-0" />
+
+                  {userEmail && (
+                    <span className="text-xs text-white/50 font-mono truncate max-w-[120px] sm:max-w-[160px] hidden md:inline shrink-0" title={`Signed in as ${userEmail}`}>
+                      {userEmail}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-red-500/20 hover:border-red-500/30 border border-white/15 transition-all duration-200 active:scale-95 disabled:opacity-50 shrink-0"
+                    title="Sign out or switch to a different Google account"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isSigningOut ? 'Signing out…' : 'Switch Account'}</span>
+                  </button>
                 </div>
               </>
             ) : (
               <>
-                <div className="flex items-center gap-3.5">
-                  <SiriOrb size="36px" state="listening" className="mr-0.5" />
+                <div className="flex items-center gap-3 sm:gap-3.5">
+                  <SiriOrb size="36px" state="listening" className="mr-0.5 shrink-0" />
                   
-                  <div className="flex items-baseline gap-2.5">
+                  <div className="flex items-baseline gap-2">
                     <span
                       style={{
                         fontFamily: 'Georgia, serif',
-                        fontSize: 30,
+                        fontSize: 28,
                         fontWeight: 300,
                         letterSpacing: '-0.03em',
                         color: '#ffffff',
@@ -153,16 +194,35 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                     >
                       dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 18, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
                     </span>
-                    <span className="text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent">
+                    <span className="text-[10px] sm:text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent hidden xs:inline">
                       for merchants
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center">
-                  <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums shrink-0">
                     <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {MAIN_STEPS.length}
                   </span>
+
+                  <div className="h-3.5 w-[1px] bg-white/15 shrink-0" />
+
+                  {userEmail && (
+                    <span className="text-xs text-white/50 font-mono truncate max-w-[120px] sm:max-w-[160px] hidden md:inline shrink-0" title={`Signed in as ${userEmail}`}>
+                      {userEmail}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-red-500/20 hover:border-red-500/30 border border-white/15 transition-all duration-200 active:scale-95 disabled:opacity-50 shrink-0"
+                    title="Sign out or switch to a different Google account"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isSigningOut ? 'Signing out…' : 'Switch Account'}</span>
+                  </button>
                 </div>
               </>
             )}

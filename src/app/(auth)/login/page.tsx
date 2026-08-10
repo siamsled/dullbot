@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
 
@@ -15,8 +15,11 @@ const KEYFRAMES = `
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const isSwitched = searchParams.get('switched') === 'true' || searchParams.get('prompt') === 'select_account';
 
   // 3D Card Tilt Ref
   const cardRef = useRef<HTMLDivElement>(null);
@@ -48,7 +51,12 @@ export default function LoginPage() {
     setErrorMsg('');
     const { error } = await supabaseBrowser.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/login` },
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
     });
     if (error) {
       setErrorMsg(error.message);
@@ -142,6 +150,13 @@ export default function LoginPage() {
                   Sign in or create an account with Google
                 </p>
               </div>
+
+              {/* Switched / Signed Out Notice */}
+              {isSwitched && (
+                <div style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#93c5fd', textAlign: 'center' }}>
+                  You have signed out. Select a different Google account to continue.
+                </div>
+              )}
 
               {/* Error message */}
               {errorMsg && (

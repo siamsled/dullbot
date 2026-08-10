@@ -64,7 +64,12 @@ export default function SignupPage() {
     setLoading(true);
     await supabaseBrowser.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/login` },
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
     });
   };
 

@@ -87,8 +87,12 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
   }, [shop?.id]);
 
   const handleSignOut = async () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'dummy';
+    const key = `sb-${projectRef}-auth-token`;
+    document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     await supabaseBrowser.auth.signOut();
-    router.push('/login');
+    window.location.href = '/login?prompt=select_account&switched=true';
   };
 
   const businessType = shop?.business_type || 'retail';
