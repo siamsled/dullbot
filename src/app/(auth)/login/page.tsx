@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
+
+export const dynamic = 'force-dynamic';
 
 const KEYFRAMES = `
   @keyframes card-enter {
@@ -13,7 +15,7 @@ const KEYFRAMES = `
   }
 `;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -217,5 +219,13 @@ export default function LoginPage() {
       </div>
     </div>
   </>
-);
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  );
 }
