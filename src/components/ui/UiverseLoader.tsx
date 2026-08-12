@@ -4,23 +4,19 @@ import React from 'react';
 
 interface UiverseLoaderProps {
   className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export default function UiverseLoader({ className = "w-6 h-6" }: UiverseLoaderProps) {
+export default function UiverseLoader({ className = "", size = 'md' }: UiverseLoaderProps) {
+  const scaleClass = size === 'sm' ? 'scale-[0.45]' : size === 'lg' ? 'scale-110' : 'scale-[0.65] sm:scale-[0.8]';
+
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
-      <svg className="animate-spin w-full h-full text-dove/30" viewBox="0 0 50 50">
-        <circle className="stroke-current" cx="25" cy="25" r="20" fill="none" strokeWidth="4"></circle>
-        <circle 
-          className="stroke-rust stroke-[4px]" 
-          cx="25" cy="25" r="20" fill="none" 
-          strokeDasharray="90 150" 
-          strokeDashoffset="0" 
-          strokeLinecap="round"
-        ></circle>
-      </svg>
-      {/* Subtle center pulse */}
-      <div className="absolute inset-0 m-auto w-1/3 h-1/3 bg-rust/40 rounded-full blur-[4px] animate-pulse"></div>
+    <div className={`loader ${scaleClass} ${className}`}>
+      <section className="slider" style={{ '--i': 0 } as React.CSSProperties}></section>
+      <section className="slider" style={{ '--i': 1 } as React.CSSProperties}></section>
+      <section className="slider" style={{ '--i': 2 } as React.CSSProperties}></section>
+      <section className="slider" style={{ '--i': 3 } as React.CSSProperties}></section>
+      <section className="slider" style={{ '--i': 4 } as React.CSSProperties}></section>
     </div>
   );
 }
