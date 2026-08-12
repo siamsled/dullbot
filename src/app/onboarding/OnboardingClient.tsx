@@ -152,29 +152,31 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                 </div>
 
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <span className="inline-flex items-center gap-1.5 text-emerald-400 font-extrabold text-[11px] uppercase tracking-widest shrink-0">
+                  <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-md flex items-center gap-1.5 shadow-sm shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    READY
-                  </span>
-
-                  <div className="h-3.5 w-[1px] bg-white/15 shrink-0" />
+                    <span className="text-[11px] font-extrabold text-emerald-400 uppercase tracking-widest">READY</span>
+                  </div>
 
                   {userEmail && (
-                    <span className="text-xs text-white/50 font-mono truncate max-w-[120px] sm:max-w-[160px] hidden md:inline shrink-0" title={`Signed in as ${userEmail}`}>
-                      {userEmail}
-                    </span>
+                    <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-white/8 hover:bg-white/12 border border-white/15 backdrop-blur-md transition-all duration-200 group shadow-sm shrink-0">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 text-[9px] font-extrabold text-white flex items-center justify-center shrink-0 uppercase shadow-xs">
+                        {userEmail.charAt(0)}
+                      </div>
+                      <span className="text-xs font-medium text-white/70 group-hover:text-white/90 truncate max-w-[120px] sm:max-w-[160px] hidden md:inline transition-colors" title={`Signed in as ${userEmail}`}>
+                        {userEmail}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        disabled={isSigningOut}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-red-500/25 border border-white/15 hover:border-red-500/40 transition-all duration-200 active:scale-95 disabled:opacity-50"
+                        title="Sign out or switch account"
+                      >
+                        <LogOut className="w-3 h-3 stroke-[2.5]" />
+                        <span>{isSigningOut ? 'Signing out…' : 'Switch'}</span>
+                      </button>
+                    </div>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    disabled={isSigningOut}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-red-500/20 hover:border-red-500/30 border border-white/15 transition-all duration-200 active:scale-95 disabled:opacity-50 shrink-0"
-                    title="Sign out or switch to a different Google account"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{isSigningOut ? 'Signing out…' : 'Switch Account'}</span>
-                  </button>
                 </div>
               </>
             ) : (
@@ -201,28 +203,44 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
                 </div>
 
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  <span className="text-xs tracking-wider text-white/50 uppercase font-medium tabular-nums shrink-0">
-                    <span className="text-white font-bold text-sm">{currentIndex + 1}</span> <span className="text-white/30">/</span> {MAIN_STEPS.length}
-                  </span>
+                  {/* Step counter pill */}
+                  <div className="px-3 py-1 rounded-full bg-white/8 border border-white/12 backdrop-blur-md flex items-center gap-1.5 shadow-sm shrink-0">
+                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-widest hidden sm:inline">Step</span>
+                    <span className="text-xs font-bold text-white tabular-nums">{currentIndex + 1}</span>
+                    <span className="text-[10px] text-white/30 font-medium">/</span>
+                    <span className="text-xs font-medium text-white/50 tabular-nums">{MAIN_STEPS.length}</span>
+                  </div>
 
-                  <div className="h-3.5 w-[1px] bg-white/15 shrink-0" />
-
-                  {userEmail && (
-                    <span className="text-xs text-white/50 font-mono truncate max-w-[120px] sm:max-w-[160px] hidden md:inline shrink-0" title={`Signed in as ${userEmail}`}>
-                      {userEmail}
-                    </span>
+                  {userEmail ? (
+                    <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-white/8 hover:bg-white/12 border border-white/15 backdrop-blur-md transition-all duration-200 group shadow-sm shrink-0">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 text-[9px] font-extrabold text-white flex items-center justify-center shrink-0 uppercase shadow-xs">
+                        {userEmail.charAt(0)}
+                      </div>
+                      <span className="text-xs font-medium text-white/70 group-hover:text-white/90 truncate max-w-[120px] sm:max-w-[170px] hidden md:inline transition-colors" title={`Signed in as ${userEmail}`}>
+                        {userEmail}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        disabled={isSigningOut}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-red-500/25 border border-white/15 hover:border-red-500/40 transition-all duration-200 active:scale-95 disabled:opacity-50"
+                        title="Sign out or switch account"
+                      >
+                        <LogOut className="w-3 h-3 stroke-[2.5]" />
+                        <span>{isSigningOut ? 'Signing out…' : 'Switch'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-200 active:scale-95 disabled:opacity-50 shrink-0"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{isSigningOut ? 'Signing out…' : 'Switch Account'}</span>
+                    </button>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    disabled={isSigningOut}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-red-500/20 hover:border-red-500/30 border border-white/15 transition-all duration-200 active:scale-95 disabled:opacity-50 shrink-0"
-                    title="Sign out or switch to a different Google account"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{isSigningOut ? 'Signing out…' : 'Switch Account'}</span>
-                  </button>
                 </div>
               </>
             )}

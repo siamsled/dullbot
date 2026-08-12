@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend
@@ -9,6 +10,7 @@ import {
 import {
   TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert
 } from 'lucide-react';
+import { AnalyticsSkeleton } from '@/components/ui/SkeletonLoaders';
 
 interface Props {
   range: number;
@@ -43,17 +45,50 @@ const SESSIONS = ['Morning (<12 PM)', 'Afternoon (12-6 PM)', 'Evening (>6 PM)'];
 
 export default function AnalyticsClient({
   range,
-  revenueTrend,
-  peakTimes,
-  customerGrowth,
-  topRegions,
-  channelPerformance,
-  topProducts,
-  paymentStats
+  revenueTrend: initialRevenueTrend,
+  peakTimes: initialPeakTimes,
+  customerGrowth: initialCustomerGrowth,
+  topRegions: initialTopRegions,
+  channelPerformance: initialChannelPerformance,
+  topProducts: initialTopProducts,
+  paymentStats: initialPaymentStats
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+
+  const { data: analyticsData = {
+    revenueTrend: initialRevenueTrend,
+    peakTimes: initialPeakTimes,
+    customerGrowth: initialCustomerGrowth,
+    topRegions: initialTopRegions,
+    channelPerformance: initialChannelPerformance,
+    topProducts: initialTopProducts,
+    paymentStats: initialPaymentStats
+  } } = useQuery({
+    queryKey: ['analytics', range],
+    queryFn: () => ({
+      revenueTrend: initialRevenueTrend,
+      peakTimes: initialPeakTimes,
+      customerGrowth: initialCustomerGrowth,
+      topRegions: initialTopRegions,
+      channelPerformance: initialChannelPerformance,
+      topProducts: initialTopProducts,
+      paymentStats: initialPaymentStats
+    }),
+    initialData: {
+      revenueTrend: initialRevenueTrend,
+      peakTimes: initialPeakTimes,
+      customerGrowth: initialCustomerGrowth,
+      topRegions: initialTopRegions,
+      channelPerformance: initialChannelPerformance,
+      topProducts: initialTopProducts,
+      paymentStats: initialPaymentStats
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { revenueTrend, peakTimes, customerGrowth, topRegions, channelPerformance, topProducts, paymentStats } = analyticsData;
 
   const handleRangeChange = (days: number) => {
     startTransition(() => {

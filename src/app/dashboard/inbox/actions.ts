@@ -226,34 +226,41 @@ export async function getConversations(shopId: string) {
     return [];
   }
 
-  // Heal / Backfill missing last_message_content and last_message_at
-  for (const conv of conversations) {
-    if (!conv.last_message_content) {
-      const { data: latest } = await supabaseAdmin
-        .from('messages')
-        .select('content, created_at')
-        .eq('conversation_id', conv.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  // Heal / Backfill missing last_message_content and last_message_at using a single batched query (no N+1)
+  const unhealedConvs = conversations.filter(c => !c.last_message_content);
+  if (unhealedConvs.length > 0) {
+    const unhealedIds = unhealedConvs.map(c => c.id);
+    const { data: latestMsgs } = await supabaseAdmin
+      .from('messages')
+      .select('conversation_id, content, created_at')
+      .in('conversation_id', unhealedIds)
+      .order('created_at', { ascending: false });
 
-      if (latest) {
-        conv.last_message_content = latest.content;
-        conv.last_message_at = latest.created_at;
+    if (latestMsgs && latestMsgs.length > 0) {
+      const latestMap = new Map<string, { content: string; created_at: string }>();
+      for (const m of latestMsgs) {
+        if (!latestMap.has(m.conversation_id)) {
+          latestMap.set(m.conversation_id, { content: m.content, created_at: m.created_at });
+        }
+      }
 
-        // Perform deferred update to persist the healed values in the database
-        supabaseAdmin
-          .from('conversations')
-          .update({
-            last_message_content: latest.content,
-            last_message_at: latest.created_at
-          })
-          .eq('id', conv.id)
-          .then(({ error: healErr }) => {
-            if (healErr) {
-              console.error(`Failed to heal conversation ${conv.id}:`, healErr.message);
-            }
-          });
+      for (const conv of unhealedConvs) {
+        const latest = latestMap.get(conv.id);
+        if (latest) {
+          conv.last_message_content = latest.content;
+          conv.last_message_at = latest.created_at;
+
+          supabaseAdmin
+            .from('conversations')
+            .update({
+              last_message_content: latest.content,
+              last_message_at: latest.created_at
+            })
+            .eq('id', conv.id)
+            .then(({ error: healErr }) => {
+              if (healErr) console.error(`Failed to heal conversation ${conv.id}:`, healErr.message);
+            });
+        }
       }
     }
   }

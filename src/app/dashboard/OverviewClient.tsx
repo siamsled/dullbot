@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import {
   Activity, MessageSquareText, Package, Clock, X,
@@ -13,6 +14,7 @@ import { ShopStats } from '@/lib/analytics';
 import UiverseGlassCard from '@/components/ui/UiverseGlassCard';
 import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
 import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
+import { OverviewSkeleton } from '@/components/ui/SkeletonLoaders';
 
 const BANNER_DISMISSED_KEY = 'dullbot_setup_banner_dismissed';
 const NUDGE_DISMISSED_KEY = 'dullbot_nudge_widget_dismissed';
@@ -34,20 +36,17 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const [rangeType, setRangeType] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'>('weekly');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  const [currentStats, setCurrentStats] = useState<ShopStats>(stats);
-  const [loadingStats, setLoadingStats] = useState(false);
 
-  useEffect(() => {
-    if (rangeType === 'custom' && (!customStart || !customEnd)) return;
-    
-    setLoadingStats(true);
-    fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined).then(res => {
-      setLoadingStats(false);
-      if (res.success && res.stats) {
-        setCurrentStats(res.stats);
-      }
-    });
-  }, [rangeType, customStart, customEnd, shop.id]);
+  const { data: currentStats = stats, isLoading: loadingStats } = useQuery({
+    queryKey: ['overview-stats', shop.id, rangeType, customStart, customEnd],
+    queryFn: async () => {
+      if (rangeType === 'custom' && (!customStart || !customEnd)) return stats;
+      const res = await fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined);
+      return res.success && res.stats ? res.stats : stats;
+    },
+    initialData: stats,
+    staleTime: 1000 * 60 * 5,
+  });
 
   useEffect(() => {
     setIsBannerDismissed(localStorage.getItem(BANNER_DISMISSED_KEY) === '1');

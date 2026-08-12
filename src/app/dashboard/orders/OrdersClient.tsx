@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Package, Clock, CheckCircle2, Search, ArrowRight, ShieldAlert,
@@ -9,7 +10,8 @@ import {
   ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
   Printer, ChevronDown, Smartphone, ShieldCheck
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
 import {
   verifyPaymentManually, dispatchToCourier, dispatchToCourierWithProvider, cancelOrder,
   updateInternalNote, toggleNeedsReview, bulkConfirmPayment,
@@ -67,16 +69,24 @@ function fmt(isoString: string) {
 }
 
 export default function OrdersClient({ shopId, orders: initial }: { shopId: string; orders: Order[] }) {
-  const [orders, setOrders] = useState<Order[]>(initial);
+  const { data: fetchedOrders = initial, isLoading: loadingOrders } = useQuery({
+    queryKey: ['orders', shopId],
+    queryFn: () => initial,
+    initialData: initial,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const [orders, setOrders] = useState<Order[]>(fetchedOrders);
+
+  useEffect(() => {
+    setOrders(fetchedOrders);
+  }, [fetchedOrders]);
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
 
   // Funnel filtering state
-  // main flow stages: 'pending_payment' | 'confirmed' | 'dispatched' | 'delivered'
-  // off-funnel stages: 'needs_review' | 'cancelled' | 'all'
   const [activeStage, setActiveStage] = useState<string>('all');
-
-  // Detail slide-over state
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   // Slide-over interactive forms state
@@ -87,7 +97,6 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const [isDispatching, setIsDispatching] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
-  // Courier selector state (per dispatch)
   const [selectedCourier, setSelectedCourier] = useState<string>('pathao');
 
   // Print Manager state
@@ -107,12 +116,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
   // Realtime Supabase Sync
   useEffect(() => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const channel = supabase
+    const channel = supabaseBrowser
       .channel(`orders-lifecycle:${shopId}`)
       .on(
         'postgres_changes',
@@ -120,13 +124,12 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         async (payload) => {
           const raw = payload.new as any;
           if (payload.eventType === 'INSERT') {
-            // Fetch nested relations (line items, history) using supabase client
-            const { data: lineItems } = await supabase
+            const { data: lineItems } = await supabaseBrowser
               .from('order_line_items')
               .select('*')
               .eq('order_id', raw.id);
 
-            const { data: statusHistory } = await supabase
+            const { data: statusHistory } = await supabaseBrowser
               .from('order_status_history')
               .select('*')
               .eq('order_id', raw.id)
@@ -154,18 +157,18 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               paymentVerifications: []
             }, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            const { data: lineItems } = await supabase
+            const { data: lineItems } = await supabaseBrowser
               .from('order_line_items')
               .select('*')
               .eq('order_id', raw.id);
 
-            const { data: statusHistory } = await supabase
+            const { data: statusHistory } = await supabaseBrowser
               .from('order_status_history')
               .select('*')
               .eq('order_id', raw.id)
               .order('created_at', { ascending: true });
 
-            setOrders(prev => prev.map(o =>
+            setOrders(prev => prev.map((o: Order) =>
               o.id === raw.id ? {
                 ...o,
                 status: raw.status,
@@ -190,7 +193,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseBrowser.removeChannel(channel);
     };
   }, [shopId]);
 

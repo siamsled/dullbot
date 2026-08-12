@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Package, Building2, Activity, BarChart2, AlertTriangle } from 'lucide-react';
+import { InventoryTableSkeleton } from '@/components/ui/SkeletonLoaders';
 
 import dynamic from 'next/dynamic';
 import CatalogueTable from './components/CatalogueTable';
@@ -99,6 +101,19 @@ export default function InventoryClient({
   const [tab, setTab] = useState<Tab>('catalogue');
   const [isPending, startTransition] = useTransition();
 
+  const { data: fetchedProducts = initialProducts, isLoading: loadingProducts } = useQuery({
+    queryKey: ['inventory-products', shopId],
+    queryFn: () => initialProducts,
+    initialData: initialProducts,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const [products, setProducts] = useState<Product[]>(fetchedProducts);
+
+  useEffect(() => {
+    setProducts(fetchedProducts);
+  }, [fetchedProducts]);
+
   // Movements state
   const [movements, setMovements] = useState<StockMovement[]>(initialMovements);
 
@@ -106,9 +121,6 @@ export default function InventoryClient({
     const latest = await getShopMovements(shopId);
     setMovements(latest as StockMovement[]);
   };
-
-  // Products state (optimistic)
-  const [products, setProducts] = useState<Product[]>(initialProducts);
 
   // Slide-over
   const [slideOverOpen, setSlideOverOpen] = useState(false);

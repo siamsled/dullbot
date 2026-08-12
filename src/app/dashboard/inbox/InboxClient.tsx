@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit, Package } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies } from './actions';
@@ -8,6 +9,7 @@ import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import UiverseTabs from '@/components/ui/UiverseTabs';
+import { ConversationListSkeleton, MessageThreadSkeleton } from '@/components/ui/SkeletonLoaders';
 
 function formatWaitingTime(dateString: string) {
   const date = new Date(dateString);
