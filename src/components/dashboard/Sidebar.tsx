@@ -164,8 +164,14 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
               key={item.name}
               href={item.href}
               id={item.id}
+              onClick={(e) => {
+                // Ensure immediate client router navigation
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                  router.push(item.href);
+                }
+              }}
               title={isCollapsed ? item.name : undefined}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative cursor-pointer ${
                 isActive
                   ? 'bg-white text-ink shadow-subtle border border-dove/10'
                   : 'text-ash hover:text-ink hover:bg-dove/10 border border-transparent'
