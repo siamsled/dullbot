@@ -1,5 +1,5 @@
-import { DashboardWorkspaceSkeleton } from '@/components/ui/SkeletonLoaders';
+import { CreditsSkeleton } from '@/components/ui/SkeletonLoaders';
 
 export default function CreditsLoading() {
-  return <DashboardWorkspaceSkeleton />;
+  return <CreditsSkeleton />;
 }

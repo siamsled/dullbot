@@ -1,5 +1,5 @@
-import { DashboardWorkspaceSkeleton } from '@/components/ui/SkeletonLoaders';
+import { TransactionsSkeleton } from '@/components/ui/SkeletonLoaders';
 
 export default function TransactionsLoading() {
-  return <DashboardWorkspaceSkeleton />;
+  return <TransactionsSkeleton />;
 }

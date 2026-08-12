@@ -1,5 +1,5 @@
-import { DashboardWorkspaceSkeleton } from '@/components/ui/SkeletonLoaders';
+import { AiTuningSkeleton } from '@/components/ui/SkeletonLoaders';
 
 export default function AITuningLoading() {
-  return <DashboardWorkspaceSkeleton />;
+  return <AiTuningSkeleton />;
 }
