@@ -236,9 +236,11 @@ function HandoffSummaryCard({
   const sentiment = (summary?.sentiment || 'neutral').toLowerCase();
   const { cls: sentimentCls, label: sentimentLabel } = sentimentConfig[sentiment] || sentimentConfig.neutral;
 
-  // Extract customer details from most recent order
+  // Extract customer details from most recent order or conversation
   const latestOrder = orderHistory.orders[0];
-  const phone = latestOrder?.customer_phone || conversation.customer_phone || null;
+  const rawPhone = latestOrder?.customer_phone || conversation.customer_phone || null;
+  // Filter out 15+ digit raw Meta PSID strings so they aren't displayed as phone numbers
+  const phone = (rawPhone && !/^\d{14,}$/.test(rawPhone)) ? rawPhone : null;
   const address = latestOrder?.customer_address || null;
 
   // Collect all unique product thumbnails across line items
@@ -253,24 +255,24 @@ function HandoffSummaryCard({
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+    <div className="rounded-2xl border border-dove/15 bg-white shadow-subtle overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-amber-100/60 border-b border-amber-200">
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-fog/80 border-b border-dove/10">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-amber-600" />
-          <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">AI Briefing</span>
+          <BrainCircuit className="w-3.5 h-3.5 text-indigo-600" />
+          <span className="text-[10px] font-bold text-graphite uppercase tracking-wider">AI Briefing</span>
         </div>
         <div className="flex items-center gap-1.5">
           {summary && (
-            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${sentimentCls}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${sentimentCls}`}>
               {sentimentLabel}
             </span>
           )}
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            title="Regenerate summary"
-            className="p-1 rounded hover:bg-amber-200 text-amber-700 transition-colors disabled:opacity-50"
+            title="Regenerate briefing"
+            className="p-1 rounded-lg hover:bg-dove/20 text-ash hover:text-ink transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -278,20 +280,20 @@ function HandoffSummaryCard({
       </div>
 
       {/* Content */}
-      <div className="px-3 py-2.5 space-y-2.5">
+      <div className="p-3.5 space-y-3">
         {/* Customer contact row */}
         {(phone || address) && (
-          <div className="bg-white/70 rounded-lg px-2.5 py-2 space-y-1 border border-amber-100">
+          <div className="bg-fog/50 rounded-xl px-3 py-2 space-y-1.5 border border-dove/10">
             {phone && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider w-12 shrink-0">Phone</span>
-                <span className="text-[11px] text-ink font-mono">{phone}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-ash uppercase tracking-wider w-12 shrink-0">Phone</span>
+                <span className="text-xs text-ink font-mono font-medium">{phone}</span>
               </div>
             )}
             {address && (
-              <div className="flex items-start gap-1.5">
-                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider w-12 shrink-0 mt-0.5">Address</span>
-                <span className="text-[11px] text-ink leading-relaxed">{address}</span>
+              <div className="flex items-start gap-2">
+                <span className="text-[9px] font-bold text-ash uppercase tracking-wider w-12 shrink-0 mt-0.5">Address</span>
+                <span className="text-xs text-ink leading-relaxed font-medium">{address}</span>
               </div>
             )}
           </div>
@@ -300,18 +302,18 @@ function HandoffSummaryCard({
         {/* Product thumbnails */}
         {productItems.length > 0 && (
           <div>
-            <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">Products ordered</p>
+            <p className="text-[9px] font-bold text-ash uppercase tracking-wider mb-1.5">Products ordered</p>
             <div className="flex flex-col gap-1.5">
               {productItems.slice(0, 3).map((p, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white/70 rounded-lg px-2 py-1.5 border border-amber-100">
+                <div key={i} className="flex items-center gap-2.5 bg-fog/50 rounded-xl p-2 border border-dove/10">
                   {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="w-8 h-8 object-cover rounded-md shrink-0" />
+                    <img src={p.imageUrl} alt={p.name} className="w-8 h-8 object-cover rounded-lg shrink-0 border border-dove/10" />
                   ) : (
-                    <div className="w-8 h-8 bg-amber-100 rounded-md shrink-0 flex items-center justify-center">
-                      <Package className="w-4 h-4 text-amber-400" />
+                    <div className="w-8 h-8 bg-dove/20 rounded-lg shrink-0 flex items-center justify-center">
+                      <Package className="w-4 h-4 text-ash" />
                     </div>
                   )}
-                  <span className="text-[11px] text-ink font-medium leading-tight line-clamp-2">{p.name}</span>
+                  <span className="text-xs text-ink font-medium leading-tight line-clamp-2">{p.name}</span>
                 </div>
               ))}
             </div>
@@ -320,34 +322,38 @@ function HandoffSummaryCard({
 
         {/* AI Summary sections */}
         {isLoading && !summary ? (
-          <p className="text-[11px] text-amber-700 italic">Generating briefing...</p>
+          <p className="text-xs text-ash italic">Generating briefing...</p>
         ) : summary ? (
           <>
-            <div>
-              <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Customer wants</p>
-              <p className="text-[11px] text-ink leading-relaxed">
-                {summary.wants?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || '—'}
-              </p>
-            </div>
+            {summary.wants && (
+              <div>
+                <p className="text-[9px] font-bold text-ash uppercase tracking-wider mb-1">Customer wants</p>
+                <p className="text-xs text-ink leading-relaxed font-medium bg-fog/30 p-2 rounded-xl border border-dove/10">
+                  {summary.wants?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || '—'}
+                </p>
+              </div>
+            )}
             {summary.facts && (
               <div>
-                <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Key facts</p>
-                <p className="text-[11px] text-ink leading-relaxed">
+                <p className="text-[9px] font-bold text-ash uppercase tracking-wider mb-1">Key facts</p>
+                <p className="text-xs text-ink leading-relaxed font-medium bg-fog/30 p-2 rounded-xl border border-dove/10">
                   {summary.facts?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || '—'}
                 </p>
               </div>
             )}
             {(summary.flagReason || conversation.ticket_reason) && (
               <div>
-                <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Escalation</p>
-                <p className="text-[11px] text-rust font-semibold">
-                  {summary.flagReason?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || conversation.ticket_reason || 'Manual takeover'}
-                </p>
+                <p className="text-[9px] font-bold text-rust uppercase tracking-wider mb-1">Escalation reason</p>
+                <div className="bg-red-50/80 rounded-xl p-2.5 border border-red-200/80">
+                  <p className="text-xs text-rust font-semibold leading-relaxed">
+                    {summary.flagReason?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || conversation.ticket_reason || 'Manual takeover required'}
+                  </p>
+                </div>
               </div>
             )}
           </>
         ) : (
-          <p className="text-[11px] text-amber-700">No briefing yet.</p>
+          <p className="text-xs text-ash">No briefing available.</p>
         )}
       </div>
     </div>
@@ -466,7 +472,18 @@ export default function InboxClient({
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const doScroll = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    };
+
+    doScroll();
+    requestAnimationFrame(doScroll);
+    setTimeout(doScroll, 50);
+    setTimeout(doScroll, 150);
+    setTimeout(doScroll, 350);
   };
 
   const scrollToTop = () => {
@@ -486,6 +503,10 @@ export default function InboxClient({
       setIsTakeover(activeConv.status === 'human_takeover');
     }
   }, [activeConv]);
+
+  useEffect(() => {
+    isFirstLoadRef.current = true;
+  }, [activeId]);
 
   useEffect(() => {
     conversations.forEach(async (conv) => {
@@ -537,11 +558,7 @@ export default function InboxClient({
         messageCacheRef.current[activeId] = { msgs: msgs || [], hasMore };
 
         // Scroll to bottom immediately
-        requestAnimationFrame(() => {
-          if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-          }
-        });
+        scrollToBottom();
       };
       fetchInit();
     }
@@ -621,6 +638,8 @@ export default function InboxClient({
             };
             return merged;
           });
+
+          scrollToBottom();
         }
       )
       .subscribe();

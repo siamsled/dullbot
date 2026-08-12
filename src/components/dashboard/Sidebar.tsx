@@ -17,7 +17,6 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [shop, setShop] = useState<any>(initialShop || null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [playUnlockAnim, setPlayUnlockAnim] = useState(false);
 
   // Detect unlock animation trigger from ?unlocked=1 query param (one-time)
@@ -65,22 +64,37 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
     return () => { supabaseBrowser.removeChannel(channel); };
   }, [initialShop, shop?.id]);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [actionCount, setActionCount] = useState(0);
+
   useEffect(() => {
     if (!shop?.id) return;
 
-    const fetchUnread = async () => {
+    const fetchCounts = async () => {
       const { data } = await supabaseBrowser
         .from('conversations')
-        .select('unread_count')
+        .select('unread_count, status, ticket_reason')
         .eq('shop_id', shop.id);
-      const count = (data || []).reduce((acc, c) => acc + (c.unread_count || 0), 0);
-      setUnreadCount(count);
+
+      if (data) {
+        let actionNeeded = 0;
+        let unread = 0;
+        for (const c of data) {
+          if (c.status === 'human_takeover' || c.ticket_reason) {
+            actionNeeded += 1;
+          } else if (c.unread_count > 0) {
+            unread += c.unread_count;
+          }
+        }
+        setActionCount(actionNeeded);
+        setUnreadCount(unread);
+      }
     };
-    fetchUnread();
+    fetchCounts();
 
     const channel = supabaseBrowser
       .channel('sidebar-unread-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations', filter: `shop_id=eq.${shop.id}` }, () => { fetchUnread(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations', filter: `shop_id=eq.${shop.id}` }, () => { fetchCounts(); })
       .subscribe();
 
     return () => { supabaseBrowser.removeChannel(channel); };
@@ -159,10 +173,25 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-graphite'}`} />
               {!isCollapsed && <span className="truncate">{item.name}</span>}
-              {item.id === 'nav-inbox' && unreadCount > 0 && (
-                <span className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-4'} flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white`}>
-                  {unreadCount}
-                </span>
+              {item.id === 'nav-inbox' && (actionCount > 0 || unreadCount > 0) && (
+                <div className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-3'} flex items-center gap-1`}>
+                  {actionCount > 0 && (
+                    <span
+                      title={`${actionCount} conversation(s) require human attention`}
+                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-pulse shadow-sm"
+                    >
+                      {actionCount}
+                    </span>
+                  )}
+                  {unreadCount > 0 && (
+                    <span
+                      title={`${unreadCount} unread message(s)`}
+                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-blue-600 text-[9px] font-extrabold text-white shadow-sm"
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
               )}
             </Link>
           );
