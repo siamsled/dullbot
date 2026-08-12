@@ -8,14 +8,31 @@ interface UiverseLoaderProps {
 }
 
 export default function UiverseLoader({ className = "", size = 'md' }: UiverseLoaderProps) {
-  const scaleClass = size === 'sm' ? 'scale-[0.35]' : size === 'lg' ? 'scale-100' : 'scale-[0.55] sm:scale-[0.65]';
+  const scaleClass = size === 'sm' ? 'scale-[0.45]' : size === 'lg' ? 'scale-110' : 'scale-[0.75] sm:scale-[0.85]';
 
   return (
     <div className={`relative flex items-center justify-center ${scaleClass} ${className}`}>
-      <div className="loader">
-        <div className="box1"></div>
-        <div className="box2"></div>
-        <div className="box3"></div>
+      <div className="section-path">
+        <div className="globe">
+          <div className="wrapper">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
       </div>
     </div>
   );
