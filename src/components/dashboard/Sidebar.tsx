@@ -3,20 +3,41 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 const UNLOCK_ANIM_KEY = 'dullbot_unlocked_anim';
+const SIDEBAR_COLLAPSED_KEY = 'dullbot_sidebar_collapsed';
 
 export default function Sidebar({ initialShop }: { initialShop?: any }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // 1. Persistent collapsed state in localStorage across tab switches and refreshes
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    }
+    return false;
+  });
+
+  // 2. Hover state for temporary hover expansion when collapsed
+  const [isHovered, setIsHovered] = useState(false);
   const [shop, setShop] = useState<any>(initialShop || null);
   const [playUnlockAnim, setPlayUnlockAnim] = useState(false);
+
+  const togglePin = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      }
+      return next;
+    });
+  };
 
   // Detect unlock animation trigger from ?unlocked=1 query param (one-time)
   useEffect(() => {
@@ -143,30 +164,43 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
     return name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   };
 
+  // Effective expansion state: expanded if manually uncollapsed OR temporarily hovered
+  const isEffectiveExpanded = !isCollapsed || isHovered;
+
   return (
-    <aside className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${isCollapsed ? 'w-16' : 'w-56'}`}>
+    <aside
+      onMouseEnter={() => {
+        if (isCollapsed) setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (isCollapsed) setIsHovered(false);
+      }}
+      className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${
+        isEffectiveExpanded ? 'w-56' : 'w-16'
+      }`}
+    >
       {/* Top Header */}
       <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10 shrink-0">
-        {!isCollapsed ? (
+        {isEffectiveExpanded ? (
           <div className="flex items-center justify-between w-full">
             <span className="text-xl font-serif font-semibold tracking-tight text-ink px-1">DullBot</span>
             <button
-              onClick={() => setIsCollapsed(true)}
-              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-colors"
-              title="Collapse sidebar"
+              onClick={togglePin}
+              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
+              title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
             >
-              <PanelLeftClose className="w-4 h-4" />
+              <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center w-full gap-1">
+          <div className="flex items-center justify-between w-full px-1">
             <span className="text-base font-serif font-bold tracking-tight text-ink">DB</span>
             <button
-              onClick={() => setIsCollapsed(false)}
-              className="p-1 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-colors"
+              onClick={togglePin}
+              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
               title="Expand sidebar"
             >
-              <PanelLeftOpen className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4 text-ash" />
             </button>
           </div>
         )}
@@ -190,17 +224,17 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
                   router.push(item.href);
                 }
               }}
-              title={isCollapsed ? item.name : undefined}
+              title={!isEffectiveExpanded ? item.name : undefined}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative cursor-pointer ${
                 isActive
                   ? 'bg-white text-ink shadow-subtle border border-dove/10 font-bold'
                   : 'text-graphite hover:text-ink hover:bg-dove/10 border border-transparent'
-              } ${isCollapsed ? 'justify-center px-2' : ''}`}
+              } ${!isEffectiveExpanded ? 'justify-center px-2' : ''}`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-ash'}`} />
-              {!isCollapsed && <span className="truncate">{item.name}</span>}
+              {isEffectiveExpanded && <span className="truncate">{item.name}</span>}
               {item.id === 'nav-inbox' && (actionCount > 0 || unreadCount > 0) && (
-                <div className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-2.5'} flex items-center gap-1`}>
+                <div className={`absolute ${!isEffectiveExpanded ? 'top-1 right-1' : 'right-2.5'} flex items-center gap-1`}>
                   {actionCount > 0 && (
                     <span
                       title={`${actionCount} conversation(s) require human attention`}
@@ -241,7 +275,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
       {/* Footer Shop & Logout Card */}
       <div className="p-3 border-t border-dove/10 shrink-0">
-        {!isCollapsed ? (
+        {isEffectiveExpanded ? (
           <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 shrink-0 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs">
