@@ -62,14 +62,33 @@ async function run() {
   for (const shop of shops) {
     console.log(`\nProcessing shop: ${shop.name} (${shop.id})`);
 
-    const { data: products, error: productsError } = await supabase
+    let { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, name, price')
       .eq('shop_id', shop.id);
 
-    if (productsError || !products || products.length === 0) {
-      console.log(`No products found for ${shop.name}. Skipping...`);
+    if (productsError) {
+      console.error(`Error fetching products for ${shop.name}:`, productsError);
       continue;
+    }
+
+    if (!products || products.length === 0) {
+      console.log(`No products found for ${shop.name}. Creating dummy products...`);
+      const dummyProducts = [
+        { shop_id: shop.id, name: 'Dummy T-Shirt', price: 500, description: 'Test item' },
+        { shop_id: shop.id, name: 'Dummy Sneakers', price: 2500, description: 'Test item' }
+      ];
+      
+      const { data: newProducts, error: createErr } = await supabase
+        .from('products')
+        .insert(dummyProducts)
+        .select('id, name, price');
+        
+      if (createErr || !newProducts) {
+        console.error(`Failed to create dummy products for ${shop.name}:`, createErr);
+        continue;
+      }
+      products = newProducts;
     }
 
     console.log(`Found ${products.length} products to use for ${shop.name}.`);
