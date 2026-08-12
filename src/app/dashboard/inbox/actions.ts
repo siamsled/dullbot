@@ -256,7 +256,6 @@ export async function getConversations(shopId: string) {
               last_message_content: latest.content,
               last_message_at: latest.created_at
             })
-            .eq('id', conv.id)
             .then(({ error: healErr }) => {
               if (healErr) console.error(`Failed to heal conversation ${conv.id}:`, healErr.message);
             });
@@ -277,13 +276,13 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
     .eq('customer_phone', psid)
     .maybeSingle();
 
-  const isCacheValid = conversation && conversation.meta_name && conversation.meta_name !== 'Facebook User' && conversation.meta_checked_at && (
+  const isCacheValid = conversation && (conversation.meta_profile_pic || (conversation.meta_name && conversation.meta_name !== 'Facebook User')) && conversation.meta_checked_at && (
     new Date().getTime() - new Date(conversation.meta_checked_at).getTime() < 24 * 60 * 60 * 1000 // 24 hours
   );
 
   if (isCacheValid) {
     return {
-      customer_name: conversation.meta_name!,
+      customer_name: conversation.meta_name || 'Facebook User',
       profile_pic_url: conversation.meta_profile_pic || undefined
     };
   }
@@ -309,15 +308,20 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
   if (tokenToUse) {
     const profile = await getFacebookProfile(psid, tokenToUse);
 
-    if (profile.customer_name && profile.customer_name !== 'Facebook User') {
-      // Cache to DB conversations record
+    if (profile.profile_pic_url || (profile.customer_name && profile.customer_name !== 'Facebook User')) {
+      const updatePayload: any = {
+        meta_checked_at: new Date().toISOString()
+      };
+      if (profile.customer_name && profile.customer_name !== 'Facebook User') {
+        updatePayload.meta_name = profile.customer_name;
+      }
+      if (profile.profile_pic_url) {
+        updatePayload.meta_profile_pic = profile.profile_pic_url;
+      }
+
       await supabaseAdmin
         .from('conversations')
-        .update({
-          meta_name: profile.customer_name,
-          meta_profile_pic: profile.profile_pic_url || null,
-          meta_checked_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('shop_id', shopId)
         .eq('customer_phone', psid);
     }

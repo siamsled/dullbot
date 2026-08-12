@@ -97,6 +97,12 @@ function getAvatarInitials(name: string): string {
   return name.substring(0, 2).toUpperCase();
 }
 
+function getProfilePicUrl(conv: any, profile?: any): string | null {
+  if (profile?.profile_pic_url) return profile.profile_pic_url;
+  if (conv?.meta_profile_pic) return conv.meta_profile_pic;
+  return null;
+}
+
 function formatSnippetPreview(snippet: string): string {
   if (!snippet) return 'No messages';
   if (snippet.startsWith('IMAGE:')) return '📷 Photo';
@@ -525,12 +531,18 @@ export default function InboxClient({
 
   useEffect(() => {
     conversations.forEach(async (conv) => {
-      if ((conv.channel === 'messenger' || conv.channel === 'instagram') && /^\d+$/.test(conv.customer_phone) && !profiles[conv.customer_phone]) {
+      const ch = getConvChannel(conv);
+      const isMeta = ch === 'messenger' || ch === 'instagram';
+      const needsProfile = isMeta && (!conv.meta_profile_pic || !conv.meta_name || conv.meta_name === 'Facebook User');
+
+      if (needsProfile && conv.customer_phone && !profiles[conv.customer_phone]) {
         const profile = await resolveFacebookProfile(conv.customer_phone, shop.id);
-        setProfiles(prev => ({
-          ...prev,
-          [conv.customer_phone]: profile
-        }));
+        if (profile) {
+          setProfiles(prev => ({
+            ...prev,
+            [conv.customer_phone]: profile
+          }));
+        }
       }
     });
   }, [conversations, shop.id]);
@@ -999,6 +1011,8 @@ export default function InboxClient({
                 const avatarInitials = getAvatarInitials(displayName);
                 const previewText = formatSnippetPreview(conv.last_message_content || '');
 
+                const profilePicUrl = getProfilePicUrl(conv, profiles[conv.customer_phone]);
+
                 return (
                   <button
                     key={conv.id}
@@ -1009,19 +1023,17 @@ export default function InboxClient({
                     {/* Avatar with Channel Overlay Badge */}
                     <div className="relative shrink-0">
                       <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
-                        {chType === 'whatsapp' ? (
+                        {chType === 'whatsapp' || !profilePicUrl ? (
                           avatarInitials
-                        ) : profiles[conv.customer_phone]?.profile_pic_url ? (
+                        ) : (
                           <img
-                            src={profiles[conv.customer_phone].profile_pic_url}
+                            src={profilePicUrl}
                             alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
                             }}
                           />
-                        ) : (
-                          avatarInitials
                         )}
                       </div>
                       <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] shadow-xs border border-white ${
@@ -1122,13 +1134,14 @@ export default function InboxClient({
                 {(() => {
                   const activeDisplayName = activeConv ? getDisplayName(activeConv, profiles[activeConv.customer_phone]) : '';
                   const activeInitials = getAvatarInitials(activeDisplayName);
+                  const activeProfilePicUrl = activeConv ? getProfilePicUrl(activeConv, profiles[activeConv.customer_phone]) : null;
 
                   return (
                     <>
                       <div className="w-8 h-8 rounded-full bg-dove/20 flex items-center justify-center text-ink text-xs font-semibold overflow-hidden shrink-0">
-                        {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
+                        {activeConv && activeConv.channel !== 'whatsapp' && activeProfilePicUrl ? (
                           <img
-                            src={profiles[activeConv.customer_phone].profile_pic_url}
+                            src={activeProfilePicUrl}
                             alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
