@@ -45,6 +45,61 @@ function formatMessageDate(dateString: string) {
   }
 }
 
+function getDisplayName(conv: any, profile?: any): string {
+  if (!conv) return 'Customer';
+
+  if (profile?.customer_name && profile.customer_name !== 'Facebook User') {
+    return profile.customer_name;
+  }
+  if (conv.meta_name && conv.meta_name !== 'Facebook User') {
+    return conv.meta_name;
+  }
+  if (conv.customer_name && conv.customer_name !== 'Facebook User') {
+    return conv.customer_name;
+  }
+  if (profile?.customer_name) {
+    return profile.customer_name;
+  }
+  if (conv.meta_name) {
+    return conv.meta_name;
+  }
+
+  const phone = conv.customer_phone || '';
+  if (/^\d{10,}$/.test(phone)) {
+    return 'Facebook User';
+  }
+
+  return phone || 'Customer';
+}
+
+function getAvatarInitials(name: string): string {
+  if (!name || name === 'Facebook User') return 'FB';
+  if (name === 'Customer') return 'CU';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+function formatSnippetPreview(snippet: string): string {
+  if (!snippet) return 'No messages';
+  if (snippet.startsWith('IMAGE:')) return '📷 Photo';
+  if (snippet.startsWith('AUDIO:')) return '🎵 Voice message';
+
+  let cleaned = snippet.replace(/!\[([^\]]*)\]\([^)]+\)/g, (_, alt) => {
+    return alt && alt.toLowerCase() !== 'image' ? `📷 ${alt}` : '📷 Photo';
+  });
+
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+
+  if (cleaned.startsWith('[SYSTEM ERROR]')) {
+    cleaned = cleaned.replace('[SYSTEM ERROR]', '⚠️ Error:');
+  }
+
+  return cleaned.trim() || '📷 Photo';
+}
+
 function getConvChannel(conv: any): 'messenger' | 'instagram' | 'whatsapp' | 'web' {
   if (!conv) return 'messenger';
   if (conv.channel === 'whatsapp' || conv.whatsapp_session_expires_at) return 'whatsapp';
@@ -302,22 +357,58 @@ function HandoffSummaryCard({
 export default function InboxClient({
   shop: initialShop,
   initialConversations,
+  initialMessages = [],
   productCount,
   initialPhone
 }: {
   shop: any;
   initialConversations: any[];
+  initialMessages?: any[];
   productCount: number;
   initialPhone?: string | null;
 }) {
+  const queryClient = useQueryClient();
   const [shop, setShop] = useState(initialShop);
-  const [conversations, setConversations] = useState(initialConversations);
+
+  const { data: fetchedConversations = initialConversations } = useQuery({
+    queryKey: ['conversations', shop.id],
+    queryFn: () => getConversations(shop.id),
+    initialData: initialConversations,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const [conversations, setConversations] = useState<any[]>(fetchedConversations || []);
+
+  useEffect(() => {
+    if (fetchedConversations) {
+      setConversations(fetchedConversations);
+    }
+  }, [fetchedConversations]);
+
   // If initialPhone is provided (deep-link from Orders), find the matching conversation
   const initialId = initialPhone
-    ? (initialConversations.find(c => c.customer_phone === initialPhone)?.id ?? initialConversations[0]?.id ?? null)
-    : (initialConversations[0]?.id ?? null);
+    ? (conversations.find(c => c.customer_phone === initialPhone)?.id ?? conversations[0]?.id ?? null)
+    : (conversations[0]?.id ?? null);
   const [activeId, setActiveId] = useState<string | null>(initialId);
-  const [messages, setMessages] = useState<any[]>([]);
+
+  const { data: fetchedMessages = [], isLoading: loadingMessages } = useQuery({
+    queryKey: ['messages', activeId],
+    queryFn: () => getMessages(activeId!, undefined, 30),
+    initialData: activeId === initialId ? initialMessages : undefined,
+    enabled: !!activeId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const [messages, setMessages] = useState<any[]>(fetchedMessages || []);
+
+  useEffect(() => {
+    if (fetchedMessages && fetchedMessages.length > 0) {
+      setMessages(fetchedMessages);
+    } else if (!loadingMessages && fetchedMessages.length === 0) {
+      setMessages([]);
+    }
+  }, [fetchedMessages, loadingMessages]);
+
   const [isTakeover, setIsTakeover] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -850,10 +941,10 @@ export default function InboxClient({
                 // 4. Search query
                 if (searchQuery.trim()) {
                   const query = searchQuery.toLowerCase();
-                  const nameMatch = (profiles[conv.customer_phone]?.customer_name || '').toLowerCase().includes(query) ||
-                    conv.customer_phone.toLowerCase().includes(query);
-
-                  const snippetMatch = (conv.last_message_content || '').toLowerCase().includes(query);
+                  const displayName = getDisplayName(conv, profiles[conv.customer_phone]);
+                  const nameMatch = displayName.toLowerCase().includes(query) || (conv.customer_phone || '').toLowerCase().includes(query);
+                  const previewText = formatSnippetPreview(conv.last_message_content || '');
+                  const snippetMatch = previewText.toLowerCase().includes(query);
 
                   const cachedMsgs = messageCacheRef.current[conv.id]?.msgs || [];
                   const messageMatch = cachedMsgs.some((m: any) => m.content.toLowerCase().includes(query));
@@ -870,15 +961,10 @@ export default function InboxClient({
 
               return filteredConversations.map(conv => {
                 const hasUnread = conv.unread_count > 0 && conv.id !== activeId;
-                const snippet = conv.last_message_content || '';
                 const chType = getConvChannel(conv);
-
-                let previewText = 'No messages';
-                if (snippet) {
-                  if (snippet.startsWith('IMAGE:')) previewText = '📷 Photo';
-                  else if (snippet.startsWith('AUDIO:')) previewText = '🎵 Voice message';
-                  else previewText = snippet;
-                }
+                const displayName = getDisplayName(conv, profiles[conv.customer_phone]);
+                const avatarInitials = getAvatarInitials(displayName);
+                const previewText = formatSnippetPreview(conv.last_message_content || '');
 
                 return (
                   <button
@@ -891,7 +977,7 @@ export default function InboxClient({
                     <div className="relative shrink-0">
                       <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-medium overflow-hidden">
                         {chType === 'whatsapp' ? (
-                          (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                          avatarInitials
                         ) : profiles[conv.customer_phone]?.profile_pic_url ? (
                           <img
                             src={profiles[conv.customer_phone].profile_pic_url}
@@ -902,7 +988,7 @@ export default function InboxClient({
                             }}
                           />
                         ) : (
-                          (profiles[conv.customer_phone]?.customer_name || conv.customer_phone).substring(0, 2)
+                          avatarInitials
                         )}
                       </div>
                       <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] shadow-xs border border-white ${
@@ -917,7 +1003,7 @@ export default function InboxClient({
                         <div className="flex items-center gap-1.5 min-w-0">
                           {hasUnread && <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
                           <p className={`text-sm truncate ${hasUnread ? 'text-ink font-bold' : 'text-graphite font-semibold'}`}>
-                            {profiles[conv.customer_phone]?.customer_name || conv.customer_phone}
+                            {displayName}
                           </p>
                         </div>
                         <p className="text-[10px] text-ash shrink-0">{formatMessageDate(conv.last_message_at)}</p>
@@ -1000,32 +1086,41 @@ export default function InboxClient({
                 >
                   <ArrowRight className={`w-4 h-4 transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
                 </button>
-                <div className="w-8 h-8 rounded-full bg-dove/20 flex items-center justify-center text-ink text-xs font-semibold overflow-hidden shrink-0">
-                  {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
-                    <img
-                      src={profiles[activeConv.customer_phone].profile_pic_url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  ) : (
-                    (activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : '').substring(0, 2)
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-sm font-semibold text-ink truncate max-w-[140px]">
-                      {activeConv ? (profiles[activeConv.customer_phone]?.customer_name || activeConv.customer_phone) : ''}
-                    </h3>
-                    {activeConv && (
-                      <span className="text-[9px] font-bold text-ash bg-fog px-1.5 py-0.5 rounded border border-dove/10 flex items-center gap-1 shrink-0 whitespace-nowrap">
-                        <Clock className="w-2 h-2" />
-                        {formatWaitingTime(activeConv.last_message_at)}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-ash capitalize leading-none mt-0.5">via {activeConv?.channel}</p>
-                </div>
+                {(() => {
+                  const activeDisplayName = activeConv ? getDisplayName(activeConv, profiles[activeConv.customer_phone]) : '';
+                  const activeInitials = getAvatarInitials(activeDisplayName);
+
+                  return (
+                    <>
+                      <div className="w-8 h-8 rounded-full bg-dove/20 flex items-center justify-center text-ink text-xs font-semibold overflow-hidden shrink-0">
+                        {activeConv && activeConv.channel !== 'whatsapp' && profiles[activeConv.customer_phone]?.profile_pic_url ? (
+                          <img
+                            src={profiles[activeConv.customer_phone].profile_pic_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          activeInitials
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="text-sm font-semibold text-ink truncate max-w-[140px]">
+                            {activeDisplayName}
+                          </h3>
+                          {activeConv && (
+                            <span className="text-[9px] font-bold text-ash bg-fog px-1.5 py-0.5 rounded border border-dove/10 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                              <Clock className="w-2 h-2" />
+                              {formatWaitingTime(activeConv.last_message_at)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-ash capitalize leading-none mt-0.5">via {activeConv?.channel}</p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Actions Zone */}
@@ -1123,7 +1218,9 @@ export default function InboxClient({
                   <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
                 </div>
               )}
-              {messages.length === 0 ? (
+              {loadingMessages && messages.length === 0 ? (
+                <MessageThreadSkeleton />
+              ) : messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-ash text-sm">No messages in this conversation.</div>
               ) : (
                 <div className="flex flex-col gap-6">
@@ -1149,6 +1246,8 @@ export default function InboxClient({
                       );
                     }
 
+                    const activeDisplayName = activeConv ? getDisplayName(activeConv, profiles[activeConv.customer_phone]) : 'Customer';
+
                     return (
                       <div id={`message-${msg.id}`} key={msg.id} className={`flex group transition-all duration-500 ${isCustomer ? 'justify-start' : 'justify-end'}`}>
                         {/* Reply Button (Hover) - Right side for customer, left for agent */}
@@ -1169,7 +1268,7 @@ export default function InboxClient({
                             {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
                             {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-ash" />}
                             <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
-                              {isCustomer ? ((activeConv ? (profiles[activeConv.customer_phone]?.customer_name || 'Customer') : 'Customer')) : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
+                              {isCustomer ? activeDisplayName : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
                             </span>
                             <span className="text-[10px] text-ash">
                               {formatMessageDate(msg.created_at)}

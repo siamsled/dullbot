@@ -1,8 +1,6 @@
 import InboxClient from './InboxClient';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getConversations } from './actions';
-
-
+import { getConversations, getMessages } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +28,18 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   // Get initial conversations (with names resolved)
   const conversations = await getConversations(shop.id);
 
+  // Find initial active conversation ID and pre-fetch initial messages on server
+  const initialId = params.phone
+    ? (conversations.find(c => c.customer_phone === params.phone)?.id ?? conversations[0]?.id ?? null)
+    : (conversations[0]?.id ?? null);
+
+  const initialMessages = initialId ? await getMessages(initialId, undefined, 30) : [];
+
   return (
     <InboxClient 
       shop={shop} 
       initialConversations={conversations} 
+      initialMessages={initialMessages}
       productCount={productCount || 0}
       initialPhone={params.phone ?? null}
     />
