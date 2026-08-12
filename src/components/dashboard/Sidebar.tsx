@@ -146,7 +146,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
   return (
     <aside className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${isCollapsed ? 'w-16' : 'w-56'}`}>
       {/* Top Header */}
-      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10">
+      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10 shrink-0">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
             <span className="text-xl font-serif font-semibold tracking-tight text-ink px-1">DullBot</span>
@@ -172,8 +172,8 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         )}
       </div>
 
-      {/* Nav List */}
-      <nav className="p-3 flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
+      {/* Nav List - Flexibly Spans Whole Screen Height */}
+      <nav className="p-3 flex-1 flex flex-col justify-between min-h-0 overflow-y-auto overflow-x-hidden">
         {navItems.map((item, i) => {
           const isActive = item.href === '/dashboard'
             ? pathname === item.href
@@ -240,7 +240,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       </nav>
 
       {/* Footer Shop & Logout Card */}
-      <div className="p-3 border-t border-dove/10">
+      <div className="p-3 border-t border-dove/10 shrink-0">
         {!isCollapsed ? (
           <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
             <div className="flex items-center gap-2.5 min-w-0">
