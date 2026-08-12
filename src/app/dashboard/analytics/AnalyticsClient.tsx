@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -10,7 +9,7 @@ import {
 import {
   TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert
 } from 'lucide-react';
-import { AnalyticsSkeleton } from '@/components/ui/SkeletonLoaders';
+import { fetchAnalyticsByRange } from './actions';
 
 interface Props {
   range: number;
@@ -31,8 +30,8 @@ interface Props {
 const TOOLTIP_STYLE = {
   contentStyle: {
     background: '#ffffff',
-    border: '1px solid rgba(163, 166, 175, 0.3)', // Dove tint
-    borderRadius: '16px', // Input radius
+    border: '1px solid rgba(163, 166, 175, 0.3)',
+    borderRadius: '16px',
     fontSize: '11px',
     boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)',
     fontFamily: 'var(--font-sohne)',
@@ -44,7 +43,7 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SESSIONS = ['Morning (<12 PM)', 'Afternoon (12-6 PM)', 'Evening (>6 PM)'];
 
 export default function AnalyticsClient({
-  range,
+  range: initialRange,
   revenueTrend: initialRevenueTrend,
   peakTimes: initialPeakTimes,
   customerGrowth: initialCustomerGrowth,
@@ -53,29 +52,14 @@ export default function AnalyticsClient({
   topProducts: initialTopProducts,
   paymentStats: initialPaymentStats
 }: Props) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  // ── Local state: switching pills is instant — no router navigation ──────
+  const [activeRange, setActiveRange] = useState(initialRange);
 
-  const { data: analyticsData = {
-    revenueTrend: initialRevenueTrend,
-    peakTimes: initialPeakTimes,
-    customerGrowth: initialCustomerGrowth,
-    topRegions: initialTopRegions,
-    channelPerformance: initialChannelPerformance,
-    topProducts: initialTopProducts,
-    paymentStats: initialPaymentStats
-  } } = useQuery({
-    queryKey: ['analytics', range],
-    queryFn: () => ({
-      revenueTrend: initialRevenueTrend,
-      peakTimes: initialPeakTimes,
-      customerGrowth: initialCustomerGrowth,
-      topRegions: initialTopRegions,
-      channelPerformance: initialChannelPerformance,
-      topProducts: initialTopProducts,
-      paymentStats: initialPaymentStats
-    }),
+  // ── React Query: fetches new data via server action when range changes ──
+  // keepPreviousData: true means charts stay visible while new data loads.
+  const { data } = useQuery({
+    queryKey: ['analytics', activeRange],
+    queryFn: () => fetchAnalyticsByRange(activeRange),
     initialData: {
       revenueTrend: initialRevenueTrend,
       peakTimes: initialPeakTimes,
@@ -83,20 +67,13 @@ export default function AnalyticsClient({
       topRegions: initialTopRegions,
       channelPerformance: initialChannelPerformance,
       topProducts: initialTopProducts,
-      paymentStats: initialPaymentStats
+      paymentStats: initialPaymentStats,
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 min — don't refetch if switching back quickly
+    placeholderData: (prev) => prev, // show old data while loading (no flicker)
   });
 
-  const { revenueTrend, peakTimes, customerGrowth, topRegions, channelPerformance, topProducts, paymentStats } = analyticsData;
-
-  const handleRangeChange = (days: number) => {
-    startTransition(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('range', days.toString());
-      router.replace(`/dashboard/analytics?${params.toString()}`, { scroll: false });
-    });
-  };
+  const { revenueTrend, peakTimes, customerGrowth, topRegions, channelPerformance, topProducts, paymentStats } = data!;
 
   const maxPeak = Math.max(...peakTimes.flatMap(row => row), 1);
 
@@ -110,28 +87,27 @@ export default function AnalyticsClient({
           <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Analytics</h1>
           <p className="text-ash text-sm">Understand your sales performance, customer trends, and conversion channels.</p>
         </div>
+        {/* Pills switch activeRange instantly — no navigation, no disabled state */}
         <div className="flex gap-1 bg-fog p-1 rounded-inputs self-start shadow-subtle border border-dove/5">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
-              onClick={() => handleRangeChange(d)}
-              disabled={isPending}
+              onClick={() => setActiveRange(d)}
               className={`px-3.5 py-1.5 rounded-buttons text-xs font-semibold transition-all ${
-                range === d
+                activeRange === d
                   ? 'bg-white text-ink shadow-subtle'
-                  : 'text-ash hover:text-ink disabled:opacity-50'
+                  : 'text-ash hover:text-ink'
               }`}
             >
               {d}d
             </button>
           ))}
           <button
-            onClick={() => handleRangeChange(0)}
-            disabled={isPending}
+            onClick={() => setActiveRange(0)}
             className={`px-3.5 py-1.5 rounded-buttons text-xs font-semibold transition-all ${
-              range === 0
+              activeRange === 0
                 ? 'bg-white text-ink shadow-subtle'
-                : 'text-ash hover:text-ink disabled:opacity-50'
+                : 'text-ash hover:text-ink'
             }`}
           >
             All
@@ -344,7 +320,7 @@ export default function AnalyticsClient({
               <ShieldAlert className="w-4 h-4 text-ink" />
               <div>
                 <h3 className="text-sm font-semibold text-ink">Verification Stats</h3>
-                <p className="text-xs text-ash">Payment check audits (last {range}d)</p>
+                <p className="text-xs text-ash">Payment check audits ({activeRange === 0 ? 'all time' : `last ${activeRange}d`})</p>
               </div>
             </div>
 
