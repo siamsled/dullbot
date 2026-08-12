@@ -80,30 +80,74 @@ export function InventoryTableSkeleton({ count = 5 }: { count?: number }) {
   );
 }
 
-export function OrdersListSkeleton({ count = 4 }: { count?: number }) {
+export function OrdersListSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="space-y-4 animate-pulse">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-white rounded-cards shadow-subtle border border-dove/10 p-5 space-y-4"
-        >
-          <div className="flex items-center justify-between border-b border-dove/10 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="h-4 w-24 bg-dove/25 rounded-md" />
-              <div className="h-5 w-20 bg-fog rounded-full border border-dove/15" />
-            </div>
-            <div className="h-3.5 w-16 bg-dove/20 rounded-md" />
+    <div className="flex-1 overflow-y-auto h-full w-full animate-pulse">
+      <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* HEADER SECTION */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-10 w-64 bg-dove/25 rounded-xl" />
+            <div className="h-3.5 w-80 bg-dove/15 rounded-md" />
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1.5">
-              <div className="h-3.5 w-32 bg-dove/25 rounded-md" />
-              <div className="h-3 w-24 bg-dove/15 rounded-md" />
-            </div>
-            <div className="h-5 w-24 bg-dove/30 rounded-md" />
+          <div className="h-9 w-40 bg-fog border border-dove/20 rounded-buttons" />
+        </div>
+
+        {/* FUNNEL STRIP */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3.5">
+          <div className="md:col-span-4 bg-white rounded-cards shadow-subtle border border-dove/10 p-2 flex flex-col sm:flex-row gap-1.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex-1 p-3 rounded-inputs border border-dove/10 space-y-2 bg-fog/30">
+                <div className="flex items-center justify-between">
+                  <div className="h-2.5 w-16 bg-dove/20 rounded-md" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-dove/20" />
+                </div>
+                <div className="h-7 w-8 bg-dove/30 rounded-md" />
+                <div className="h-2 w-20 bg-dove/15 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="md:col-span-2 grid grid-cols-2 gap-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="p-3 rounded-cards border border-dove/10 space-y-2 bg-white shadow-subtle">
+                <div className="flex items-center justify-between">
+                  <div className="h-2.5 w-16 bg-dove/20 rounded-md" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-dove/20" />
+                </div>
+                <div className="h-7 w-8 bg-dove/30 rounded-md" />
+              </div>
+            ))}
           </div>
         </div>
-      ))}
+
+        {/* SEARCH BAR */}
+        <div className="h-11 w-full max-w-md bg-white rounded-full border border-dove/20 shadow-xs" />
+
+        {/* ORDERS TABLE CONTAINER */}
+        <div className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden">
+          <div className="p-4 border-b border-dove/10 flex items-center justify-between">
+            <div className="h-4 w-28 bg-dove/25 rounded-md" />
+            <div className="h-3 w-16 bg-dove/15 rounded-md" />
+          </div>
+          <div className="divide-y divide-dove/10">
+            {Array.from({ length: count }).map((_, i) => (
+              <div key={i} className="p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-4 h-4 rounded-md bg-dove/15 shrink-0" />
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="h-3.5 w-32 bg-dove/25 rounded-md" />
+                    <div className="h-2.5 w-24 bg-dove/15 rounded-md" />
+                  </div>
+                </div>
+                <div className="h-3.5 w-40 bg-dove/15 rounded-md hidden md:block" />
+                <div className="h-3.5 w-24 bg-dove/20 rounded-md" />
+                <div className="h-5 w-20 bg-fog border border-dove/15 rounded-full" />
+                <div className="h-3.5 w-20 bg-dove/15 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
