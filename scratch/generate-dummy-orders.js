@@ -49,36 +49,33 @@ const orderStatuses = ['pending_verification', 'confirmed', 'rejected', 'fulfill
 const fulfillmentStatuses = ['awaiting_dispatch', 'dispatched', 'in_transit', 'delivered', 'cancelled'];
 
 async function run() {
-  console.log("Fetching active shop ('dull-store')...");
-  const { data: shop, error: shopError } = await supabase
+  console.log("Fetching all shops...");
+  const { data: shops, error: shopError } = await supabase
     .from('shops')
-    .select('id, name')
-    .eq('slug', 'dull-store')
-    .single();
+    .select('id, name');
 
-  if (shopError || !shop) {
-    console.error("Failed to fetch shop:", shopError);
+  if (shopError || !shops) {
+    console.error("Failed to fetch shops:", shopError);
     return;
   }
 
-  console.log(`Found shop: ${shop.name} (${shop.id})`);
+  for (const shop of shops) {
+    console.log(`\nProcessing shop: ${shop.name} (${shop.id})`);
 
-  console.log("Fetching shop products...");
-  const { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('id, name, price')
-    .eq('shop_id', shop.id);
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, price')
+      .eq('shop_id', shop.id);
 
-  if (productsError || !products || products.length === 0) {
-    console.error("Failed to fetch products:", productsError);
-    return;
-  }
+    if (productsError || !products || products.length === 0) {
+      console.log(`No products found for ${shop.name}. Skipping...`);
+      continue;
+    }
 
-  console.log(`Found ${products.length} products to use.`);
+    console.log(`Found ${products.length} products to use for ${shop.name}.`);
 
-  // Generate 15 dummy orders with dates spread across the last 30 days
-  const ordersToInsert = [];
-  const now = new Date();
+    const ordersToInsert = [];
+    const now = new Date();
 
   for (let i = 0; i < 15; i++) {
     const product = products[Math.floor(Math.random() * products.length)];
@@ -168,6 +165,8 @@ async function run() {
         created_at: insertedOrder.created_at
       });
   }
+  
+  } // end of shops loop
 
   console.log("Successfully seeded dummy orders!");
 }

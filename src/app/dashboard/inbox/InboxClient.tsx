@@ -427,7 +427,7 @@ export default function InboxClient({
     : (conversations[0]?.id ?? null);
   const [activeId, setActiveId] = useState<string | null>(initialId);
 
-  const { data: fetchedMessages = [], isLoading: loadingMessages } = useQuery({
+  const { data: fetchedMessages = [], isFetching: loadingMessages } = useQuery({
     queryKey: ['messages', activeId],
     queryFn: () => getMessages(activeId!, undefined, 30),
     initialData: activeId === initialId ? initialMessages : undefined,
@@ -436,6 +436,10 @@ export default function InboxClient({
   });
 
   const [messages, setMessages] = useState<any[]>(fetchedMessages || []);
+
+  useEffect(() => {
+    setMessages([]);
+  }, [activeId]);
 
   useEffect(() => {
     if (fetchedMessages && fetchedMessages.length > 0) {

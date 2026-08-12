@@ -223,16 +223,24 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
                 }
               }}
               title={!isEffectiveExpanded ? item.name : undefined}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative cursor-pointer ${
+              className={`flex items-center px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-300 relative cursor-pointer ${
                 isActive
                   ? 'bg-white text-ink shadow-subtle border border-dove/10 font-bold'
                   : 'text-graphite hover:text-ink hover:bg-dove/10 border border-transparent'
-              } ${!isEffectiveExpanded ? 'justify-center px-2' : ''}`}
+              } ${!isEffectiveExpanded ? 'justify-center px-0' : ''}`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-ash'}`} />
-              {isEffectiveExpanded && <span className="truncate">{item.name}</span>}
+              <div 
+                className={`flex items-center overflow-hidden transition-all duration-300 whitespace-nowrap ${
+                  isEffectiveExpanded ? 'w-[140px] opacity-100 ml-2.5' : 'w-0 opacity-0 ml-0'
+                }`}
+              >
+                <span className="truncate">{item.name}</span>
+              </div>
               {item.id === 'nav-inbox' && (actionCount > 0 || unreadCount > 0) && (
-                <div className={`absolute ${!isEffectiveExpanded ? 'top-1 right-1' : 'right-2.5'} flex items-center gap-1`}>
+                <div className={`absolute transition-all duration-300 flex items-center gap-1 ${
+                  !isEffectiveExpanded ? 'top-1 right-1' : 'right-2.5 top-1/2 -translate-y-1/2'
+                }`}>
                   {actionCount > 0 && (
                     <span
                       title={`${actionCount} conversation(s) require human attention`}

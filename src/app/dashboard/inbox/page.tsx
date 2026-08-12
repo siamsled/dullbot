@@ -1,18 +1,20 @@
 import InboxClient from './InboxClient';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin, getCurrentShop } from '@/lib/supabase-admin';
 import { getConversations, getMessages } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ phone?: string }> }) {
-  const shopSlug = 'dull-store';
+  const shopRaw = await getCurrentShop();
+  if (!shopRaw) return <div>Shop not found.</div>;
+  
   const params = await searchParams;
   
-  // Get shop details and onboarding config
+  // Get full shop details and onboarding config
   const { data: shop } = await supabaseAdmin
     .from('shops')
     .select('id, name, business_type, onboarding_complete, onboarding_steps_done, payment_verification_method, bkash_number, meta_page_access_token, agent_enabled, courier_provider')
-    .eq('slug', shopSlug)
+    .eq('id', shopRaw.id)
     .single();
 
   if (!shop) {
