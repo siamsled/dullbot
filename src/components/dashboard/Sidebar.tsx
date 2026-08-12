@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
-import UiversePulseBadge from '@/components/ui/UiversePulseBadge';
 import { motion } from 'framer-motion';
 
 const UNLOCK_ANIM_KEY = 'dullbot_unlocked_anim';
@@ -111,30 +110,28 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
   const businessType = shop?.business_type || 'retail';
 
-  // Build nav items by business type
+  // Build nav items in logical order: Overview (Home) -> Live Inbox -> Orders -> Inventory -> Analytics -> etc.
   const baseItems = [
-    { name: 'Live Inbox', href: '/dashboard/inbox', icon: MessageSquareText, id: 'nav-inbox' },
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard, id: 'nav-overview' },
+    { name: 'Live Inbox', href: '/dashboard/inbox', icon: MessageSquareText, id: 'nav-inbox' },
     { name: 'Orders', href: '/dashboard/orders', icon: Package, id: 'nav-orders' },
   ];
 
   if (businessType === 'restaurant') {
-    // Restaurant gets both Services (for bookings/tables) and Inventory (for menu)
-    baseItems.push({ name: 'Tables & Bookings', href: '/dashboard/services', icon: UtensilsCrossed, id: 'nav-bookings' });
     baseItems.push({ name: 'Menu / Inventory', href: '/dashboard/inventory', icon: Box, id: 'nav-inventory' });
+    baseItems.push({ name: 'Tables & Bookings', href: '/dashboard/services', icon: UtensilsCrossed, id: 'nav-bookings' });
   } else if (businessType === 'service') {
     baseItems.push({ name: 'Services', href: '/dashboard/services', icon: Box, id: 'nav-services' });
   } else {
-    // retail (and any legacy 'wholesale' that was migrated)
     baseItems.push({ name: 'Inventory', href: '/dashboard/inventory', icon: Box, id: 'nav-inventory' });
   }
 
   const navItems = [
     ...baseItems,
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart, id: 'nav-analytics' },
     { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight, id: 'nav-transactions' },
     { name: 'Complaints', href: '/dashboard/complaints', icon: AlertTriangle, id: 'nav-complaints' },
     { name: 'AI Tuning', href: '/dashboard/ai-tuning', icon: Sliders, id: 'nav-tuning' },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart, id: 'nav-analytics' },
     { name: 'Social', href: '/dashboard/social', icon: Megaphone, id: 'nav-social' },
     { name: 'Credits', href: '/dashboard/credits', icon: Zap, id: 'nav-credits' },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings, id: 'nav-settings' },
@@ -147,12 +144,36 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
   };
 
   return (
-    <aside className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${isCollapsed ? 'w-20' : 'w-64'}`}>
-      <div className="h-20 flex items-center px-4 border-b border-dove/10 relative">
-        {!isCollapsed && <span className="text-2xl font-serif font-medium tracking-tight text-ink px-4">DullBot</span>}
-        {isCollapsed && <span className="text-2xl font-serif font-bold tracking-tight text-ink w-full text-center">DB</span>}
+    <aside className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${isCollapsed ? 'w-16' : 'w-56'}`}>
+      {/* Top Header */}
+      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10">
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between w-full">
+            <span className="text-xl font-serif font-semibold tracking-tight text-ink px-1">DullBot</span>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-colors"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center w-full gap-1">
+            <span className="text-base font-serif font-bold tracking-tight text-ink">DB</span>
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="p-1 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-colors"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
-      <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden">
+
+      {/* Nav List */}
+      <nav className="p-3 flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
         {navItems.map((item, i) => {
           const isActive = item.href === '/dashboard'
             ? pathname === item.href
@@ -165,26 +186,25 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
               href={item.href}
               id={item.id}
               onClick={(e) => {
-                // Ensure immediate client router navigation
                 if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
                   router.push(item.href);
                 }
               }}
               title={isCollapsed ? item.name : undefined}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-inputs text-sm font-medium transition-colors relative cursor-pointer ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative cursor-pointer ${
                 isActive
-                  ? 'bg-white text-ink shadow-subtle border border-dove/10'
-                  : 'text-ash hover:text-ink hover:bg-dove/10 border border-transparent'
+                  ? 'bg-white text-ink shadow-subtle border border-dove/10 font-bold'
+                  : 'text-graphite hover:text-ink hover:bg-dove/10 border border-transparent'
               } ${isCollapsed ? 'justify-center px-2' : ''}`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-graphite'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-ash'}`} />
               {!isCollapsed && <span className="truncate">{item.name}</span>}
               {item.id === 'nav-inbox' && (actionCount > 0 || unreadCount > 0) && (
-                <div className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-3'} flex items-center gap-1`}>
+                <div className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-2.5'} flex items-center gap-1`}>
                   {actionCount > 0 && (
                     <span
                       title={`${actionCount} conversation(s) require human attention`}
-                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-pulse shadow-sm"
+                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-pulse shadow-xs"
                     >
                       {actionCount}
                     </span>
@@ -192,7 +212,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
                   {unreadCount > 0 && (
                     <span
                       title={`${unreadCount} unread message(s)`}
-                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-blue-600 text-[9px] font-extrabold text-white shadow-sm"
+                      className="flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-blue-600 text-[9px] font-extrabold text-white shadow-xs"
                     >
                       {unreadCount}
                     </span>
@@ -219,40 +239,42 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         })}
       </nav>
 
-      <div className="border-t border-dove/10 flex flex-col justify-center p-4 gap-4">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex items-center justify-center w-full p-2 text-ash hover:text-ink hover:bg-dove/10 rounded-lg transition-colors"
-          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={`transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}>
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-2'}`}>
-          <div className="w-8 h-8 shrink-0 rounded-full bg-ink text-pure-white flex items-center justify-center text-xs font-bold shadow-subtle">
-            {getInitials(shop?.name)}
-          </div>
-          {!isCollapsed && (
-            <>
-              <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-sm font-medium text-ink truncate">{shop?.name || 'Dull Store'}</span>
-                <div className="mt-0.5">
-                  <UiversePulseBadge label="Online" status="active" size="sm" />
-                </div>
+      {/* Footer Shop & Logout Card */}
+      <div className="p-3 border-t border-dove/10">
+        {!isCollapsed ? (
+          <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                {getInitials(shop?.name)}
               </div>
-              <button onClick={handleSignOut} title="Sign out" className="p-1.5 shrink-0 rounded-lg text-dove hover:text-rust hover:bg-apricot-wash transition-colors">
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {isCollapsed && (
-          <button onClick={handleSignOut} title="Sign out" className="flex items-center justify-center w-full p-2 text-dove hover:text-rust hover:bg-apricot-wash rounded-lg transition-colors">
-            <LogOut className="w-4 h-4" />
-          </button>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-ink truncate max-w-[95px]">{shop?.name || 'Dull Store'}</span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-medium text-green-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign out / Switch account"
+              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs" title={shop?.name || 'Dull Store'}>
+              {getInitials(shop?.name)}
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
       </div>
     </aside>

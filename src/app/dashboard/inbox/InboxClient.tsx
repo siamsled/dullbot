@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit, Package } from 'lucide-react';
+import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit, Package, ExternalLink, Maximize2 } from 'lucide-react';
 import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
@@ -192,7 +192,7 @@ function renderOrganizedList(text: string) {
   );
 }
 
-function SmartVideoPlayer({ src }: { src: string }) {
+function SmartVideoPlayer({ src, onOpenFullscreen }: { src: string; onOpenFullscreen?: (src: string) => void }) {
   const [isAudioOnly, setIsAudioOnly] = useState(false);
 
   if (isAudioOnly) {
@@ -204,7 +204,7 @@ function SmartVideoPlayer({ src }: { src: string }) {
   }
 
   return (
-    <div className="max-w-xs rounded-2xl overflow-hidden bg-black">
+    <div className="max-w-xs rounded-2xl overflow-hidden bg-black relative group">
       <video
         src={src}
         controls
@@ -212,11 +212,20 @@ function SmartVideoPlayer({ src }: { src: string }) {
         className="max-h-64 w-full object-contain"
         onLoadedMetadata={(e) => {
           const v = e.target as HTMLVideoElement;
-          // videoHeight === 0 means audio-only container (Facebook voice notes are audio/mp4)
           if (v.videoHeight === 0) setIsAudioOnly(true);
         }}
         onError={() => setIsAudioOnly(true)}
       />
+      {onOpenFullscreen && (
+        <button
+          type="button"
+          onClick={() => onOpenFullscreen(src)}
+          title="Fullscreen overlay"
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity border border-white/20 z-10"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -440,6 +449,15 @@ export default function InboxClient({
   const [profiles, setProfiles] = useState<Record<string, { customer_name: string; profile_pic_url?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewMedia(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filter, setFilter] = useState<'all' | 'tickets' | 'confirmed' | 'test'>('all');
@@ -1390,11 +1408,23 @@ export default function InboxClient({
                               return (
                                 <div key={`${msg.id}-${sIdx}`} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
                                   {segment.type === 'image' ? (
-                                    <a href={segment.content} target="_blank" rel="noopener noreferrer" className="block max-w-xs rounded-2xl overflow-hidden">
-                                      <img src={segment.content} alt="Attachment" className="max-h-64 w-auto object-cover hover:opacity-95 transition-opacity duration-200" />
-                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewMedia({ url: segment.content, type: 'image' })}
+                                      className="block max-w-xs rounded-2xl overflow-hidden text-left focus:outline-none group relative cursor-pointer"
+                                    >
+                                      <img
+                                        src={segment.content}
+                                        alt="Attachment"
+                                        className="max-h-64 w-auto object-cover group-hover:scale-[1.02] transition-transform duration-200"
+                                        onLoad={scrollToBottom}
+                                      />
+                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                        <Maximize2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                                      </div>
+                                    </button>
                                   ) : segment.type === 'video' ? (
-                                    <SmartVideoPlayer src={segment.content} />
+                                    <SmartVideoPlayer src={segment.content} onOpenFullscreen={(url) => setPreviewMedia({ url, type: 'video' })} />
                                   ) : segment.type === 'audio' ? (
                                     <div className={`px-4 py-2 rounded-2xl ${isCustomer ? 'bg-[#E4E6EB]' : 'bg-[#0084FF]'}`}>
                                       <audio src={segment.content} controls className="max-w-full" />
@@ -1740,6 +1770,54 @@ export default function InboxClient({
           </div>
         )}
       </div>
+
+      {/* Fullscreen Blurred Media Lightbox Overlay */}
+      {previewMedia && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <div
+            className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center bg-white/5 border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-2 backdrop-blur-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <a
+                href={previewMedia.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                title="Open original link"
+                className="p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/20 shadow-md"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              <button
+                onClick={() => setPreviewMedia(null)}
+                title="Close (Esc)"
+                className="p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/20 shadow-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {previewMedia.type === 'image' ? (
+              <img
+                src={previewMedia.url}
+                alt="Enlarged Preview"
+                className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
+              />
+            ) : (
+              <video
+                src={previewMedia.url}
+                controls
+                autoPlay
+                className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
