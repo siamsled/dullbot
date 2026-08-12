@@ -158,3 +158,49 @@ export function OverviewSkeleton() {
     </div>
   );
 }
+
+export function DashboardWorkspaceSkeleton() {
+  return (
+    <div className="w-full h-full min-h-[70vh] p-6 space-y-6 animate-pulse">
+      {/* Top Header Placeholder */}
+      <div className="flex items-center justify-between pb-4 border-b border-dove/10">
+        <div className="space-y-2">
+          <div className="h-6 w-48 bg-dove/25 rounded-xl" />
+          <div className="h-3 w-64 bg-dove/15 rounded-md" />
+        </div>
+        <div className="h-9 w-28 bg-fog rounded-full border border-dove/15" />
+      </div>
+
+      {/* Cards Grid Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-cards shadow-subtle border border-dove/10 p-5 space-y-3">
+            <div className="h-3.5 w-24 bg-dove/20 rounded-md" />
+            <div className="h-7 w-20 bg-dove/35 rounded-md" />
+            <div className="h-2.5 w-32 bg-dove/15 rounded-md" />
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Area Skeleton */}
+      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 space-y-4 min-h-[320px]">
+        <div className="flex items-center justify-between pb-2 border-b border-dove/10">
+          <div className="h-4 w-40 bg-dove/25 rounded-md" />
+          <div className="h-3 w-20 bg-dove/15 rounded-md" />
+        </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between py-3 border-b border-dove/5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-fog border border-dove/10" />
+              <div className="space-y-1.5">
+                <div className="h-3.5 w-36 bg-dove/25 rounded-md" />
+                <div className="h-2.5 w-24 bg-dove/15 rounded-md" />
+              </div>
+            </div>
+            <div className="h-4 w-20 bg-dove/20 rounded-md" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
