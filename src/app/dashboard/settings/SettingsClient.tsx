@@ -117,7 +117,14 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [category,       setCategory]       = useState(shop?.category       ?? '');
   const [operatingHours, setOperatingHours] = useState(shop?.operating_hours ?? '');
   const [deliveryAreas,  setDeliveryAreas]  = useState(shop?.delivery_areas  ?? '');
-  const [bizOverview,    setBizOverview]    = useState(shop?.business_overview ?? '');
+  
+  const [bizOverview, setBizOverview] = useState(
+    shop?.business_overview ? shop.business_overview.split('---TERMS---')[0].trim() : ''
+  );
+  const [terms, setTerms] = useState(
+    shop?.business_overview?.includes('---TERMS---') ? shop.business_overview.split('---TERMS---')[1].trim() : ''
+  );
+  
   const [toneTemplate,   setToneTemplate]   = useState<'casual' | 'formal' | 'technical' | 'wholesale'>(shop?.tone_template ?? 'casual');
   const [profileSaved,   setProfileSaved]   = useState(false);
 
@@ -228,12 +235,16 @@ export default function SettingsClient({ shop }: { shop: any }) {
 
   const handleSaveProfile = () => {
     startProfileSave(async () => {
+      const combinedOverview = terms.trim() 
+        ? `${bizOverview.trim()}\n\n---TERMS---\n${terms.trim()}`
+        : bizOverview.trim();
+
       const res = await saveOnboardingProfileAndTone(shop.id, {
         name: shopName,
         category,
         operatingHours,
         deliveryAreas,
-        businessOverview: bizOverview,
+        businessOverview: combinedOverview,
         toneTemplate,
       });
       if (res.success) {
@@ -315,19 +326,34 @@ export default function SettingsClient({ shop }: { shop: any }) {
                 className="overflow-hidden"
               >
                 <div className="border-t border-dove/10 pt-5 space-y-4">
-                  {/* overview */}
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-rust" />
-                      <span className="text-xs font-semibold text-ink">Business Overview</span>
+                  {/* overview & terms */}
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-rust" />
+                        <span className="text-xs font-semibold text-ink">Business Overview</span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={bizOverview}
+                        onChange={e => setBizOverview(e.target.value)}
+                        className={`${inputCls} resize-none`}
+                        placeholder="Describe what your business offers..."
+                      />
                     </div>
-                    <textarea
-                      rows={3}
-                      value={bizOverview}
-                      onChange={e => setBizOverview(e.target.value)}
-                      className={`${inputCls} resize-none`}
-                      placeholder="Describe what your business offers..."
-                    />
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-rust" />
+                        <span className="text-xs font-semibold text-ink">Terms & Conditions</span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={terms}
+                        onChange={e => setTerms(e.target.value)}
+                        className={`${inputCls} resize-none`}
+                        placeholder="Return policy, shipping rules, or any other terms..."
+                      />
+                    </div>
                   </div>
 
                   {/* grid fields */}

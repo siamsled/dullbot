@@ -474,7 +474,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         {/* HEADER SECTION */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Lifecycle Control</h1>
+            <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Orders</h1>
             <p className="text-ash text-sm">Review payments, dispatch couriers, and track fulfillment cycles.</p>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
