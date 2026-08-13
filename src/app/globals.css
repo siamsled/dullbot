@@ -62,205 +62,73 @@
   --surface-ink: #0f1419;
 }
 
-/* ─── SLEEK DARK MODE OBSIDIAN THEME (UI_TASTE.md) ──────────────── */
+/* ─── SLEEK DARK MODE OBSIDIAN THEME ──────────────── */
 [data-dark-mode="true"],
 .dark {
-  --color-ink: #f8fafc;
+  /* Semantic color tokens — Tailwind utilities that reference these vars (bg-ink, text-ash, etc.)
+     automatically invert in dark mode. No !important overrides needed. */
+  --color-ink: #f0f4f8;
   --color-pure-white: #090b0e;
-  --color-fog: #0f1318;
+  --color-fog: #12161e;
   --color-ash: #94a3b8;
-  --color-graphite: #cbd5e1;
-  --color-dove: #333a46;
+  --color-graphite: #94a3b8;
+  --color-dove: #2a303c;
   --color-slate: #64748b;
   --color-obsidian: #ffffff;
   --color-rust: #fb923c;
-  --color-apricot-wash: rgba(251, 146, 60, 0.16);
-  --color-sky-wash: rgba(56, 189, 248, 0.16);
+  --color-apricot-wash: rgba(251, 146, 60, 0.15);
+  --color-sky-wash: rgba(56, 189, 248, 0.15);
 
-  --surface-canvas: #090b0e;
-  --surface-fog: #0f1318;
-  --surface-card: #151921;
-  --surface-warm-tint: rgba(251, 146, 60, 0.16);
-  --surface-cool-tint: rgba(56, 189, 248, 0.16);
-  --surface-ink: #f8fafc;
-  --shadow-subtle: 0px 0px 0px 1px rgba(255, 255, 255, 0.1), 0px 10px 25px -5px rgba(0, 0, 0, 0.7);
+  --surface-canvas: #0c0f14;
+  --surface-fog: #12161e;
+  --surface-card: #181d26;
+  --surface-warm-tint: rgba(251, 146, 60, 0.15);
+  --surface-cool-tint: rgba(56, 189, 248, 0.15);
+  --surface-ink: #f0f4f8;
+  --shadow-subtle: 0px 0px 0px 1px rgba(255,255,255,0.07), 0px 8px 24px -4px rgba(0,0,0,0.6);
+
   color-scheme: dark;
 }
 
-/* Dark mode canvas & card surface overrides */
+/* ── Dark body base ── */
 .dark body {
-  background-color: #090b0e;
-  color: #f8fafc;
+  background-color: var(--surface-canvas);
+  color: var(--color-ink);
 }
 
-.dark .bg-white {
-  background-color: #151921 !important;
-}
-
-.dark .bg-pure-white {
-  background-color: #090b0e !important;
-}
-
-.dark .bg-fog {
-  background-color: #0f1318 !important;
-}
-
-/* Primary Action Buttons in Dark Mode: Crisp White Button with Black Text */
-.dark .bg-ink {
-  background-color: #f8fafc !important;
-  color: #090b0e !important;
-}
-
-.dark .bg-ink:hover {
-  background-color: #ffffff !important;
-}
-
-.dark .bg-ink * {
-  color: #090b0e !important;
-}
-
-.dark .bg-ink svg {
-  stroke: #090b0e !important;
-}
-
-/* Form Controls & Inputs */
-.dark input,
+/* ── Form controls: inputs need explicit dark styling since browsers style them natively ── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .dark select,
 .dark textarea {
-  background-color: #0f1318;
-  color: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.15);
+  background-color: #1a1f2a;
+  color: #f0f4f8;
+  border-color: rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #64748b !important;
+  color: #64748b;
 }
 
-/* Typography Hierarchy in Dark Mode */
-.dark .text-ink {
-  color: #f8fafc !important;
-}
-
-.dark .text-ash {
-  color: #94a3b8 !important;
-}
-
-.dark .text-graphite {
-  color: #cbd5e1 !important;
-}
-
-/* Subtle Borders */
-.dark .border-dove\/5,
-.dark .border-dove\/10,
-.dark .border-dove\/15,
-.dark .border-dove\/20,
-.dark .border-dove\/25,
-.dark .border-dove\/30,
-.dark .border-dove\/40 {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Chat Message Bubbles */
+/* ── Chat bubbles: hardcoded #E4E6EB hex can't be swapped via CSS vars ── */
 .dark .bg-\[\#E4E6EB\] {
-  background-color: #1e242d !important;
-  color: #f0f6fc !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background-color: #1e2533 !important;
+  color: #e8edf4 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .dark .text-\[\#050505\] {
-  color: #f0f6fc !important;
+  color: #e8edf4 !important;
 }
 
 .dark .text-\[\#65676B\] {
-  color: #94a3b8 !important;
+  color: #7e8fa8 !important;
 }
 
 .dark .bg-\[\#E4E6EB\]\/60 {
-  background-color: rgba(30, 36, 45, 0.8) !important;
-  color: #94a3b8 !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Status Badges & Washes in Dark Mode */
-.dark .bg-apricot-wash {
-  background-color: rgba(251, 146, 60, 0.16) !important;
-  color: #fdba74 !important;
-}
-
-.dark .text-rust {
-  color: #fb923c !important;
-}
-
-.dark .border-rust\/10,
-.dark .border-rust\/20 {
-  border-color: rgba(251, 146, 60, 0.3) !important;
-}
-
-.dark .bg-red-50,
-.dark .bg-red-50\/80 {
-  background-color: rgba(239, 68, 68, 0.16) !important;
-  color: #fca5a5 !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
-}
-
-.dark .text-red-700,
-.dark .text-red-600,
-.dark .text-red-800 {
-  color: #fca5a5 !important;
-}
-
-.dark .border-red-200,
-.dark .border-red-200\/80 {
-  border-color: rgba(239, 68, 68, 0.35) !important;
-}
-
-.dark .bg-green-50,
-.dark .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.16) !important;
-  color: #6ee7b7 !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
-}
-
-.dark .text-green-700,
-.dark .text-green-800,
-.dark .text-emerald-700,
-.dark .text-emerald-800 {
-  color: #6ee7b7 !important;
-}
-
-.dark .border-green-200,
-.dark .border-green-150,
-.dark .border-emerald-200 {
-  border-color: rgba(16, 185, 129, 0.35) !important;
-}
-
-.dark .bg-slate-50,
-.dark .bg-slate-100 {
-  background-color: rgba(148, 163, 184, 0.16) !important;
-  color: #e2e8f0 !important;
-  border-color: rgba(148, 163, 184, 0.25) !important;
-}
-
-.dark .text-slate-600,
-.dark .text-slate-700 {
-  color: #cbd5e1 !important;
-}
-
-.dark .bg-blue-100,
-.dark .bg-blue-50,
-.dark .bg-sky-wash {
-  background-color: rgba(59, 130, 246, 0.16) !important;
-  color: #93c5fd !important;
-}
-
-.dark .text-blue-600,
-.dark .text-blue-700 {
-  color: #93c5fd !important;
-}
-
-.dark .shadow-subtle {
-  box-shadow: 0px 0px 0px 1px rgba(255, 255, 255, 0.1), 0px 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
+  background-color: rgba(30, 37, 51, 0.8) !important;
+  color: #7e8fa8 !important;
 }
 
 @theme {
@@ -332,7 +200,7 @@ body {
   font-family: var(--font-sohne);
 }
 
-/* Ultra-thin sleek dark scrollbar */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -341,16 +209,25 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.18);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.32);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 /* From Uiverse.io by JkHuger */ 

@@ -95,12 +95,12 @@ export default function ActivityLog({ movements: allMovements }: Props) {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-dove/15 text-[10px] font-bold text-graphite uppercase tracking-wider">
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Type</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Product</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Delta</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Resulting Stock</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Note / Supplier</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">When</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Type</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Product</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Delta</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Resulting Stock</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Note / Supplier</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">When</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dove/10">

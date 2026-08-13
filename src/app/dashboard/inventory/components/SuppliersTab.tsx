@@ -102,10 +102,10 @@ export default function SuppliersTab({ suppliers: initialSuppliers }: Props) {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-dove/15 text-[10px] font-bold text-graphite uppercase tracking-wider">
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Name</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Phone</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Note</th>
-                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Actions</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Name</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Phone</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Note</th>
+                <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md px-5 py-3 font-bold text-graphite uppercase tracking-wider text-right border-b border-dove/15 shadow-xs">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dove/10">
