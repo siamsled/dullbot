@@ -373,9 +373,9 @@ function HandoffSummaryCard({
             )}
             {(summary.flagReason || conversation.ticket_reason) && (
               <div>
-                <p className="text-[9px] font-bold text-rust uppercase tracking-wider mb-1">Escalation reason</p>
-                <div className="bg-red-50/80 rounded-xl p-2.5 border border-red-200/80">
-                  <p className="text-xs text-rust font-semibold leading-relaxed">
+                <p className="text-[9px] font-bold text-rust dark:text-amber-300 uppercase tracking-wider mb-1">Escalation reason</p>
+                <div className="bg-red-50/80 dark:bg-amber-950/40 rounded-xl p-2.5 border border-red-200/80 dark:border-amber-500/30">
+                  <p className="text-xs text-rust dark:text-amber-200 font-semibold leading-relaxed">
                     {summary.flagReason?.replace(/^[•\s\-\*]+/gm, '').split('\n').filter(Boolean)[0] || conversation.ticket_reason || 'Manual takeover required'}
                   </p>
                 </div>
@@ -1266,9 +1266,9 @@ export default function InboxClient({
 
             {/* Takeover Warning Banner */}
             {isTakeover && (
-              <div className="bg-apricot-wash px-4 py-2 flex items-center gap-2 border-b border-rust/10 shrink-0">
-                <AlertTriangle className="w-4 h-4 text-rust" />
-                <p className="text-xs font-medium text-rust">
+              <div className="bg-apricot-wash dark:bg-amber-950/40 px-4 py-2 flex items-center gap-2 border-b border-rust/10 dark:border-amber-500/30 shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rust dark:text-amber-300" />
+                <p className="text-xs font-medium text-rust dark:text-amber-200">
                   DullBot is paused. You are currently chatting as a human agent. Toggle the switch above to re-enable AI.
                 </p>
               </div>
@@ -1430,12 +1430,12 @@ export default function InboxClient({
                                   ) : segment.type === 'video' ? (
                                     <SmartVideoPlayer src={segment.content} onOpenFullscreen={(url) => setPreviewMedia({ url, type: 'video' })} />
                                   ) : segment.type === 'audio' ? (
-                                    <div className={`px-4 py-2 rounded-2xl ${isCustomer ? 'bg-[#E4E6EB]' : 'bg-[#0084FF]'}`}>
+                                    <div className={`px-4 py-2 rounded-2xl ${isCustomer ? 'bg-[#E4E6EB] dark:bg-[#21262d]' : 'bg-[#0084FF]'}`}>
                                       <audio src={segment.content} controls className="max-w-full" />
                                     </div>
                                   ) : (
                                     <div className={`px-4 py-2 text-[15px] ${isCustomer
-                                      ? `bg-[#E4E6EB] text-[#050505] ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
+                                      ? `bg-[#E4E6EB] dark:bg-[#21262d] text-[#050505] dark:text-[#f0f6fc] border border-transparent dark:border-white/10 ${isFirst ? 'rounded-2xl rounded-tl-sm' : 'rounded-2xl'}`
                                       : `bg-[#0084FF] text-white ${isFirst ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl'}`
                                       }`}>
                                       {segment.content}

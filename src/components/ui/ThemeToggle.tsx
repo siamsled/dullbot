@@ -11,8 +11,8 @@ interface ThemeToggleProps {
 export default function ThemeToggle({ size = 'md', className = '' }: ThemeToggleProps) {
   const { isDark, toggleTheme } = useTheme();
 
-  // Width scaling
-  const widthPx = size === 'sm' ? 44 : size === 'lg' ? 70 : 54;
+  // Width scaling (reduced by ~30% for ultra-sleek appearance)
+  const widthPx = size === 'sm' ? 30 : size === 'lg' ? 48 : 38;
 
   return (
     <button
