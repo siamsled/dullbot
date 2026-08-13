@@ -250,29 +250,13 @@ export default function InventoryClient({
         </div>
       </motion.div>
 
-      {/* Reorder alert */}
+      {/* Reorder alert (Sleek & Minimizable) */}
       {reorderCandidates.length > 0 && tab === 'catalogue' && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mb-6"
-        >
-          <div className="bg-apricot-wash rounded-cards border border-rust/10 p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-rust shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-rust mb-1">
-                  {reorderCandidates.length} product{reorderCandidates.length !== 1 ? 's' : ''} projected to run out soon
-                </p>
-                <ReorderPanel
-                  candidates={reorderCandidates}
-                  suppliers={initialSuppliers}
-                  onRestocked={() => window.location.reload()}
-                />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <ReorderPanel
+          candidates={reorderCandidates}
+          suppliers={initialSuppliers}
+          onRestocked={() => window.location.reload()}
+        />
       )}
 
       {/* Tabs */}
