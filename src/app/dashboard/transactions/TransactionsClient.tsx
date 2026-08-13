@@ -217,7 +217,7 @@ export default function TransactionsClient({
       </div>
 
       {/* ── Transactions Table ────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#181d26] border border-dove/20 rounded-2xl relative shadow-xs">
+      <div className="bg-white border border-dove/20 rounded-2xl relative shadow-xs">
         {filteredTransactions.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center">
             <div className="w-12 h-12 rounded-full bg-fog flex items-center justify-center mb-3">
@@ -255,13 +255,13 @@ export default function TransactionsClient({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-dove/20 text-[10px] font-bold text-graphite uppercase tracking-wider">
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Gateway</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">TrxID / Reference</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Amount</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Sender</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Matching Order</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Relay Device</th>
-                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 text-right border-b border-dove/20 shadow-xs">Received</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Gateway</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">TrxID / Reference</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Amount</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Sender</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Matching Order</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Relay Device</th>
+                  <th className="sticky top-0 z-20 bg-fog backdrop-blur-md py-3 px-4 text-right border-b border-dove/20 shadow-xs">Received</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/15">

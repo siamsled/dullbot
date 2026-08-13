@@ -67,24 +67,24 @@
 .dark {
   /* Semantic color tokens — Tailwind utilities that reference these vars (bg-ink, text-ash, etc.)
      automatically invert in dark mode. No !important overrides needed. */
-  --color-ink: #f0f4f8;
-  --color-pure-white: #090b0e;
-  --color-fog: #12161e;
-  --color-ash: #94a3b8;
-  --color-graphite: #94a3b8;
-  --color-dove: #2a303c;
-  --color-slate: #64748b;
+  --color-ink: #ededed;
+  --color-pure-white: #000000;
+  --color-fog: #111111;
+  --color-ash: #888888;
+  --color-graphite: #a1a1aa;
+  --color-dove: #333333;
+  --color-slate: #71717a;
   --color-obsidian: #ffffff;
   --color-rust: #fb923c;
   --color-apricot-wash: rgba(251, 146, 60, 0.15);
   --color-sky-wash: rgba(56, 189, 248, 0.15);
 
-  --surface-canvas: #0c0f14;
-  --surface-fog: #12161e;
-  --surface-card: #181d26;
+  --surface-canvas: #000000;
+  --surface-fog: #111111;
+  --surface-card: #0a0a0a;
   --surface-warm-tint: rgba(251, 146, 60, 0.15);
   --surface-cool-tint: rgba(56, 189, 248, 0.15);
-  --surface-ink: #f0f4f8;
+  --surface-ink: #ededed;
   --shadow-subtle: 0px 0px 0px 1px rgba(255,255,255,0.07), 0px 8px 24px -4px rgba(0,0,0,0.6);
 
   color-scheme: dark;
@@ -100,51 +100,51 @@
 .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .dark select,
 .dark textarea {
-  background-color: #1a1f2a;
-  color: #f0f4f8;
-  border-color: rgba(255, 255, 255, 0.12);
+  background-color: #0a0a0a;
+  color: #ededed;
+  border-color: #333333;
   color-scheme: dark;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #64748b;
+  color: #888888;
 }
 
 /* ── Chat bubbles: hardcoded #E4E6EB hex can't be swapped via CSS vars ── */
 .dark .bg-\[\#E4E6EB\] {
-  background-color: #1e2533 !important;
-  color: #e8edf4 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: #111111 !important;
+  color: #ededed !important;
+  border: 1px solid #333333 !important;
 }
 
 .dark .text-\[\#050505\] {
-  color: #e8edf4 !important;
+  color: #ededed !important;
 }
 
 .dark .text-\[\#65676B\] {
-  color: #7e8fa8 !important;
+  color: #a1a1aa !important;
 }
 
 .dark .bg-\[\#E4E6EB\]\/60 {
-  background-color: rgba(30, 37, 51, 0.8) !important;
-  color: #7e8fa8 !important;
+  background-color: rgba(17, 17, 17, 0.8) !important;
+  color: #a1a1aa !important;
 }
 
 /* ── bg-white surfaces: card panels, dropdowns, wrappers need to darken ──
    Note: opacity variants (bg-white/95) use --tw-bg-opacity and are NOT
    matched by the plain .bg-white class selector, so opacity variants are safe. */
 .dark .bg-white {
-  background-color: #181d26;
+  background-color: #0a0a0a;
 }
 
-/* ── bg-ink buttons: in dark mode bg-ink becomes light (#f0f4f8), so text
+/* ── bg-ink buttons: in dark mode bg-ink becomes light, so text
    needs to be dark to remain readable. text-white on a light bg = invisible. ── */
 .dark .bg-ink {
-  color: #090b0e;
+  color: #000000;
 }
 .dark .bg-ink svg {
-  color: #090b0e;
+  color: #000000;
 }
 
 @theme {

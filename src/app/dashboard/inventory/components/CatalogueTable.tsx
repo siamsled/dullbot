@@ -231,7 +231,7 @@ export default function CatalogueTable({
             <p className="text-sm text-ash ml-2">Scraped products awaiting approval before the AI can sell them.</p>
           </div>
           <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
+            <thead className="sticky top-0 z-10 bg-fog/95/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 font-medium text-right">Price</th>
@@ -529,9 +529,9 @@ export default function CatalogueTable({
       ) : (
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10">
           <table className="w-full text-left text-sm border-collapse">
-            <thead className="bg-fog dark:bg-[#1e2330] backdrop-blur-md text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-2xs">
+            <thead className="bg-fog backdrop-blur-md text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-2xs">
               <tr>
-                <th className="sticky top-0 z-10 bg-fog dark:bg-[#1e2330] pl-5 pr-2 py-3 w-8">
+                <th className="sticky top-0 z-10 bg-fog pl-5 pr-2 py-3 w-8">
                   <input
                     type="checkbox"
                     checked={allPageSelected}
@@ -539,24 +539,24 @@ export default function CatalogueTable({
                     className="rounded border-dove/30 text-ink focus:ring-ink/30 cursor-pointer"
                   />
                 </th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">Image</th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">Image</th>
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">
                   <button onClick={() => toggleSort('name')} className="flex items-center gap-1 text-[10px] font-bold text-graphite uppercase tracking-wider hover:text-ink transition-colors cursor-pointer">
                     Product <SortIcon field="name" />
                   </button>
                 </th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-right text-[10px] font-bold text-graphite uppercase tracking-wider">
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-right text-[10px] font-bold text-graphite uppercase tracking-wider">
                   <button onClick={() => toggleSort('price')} className="flex items-center gap-1 text-[10px] font-bold text-graphite uppercase tracking-wider hover:text-ink transition-colors ml-auto cursor-pointer">
                     Price <SortIcon field="price" />
                   </button>
                 </th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-right text-[10px] font-bold text-graphite uppercase tracking-wider">
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-right text-[10px] font-bold text-graphite uppercase tracking-wider">
                   <button onClick={() => toggleSort('stock_quantity')} className="flex items-center gap-1 text-[10px] font-bold text-graphite uppercase tracking-wider hover:text-ink transition-colors ml-auto cursor-pointer">
                     Stock <SortIcon field="stock_quantity" />
                   </button>
                 </th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">Source</th>
-                <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">Source</th>
+                <th className="sticky top-0 z-20 bg-fog px-4 py-3 text-[10px] font-bold text-graphite uppercase tracking-wider">
                   <button onClick={() => toggleSort('updated_at')} className="flex items-center gap-1 text-[10px] font-bold text-graphite uppercase tracking-wider hover:text-ink transition-colors cursor-pointer">
                     Updated <SortIcon field="updated_at" />
                   </button>

@@ -171,10 +171,10 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
         initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        className="bg-white dark:bg-[#151921] rounded-cards border border-dove/20 dark:border-white/10 shadow-2xl w-full max-w-6xl h-[92vh] max-h-[860px] overflow-hidden flex flex-col"
+        className="bg-white rounded-cards border border-dove/20 dark:border-white/10 shadow-2xl w-full max-w-6xl h-[92vh] max-h-[860px] overflow-hidden flex flex-col"
       >
         {/* Top Header */}
-        <div className="px-6 py-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between bg-fog/40 dark:bg-[#11151c] shrink-0">
+        <div className="px-6 py-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between bg-fog/40 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-ink text-white flex items-center justify-center shadow-sm">
               <ShoppingBag className="w-5 h-5" />
@@ -202,7 +202,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
         <div className="flex-1 flex flex-row min-h-0 overflow-hidden divide-x divide-dove/10 dark:divide-white/10">
 
           {/* LEFT: Product Catalog & Search */}
-          <div className="flex-1 flex flex-col p-5 sm:p-6 min-h-0 min-w-0 bg-white dark:bg-[#151921] overflow-hidden">
+          <div className="flex-1 flex flex-col p-5 sm:p-6 min-h-0 min-w-0 bg-white overflow-hidden">
             {/* Search and Category Filter */}
             <div className="space-y-3 mb-4 shrink-0">
               <div className="relative">
@@ -212,7 +212,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                   placeholder="Search products by name or SKU..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-fog dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors shadow-xs"
+                  className="w-full pl-10 pr-4 py-2.5 bg-fog border border-dove/20 dark:border-white/10 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors shadow-xs"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                     className={`px-3 py-1 rounded-buttons text-[11px] font-semibold transition-all whitespace-nowrap capitalize cursor-pointer ${
                       selectedCategory === cat
                         ? 'bg-ink text-white shadow-xs'
-                        : 'bg-fog dark:bg-[#1c222c] text-ash hover:text-ink'
+                        : 'bg-fog text-ash hover:text-ink'
                     }`}
                   >
                     {cat}
@@ -262,11 +262,11 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                             ? 'bg-fog/50 dark:bg-white/5 border-dove/10 dark:border-white/5 opacity-50 cursor-not-allowed'
                             : inCart
                               ? 'bg-apricot-wash/30 dark:bg-rust/20 border-rust/30 dark:border-rust/40 shadow-subtle'
-                              : 'bg-white dark:bg-[#181d26] border-dove/15 dark:border-white/10 hover:border-ink hover:shadow-subtle'
+                              : 'bg-white border-dove/15 dark:border-white/10 hover:border-ink hover:shadow-subtle'
                         }`}
                       >
                         <div>
-                          <div className="w-full h-24 bg-fog dark:bg-[#12161e] rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-dove/10 dark:border-white/10">
+                          <div className="w-full h-24 bg-fog rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-dove/10 dark:border-white/10">
                             {p.image_url ? (
                               <img src={p.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
@@ -279,7 +279,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
 
                         <div className="mt-2 pt-2 border-t border-dove/10 dark:border-white/10 flex items-center justify-between w-full">
                           <span className="text-xs font-bold text-ink font-mono">৳{Number(p.price || 0).toLocaleString()}</span>
-                          <span className="p-1 rounded-md bg-fog dark:bg-[#1c222c] text-ink group-hover:bg-ink group-hover:text-white transition-colors">
+                          <span className="p-1 rounded-md bg-fog text-ink group-hover:bg-ink group-hover:text-white transition-colors">
                             <Plus className="w-3 h-3" />
                           </span>
                         </div>
@@ -292,14 +292,14 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
           </div>
 
           {/* RIGHT: Cart & Checkout Station */}
-          <div className="w-[360px] md:w-[400px] lg:w-[420px] shrink-0 flex flex-col p-5 sm:p-6 bg-fog/40 dark:bg-[#0f131a] min-h-0 overflow-y-auto">
+          <div className="w-[360px] md:w-[400px] lg:w-[420px] shrink-0 flex flex-col p-5 sm:p-6 bg-fog/40 min-h-0 overflow-y-auto">
             <h3 className="text-xs font-bold text-graphite uppercase tracking-wider mb-3 flex items-center justify-between">
               <span>Order Summary</span>
               <span className="text-ink font-mono">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
             </h3>
 
             {/* Cart Items List */}
-            <div className="bg-white dark:bg-[#151921] rounded-inputs border border-dove/15 dark:border-white/10 p-3 overflow-y-auto max-h-[180px] space-y-2 mb-4">
+            <div className="bg-white rounded-inputs border border-dove/15 dark:border-white/10 p-3 overflow-y-auto max-h-[180px] space-y-2 mb-4">
               {cart.length === 0 ? (
                 <div className="h-20 flex flex-col items-center justify-center text-ash text-xs">
                   <ShoppingBag className="w-5 h-5 opacity-30 mb-1" />
@@ -307,14 +307,14 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                 </div>
               ) : (
                 cart.map((item) => (
-                  <div key={item.productId} className="flex items-center justify-between p-2 rounded-lg bg-fog/40 dark:bg-[#1c222c] text-xs border border-dove/10 dark:border-white/10">
+                  <div key={item.productId} className="flex items-center justify-between p-2 rounded-lg bg-fog/40 text-xs border border-dove/10 dark:border-white/10">
                     <div className="flex-1 pr-2 min-w-0">
                       <p className="font-semibold text-ink truncate leading-tight">{item.productName}</p>
                       <p className="text-[10px] text-ash font-mono">৳{item.unitPrice.toLocaleString()} each</p>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <div className="flex items-center bg-white dark:bg-[#151921] border border-dove/20 dark:border-white/10 rounded-md">
+                      <div className="flex items-center bg-white border border-dove/20 dark:border-white/10 rounded-md">
                         <button
                           onClick={() => updateQuantity(item.productId, -1)}
                           className="p-1 hover:bg-fog dark:hover:bg-white/10 text-ash hover:text-ink transition-colors cursor-pointer"
@@ -355,7 +355,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                   <button
                     onClick={() => setIsWalkIn(true)}
                     className={`text-[10px] font-semibold px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
-                      isWalkIn ? 'bg-ink text-white' : 'bg-white dark:bg-[#181d26] border border-dove/20 dark:border-white/10 text-ash'
+                      isWalkIn ? 'bg-ink text-white' : 'bg-white border border-dove/20 dark:border-white/10 text-ash'
                     }`}
                   >
                     Walk-in
@@ -363,7 +363,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                   <button
                     onClick={() => setIsWalkIn(false)}
                     className={`text-[10px] font-semibold px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
-                      !isWalkIn ? 'bg-ink text-white' : 'bg-white dark:bg-[#181d26] border border-dove/20 dark:border-white/10 text-ash'
+                      !isWalkIn ? 'bg-ink text-white' : 'bg-white border border-dove/20 dark:border-white/10 text-ash'
                     }`}
                   >
                     Custom
@@ -372,20 +372,20 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
               </div>
 
               {!isWalkIn && (
-                <div className="space-y-2 bg-white dark:bg-[#151921] p-3 rounded-inputs border border-dove/15 dark:border-white/10">
+                <div className="space-y-2 bg-white p-3 rounded-inputs border border-dove/15 dark:border-white/10">
                   <input
                     type="text"
                     placeholder="Customer Name"
                     value={customerName}
                     onChange={e => setCustomerName(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-fog dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
+                    className="w-full px-2.5 py-1.5 bg-fog border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
                   />
                   <input
                     type="text"
                     placeholder="Phone (017...)"
                     value={customerPhone}
                     onChange={e => setCustomerPhone(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-fog dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
+                    className="w-full px-2.5 py-1.5 bg-fog border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
                   />
                 </div>
               )}
@@ -410,7 +410,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                       className={`p-2 rounded-inputs border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                         isSelected
                           ? 'border-ink bg-ink text-white shadow-xs'
-                          : 'border-dove/20 dark:border-white/10 bg-white dark:bg-[#181d26] hover:border-dove/40 text-ink'
+                          : 'border-dove/20 dark:border-white/10 bg-white hover:border-dove/40 text-ink'
                       }`}
                     >
                       <pm.icon className="w-3.5 h-3.5" />
@@ -426,7 +426,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                   placeholder="Transaction Ref / Card Slip ID..."
                   value={transactionRef}
                   onChange={e => setTransactionRef(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink mt-1.5"
+                  className="w-full px-2.5 py-1.5 bg-white border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink mt-1.5"
                 />
               )}
             </div>
@@ -441,7 +441,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                   value={discountAmount || ''}
                   onChange={e => setDiscountAmount(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
+                  className="w-full px-2.5 py-1.5 bg-white border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
                 />
               </div>
 
@@ -450,7 +450,7 @@ export default function PosModal({ isOpen, onClose, onOrderCreated, onPrintRecei
                 <select
                   value={fulfillmentType}
                   onChange={e => setFulfillmentType(e.target.value as any)}
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c222c] border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
+                  className="w-full px-2.5 py-1.5 bg-white border border-dove/20 dark:border-white/10 rounded text-xs text-ink focus:outline-none focus:border-ink"
                 >
                   <option value="in_person">Handover Now</option>
                   <option value="delivery">Courier Delivery</option>
