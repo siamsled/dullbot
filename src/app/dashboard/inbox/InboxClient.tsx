@@ -285,7 +285,7 @@ function HandoffSummaryCard({
   }
 
   return (
-    <div className="rounded-2xl border border-dove/15 bg-white shadow-subtle overflow-hidden">
+    <div className="rounded-2xl border border-dove/15 bg-white dark:bg-[#181d26] shadow-subtle overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3.5 py-2.5 bg-fog/80 border-b border-dove/10">
         <div className="flex items-center gap-1.5">
@@ -881,10 +881,10 @@ export default function InboxClient({
       )}
 
       {/* Main Inbox Workspace Container */}
-      <div className="flex-1 min-h-0 bg-white rounded-cards shadow-subtle border border-dove/20 flex overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white dark:bg-[#181d26] rounded-cards shadow-subtle border border-dove/20 dark:border-white/10 flex overflow-hidden">
         {/* Conversations List */}
         <div className="w-1/3 border-r border-dove/20 flex flex-col bg-fog">
-          <div className="p-3.5 border-b border-dove/10 bg-white space-y-2.5">
+          <div className="p-3.5 border-b border-dove/10 bg-white dark:bg-[#181d26] space-y-2.5">
             {/* Search Input */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1143,7 +1143,7 @@ export default function InboxClient({
         {activeId ? (
           <div className="flex-1 flex flex-col bg-pure-white relative min-h-0">
             {/* Chat Header */}
-            <div className="border-b border-dove/20 flex items-center justify-between px-4 py-3 bg-white shrink-0 gap-3 min-w-0">
+            <div className="border-b border-dove/20 flex items-center justify-between px-4 py-3 bg-white dark:bg-[#181d26] shrink-0 gap-3 min-w-0">
               {/* Identity Zone */}
               <div className="flex items-center gap-2.5 min-w-0">
                 <button
@@ -1583,7 +1583,7 @@ export default function InboxClient({
 
         {/* Customer Context Sidebar */}
         {activeId && activeConv && showSidebar && (
-          <div className="w-72 shrink-0 border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+          <div className="w-72 shrink-0 border-l border-dove/20 bg-white dark:bg-[#181d26] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <h3 className="text-xs font-bold text-ink uppercase tracking-widest">Customer Context</h3>
@@ -1693,7 +1693,7 @@ export default function InboxClient({
                     {showTagPicker === 'conv' && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(null)} />
-                        <div className="absolute left-0 mt-1 w-44 bg-white border border-dove/20 rounded-xl shadow-md py-1.5 z-20">
+                        <div className="absolute left-0 mt-1 w-44 bg-white dark:bg-[#1e2533] border border-dove/20 dark:border-white/10 rounded-xl shadow-md py-1.5 z-20">
                           {['Needs restock info', 'Escalated', 'Pending Payment', 'Order Issue', 'Callback'].filter(t => !(activeConv.conv_tags || []).includes(t)).map(tag => (
                             <button
                               key={tag}
@@ -1760,7 +1760,7 @@ export default function InboxClient({
             </div>
 
             {/* Sticky footer */}
-            <div className="shrink-0 p-3 border-t border-dove/10 bg-white">
+            <div className="shrink-0 p-3 border-t border-dove/10 bg-white dark:bg-[#181d26]">
               <button
                 onClick={async () => {
                   setConversations(prev => prev.map(c => c.id === activeId ? { ...c, status: 'bot_active', ticket_reason: null, assigned_to_id: null } : c));

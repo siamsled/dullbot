@@ -131,6 +131,22 @@
   color: #7e8fa8 !important;
 }
 
+/* ── bg-white surfaces: card panels, dropdowns, wrappers need to darken ──
+   Note: opacity variants (bg-white/95) use --tw-bg-opacity and are NOT
+   matched by the plain .bg-white class selector, so opacity variants are safe. */
+.dark .bg-white {
+  background-color: #181d26;
+}
+
+/* ── bg-ink buttons: in dark mode bg-ink becomes light (#f0f4f8), so text
+   needs to be dark to remain readable. text-white on a light bg = invisible. ── */
+.dark .bg-ink {
+  color: #090b0e;
+}
+.dark .bg-ink svg {
+  color: #090b0e;
+}
+
 @theme {
   --color-ink: var(--color-ink);
   --color-pure-white: var(--color-pure-white);
