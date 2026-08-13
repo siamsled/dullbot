@@ -27,12 +27,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('dullbot_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved);
-      applyTheme(saved);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (saved === 'dark') {
       setThemeState('dark');
       applyTheme('dark');
+    } else {
+      setThemeState('light');
+      applyTheme('light');
     }
   }, []);
 

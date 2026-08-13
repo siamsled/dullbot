@@ -37,8 +37,7 @@ export default function RootLayout({
             __html: `
               try {
                 var saved = localStorage.getItem('dullbot_theme');
-                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (saved === 'dark' || (!saved && prefersDark)) {
+                if (saved === 'dark') {
                   document.documentElement.classList.add('dark');
                   document.documentElement.setAttribute('data-dark-mode', 'true');
                 } else {

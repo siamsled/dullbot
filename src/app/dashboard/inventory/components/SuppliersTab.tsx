@@ -100,7 +100,7 @@ export default function SuppliersTab({ suppliers: initialSuppliers }: Props) {
       ) : (
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden">
           <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
+            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Phone</th>
