@@ -760,10 +760,41 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${o.status === 'confirmed' ? 'bg-green-50 border-green-150 text-green-800' : 'bg-apricot-wash border-rust/10 text-rust'
-                            }`}>
-                            {o.status === 'confirmed' ? 'Paid' : 'Pending'}
-                          </span>
+                          {(() => {
+                            const isCancelled = o.status === 'cancelled' || o.fulfillmentStatus === 'cancelled';
+                            const isPaid = o.status === 'confirmed';
+                            const isRefunded = o.status === 'refunded';
+
+                            if (isRefunded) {
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-300">
+                                  Refunded
+                                </span>
+                              );
+                            }
+
+                            if (isCancelled) {
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                                  Cancelled
+                                </span>
+                              );
+                            }
+
+                            if (isPaid) {
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-green-50 dark:bg-emerald-950/40 border-green-200 dark:border-emerald-500/30 text-green-700 dark:text-emerald-300">
+                                  Paid
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300">
+                                Pending
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${fConfig.bg} ${fConfig.text}`}>
@@ -955,7 +986,12 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </div>
                       )}
 
-                      {activeOrder.status !== 'confirmed' ? (
+                      {activeOrder.status === 'cancelled' || activeOrder.fulfillmentStatus === 'cancelled' ? (
+                        <div className="flex items-center gap-2 p-2.5 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 rounded-inputs text-xs border border-slate-200 dark:border-slate-700">
+                          <AlertTriangle className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span>This order was cancelled. Payment verification is disabled.</span>
+                        </div>
+                      ) : activeOrder.status !== 'confirmed' ? (
                         <div className="pt-2 space-y-2">
                           <span className="text-[10px] font-semibold text-rust uppercase tracking-wider block">Verify Payment Manually</span>
                           <p className="text-[10px] text-graphite leading-relaxed">
