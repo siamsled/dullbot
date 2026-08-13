@@ -18,7 +18,42 @@ export const supabaseAdmin = createClient(
   supabaseServiceKey || 'dummy'
 );
 
-export const getCurrentShop = cache(async function getCurrentShop() {
+export type StaffRole = 'owner' | 'manager' | 'cashier' | 'support' | 'custom';
+
+export interface ShopWithAuth {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug: string;
+  isOwner: boolean;
+  staffRole: StaffRole;
+  permissions: string[];
+  staffUserId?: string;
+  staffEmail?: string;
+  staffName?: string;
+  [key: string]: any;
+}
+
+export function hasShopPermission(shop: ShopWithAuth | null | undefined, permission: string): boolean {
+  if (!shop) return false;
+  if (shop.isOwner || shop.permissions?.includes('*')) return true;
+  return Array.isArray(shop.permissions) && shop.permissions.includes(permission);
+}
+
+export async function assertShopPermission(permission: string): Promise<ShopWithAuth> {
+  const shop = await getCurrentShop();
+  if (!shop) {
+    throw new Error('Unauthorized: No active shop session found.');
+  }
+
+  if (!hasShopPermission(shop, permission)) {
+    throw new Error(`Forbidden: Insufficient permissions for [${permission}].`);
+  }
+
+  return shop;
+}
+
+export const getCurrentShop = cache(async function getCurrentShop(): Promise<ShopWithAuth | null> {
   let cookieStore;
   try {
     cookieStore = await cookies();
@@ -46,7 +81,42 @@ export const getCurrentShop = cache(async function getCurrentShop() {
     if (userErr || !user) {
       return null;
     }
+
+    // 1. Check if user is an Employee/Staff member
+    if (user.app_metadata?.is_staff) {
+      const staffShopId = user.app_metadata.shop_id;
+      const staffStatus = user.app_metadata.status || 'active';
+      const staffRole = (user.app_metadata.role || 'cashier') as StaffRole;
+      const permissions: string[] = Array.isArray(user.app_metadata.permissions) 
+        ? user.app_metadata.permissions 
+        : ['orders', 'pos'];
+
+      if (staffStatus === 'suspended' || !staffShopId) {
+        return null;
+      }
+
+      const { data: shop, error: shopErr } = await supabaseAdmin
+        .from('shops')
+        .select('*')
+        .eq('id', staffShopId)
+        .single();
+
+      if (shopErr || !shop) {
+        return null;
+      }
+
+      return {
+        ...shop,
+        isOwner: false,
+        staffRole,
+        permissions,
+        staffUserId: user.id,
+        staffEmail: user.email,
+        staffName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Staff Member',
+      };
+    }
     
+    // 2. Check if user is the Shop Owner
     const { data: shop } = await supabaseAdmin
       .from('shops')
       .select('*')
@@ -54,7 +124,7 @@ export const getCurrentShop = cache(async function getCurrentShop() {
       .single();
       
     if (!shop) {
-      // Auto-create isolated shop for this logged-in user
+      // Auto-create isolated shop for this newly registered owner
       const userSlug = `store-${user.id.slice(0, 8)}`;
       const { data: newShop } = await supabaseAdmin
         .from('shops')
@@ -66,12 +136,30 @@ export const getCurrentShop = cache(async function getCurrentShop() {
         .select('*')
         .single();
 
-      if (newShop) return newShop;
+      if (newShop) {
+        return {
+          ...newShop,
+          isOwner: true,
+          staffRole: 'owner',
+          permissions: ['*'],
+          staffUserId: user.id,
+          staffEmail: user.email,
+          staffName: user.user_metadata?.full_name || 'Store Owner',
+        };
+      }
 
       return null;
     }
     
-    return shop;
+    return {
+      ...shop,
+      isOwner: true,
+      staffRole: 'owner',
+      permissions: ['*'],
+      staffUserId: user.id,
+      staffEmail: user.email,
+      staffName: user.user_metadata?.full_name || 'Store Owner',
+    };
   } catch (e) {
     console.error('Error getting current shop:', e);
     return null;

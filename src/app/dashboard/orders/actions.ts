@@ -1,14 +1,13 @@
 'use server';
 
-import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin, assertShopPermission } from '@/lib/supabase-admin';
 import { triggerCourierShipment } from '@/lib/courier';
 
 /**
- * Verifies that the logged-in user owns the shop that the specified order belongs to.
+ * Verifies that the logged-in user has 'orders' permission for the shop that the specified order belongs to.
  */
 async function verifyOrderOwnership(orderId: string): Promise<string> {
-  const shop = await getCurrentShop();
-  if (!shop) throw new Error('Unauthorized: No shop session found.');
+  const shop = await assertShopPermission('orders');
 
   const { data: order, error } = await supabaseAdmin
     .from('orders')
@@ -17,7 +16,7 @@ async function verifyOrderOwnership(orderId: string): Promise<string> {
     .single();
 
   if (error || !order || order.shop_id !== shop.id) {
-    throw new Error('Unauthorized: You do not own this order.');
+    throw new Error('Unauthorized: You do not have access to this order.');
   }
 
   return shop.id;
@@ -277,8 +276,7 @@ export async function toggleNeedsReview(orderId: string, needsReview: boolean, r
 
 export async function bulkConfirmPayment(orderIds: string[]) {
   try {
-    const shop = await getCurrentShop();
-    if (!shop) throw new Error('Unauthorized: No shop session found.');
+    const shop = await assertShopPermission('orders');
 
     // 1. Confirm all orders that belong to this shop in a single batched update
     const { error: updateErr } = await supabaseAdmin
@@ -336,8 +334,7 @@ export async function bulkConfirmPayment(orderIds: string[]) {
 
 export async function bulkDispatchToCourier(orderIds: string[]) {
   try {
-    const shop = await getCurrentShop();
-    if (!shop) throw new Error('Unauthorized: No shop session found.');
+    const shop = await assertShopPermission('orders');
 
     // 1. Trigger bookings in parallel
     const results = await Promise.all(

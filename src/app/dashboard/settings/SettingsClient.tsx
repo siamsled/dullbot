@@ -12,6 +12,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
+import StaffManagementSection from './staff/StaffManagementSection';
 
 /* ─── constants ─────────────────────────────────────────── */
 const RETAIL_CATEGORIES      = ['Fashion', 'Electronics', 'Beauty', 'Food', 'Home goods', 'Other'];
@@ -847,6 +848,14 @@ export default function SettingsClient({ shop }: { shop: any }) {
             </div>
           )}
         </SettingsCard>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
+          SECTION 6 — TEAM & PERMISSIONS (RBAC)
+          ══════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel>Team & Staff Permissions</SectionLabel>
+        <StaffManagementSection shopId={shop.id} isOwner={shop.isOwner !== false} />
       </section>
 
       {/* ── GLOBAL SAVE BUTTON ── */}

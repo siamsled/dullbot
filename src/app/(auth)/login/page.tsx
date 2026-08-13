@@ -209,8 +209,18 @@ function LoginContent() {
                 {loading ? 'Connecting to Google…' : 'Continue with Google'}
               </button>
 
+              {/* Staff Portal Link */}
+              <div className="mt-5 text-center">
+                <Link
+                  href="/staff-login"
+                  className="text-xs text-white/60 hover:text-white transition-colors inline-flex items-center gap-1 font-medium"
+                >
+                  Store employee? <span className="underline text-white">Log in with Employee ID →</span>
+                </Link>
+              </div>
+
               {/* Secure Notice */}
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255, 255, 255, 0.4)', marginTop: 20, lineHeight: 1.5 }}>
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255, 255, 255, 0.4)', marginTop: 16, lineHeight: 1.5 }}>
                 By continuing, you agree to our Terms of Service & Privacy Policy.
               </p>
             </div>

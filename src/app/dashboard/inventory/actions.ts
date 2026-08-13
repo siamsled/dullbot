@@ -1,12 +1,12 @@
 'use server';
-import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin, assertShopPermission } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-async function getShopId(): Promise<string | null> {
-  const shop = await getCurrentShop();
-  return shop?.id ?? null;
+async function getShopId(): Promise<string> {
+  const shop = await assertShopPermission('inventory');
+  return shop.id;
 }
 
 function revalidate() {
@@ -16,17 +16,23 @@ function revalidate() {
 // ─── Draft / Scraping Workflow (preserved from Phase 3) ─────────────────────────
 
 export async function approveProduct(productId: string) {
+  const shopId = await getShopId();
+
   // Fetch product to get current stock for the movement row
   const { data: product } = await supabaseAdmin
     .from('products')
     .select('shop_id, stock_quantity')
     .eq('id', productId)
+    .eq('shop_id', shopId)
     .single();
+
+  if (!product) throw new Error('Product not found or unauthorized');
 
   await supabaseAdmin
     .from('products')
     .update({ draft: false, is_active: true, updated_at: new Date().toISOString() })
-    .eq('id', productId);
+    .eq('id', productId)
+    .eq('shop_id', shopId);
 
   // Write import movement if there's stock
   if (product && (product.stock_quantity ?? 0) > 0) {
@@ -44,15 +50,18 @@ export async function approveProduct(productId: string) {
 }
 
 export async function rejectProduct(productId: string) {
-  await supabaseAdmin.from('products').delete().eq('id', productId);
+  const shopId = await getShopId();
+  await supabaseAdmin.from('products').delete().eq('id', productId).eq('shop_id', shopId);
   revalidate();
 }
 
 export async function toggleProductActive(productId: string, isActive: boolean) {
+  const shopId = await getShopId();
   await supabaseAdmin
     .from('products')
     .update({ is_active: !isActive, updated_at: new Date().toISOString() })
-    .eq('id', productId);
+    .eq('id', productId)
+    .eq('shop_id', shopId);
   revalidate();
 }
 
@@ -167,7 +176,8 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(productId: string) {
-  await supabaseAdmin.from('products').delete().eq('id', productId);
+  const shopId = await getShopId();
+  await supabaseAdmin.from('products').delete().eq('id', productId).eq('shop_id', shopId);
   revalidate();
 }
 
@@ -175,7 +185,8 @@ export async function deleteProduct(productId: string) {
 
 export async function bulkDeleteProducts(ids: string[]) {
   if (!ids.length) return;
-  await supabaseAdmin.from('products').delete().in('id', ids);
+  const shopId = await getShopId();
+  await supabaseAdmin.from('products').delete().in('id', ids).eq('shop_id', shopId);
   revalidate();
 }
 

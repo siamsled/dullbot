@@ -147,15 +147,28 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
     baseItems.push({ name: 'Inventory', href: '/dashboard/inventory', icon: Box, id: 'nav-inventory' });
   }
 
-  const navItems = [
-    ...baseItems,
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart, id: 'nav-analytics' },
-    { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight, id: 'nav-transactions' },
-    { name: 'AI Tuning', href: '/dashboard/ai-tuning', icon: Sliders, id: 'nav-tuning' },
-    { name: 'Social', href: '/dashboard/social', icon: Megaphone, id: 'nav-social' },
-    { name: 'Credits', href: '/dashboard/credits', icon: Zap, id: 'nav-credits' },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings, id: 'nav-settings' },
+  const rawNavItems = [
+    ...baseItems.map(item => ({
+      ...item,
+      permission: item.id === 'nav-overview' ? 'overview' : item.id === 'nav-inbox' ? 'inbox' : item.id === 'nav-orders' ? 'orders' : 'inventory',
+    })),
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart, id: 'nav-analytics', permission: 'analytics' },
+    { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight, id: 'nav-transactions', permission: 'orders' },
+    { name: 'AI Tuning', href: '/dashboard/ai-tuning', icon: Sliders, id: 'nav-tuning', permission: 'settings' },
+    { name: 'Social', href: '/dashboard/social', icon: Megaphone, id: 'nav-social', permission: 'settings' },
+    { name: 'Credits', href: '/dashboard/credits', icon: Zap, id: 'nav-credits', permission: 'settings' },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings, id: 'nav-settings', permission: 'settings' },
   ];
+
+  // RBAC Permission Filter: owners see everything; staff see only their permitted routes
+  const isOwner = shop?.isOwner !== false;
+  const userPermissions = Array.isArray(shop?.permissions) ? shop.permissions : ['*'];
+
+  const navItems = rawNavItems.filter(item => {
+    if (isOwner || userPermissions.includes('*')) return true;
+    if (item.permission === 'overview') return true; // Overview always accessible
+    return userPermissions.includes(item.permission);
+  });
 
   const getInitials = (name?: string) => {
     if (!name) return 'DB';
@@ -285,12 +298,16 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
           <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 shrink-0 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                {getInitials(shop?.name)}
+                {getInitials(shop?.staffName || shop?.name)}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-ink truncate max-w-[95px]">{shop?.name || 'Dull Store'}</span>
-                <span className="inline-flex items-center gap-1 text-[9px] font-medium text-green-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+                <span className="text-xs font-semibold text-ink truncate max-w-[95px]">{shop?.staffName || shop?.name || 'Dull Store'}</span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-graphite capitalize">
+                  {shop?.isOwner === false ? (
+                    <span className="text-rust bg-apricot-wash px-1 rounded border border-rust/10 font-bold">{shop?.staffRole || 'Staff'}</span>
+                  ) : (
+                    <span className="text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">Owner</span>
+                  )}
                 </span>
               </div>
             </div>
