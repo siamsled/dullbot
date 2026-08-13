@@ -7,6 +7,7 @@ import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Z
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 const UNLOCK_ANIM_KEY = 'dullbot_unlocked_anim';
 const SIDEBAR_COLLAPSED_KEY = 'dullbot_sidebar_collapsed';
@@ -292,8 +293,21 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         })}
       </nav>
 
-      {/* Footer Shop & Logout Card */}
-      <div className="p-3 border-t border-dove/10 shrink-0">
+      {/* Footer Theme Switch & Shop Profile */}
+      <div className="p-3 border-t border-dove/10 shrink-0 space-y-2">
+        {/* Theme Switch Row */}
+        {isEffectiveExpanded ? (
+          <div className="flex items-center justify-between px-1.5 py-1 text-xs">
+            <span className="text-[11px] font-semibold text-graphite">Appearance</span>
+            <ThemeToggle size="md" />
+          </div>
+        ) : (
+          <div className="flex justify-center pb-1">
+            <ThemeToggle size="sm" />
+          </div>
+        )}
+
+        {/* User / Shop Card */}
         {isEffectiveExpanded ? (
           <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -314,7 +328,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             <button
               onClick={handleSignOut}
               title="Sign out / Switch account"
-              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors shrink-0"
+              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -327,7 +341,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             <button
               onClick={handleSignOut}
               title="Sign out"
-              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors"
+              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
