@@ -255,13 +255,13 @@ export default function TransactionsClient({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-dove/20 text-[10px] font-bold text-graphite uppercase tracking-wider">
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Gateway</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">TrxID / Reference</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Amount</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Sender</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Matching Order</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Relay Device</th>
-                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#1e2330]/80 backdrop-blur-md py-3 px-4 text-right border-b border-dove/20 shadow-xs">Received</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Gateway</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">TrxID / Reference</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Amount</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Sender</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Matching Order</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Relay Device</th>
+                  <th className="sticky top-0 z-20 bg-fog dark:bg-[#1e2330] backdrop-blur-md py-3 px-4 text-right border-b border-dove/20 shadow-xs">Received</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/15">
