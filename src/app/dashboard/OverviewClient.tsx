@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import {
   Activity, MessageSquareText, Package, Clock, X,
-  CheckCircle2, Plus, ChevronRight, Sparkles, AlertTriangle
+  CheckCircle2, Plus, ChevronRight, Sparkles, AlertTriangle,
+  ShoppingBag, Zap, TrendingUp, Users, AlertCircle, Hourglass, ShieldAlert
 } from 'lucide-react';
 import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
@@ -281,7 +282,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-md border border-dove/20 rounded-inputs px-5 py-3.5 flex items-center justify-between shadow-subtle"
+          className="bg-white/80 backdrop-blur-md border border-dove/20 rounded-inputs px-5 py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-subtle"
         >
           <div className="flex items-center gap-3">
             <Sparkles className="w-4 h-4 text-rust shrink-0 animate-pulse" />
@@ -289,96 +290,146 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               <span className="text-rust">Insight:</span> {getInsightCallout()}
             </p>
           </div>
-          <UiversePulseBadge label="Live Intelligence" status="rust" size="sm" />
+
+          <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end shrink-0">
+            {/* Credits Balance Widget */}
+            <Link
+              href="/dashboard/credits"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                (currentStats.creditBalance ?? 0) < 50
+                  ? 'bg-rose-50 text-rust border-rust/30 hover:bg-rose-100'
+                  : 'bg-fog text-ink border-dove/20 hover:border-ink'
+              }`}
+              title="Click to top up AI reply credits"
+            >
+              <Zap className={`w-3.5 h-3.5 ${(currentStats.creditBalance ?? 0) < 50 ? 'text-rust fill-rust' : 'text-amber-500'}`} />
+              <span>{(currentStats.creditBalance ?? 0).toLocaleString()} replies left</span>
+            </Link>
+
+            {/* Quick POS New Order Button */}
+            <Link
+              href="/dashboard/orders"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-ink text-white text-xs font-semibold rounded-buttons hover:bg-black transition-all shadow-subtle"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>New Order</span>
+            </Link>
+          </div>
         </motion.div>
       </div>
 
-      {/* Soft Progress Nudge Widget */}
-      <AnimatePresence>
-        {!isNudgeDismissed && !allSoftDone && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className="bg-white rounded-cards shadow-subtle border border-dove/15 overflow-hidden"
-          >
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-ink text-sm">Finish setting up</h3>
-                <p className="text-xs text-ash mt-0.5 flex items-center gap-2">
-                  <span>{softStepsDoneCount} of {softSteps.length} optional steps done.</span>
-                  <UiversePulseBadge label="DullBot is live" status="active" size="sm" />
-                </p>
-              </div>
-              <button
-                onClick={dismissNudge}
-                className="p-1 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors mt-0.5"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* FRONT & CENTER NEEDS-ATTENTION STRIP */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 text-rust" /> Needs Attention Right Now
+          </h2>
+          <span className="text-[11px] text-ash">Action items requiring merchant review</span>
+        </div>
 
-            <div className="px-6 pb-4 flex flex-col divide-y divide-dove/10">
-              {softSteps.map((step) => (
-                <div key={step.id} className="flex items-center gap-3 py-3">
-                  {step.done ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-dashed border-dove/40 shrink-0" />
-                  )}
-                  <span className={`flex-1 text-sm ${step.done ? 'text-ash line-through' : 'text-ink'}`}>
-                    {step.title}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Pending Payments / Aging */}
+          <Link
+            href="/dashboard/orders"
+            className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
+              (currentStats.pendingOrders ?? 0) > 0
+                ? 'bg-white border-rust/30 hover:border-rust hover:shadow-hover'
+                : 'bg-white border-dove/10 hover:border-dove/30'
+            }`}
+          >
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-xs font-bold text-ink">Pending Payments</span>
+                {(currentStats.pendingAgingCount ?? 0) > 0 && (
+                  <span className="px-1.5 py-0.5 bg-rose-100 text-rust text-[9px] font-bold rounded">
+                    {currentStats.pendingAgingCount} aging &gt;2h
                   </span>
-                  {!step.done && (
-                    <Link
-                      href={step.link}
-                      className="shrink-0 px-3.5 py-1 text-xs font-semibold bg-fog text-ink border border-dove/20 rounded-buttons hover:bg-dove/15 hover:border-ink transition-colors flex items-center gap-1 shadow-subtle"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {step.actionLabel}
-                    </Link>
-                  )}
-                </div>
-              ))}
+                )}
+              </div>
+              <p className="text-2xl font-serif font-medium text-ink leading-none">{currentStats.pendingOrders ?? 0}</p>
+              <span className="text-[10px] text-ash mt-1 block">Awaiting payment verification</span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="w-10 h-10 rounded-xl bg-fog group-hover:bg-apricot-wash text-ink group-hover:text-rust flex items-center justify-center transition-colors">
+              <Clock className="w-5 h-5" />
+            </div>
+          </Link>
+
+          {/* Payment Discrepancies & Flagged Reviews */}
+          <Link
+            href="/dashboard/orders"
+            className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
+              (currentStats.paymentMismatches ?? 0) > 0
+                ? 'bg-white border-rose-300 hover:border-rose-400 hover:shadow-hover'
+                : 'bg-white border-dove/10 hover:border-dove/30'
+            }`}
+          >
+            <div>
+              <span className="text-xs font-bold text-ink block mb-1">Flagged for Review</span>
+              <p className="text-2xl font-serif font-medium text-ink leading-none">{currentStats.paymentMismatches ?? 0}</p>
+              <span className="text-[10px] text-ash mt-1 block">Amount or transaction mismatches</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-fog group-hover:bg-rose-100 text-ink group-hover:text-rose-700 flex items-center justify-center transition-colors">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+          </Link>
+
+          {/* Low Stock Alerts */}
+          <Link
+            href="/dashboard/inventory"
+            className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
+              (currentStats.lowStockProducts ?? 0) > 0
+                ? 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-hover'
+                : 'bg-white border-dove/10 hover:border-dove/30'
+            }`}
+          >
+            <div>
+              <span className="text-xs font-bold text-ink block mb-1">Low Stock Products</span>
+              <p className="text-2xl font-serif font-medium text-ink leading-none">{currentStats.lowStockProducts ?? 0}</p>
+              <span className="text-[10px] text-ash mt-1 block">&lt; 5 units remaining in catalog</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-fog group-hover:bg-amber-100 text-ink group-hover:text-amber-800 flex items-center justify-center transition-colors">
+              <Package className="w-5 h-5" />
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* METRIC TILES (UIverse Glass Cards) */}
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
       >
         {[
-          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs previous period', icon: Package, variant: 'warm' as const },
-          { label: 'Orders Captured', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs previous period', icon: Package, variant: 'default' as const },
-          { label: 'Conversations', value: currentStats.convsTotal, series: currentStats.convSeries, delta: currentStats.convDelta, sub: 'vs previous period', icon: MessageSquareText, variant: 'cool' as const },
-          { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'Active & handling traffic', icon: Activity, variant: 'default' as const }
+          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs prev', icon: Package, variant: 'warm' as const },
+          { label: 'Orders', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs prev', icon: Package, variant: 'default' as const },
+          { label: 'Avg Order Value', value: `৳${(currentStats.aovTotal ?? 0).toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.aovDelta, sub: 'vs prev', icon: TrendingUp, variant: 'default' as const },
+          { label: 'Conversion %', value: `${currentStats.inquiryConvRate ?? 0}%`, series: currentStats.convSeries, delta: null, sub: 'inquiries → orders', icon: Users, variant: 'cool' as const },
+          { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'handling chats', icon: Activity, variant: 'default' as const },
+          { label: 'Customer Pulse', value: `${currentStats.todayNewCustomers ?? 0} new / ${currentStats.todayReturningCustomers ?? 0} rpt`, series: currentStats.ordersSeries, delta: null, sub: "today's split", icon: Users, variant: 'default' as const },
         ].map((tile, idx) => (
           <UiverseGlassCard
             key={idx}
             variant={tile.variant}
-            className="flex flex-col justify-between"
+            className="flex flex-col justify-between p-4 min-h-[140px]"
           >
             <div>
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start mb-2">
                 <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider">{tile.label}</span>
-                <span className="p-1.5 bg-white/80 backdrop-blur-sm text-ink rounded-lg shadow-sm border border-dove/10"><tile.icon className="w-4 h-4" /></span>
+                <span className="p-1 bg-white/80 backdrop-blur-sm text-ink rounded shadow-xs border border-dove/10"><tile.icon className="w-3.5 h-3.5" /></span>
               </div>
-              <p className="text-[32px] font-serif text-ink tracking-tight font-medium leading-none">{tile.value}</p>
+              <p className="text-[22px] font-serif text-ink tracking-tight font-medium leading-none">{tile.value}</p>
             </div>
-            <div className="mt-4">
+            <div className="mt-3">
               <Sparkline data={tile.series} />
-              <div className="flex justify-between items-center text-[10px] text-ash mt-2 font-semibold">
-                {tile.delta !== null ? (
-                  <span className={`px-1.5 py-0.5 rounded-full ${tile.delta >= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rust'}`}>
+              <div className="flex justify-between items-center text-[9px] text-ash mt-1.5 font-semibold">
+                {tile.delta !== null && tile.delta !== undefined ? (
+                  <span className={`px-1.5 py-0.2 rounded-full ${tile.delta >= 0 ? 'bg-emerald-100/80 text-emerald-700' : 'bg-rose-100/80 text-rust'}`}>
                     {tile.delta >= 0 ? '↑' : '↓'} {Math.abs(tile.delta)}%
                   </span>
                 ) : (
-                  <UiversePulseBadge label="Active" status="active" size="sm" />
+                  <span className="text-graphite font-mono">pulse</span>
                 )}
                 <span>{tile.sub}</span>
               </div>

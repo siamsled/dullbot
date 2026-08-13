@@ -8,10 +8,11 @@ import {
   Package, Clock, CheckCircle2, Search, ArrowRight, ShieldAlert,
   AlertTriangle, Filter, ClipboardList, HelpCircle, X, ExternalLink,
   ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
-  Printer, ChevronDown, Smartphone, ShieldCheck
+  Printer, ChevronDown, Smartphone, ShieldCheck, ShoppingBag, Banknote, Hourglass
 } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
+import PosModal from './PosModal';
 import {
   verifyPaymentManually, dispatchToCourier, dispatchToCourierWithProvider, cancelOrder,
   updateInternalNote, toggleNeedsReview, bulkConfirmPayment,
@@ -105,6 +106,9 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const [printCopies, setPrintCopies] = useState(1);
   const [printPageSize, setPrintPageSize] = useState<'thermal_80mm' | 'a4'>('thermal_80mm');
   const [printModalOpen, setPrintModalOpen] = useState(false);
+
+  // POS State
+  const [posModalOpen, setPosModalOpen] = useState(false);
 
   const activeOrder = orders.find(o => o.id === activeOrderId);
 
@@ -467,6 +471,22 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }
   };
 
+  // POS & Till Calculations
+  const todayTimestamp = Date.now() - 24 * 60 * 60 * 1000;
+  const todayOrders = orders.filter(o => new Date(o.createdAt).getTime() >= todayTimestamp);
+  const todayCashInTill = todayOrders
+    .filter(o => o.paymentMethod === 'cash')
+    .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+  const todayPosOrders = todayOrders.filter(o => (o.internalNote && o.internalNote.includes('[POS SALE]')) || o.paymentMethod === 'cash');
+  const todayChatOrders = todayOrders.filter(o => !((o.internalNote && o.internalNote.includes('[POS SALE]')) || o.paymentMethod === 'cash'));
+  const todayPosRevenue = todayPosOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const todayChatRevenue = todayChatOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+  // Aging Pending Verification (> 2 hours old)
+  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+  const agingPendingCount = orders.filter(o => o.status === 'pending_verification' && new Date(o.createdAt).getTime() < twoHoursAgo).length;
+
   return (
     <div className="flex-1 overflow-y-auto h-full w-full">
       <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 relative">
@@ -475,16 +495,81 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Orders</h1>
-            <p className="text-ash text-sm">Review payments, dispatch couriers, and track fulfillment cycles.</p>
+            <p className="text-ash text-sm">Review payments, dispatch couriers, and process in-store POS sales.</p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
             <button
               onClick={() => handleExportCSV()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-fog border border-dove/20 text-ink font-semibold rounded-buttons hover:bg-dove/15 transition-all text-xs shadow-subtle"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-fog border border-dove/20 text-ink font-semibold rounded-buttons hover:bg-dove/15 transition-all text-xs shadow-subtle cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              Export Filtered CSV
+              Export CSV
             </button>
+            <button
+              onClick={() => setPosModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-ink text-white font-semibold rounded-buttons hover:bg-black transition-all text-xs shadow-subtle cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              New POS Order
+            </button>
+          </div>
+        </div>
+
+        {/* POS TILL & AGING ALERT STRIP */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Cash in Till */}
+          <div className="bg-white rounded-cards p-4 border border-dove/10 shadow-subtle flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Today's Cash in Till</span>
+              <p className="text-2xl font-serif font-medium text-ink leading-none">৳{todayCashInTill.toLocaleString()}</p>
+              <span className="text-[10px] text-ash mt-1 block">Physical drawer cash from POS</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-150 shadow-xs">
+              <Banknote className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Sales Origin Split (POS vs Chat) */}
+          <div className="bg-white rounded-cards p-4 border border-dove/10 shadow-subtle flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Today's Sales Split</span>
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="text-xs font-bold text-ink font-mono">৳{todayPosRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash block">🛍️ In-Person POS ({todayPosOrders.length})</span>
+                </div>
+                <div className="w-px h-6 bg-dove/20" />
+                <div>
+                  <span className="text-xs font-bold text-ink font-mono">৳{todayChatRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash block">💬 Chat AI ({todayChatOrders.length})</span>
+                </div>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-fog text-ink flex items-center justify-center border border-dove/10 shadow-xs">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Pending Verification Aging */}
+          <div className={`rounded-cards p-4 border shadow-subtle flex items-center justify-between transition-colors ${
+            agingPendingCount > 0 
+              ? 'bg-apricot-wash/50 border-rust/20' 
+              : 'bg-white border-dove/10'
+          }`}>
+            <div>
+              <span className="text-[10px] font-bold text-rust uppercase tracking-wider block mb-1">Pending Payment Aging</span>
+              <p className="text-2xl font-serif font-medium text-ink leading-none">
+                {agingPendingCount} {agingPendingCount === 1 ? 'order' : 'orders'}
+              </p>
+              <span className="text-[10px] text-ash mt-1 block">
+                {agingPendingCount > 0 ? 'Stuck pending > 2 hours' : 'All verifications up to date'}
+              </span>
+            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-xs border ${
+              agingPendingCount > 0 ? 'bg-white text-rust border-rust/10' : 'bg-fog text-ash border-dove/10'
+            }`}>
+              <Hourglass className="w-5 h-5" />
+            </div>
           </div>
         </div>
 
@@ -995,11 +1080,11 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                                 onChange={e => setSelectedCourier(e.target.value)}
                                 className="w-full appearance-none px-3 py-2 pr-8 bg-fog border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all font-semibold text-ink uppercase cursor-pointer"
                               >
-                                <option value="pathao">Pathao</option>
-                                <option value="steadfast">Steadfast</option>
-                                <option value="redx">RedX</option>
-                                <option value="paperfly">Paperfly</option>
-                                <option value="ecourier">eCourier</option>
+                                <option value="pathao">Pathao (~1.8d avg delivery)</option>
+                                <option value="steadfast">Steadfast (~2.1d avg delivery)</option>
+                                <option value="redx">RedX (~2.5d avg delivery)</option>
+                                <option value="paperfly">Paperfly (~3.0d avg delivery)</option>
+                                <option value="ecourier">eCourier (~2.2d avg delivery)</option>
                                 <option value="manual">Manual (no API)</option>
                               </select>
                               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-graphite pointer-events-none" />
@@ -1238,6 +1323,18 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
             </>
           )}
         </AnimatePresence>
+
+        {/* POS CHECKOUT MODAL */}
+        <PosModal
+          isOpen={posModalOpen}
+          onClose={() => setPosModalOpen(false)}
+          onOrderCreated={(newOrder) => {
+            setOrders(prev => [newOrder, ...prev]);
+          }}
+          onPrintReceipt={(newOrder) => {
+            openPrintManager([newOrder]);
+          }}
+        />
 
       </div>
     </div>

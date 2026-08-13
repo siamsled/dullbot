@@ -9,6 +9,12 @@ import {
   getChannelPerformance,
   getTopProducts,
   getPaymentStats,
+  getProfitMargins,
+  getBasketAnalysis,
+  getInventoryRunway,
+  getCourierPerformance,
+  getPaymentMethodBreakdown,
+  getCancellationBreakdown,
 } from '@/lib/analytics';
 
 export async function fetchAnalyticsByRange(rawRange: number) {
@@ -25,6 +31,12 @@ export async function fetchAnalyticsByRange(rawRange: number) {
     channelPerformance,
     topProducts,
     paymentStats,
+    profitMargins,
+    basketAnalysis,
+    inventoryRunway,
+    courierPerformance,
+    paymentBreakdown,
+    cancellationBreakdown,
   ] = await Promise.all([
     getRevenueTrend(shop.id, days),
     getPeakOrderTimes(shop.id, days),
@@ -33,6 +45,12 @@ export async function fetchAnalyticsByRange(rawRange: number) {
     getChannelPerformance(shop.id, days),
     getTopProducts(shop.id, days),
     getPaymentStats(shop.id, days),
+    getProfitMargins(shop.id, days),
+    getBasketAnalysis(shop.id, days),
+    getInventoryRunway(shop.id, days),
+    getCourierPerformance(shop.id, days),
+    getPaymentMethodBreakdown(shop.id, days),
+    getCancellationBreakdown(shop.id, days),
   ]);
 
   return {
@@ -43,5 +61,11 @@ export async function fetchAnalyticsByRange(rawRange: number) {
     channelPerformance,
     topProducts,
     paymentStats,
+    profitMargins,
+    basketAnalysis,
+    inventoryRunway,
+    courierPerformance,
+    paymentBreakdown,
+    cancellationBreakdown,
   };
 }

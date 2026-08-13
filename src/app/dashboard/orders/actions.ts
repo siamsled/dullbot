@@ -370,3 +370,163 @@ export async function bulkDispatchToCourier(orderIds: string[]) {
     return { success: false, error: err.message };
   }
 }
+
+export type PosLineItemInput = {
+  productId: string;
+  variantId?: string | null;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  imageUrl?: string | null;
+};
+
+export type PosOrderPayload = {
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  paymentMethod: 'cash' | 'bkash' | 'nagad' | 'card';
+  transactionRef?: string;
+  deliveryCharge?: number;
+  discountAmount?: number;
+  fulfillmentType: 'in_person' | 'delivery';
+  items: PosLineItemInput[];
+  note?: string;
+};
+
+/**
+ * Retrieves active inventory products for POS checkout.
+ */
+export async function fetchPosProducts() {
+  try {
+    const shop = await assertShopPermission('pos');
+    const { data: products, error } = await supabaseAdmin
+      .from('products')
+      .select('id, name, price, stock_quantity, image_url, category, sku')
+      .eq('shop_id', shop.id)
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) throw new Error(error.message);
+    return { success: true, products: products ?? [] };
+  } catch (err: any) {
+    console.error('Error fetching POS products:', err);
+    return { success: false, error: err.message, products: [] };
+  }
+}
+
+/**
+ * Creates an in-person or manual POS order, atomically decrements stock via RPC, and logs history.
+ */
+export async function createPosOrder(payload: PosOrderPayload) {
+  try {
+    const shop = await assertShopPermission('pos');
+
+    if (!payload.items || payload.items.length === 0) {
+      throw new Error('At least one item is required in the cart.');
+    }
+
+    const itemsSubtotal = payload.items.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
+    const deliveryCharge = payload.fulfillmentType === 'delivery' ? (payload.deliveryCharge ?? 100) : 0;
+    const discount = payload.discountAmount ?? 0;
+    const totalAmount = Math.max(0, itemsSubtotal + deliveryCharge - discount);
+
+    const isDelivered = payload.fulfillmentType === 'in_person';
+    const fulfillmentStatus = isDelivered ? 'delivered' : 'awaiting_dispatch';
+    const status = 'confirmed'; // POS orders are paid immediately
+
+    const operatorName = shop.staffName || (shop.isOwner ? 'Store Owner' : 'POS Cashier');
+
+    // 1. Insert order record
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        shop_id: shop.id,
+        customer_name: payload.customerName?.trim() || 'Walk-in Customer',
+        customer_phone: payload.customerPhone?.trim() || 'Walk-in',
+        customer_address: payload.customerAddress?.trim() || (isDelivered ? 'In-Store POS' : 'Customer Address'),
+        total_amount: totalAmount,
+        status,
+        payment_method: payload.paymentMethod,
+        payment_verified_at: new Date().toISOString(),
+        payment_transaction_ref: payload.transactionRef || (payload.paymentMethod === 'cash' ? `CASH-${Date.now().toString().slice(-6)}` : null),
+        verification_method: null,
+        fulfillment_status: fulfillmentStatus,
+        internal_note: `[POS SALE] Processed by ${operatorName}${payload.note ? ` · ${payload.note}` : ''}`,
+        confirmed_at: new Date().toISOString(),
+      })
+      .select('id, created_at, customer_name, customer_phone, customer_address, total_amount, status, payment_method, fulfillment_status')
+      .single();
+
+    if (orderErr || !order) {
+      throw new Error(`Failed to create POS order: ${orderErr?.message}`);
+    }
+
+    // 2. Insert line items
+    const lineItemRows = payload.items.map(it => ({
+      order_id: order.id,
+      product_id: it.productId || null,
+      product_name: it.productName,
+      quantity: it.quantity,
+      unit_price: it.unitPrice,
+    }));
+
+    const { error: lineErr } = await supabaseAdmin.from('order_line_items').insert(lineItemRows);
+    if (lineErr) {
+      console.warn('Warning inserting line items for POS:', lineErr);
+    }
+
+    // 3. Atomically decrement stock via existing RPC for each product
+    for (const item of payload.items) {
+      if (item.productId) {
+        await supabaseAdmin.rpc('decrement_stock', {
+          p_product_id: item.productId,
+          p_variant_id: item.variantId || null,
+          p_shop_id: shop.id,
+          p_note: `POS sale #${order.id.slice(0, 8)} (${operatorName})`
+        });
+      }
+    }
+
+    // 4. Log status history
+    await supabaseAdmin.from('order_status_history').insert({
+      order_id: order.id,
+      status: 'confirmed',
+      note: `In-store POS sale confirmed via ${payload.paymentMethod.toUpperCase()} by ${operatorName}. Total: ৳${totalAmount.toLocaleString()}`
+    });
+
+    if (isDelivered) {
+      await supabaseAdmin.from('order_status_history').insert({
+        order_id: order.id,
+        status: 'delivered',
+        note: 'Customer received products in-store at POS checkout.'
+      });
+    }
+
+    return {
+      success: true,
+      order: {
+        id: order.id,
+        createdAt: order.created_at,
+        customerName: order.customer_name,
+        customerPhone: order.customer_phone,
+        customerAddress: order.customer_address,
+        totalAmount: order.total_amount,
+        status: order.status,
+        paymentMethod: order.payment_method,
+        fulfillmentStatus: order.fulfillment_status,
+        lineItems: payload.items.map(it => ({
+          product_name: it.productName,
+          quantity: it.quantity,
+          unit_price: it.unitPrice,
+          imageUrl: it.imageUrl || null
+        })),
+        statusHistory: [],
+        paymentVerifications: []
+      }
+    };
+  } catch (err: any) {
+    console.error('Error creating POS order:', err);
+    return { success: false, error: err.message };
+  }
+}
+

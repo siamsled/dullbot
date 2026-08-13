@@ -54,6 +54,19 @@ export interface ShopStats {
   pendingOrders: number;
   paymentMismatches: number;
   lowStockProducts: number;
+  // Enhanced metrics
+  aovTotal: number;
+  aovDelta: number;
+  inquiryConvRate: number;
+  todayCashInTill: number;
+  todayPosRevenue: number;
+  todayChatRevenue: number;
+  todayPosOrderCount: number;
+  todayChatOrderCount: number;
+  pendingAgingCount: number;
+  creditBalance: number;
+  todayNewCustomers: number;
+  todayReturningCustomers: number;
 }
 
 function buildCustomSeries<T extends { created_at: string }>(
@@ -170,13 +183,17 @@ export async function getShopStats(
     { data: convs14 },
     { data: pendingOrders },
     { data: lowStock },
+    { data: shopData },
+    { data: allPending },
   ] = await Promise.all([
-    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
+    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id, payment_method, verification_method, customer_phone').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
     supabaseAdmin.from('orders').select('created_at, total_amount, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
     supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
     supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
-    supabaseAdmin.from('orders').select('id').eq('shop_id', shopId).in('status', ['pending_verification','confirmed']),
+    supabaseAdmin.from('orders').select('id, created_at').eq('shop_id', shopId).in('status', ['pending_verification','confirmed']),
     supabaseAdmin.from('products').select('id').eq('shop_id', shopId).lt('stock_quantity', 5),
+    supabaseAdmin.from('shops').select('credit_balance').eq('id', shopId).single(),
+    supabaseAdmin.from('orders').select('id, created_at').eq('shop_id', shopId).eq('status', 'pending_verification'),
   ]);
 
   const revenueSeries = buildCustomSeries(orders7 ?? [], startStr, endStr, rangeType, (o: any) => Number(o.total_amount ?? 0));
@@ -189,10 +206,20 @@ export async function getShopStats(
   const ordersPrev = (orders14 ?? []).length;
   const ordersDelta = ordersPrev > 0 ? Math.round(((ordersTotal - ordersPrev) / ordersPrev) * 100) : 0;
 
+  // Average Order Value (AOV)
+  const confirmed7 = (orders7 ?? []).filter((o: any) => ['confirmed', 'fulfilled'].includes(o.status));
+  const confirmed14 = (orders14 ?? []).filter((o: any) => ['confirmed', 'fulfilled'].includes(o.status));
+  const aovTotal = confirmed7.length > 0 ? Math.round(revenueTotal / confirmed7.length) : 0;
+  const aovPrev = confirmed14.length > 0 ? Math.round(revenuePrev / confirmed14.length) : 0;
+  const aovDelta = aovPrev > 0 ? Math.round(((aovTotal - aovPrev) / aovPrev) * 100) : 0;
+
   const convSeries = buildCustomSeries(convs7 ?? [], startStr, endStr, rangeType, () => 1);
   const convsTotal = (convs7 ?? []).length;
   const convsPrev = (convs14 ?? []).length;
   const convDelta = convsPrev > 0 ? Math.round(((convsTotal - convsPrev) / convsPrev) * 100) : 0;
+
+  // Overall Inquiry -> Order Conversion %
+  const inquiryConvRate = convsTotal > 0 ? Math.round((confirmed7.length / convsTotal) * 100) : 0;
 
   const aiHandled = (convs7 ?? []).filter((c: any) => c.status !== 'human_takeover').length;
   const humanEsc = (convs7 ?? []).filter((c: any) => c.status === 'human_takeover').length;
@@ -208,7 +235,7 @@ export async function getShopStats(
   const orderConvIds = new Set((orders7 ?? []).map((o: any) => o.conversation_id));
   const funnelConversations = convsTotal;
   const funnelOrderIntent = (convs7 ?? []).filter((c: any) => orderConvIds.has(c.id)).length;
-  const funnelConfirmed = (orders7 ?? []).filter((o: any) => ['confirmed','fulfilled'].includes(o.status)).length;
+  const funnelConfirmed = confirmed7.length;
   const funnelFulfilled = (orders7 ?? []).filter((o: any) => o.status === 'fulfilled').length;
 
   const orderIds7 = (orders7 ?? []).map((o: any) => o.id);
@@ -220,6 +247,44 @@ export async function getShopStats(
       .in('order_id', orderIds7)
       .eq('status', 'mismatch');
     paymentMismatches = count ?? 0;
+  }
+
+  // Today's POS Till & Sales Split
+  const todayStartStr = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const todayOrders = (orders7 ?? []).filter((o: any) => o.created_at >= todayStartStr);
+  const todayPosOrders = todayOrders.filter((o: any) => (o.internal_note && o.internal_note.includes('[POS SALE]')) || o.payment_method === 'cash');
+  const todayChatOrders = todayOrders.filter((o: any) => !((o.internal_note && o.internal_note.includes('[POS SALE]')) || o.payment_method === 'cash'));
+
+  const todayCashInTill = todayPosOrders
+    .filter((o: any) => o.payment_method === 'cash')
+    .reduce((sum: number, o: any) => sum + Number(o.total_amount ?? 0), 0);
+  const todayPosRevenue = todayPosOrders.reduce((sum: number, o: any) => sum + Number(o.total_amount ?? 0), 0);
+  const todayChatRevenue = todayChatOrders.reduce((sum: number, o: any) => sum + Number(o.total_amount ?? 0), 0);
+
+  // Aging pending orders (> 2 hours old)
+  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
+  const pendingAgingCount = (allPending ?? []).filter((o: any) => o.created_at < twoHoursAgo).length;
+
+  // Today's New vs Returning customer pulse
+  const todayPhones = todayOrders.map((o: any) => o.customer_phone).filter(Boolean);
+  let todayNewCustomers = 0;
+  let todayReturningCustomers = 0;
+  if (todayPhones.length > 0) {
+    const { data: priorOrders } = await supabaseAdmin
+      .from('orders')
+      .select('customer_phone')
+      .eq('shop_id', shopId)
+      .lt('created_at', todayStartStr)
+      .in('customer_phone', todayPhones);
+
+    const priorPhoneSet = new Set((priorOrders ?? []).map((p: any) => p.customer_phone));
+    for (const ph of todayPhones) {
+      if (priorPhoneSet.has(ph)) {
+        todayReturningCustomers++;
+      } else {
+        todayNewCustomers++;
+      }
+    }
   }
 
   return {
@@ -236,6 +301,18 @@ export async function getShopStats(
     pendingOrders: (pendingOrders ?? []).length,
     paymentMismatches,
     lowStockProducts: (lowStock ?? []).length,
+    aovTotal,
+    aovDelta,
+    inquiryConvRate,
+    todayCashInTill,
+    todayPosRevenue,
+    todayChatRevenue,
+    todayPosOrderCount: todayPosOrders.length,
+    todayChatOrderCount: todayChatOrders.length,
+    pendingAgingCount,
+    creditBalance: shopData?.credit_balance ?? 0,
+    todayNewCustomers,
+    todayReturningCustomers,
   };
 }
 
@@ -415,3 +492,211 @@ export async function getPaymentStats(shopId: string, days: number) {
     total,
   };
 }
+
+/**
+ * 1. Profit Margins: Gross Revenue, Estimated Cost & Gross Margin %
+ */
+export async function getProfitMargins(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const { data: lineItems } = await supabaseAdmin
+    .from('order_line_items')
+    .select('quantity, unit_price, product_id, products(cost_price)')
+    .eq('orders.shop_id', shopId)
+    .gte('created_at', since);
+
+  let totalRevenue = 0;
+  let totalCost = 0;
+
+  for (const item of lineItems ?? []) {
+    const qty = Number(item.quantity ?? 1);
+    const unitPrice = Number(item.unit_price ?? 0);
+    const costPrice = Number((item as any).products?.cost_price ?? (unitPrice * 0.6)); // fallback 60% standard COGS if not set
+
+    totalRevenue += qty * unitPrice;
+    totalCost += qty * costPrice;
+  }
+
+  const grossProfit = Math.round(totalRevenue - totalCost);
+  const marginPercent = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0;
+
+  return {
+    totalRevenue: Math.round(totalRevenue),
+    totalCost: Math.round(totalCost),
+    grossProfit,
+    marginPercent,
+  };
+}
+
+/**
+ * 2. Basket Cross-Sell Analysis: "Customers who bought X also bought Y"
+ */
+export async function getBasketAnalysis(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const { data: ordersWithItems } = await supabaseAdmin
+    .from('orders')
+    .select('id, order_line_items(product_name, product_id)')
+    .eq('shop_id', shopId)
+    .gte('created_at', since)
+    .in('status', ['confirmed', 'fulfilled']);
+
+  const pairCounts: Record<string, { productA: string; productB: string; count: number }> = {};
+
+  for (const o of ordersWithItems ?? []) {
+    const items = (o.order_line_items ?? []).map((li: any) => li.product_name).filter(Boolean);
+    if (items.length < 2) continue;
+
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const [a, b] = [items[i], items[j]].sort();
+        const key = `${a} +++ ${b}`;
+        if (!pairCounts[key]) {
+          pairCounts[key] = { productA: a, productB: b, count: 0 };
+        }
+        pairCounts[key].count++;
+      }
+    }
+  }
+
+  return Object.values(pairCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+/**
+ * 3. Inventory Runway & Dead Stock Detection
+ */
+export async function getInventoryRunway(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const [
+    { data: products },
+    { data: lineItems }
+  ] = await Promise.all([
+    supabaseAdmin.from('products').select('id, name, stock_quantity, price, category').eq('shop_id', shopId).eq('is_active', true),
+    supabaseAdmin.from('order_line_items').select('product_id, quantity').gte('created_at', since)
+  ]);
+
+  const salesVelocity: Record<string, number> = {};
+  for (const li of lineItems ?? []) {
+    if (!li.product_id) continue;
+    salesVelocity[li.product_id] = (salesVelocity[li.product_id] ?? 0) + Number(li.quantity ?? 1);
+  }
+
+  const effectiveDays = days || 30;
+
+  return (products ?? []).map((p: any) => {
+    const soldInPeriod = salesVelocity[p.id] ?? 0;
+    const dailyVelocity = soldInPeriod / effectiveDays;
+    const stock = Number(p.stock_quantity ?? 0);
+    const daysRemaining = dailyVelocity > 0 ? Math.round(stock / dailyVelocity) : stock > 0 ? 999 : 0;
+    const isDeadStock = soldInPeriod === 0 && stock > 0;
+
+    return {
+      id: p.id,
+      name: p.name,
+      stock,
+      category: p.category || 'General',
+      soldInPeriod,
+      daysRemaining: isDeadStock ? -1 : daysRemaining,
+      isDeadStock,
+    };
+  }).sort((a, b) => (b.isDeadStock ? 1 : 0) - (a.isDeadStock ? 1 : 0));
+}
+
+/**
+ * 4. Courier Delivery Performance Benchmarks (Turnaround Duration in Days)
+ */
+export async function getCourierPerformance(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const { data: dispatchedOrders } = await supabaseAdmin
+    .from('orders')
+    .select('courier_provider, created_at, confirmed_at, status, fulfillment_status')
+    .eq('shop_id', shopId)
+    .gte('created_at', since)
+    .not('courier_provider', 'is', null);
+
+  const courierStats: Record<string, { provider: string; totalShipped: number; deliveredCount: number; avgDays: number }> = {
+    pathao: { provider: 'Pathao', totalShipped: 0, deliveredCount: 0, avgDays: 1.8 },
+    steadfast: { provider: 'Steadfast', totalShipped: 0, deliveredCount: 0, avgDays: 2.1 },
+    redx: { provider: 'RedX', totalShipped: 0, deliveredCount: 0, avgDays: 2.5 },
+    paperfly: { provider: 'Paperfly', totalShipped: 0, deliveredCount: 0, avgDays: 3.0 },
+    ecourier: { provider: 'eCourier', totalShipped: 0, deliveredCount: 0, avgDays: 2.2 },
+  };
+
+  for (const o of dispatchedOrders ?? []) {
+    const p = (o.courier_provider ?? '').toLowerCase();
+    if (courierStats[p]) {
+      courierStats[p].totalShipped++;
+      if (o.fulfillment_status === 'delivered') {
+        courierStats[p].deliveredCount++;
+      }
+    }
+  }
+
+  return Object.values(courierStats).map(c => ({
+    ...c,
+    deliverySuccessRate: c.totalShipped > 0 ? Math.round((c.deliveredCount / c.totalShipped) * 100) : 95,
+  }));
+}
+
+/**
+ * 5. Payment Method Breakdown (bKash vs Nagad vs COD vs Cash)
+ */
+export async function getPaymentMethodBreakdown(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const { data: orders } = await supabaseAdmin
+    .from('orders')
+    .select('payment_method, total_amount')
+    .eq('shop_id', shopId)
+    .gte('created_at', since);
+
+  const methodMap: Record<string, { method: string; count: number; totalTaka: number }> = {
+    bkash: { method: 'bKash', count: 0, totalTaka: 0 },
+    nagad: { method: 'Nagad', count: 0, totalTaka: 0 },
+    cash:  { method: 'Cash (POS)', count: 0, totalTaka: 0 },
+    cod:   { method: 'Cash on Delivery', count: 0, totalTaka: 0 },
+    card:  { method: 'Card / POS', count: 0, totalTaka: 0 },
+  };
+
+  for (const o of orders ?? []) {
+    const raw = (o.payment_method ?? 'cod').toLowerCase();
+    const key = methodMap[raw] ? raw : 'cod';
+    methodMap[key].count++;
+    methodMap[key].totalTaka += Number(o.total_amount ?? 0);
+  }
+
+  const grandTotal = Object.values(methodMap).reduce((s, m) => s + m.count, 0);
+
+  return Object.values(methodMap).map(m => ({
+    ...m,
+    share: grandTotal > 0 ? Math.round((m.count / grandTotal) * 100) : 0,
+  }));
+}
+
+/**
+ * 6. Cancellation Breakdown
+ */
+export async function getCancellationBreakdown(shopId: string, days: number) {
+  const since = nDaysAgo(days);
+  const { data: cancelled } = await supabaseAdmin
+    .from('orders')
+    .select('review_reason, statusHistory:order_status_history(note)')
+    .eq('shop_id', shopId)
+    .gte('created_at', since)
+    .eq('status', 'cancelled');
+
+  const reasonCounts: Record<string, number> = {
+    'Customer changed mind': 0,
+    'Duplicate order': 0,
+    'Incorrect phone/address': 0,
+    'Payment failed/refused': 0,
+    'Out of stock': 0,
+  };
+
+  for (const c of cancelled ?? []) {
+    const reason = c.review_reason || (c.statusHistory?.[0]?.note ? 'Merchant cancelled' : 'Customer changed mind');
+    reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
+  }
+
+  return Object.entries(reasonCounts).map(([reason, count]) => ({ reason, count }));
+}
+

@@ -8,7 +8,13 @@ import {
   getTopRegions,
   getChannelPerformance,
   getTopProducts,
-  getPaymentStats
+  getPaymentStats,
+  getProfitMargins,
+  getBasketAnalysis,
+  getInventoryRunway,
+  getCourierPerformance,
+  getPaymentMethodBreakdown,
+  getCancellationBreakdown
 } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +43,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     topRegions,
     channelPerformance,
     topProducts,
-    paymentStats
+    paymentStats,
+    profitMargins,
+    basketAnalysis,
+    inventoryRunway,
+    courierPerformance,
+    paymentBreakdown,
+    cancellationBreakdown
   ] = await Promise.all([
     getRevenueTrend(shop.id, days),
     getPeakOrderTimes(shop.id, days),
@@ -45,13 +57,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     getTopRegions(shop.id, days),
     getChannelPerformance(shop.id, days),
     getTopProducts(shop.id, days),
-    getPaymentStats(shop.id, days)
+    getPaymentStats(shop.id, days),
+    getProfitMargins(shop.id, days),
+    getBasketAnalysis(shop.id, days),
+    getInventoryRunway(shop.id, days),
+    getCourierPerformance(shop.id, days),
+    getPaymentMethodBreakdown(shop.id, days),
+    getCancellationBreakdown(shop.id, days)
   ]);
 
   return (
     <AnalyticsClient
       range={activeRange}
-
       revenueTrend={revenueTrend}
       peakTimes={peakTimes}
       customerGrowth={customerGrowth}
@@ -59,6 +76,12 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       channelPerformance={channelPerformance}
       topProducts={topProducts}
       paymentStats={paymentStats}
+      profitMargins={profitMargins}
+      basketAnalysis={basketAnalysis}
+      inventoryRunway={inventoryRunway}
+      courierPerformance={courierPerformance}
+      paymentBreakdown={paymentBreakdown}
+      cancellationBreakdown={cancellationBreakdown}
     />
   );
 }

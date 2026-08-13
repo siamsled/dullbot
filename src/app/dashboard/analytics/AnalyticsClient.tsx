@@ -7,7 +7,8 @@ import {
   ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
 import {
-  TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert
+  TrendingUp, Clock, Users, MapPin, Share2, Award, ShieldAlert,
+  Percent, ShoppingCart, Truck, AlertOctagon, Package, ArrowUpRight, Flame, CheckCircle2
 } from 'lucide-react';
 import { fetchAnalyticsByRange } from './actions';
 
@@ -25,6 +26,17 @@ interface Props {
     mismatchRate: number;
     total: number;
   };
+  profitMargins?: {
+    totalRevenue: number;
+    totalCost: number;
+    grossProfit: number;
+    marginPercent: number;
+  };
+  basketAnalysis?: Array<{ productA: string; productB: string; count: number }>;
+  inventoryRunway?: Array<{ id: string; name: string; stock: number; category: string; soldInPeriod: number; daysRemaining: number; isDeadStock: boolean }>;
+  courierPerformance?: Array<{ provider: string; totalShipped: number; deliveredCount: number; avgDays: number; deliverySuccessRate: number }>;
+  paymentBreakdown?: Array<{ method: string; count: number; totalTaka: number; share: number }>;
+  cancellationBreakdown?: Array<{ reason: string; count: number }>;
 }
 
 const TOOLTIP_STYLE = {
@@ -50,13 +62,18 @@ export default function AnalyticsClient({
   topRegions: initialTopRegions,
   channelPerformance: initialChannelPerformance,
   topProducts: initialTopProducts,
-  paymentStats: initialPaymentStats
+  paymentStats: initialPaymentStats,
+  profitMargins: initialProfitMargins = { totalRevenue: 0, totalCost: 0, grossProfit: 0, marginPercent: 0 },
+  basketAnalysis: initialBasketAnalysis = [],
+  inventoryRunway: initialInventoryRunway = [],
+  courierPerformance: initialCourierPerformance = [],
+  paymentBreakdown: initialPaymentBreakdown = [],
+  cancellationBreakdown: initialCancellationBreakdown = [],
 }: Props) {
   // ── Local state: switching pills is instant — no router navigation ──────
   const [activeRange, setActiveRange] = useState(initialRange);
 
   // ── React Query: fetches new data via server action when range changes ──
-  // keepPreviousData: true means charts stay visible while new data loads.
   const { data } = useQuery({
     queryKey: ['analytics', activeRange],
     queryFn: () => fetchAnalyticsByRange(activeRange),
@@ -68,14 +85,34 @@ export default function AnalyticsClient({
       channelPerformance: initialChannelPerformance,
       topProducts: initialTopProducts,
       paymentStats: initialPaymentStats,
+      profitMargins: initialProfitMargins,
+      basketAnalysis: initialBasketAnalysis,
+      inventoryRunway: initialInventoryRunway,
+      courierPerformance: initialCourierPerformance,
+      paymentBreakdown: initialPaymentBreakdown,
+      cancellationBreakdown: initialCancellationBreakdown,
     },
-    staleTime: 1000 * 60 * 5, // 5 min — don't refetch if switching back quickly
-    placeholderData: (prev) => prev, // show old data while loading (no flicker)
+    staleTime: 1000 * 60 * 5,
+    placeholderData: (prev) => prev,
   });
 
-  const { revenueTrend, peakTimes, customerGrowth, topRegions, channelPerformance, topProducts, paymentStats } = data!;
+  const {
+    revenueTrend,
+    peakTimes,
+    customerGrowth,
+    topRegions,
+    channelPerformance,
+    topProducts,
+    paymentStats,
+    profitMargins = initialProfitMargins,
+    basketAnalysis = initialBasketAnalysis,
+    inventoryRunway = initialInventoryRunway,
+    courierPerformance = initialCourierPerformance,
+    paymentBreakdown = initialPaymentBreakdown,
+    cancellationBreakdown = initialCancellationBreakdown,
+  } = (data as any) || {};
 
-  const maxPeak = Math.max(...peakTimes.flatMap(row => row), 1);
+  const maxPeak = Math.max(...(peakTimes || []).flatMap((row: any) => row), 1);
 
   return (
     <div className="flex-1 overflow-y-auto h-full w-full">
@@ -360,6 +397,207 @@ export default function AnalyticsClient({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* SECTION 4: UNIT ECONOMICS & GROSS PROFIT MARGIN */}
+      <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <Percent className="w-4 h-4 text-emerald-700" />
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Gross Margin & Unit Economics</h3>
+              <p className="text-xs text-ash">True profitability calculated using product cost price vs captured revenue</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold font-mono">
+            {profitMargins.marginPercent}% Gross Margin
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="p-4 bg-fog rounded-inputs border border-dove/5">
+            <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Gross Revenue</span>
+            <p className="text-2xl font-serif font-medium text-ink font-mono">৳{(profitMargins.totalRevenue || 0).toLocaleString()}</p>
+            <span className="text-[10px] text-ash">Total order value</span>
+          </div>
+
+          <div className="p-4 bg-fog rounded-inputs border border-dove/5">
+            <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Estimated COGS</span>
+            <p className="text-2xl font-serif font-medium text-ash font-mono">৳{(profitMargins.totalCost || 0).toLocaleString()}</p>
+            <span className="text-[10px] text-ash">Product cost basis</span>
+          </div>
+
+          <div className="p-4 bg-emerald-50/50 rounded-inputs border border-emerald-150">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Gross Profit</span>
+            <p className="text-2xl font-serif font-medium text-emerald-700 font-mono">৳{(profitMargins.grossProfit || 0).toLocaleString()}</p>
+            <span className="text-[10px] text-emerald-600/80">Net profit before overhead</span>
+          </div>
+
+          <div className="p-4 bg-fog rounded-inputs border border-dove/5">
+            <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Profitability Ratio</span>
+            <p className="text-2xl font-serif font-medium text-ink font-mono">{profitMargins.marginPercent}%</p>
+            <span className="text-[10px] text-ash">৳{profitMargins.marginPercent > 0 ? (profitMargins.marginPercent / 100 * 100).toFixed(0) : '0'} profit per ৳100</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 5: BASKET ANALYSIS & INVENTORY RUNWAY */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Basket Analysis: "Customers who bought X also bought Y" */}
+        <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <ShoppingCart className="w-4 h-4 text-ink" />
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Basket Cross-Sell Analysis</h3>
+                <p className="text-xs text-ash">"Customers who bought X also bought Y" — top complementary pairs</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {(!basketAnalysis || basketAnalysis.length === 0) ? (
+                <div className="h-44 flex flex-col items-center justify-center text-ash text-xs text-center p-4">
+                  <ShoppingCart className="w-6 h-6 opacity-30 mb-1" />
+                  No multi-item purchase patterns detected yet.
+                </div>
+              ) : (
+                basketAnalysis.map((pair: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-fog rounded-inputs border border-dove/5 text-xs">
+                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                      <span className="w-5 h-5 rounded-full bg-white text-ink font-bold flex items-center justify-center text-[10px] shrink-0 shadow-xs">
+                        #{idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="font-semibold text-ink truncate block">{pair.productA}</span>
+                        <span className="text-[10px] text-ash truncate block">+ {pair.productB}</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 bg-white text-ink font-mono font-bold rounded shadow-xs shrink-0 text-[11px]">
+                      {pair.count} bundles
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Inventory Runway & Dead Stock Alerts */}
+        <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <Package className="w-4 h-4 text-ink" />
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Inventory Turnover & Runway</h3>
+                <p className="text-xs text-ash">Days of stock remaining based on sales velocity</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2 max-h-[220px] overflow-y-auto pr-1">
+              {(!inventoryRunway || inventoryRunway.length === 0) ? (
+                <div className="h-44 flex flex-col items-center justify-center text-ash text-xs text-center p-4">
+                  <Package className="w-6 h-6 opacity-30 mb-1" />
+                  No inventory tracking data available.
+                </div>
+              ) : (
+                inventoryRunway.slice(0, 5).map((item: any) => (
+                  <div key={item.id} className="flex items-center justify-between p-2.5 bg-fog rounded-inputs border border-dove/5 text-xs">
+                    <div className="min-w-0 pr-2">
+                      <p className="font-semibold text-ink truncate leading-tight">{item.name}</p>
+                      <p className="text-[10px] text-ash font-mono">{item.stock} in stock · {item.soldInPeriod} sold in period</p>
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                      {item.isDeadStock ? (
+                        <span className="px-2 py-0.5 bg-rose-100 text-rust rounded text-[10px] font-bold">
+                          ⚠️ Dead Stock
+                        </span>
+                      ) : (
+                        <span className={`font-mono font-bold text-xs ${item.daysRemaining < 7 ? 'text-rust' : 'text-emerald-700'}`}>
+                          {item.daysRemaining > 365 ? '>1 yr runway' : `~${item.daysRemaining}d stock`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 6: COURIER DELIVERY BENCHMARKS & PAYMENT RAILS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Courier Performance Comparison */}
+        <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
+          <div className="flex items-center gap-2.5 mb-4">
+            <Truck className="w-4 h-4 text-ink" />
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Courier Delivery Benchmarks</h3>
+              <p className="text-xs text-ash">Fulfillment turnaround time and delivery success rates</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {courierPerformance.map((c: any) => (
+              <div key={c.provider} className="flex items-center justify-between p-3 bg-fog rounded-inputs border border-dove/5 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-white text-ink flex items-center justify-center font-bold text-xs shadow-xs">
+                    {c.provider[0]}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-ink block">{c.provider}</span>
+                    <span className="text-[10px] text-ash font-mono">{c.totalShipped} orders shipped</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 font-mono text-right">
+                  <div>
+                    <span className="text-xs font-bold text-ink block">~{c.avgDays} days</span>
+                    <span className="text-[9px] text-ash">Avg fulfillment</span>
+                  </div>
+                  <div className="w-px h-6 bg-dove/20" />
+                  <div>
+                    <span className="text-xs font-bold text-emerald-700 block">{c.deliverySuccessRate}%</span>
+                    <span className="text-[9px] text-ash">Delivered</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Payment Method Rails Breakdown */}
+        <div className="bg-white rounded-cards shadow-subtle border border-dove/10 p-6">
+          <div className="flex items-center gap-2.5 mb-4">
+            <Share2 className="w-4 h-4 text-ink" />
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Payment Method Breakdown</h3>
+              <p className="text-xs text-ash">Distribution of customer payment preferences</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {paymentBreakdown.map((pm: any) => (
+              <div key={pm.method} className="flex items-center justify-between p-3 bg-fog rounded-inputs border border-dove/5 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-semibold text-ink">{pm.method}</span>
+                  <span className="text-[10px] text-ash font-mono">({pm.count} orders)</span>
+                </div>
+
+                <div className="flex items-center gap-3 font-mono text-right">
+                  <span className="text-xs font-bold text-ink">৳{pm.totalTaka.toLocaleString()}</span>
+                  <span className="px-2 py-0.5 bg-white text-ink rounded border border-dove/10 text-[10px] font-bold">
+                    {pm.share}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
 
     </div>
