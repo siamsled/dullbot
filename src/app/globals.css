@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors - Light Mode (High Taste, WCAG AAA Contrast) */
-  --color-ink: #0f1419;
+  /* Colors */
+  --color-ink: #17191c;
   --color-pure-white: #ffffff;
-  --color-fog: #f6f7f9;
-  --color-ash: #4b5563;
-  --color-graphite: #64748b;
-  --color-dove: #94a3b8;
-  --color-slate: #64748b;
+  --color-fog: #f7f7f8;
+  --color-ash: #4c4c4c;
+  --color-graphite: #777b86;
+  --color-dove: #a3a6af;
+  --color-slate: #8b8c8d;
   --color-obsidian: #000000;
-  --color-rust: #9a3412;
-  --color-apricot-wash: #ffedd5;
-  --color-sky-wash: #e0f2fe;
+  --color-rust: #5d2a1a;
+  --color-apricot-wash: #fbe1d1;
+  --color-sky-wash: #d3e3fc;
 
   /* Typography — Fonts mapped to CSS variables */
   --font-signifier: var(--font-newsreader), 'Newsreader', 'Times New Roman', Georgia, serif;
@@ -51,15 +51,15 @@
   --radius-buttons: 9999px;
 
   /* Shadows */
-  --shadow-subtle: 0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 4px 12px -2px rgba(0, 0, 0, 0.06);
+  --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
 
   /* Surfaces */
-  --surface-canvas: #f8f9fa;
-  --surface-fog: #f1f3f5;
+  --surface-canvas: #ffffff;
+  --surface-fog: #f7f7f8;
   --surface-card: #ffffff;
-  --surface-warm-tint: #ffedd5;
-  --surface-cool-tint: #e0f2fe;
-  --surface-ink: #0f1419;
+  --surface-warm-tint: #fbe1d1;
+  --surface-cool-tint: #d3e3fc;
+  --surface-ink: #17191c;
 }
 
 /* ─── SLEEK DARK MODE OBSIDIAN THEME ──────────────── */
