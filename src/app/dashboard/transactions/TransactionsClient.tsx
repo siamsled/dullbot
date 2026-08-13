@@ -251,8 +251,8 @@ export default function TransactionsClient({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-fog border-b border-dove/20 text-[11px] font-semibold text-ash uppercase tracking-wider">
+              <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md shadow-xs">
+                <tr className="border-b border-dove/20 text-[11px] font-semibold text-ash uppercase tracking-wider">
                   <th className="py-3 px-4">Gateway</th>
                   <th className="py-3 px-4">TrxID / Reference</th>
                   <th className="py-3 px-4">Amount</th>

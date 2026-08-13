@@ -662,14 +662,14 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-dove/15 bg-fog/30">
+              <thead className="sticky top-0 z-10 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-md shadow-xs">
+                <tr className="border-b border-dove/15 bg-fog/80 dark:bg-fog/50 backdrop-blur-md">
                   <th className="px-6 py-3.5 w-10">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
                       onChange={toggleSelectAll}
-                      className="rounded border-dove/30 focus:ring-ink"
+                      className="rounded border-dove/30 focus:ring-ink cursor-pointer"
                     />
                   </th>
                   <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Customer</th>

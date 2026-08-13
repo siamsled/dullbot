@@ -132,8 +132,8 @@ export default async function CreditsPage() {
           <h2 className="text-base font-medium text-ink">Recent Usage</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-fog text-xs text-ash uppercase tracking-wider">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Time</th>
                 <th className="px-5 py-3 font-medium">Type</th>

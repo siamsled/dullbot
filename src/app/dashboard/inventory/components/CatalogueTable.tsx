@@ -230,8 +230,8 @@ export default function CatalogueTable({
             <span className="bg-apricot-wash text-rust text-xs font-semibold px-2 py-0.5 rounded-full">{draftProducts.length}</span>
             <p className="text-sm text-ash ml-2">Scraped products awaiting approval before the AI can sell them.</p>
           </div>
-          <table className="w-full text-left text-sm">
-            <thead className="bg-fog text-xs text-ash uppercase tracking-wider">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 font-medium text-right">Price</th>
@@ -528,8 +528,8 @@ export default function CatalogueTable({
         </div>
       ) : (
         <div className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-fog text-xs text-ash uppercase tracking-wider">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="pl-5 pr-2 py-3 w-8">
                   <input
@@ -541,23 +541,23 @@ export default function CatalogueTable({
                 </th>
                 <th className="px-4 py-3 font-medium">Image</th>
                 <th className="px-4 py-3 font-medium">
-                  <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-ink transition-colors">
+                  <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-ink transition-colors cursor-pointer">
                     Product <SortIcon field="name" />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium text-right">
-                  <button onClick={() => toggleSort('price')} className="flex items-center gap-1 hover:text-ink transition-colors ml-auto">
+                  <button onClick={() => toggleSort('price')} className="flex items-center gap-1 hover:text-ink transition-colors ml-auto cursor-pointer">
                     Price <SortIcon field="price" />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium text-right">
-                  <button onClick={() => toggleSort('stock_quantity')} className="flex items-center gap-1 hover:text-ink transition-colors ml-auto">
+                  <button onClick={() => toggleSort('stock_quantity')} className="flex items-center gap-1 hover:text-ink transition-colors ml-auto cursor-pointer">
                     Stock <SortIcon field="stock_quantity" />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium">Source</th>
                 <th className="px-4 py-3 font-medium">
-                  <button onClick={() => toggleSort('updated_at')} className="flex items-center gap-1 hover:text-ink transition-colors">
+                  <button onClick={() => toggleSort('updated_at')} className="flex items-center gap-1 hover:text-ink transition-colors cursor-pointer">
                     Updated <SortIcon field="updated_at" />
                   </button>
                 </th>
