@@ -1069,7 +1069,7 @@ export default function InboxClient({
                       <div className="flex justify-between items-baseline mb-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {hasUnread && <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
-                          <p className={`text-sm truncate ${hasUnread ? 'text-ink font-bold' : 'text-graphite font-semibold'}`}>
+                          <p className={`text-sm truncate ${hasUnread ? 'text-ink font-bold' : 'text-ink font-medium'}`}>
                             {displayName}
                           </p>
                         </div>

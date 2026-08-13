@@ -728,15 +728,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{o.customerName}</p>
+                            <p className="text-sm font-semibold text-ink leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
                               <span className="w-3.5 h-3.5 bg-sky-wash text-ink rounded-full flex items-center justify-center text-[8px] font-bold" title="Repeat Customer">🔄</span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{o.customerPhone}</p>
+                          <p className="text-xs text-ash font-mono mt-0.5">{o.customerPhone}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[180px] line-clamp-2" title={o.customerAddress}>
+                          <p className="text-xs text-ash max-w-[180px] line-clamp-2" title={o.customerAddress}>
                             {o.customerAddress}
                           </p>
                         </td>
@@ -753,10 +753,10 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                                 <Package className="w-4 h-4 text-ash" />
                               </div>
                             )}
-                            <span className="truncate font-medium text-slate-700 dark:text-slate-200">{titleString}</span>
+                            <span className="truncate font-medium text-ink">{titleString}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-slate-100">
+                        <td className="px-6 py-4 text-sm font-bold text-ink">
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
                         <td className="px-6 py-4">
