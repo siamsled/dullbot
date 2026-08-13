@@ -13,6 +13,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 import StaffManagementSection from './staff/StaffManagementSection';
+import SiteLanguageSection from './SiteLanguageSection';
+import ReceiptCustomizerSection from './ReceiptCustomizerSection';
 
 /* ─── constants ─────────────────────────────────────────── */
 const RETAIL_CATEGORIES      = ['Fashion', 'Electronics', 'Beauty', 'Food', 'Home goods', 'Other'];
@@ -851,7 +853,51 @@ export default function SettingsClient({ shop }: { shop: any }) {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          SECTION 6 — TEAM & PERMISSIONS (RBAC)
+          SECTION 6 — SITE LANGUAGE PREFERENCES (TOP 20)
+          ══════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel>Site Language & Regional Locale</SectionLabel>
+        <SettingsCard>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-fog border border-dove/20 flex items-center justify-center text-ink shadow-xs">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-ink text-sm">Dashboard & Website Language</h3>
+              <p className="text-xs text-ash">Select your preferred interface language from the top 20 global languages.</p>
+            </div>
+          </div>
+          <SiteLanguageSection
+            currentLanguageMix={shop?.language_mix || 'english'}
+          />
+        </SettingsCard>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
+          SECTION 7 — RECEIPT & INVOICE CUSTOMIZER
+          ══════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel>Receipts & Invoice Customization</SectionLabel>
+        <SettingsCard>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-fog border border-dove/20 flex items-center justify-center text-ink shadow-xs">
+              <Palette className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-ink text-sm">Custom Invoice & Thermal Slips</h3>
+              <p className="text-xs text-ash">Configure branding, accent colors, policies, and format for A4 Color and 80mm POS printers.</p>
+            </div>
+          </div>
+          <ReceiptCustomizerSection
+            shopName={shopName || shop?.name || 'Dull Store'}
+            shopPhone={bkashNumber || shop?.bkash_number || '+880 1700-000000'}
+            shopAddress={deliveryAreas || shop?.location_address || 'Dhaka, Bangladesh'}
+          />
+        </SettingsCard>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════
+          SECTION 8 — TEAM & PERMISSIONS (RBAC)
           ══════════════════════════════════════════════════ */}
       <section>
         <SectionLabel>Team & Staff Permissions</SectionLabel>

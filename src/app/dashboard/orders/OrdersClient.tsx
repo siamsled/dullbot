@@ -13,6 +13,7 @@ import {
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
 import PosModal from './PosModal';
+import { generatePrintHTML, ReceiptCustomConfig } from '@/lib/receipt-generator';
 import {
   verifyPaymentManually, dispatchToCourier, dispatchToCourierWithProvider, cancelOrder,
   updateInternalNote, toggleNeedsReview, bulkConfirmPayment,
@@ -289,85 +290,17 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
     setPrintModalOpen(true);
   };
 
-  const generatePrintHTML = (targets: Order[], docType: typeof printDocType, copies: number, pageSize: typeof printPageSize) => {
-    const isA4 = pageSize === 'a4';
-    const w = isA4 ? '210mm' : '80mm';
-    const fontSz = isA4 ? '12px' : '10px';
-    const padded = Array.from({ length: copies }, () => targets).flat();
+  const getReceiptConfig = (): ReceiptCustomConfig | undefined => {
+    try {
+      const saved = localStorage.getItem('dullbot_receipt_custom_config');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return undefined;
+  };
 
-    const docBlocks = padded.map(o => {
-      if (docType === 'receipt') {
-        return `
-<div class="doc">
-  <h1>Order Receipt</h1>
-  <p class="sub">#${o.id.slice(0, 8)} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleDateString('en-GB')}</p>
-  <hr/>
-  <div class="row"><span>Customer</span><span>${o.customerName}</span></div>
-  <div class="row"><span>Phone</span><span>${o.customerPhone}</span></div>
-  <div class="row"><span>Address</span><span class="right">${o.customerAddress}</span></div>
-  <hr/>
-  ${o.lineItems.map(li => `<div class="row"><span>${li.product_name} ×${li.quantity}</span><span>৳${(li.quantity * li.unit_price).toLocaleString()}</span></div>`).join('')}
-  <hr/>
-  <div class="row"><span>Delivery</span><span>৳100</span></div>
-  <div class="row total"><span>Total</span><span>৳${(o.totalAmount ?? 0).toLocaleString()}</span></div>
-  ${o.paymentTransactionRef ? `<div class="row"><span>TrxID</span><span>${o.paymentTransactionRef}</span></div>` : ''}
-  ${o.courierTrackingId ? `<div class="row"><span>Tracking (${o.courierProvider ?? ''})</span><span>${o.courierTrackingId}</span></div>` : ''}
-  <p class="footer">Thank you for your order!</p>
-</div>`;
-      }
-      if (docType === 'packing_slip') {
-        return `
-<div class="doc">
-  <h1>Packing Slip</h1>
-  <p class="sub">#${o.id.slice(0, 8)}</p>
-  <hr/>
-  <div class="row"><span>Ship To</span><span class="right">${o.customerName}, ${o.customerPhone}<br/>${o.customerAddress}</span></div>
-  <hr/>
-  ${o.lineItems.map(li => `<div class="row"><span>${li.product_name}</span><span>×${li.quantity}</span></div>`).join('')}
-  <hr/>
-  <div class="row"><span>Items</span><span>${o.lineItems.reduce((s, li) => s + li.quantity, 0)}</span></div>
-</div>`;
-      }
-      // label
-      return `
-<div class="doc label-doc">
-  <p class="to-label">SHIP TO:</p>
-  <p class="to-name">${o.customerName}</p>
-  <p class="to-phone">${o.customerPhone}</p>
-  <p class="to-addr">${o.customerAddress}</p>
-  <hr/>
-  <p class="order-ref">#${o.id.slice(0, 8)} &nbsp; ${new Date(o.createdAt).toLocaleDateString('en-GB')}</p>
-</div>`;
-    }).join('');
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Print — DullBot</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Courier New', monospace; font-size: ${fontSz}; background: #fff; }
-  .doc { width: ${w}; margin: 0 auto 20px; padding: 14px; border: 1px dashed #bbb; page-break-after: always; }
-  .doc:last-child { page-break-after: avoid; }
-  h1 { font-size: calc(${fontSz} + 2px); text-align: center; margin-bottom: 3px; font-weight: bold; }
-  .sub { font-size: calc(${fontSz} - 1px); text-align: center; color: #666; margin-bottom: 8px; }
-  hr { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
-  .row { display: flex; justify-content: space-between; gap: 4px; margin: 2px 0; }
-  .row .right { text-align: right; }
-  .row.total { font-weight: bold; }
-  .footer { font-size: calc(${fontSz} - 1px); text-align: center; color: #888; margin-top: 10px; }
-  .label-doc { text-align: left; }
-  .to-label { font-size: calc(${fontSz} - 1px); color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
-  .to-name { font-size: calc(${fontSz} + 3px); font-weight: bold; }
-  .to-phone { font-size: ${fontSz}; color: #333; }
-  .to-addr { font-size: ${fontSz}; margin-top: 2px; }
-  .order-ref { font-size: calc(${fontSz} - 1px); color: #888; margin-top: 4px; }
-  @media print { body { margin: 0; } @page { size: ${isA4 ? 'A4' : '80mm auto'}; margin: 0; } }
-</style>
-</head>
-<body>${docBlocks}</body>
-</html>`;
+  const buildPrintDocument = (targets: Order[], docType: typeof printDocType, copies: number, pageSize: typeof printPageSize) => {
+    const config = getReceiptConfig();
+    return generatePrintHTML(targets as any, docType, copies, pageSize, config);
   };
 
   const handlePrintReceipts = (targets: Order[]) => openPrintManager(targets);
@@ -1292,7 +1225,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     {/* Print CTA */}
                     <button
                       onClick={() => {
-                        const html = generatePrintHTML(printModalOrders, printDocType, printCopies, printPageSize);
+                        const html = buildPrintDocument(printModalOrders, printDocType, printCopies, printPageSize);
                         const win = window.open('', '_blank');
                         if (!win) return;
                         win.document.write(html);
@@ -1300,7 +1233,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         win.focus();
                         setTimeout(() => { win.print(); }, 400);
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-graphite transition-colors shadow-subtle"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-graphite transition-colors shadow-subtle cursor-pointer"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       Print Now
@@ -1312,7 +1245,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     <div className="absolute top-2 left-3 text-[10px] text-ash font-medium uppercase tracking-wider">Live Preview</div>
                     <iframe
                       key={`${printDocType}-${printCopies}-${printPageSize}`}
-                      srcDoc={generatePrintHTML(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
+                      srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
                       title="Print Preview"
                       className="w-full h-full border-none mt-6"
                       sandbox="allow-same-origin"
