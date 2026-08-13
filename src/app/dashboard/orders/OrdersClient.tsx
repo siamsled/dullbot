@@ -649,11 +649,12 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         </AnimatePresence>
 
         {/* TABLE */}
+        {/* TABLE */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="bg-white rounded-cards shadow-subtle border border-dove/10 overflow-hidden"
+          className="bg-white dark:bg-[#151921] rounded-cards shadow-subtle border border-dove/15 relative"
         >
           <div className="px-6 py-4 border-b border-dove/15 flex items-center justify-between">
             <h2 className="text-xs font-bold text-ink uppercase tracking-wider">All Orders</h2>
@@ -662,9 +663,9 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-10 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-md shadow-xs">
-                <tr className="border-b border-dove/15 bg-fog/80 dark:bg-fog/50 backdrop-blur-md">
-                  <th className="px-6 py-3.5 w-10">
+              <thead>
+                <tr className="border-b border-dove/15">
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 w-10 border-b border-dove/15 shadow-xs">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -672,15 +673,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       className="rounded border-dove/30 focus:ring-ink cursor-pointer"
                     />
                   </th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Address</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Product(s)</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Payment</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Fulfillment</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Courier</th>
-                  <th className="px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3.5 w-12"></th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Customer</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Address</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Product(s)</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Amount</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Payment</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Fulfillment</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Courier</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15 shadow-xs">Date</th>
+                  <th className="sticky top-0 z-20 bg-white/95 dark:bg-[#151921]/95 backdrop-blur-md px-6 py-3.5 w-12 border-b border-dove/15 shadow-xs"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/10">
@@ -714,7 +715,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         key={o.id}
                         variants={itemVariants}
                         onClick={() => setActiveOrderId(o.id)}
-                        className={`hover:bg-fog/30 transition-all cursor-pointer ${isChecked ? 'bg-fog/40' : ''
+                        className={`hover:bg-fog/40 dark:hover:bg-white/5 transition-all cursor-pointer ${isChecked ? 'bg-fog/50 dark:bg-white/10' : ''
                           }`}
                       >
                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
@@ -727,35 +728,35 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-ink leading-tight">{o.customerName}</p>
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
                               <span className="w-3.5 h-3.5 bg-sky-wash text-ink rounded-full flex items-center justify-center text-[8px] font-bold" title="Repeat Customer">🔄</span>
                             )}
                           </div>
-                          <p className="text-xs text-graphite font-mono mt-0.5">{o.customerPhone}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{o.customerPhone}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-xs text-graphite max-w-[180px] line-clamp-2" title={o.customerAddress}>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[180px] line-clamp-2" title={o.customerAddress}>
                             {o.customerAddress}
                           </p>
                         </td>
-                        <td className="px-6 py-4 text-sm text-ink max-w-[200px]">
+                        <td className="px-6 py-4 text-sm max-w-[200px]">
                           <div className="flex items-center gap-2">
                             {o.lineItems[0]?.imageUrl ? (
                               <img
                                 src={o.lineItems[0].imageUrl}
                                 alt=""
-                                className="w-8 h-8 rounded object-cover border border-dove/10"
+                                className="w-8 h-8 rounded object-cover border border-dove/10 shrink-0"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded bg-fog flex items-center justify-center border border-dove/10">
+                              <div className="w-8 h-8 rounded bg-fog flex items-center justify-center border border-dove/10 shrink-0">
                                 <Package className="w-4 h-4 text-ash" />
                               </div>
                             )}
-                            <span className="truncate">{titleString}</span>
+                            <span className="truncate font-medium text-slate-700 dark:text-slate-200">{titleString}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-ink font-semibold">
+                        <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-slate-100">
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
                         <td className="px-6 py-4">

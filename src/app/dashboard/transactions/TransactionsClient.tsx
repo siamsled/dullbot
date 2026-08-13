@@ -217,16 +217,18 @@ export default function TransactionsClient({
       </div>
 
       {/* ── Transactions Table ────────────────────────────────── */}
-      <div className="bg-white border border-dove/20 rounded-2xl overflow-hidden shadow-xs">
+      <div className="bg-white dark:bg-[#151921] border border-dove/20 rounded-2xl relative shadow-xs">
         {filteredTransactions.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-fog border border-dove/30 mx-auto flex items-center justify-center text-ash">
-              <Smartphone className="w-6 h-6" />
+          <div className="p-12 text-center flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-fog flex items-center justify-center mb-3">
+              <Smartphone className="w-6 h-6 text-ash" />
             </div>
-            <h3 className="text-sm font-semibold text-ink">No Transaction Logs Found</h3>
-            <p className="text-xs text-ash max-w-sm mx-auto leading-relaxed">
+            <p className="text-sm font-semibold text-ink mb-1">
+              {search || filterProvider !== 'all' ? 'No transactions match your search' : 'No transactions recorded yet'}
+            </p>
+            <p className="text-xs text-ash max-w-sm">
               {search || filterProvider !== 'all'
-                ? 'No transactions match your current search query or gateway filters.'
+                ? 'Try adjusting your search keywords or gateway filter.'
                 : devices.length > 0
                 ? 'Your companion app is paired and live. Waiting for new incoming bKash/Nagad SMS payment receipts.'
                 : 'Install and pair the DullBot Companion Android app to automatically stream live bKash/Nagad SMS receipts into your dashboard.'}
@@ -235,7 +237,7 @@ export default function TransactionsClient({
               <button
                 type="button"
                 onClick={() => { setSearch(''); setFilterProvider('all'); }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-dove/30 text-ink text-xs font-semibold hover:border-ink transition-all mt-2 shadow-xs"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-dove/30 text-ink text-xs font-semibold hover:border-ink transition-all mt-2 shadow-xs cursor-pointer"
               >
                 Clear Search Filter
               </button>
@@ -251,15 +253,15 @@ export default function TransactionsClient({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 z-10 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md shadow-xs">
+              <thead>
                 <tr className="border-b border-dove/20 text-[10px] font-bold text-graphite uppercase tracking-wider">
-                  <th className="py-3 px-4">Gateway</th>
-                  <th className="py-3 px-4">TrxID / Reference</th>
-                  <th className="py-3 px-4">Amount</th>
-                  <th className="py-3 px-4">Sender</th>
-                  <th className="py-3 px-4">Matching Order</th>
-                  <th className="py-3 px-4">Relay Device</th>
-                  <th className="py-3 px-4 text-right">Received</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Gateway</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">TrxID / Reference</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Amount</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Sender</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Matching Order</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 border-b border-dove/20 shadow-xs">Relay Device</th>
+                  <th className="sticky top-0 z-20 bg-fog/95 dark:bg-[#13171d]/95 backdrop-blur-md py-3 px-4 text-right border-b border-dove/20 shadow-xs">Received</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/15">
