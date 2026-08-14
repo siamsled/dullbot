@@ -9,7 +9,7 @@ import {
   AlertTriangle, Filter, ClipboardList, HelpCircle, X, ExternalLink,
   ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
   Printer, ChevronDown, Smartphone, ShieldCheck, ShoppingBag, Banknote, Hourglass,
-  Sparkles, Phone, MapPin, Receipt, ArrowUpRight, Repeat
+  Sparkles, Phone, MapPin, Receipt, ArrowUpRight, Repeat, ZoomIn, ZoomOut, RotateCcw, Maximize2
 } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
@@ -108,6 +108,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const [printDocType, setPrintDocType] = useState<'receipt' | 'packing_slip' | 'label'>('receipt');
   const [printCopies, setPrintCopies] = useState(1);
   const [printPageSize, setPrintPageSize] = useState<'thermal_80mm' | 'a4'>('thermal_80mm');
+  const [printZoom, setPrintZoom] = useState<number>(100);
   const [printModalOpen, setPrintModalOpen] = useState(false);
 
   // POS State
@@ -294,6 +295,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const openPrintManager = (targets: Order[]) => {
     if (targets.length === 0) return;
     setPrintModalOrders(targets);
+    setPrintZoom(printPageSize === 'a4' ? 65 : 100);
     setPrintModalOpen(true);
   };
 
@@ -1245,10 +1247,10 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                className="fixed inset-x-4 top-12 bottom-12 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[840px] z-50 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-dove/20"
+                className="fixed inset-x-3 top-8 bottom-8 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[980px] max-w-[96vw] z-50 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-dove/20"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-dove/15 bg-fog/30 shrink-0">
+                <div className="flex items-center justify-between px-6 py-3.5 border-b border-dove/15 bg-fog/30 shrink-0">
                   <div>
                     <h2 className="text-base font-serif font-bold text-ink">Print Manager</h2>
                     <p className="text-[11px] text-ash mt-0.5">
@@ -1258,7 +1260,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                   <button
                     type="button"
                     onClick={() => setPrintModalOpen(false)}
-                    className="p-2 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
+                    className="p-2 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1267,7 +1269,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 {/* Controls + Preview */}
                 <div className="flex flex-1 overflow-hidden">
                   {/* Left: Controls */}
-                  <div className="w-56 shrink-0 border-r border-dove/15 p-5 space-y-6 overflow-y-auto">
+                  <div className="w-60 shrink-0 border-r border-dove/15 p-5 space-y-6 overflow-y-auto bg-white">
                     {/* Document Type */}
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-ash uppercase tracking-wider block">Document Type</label>
@@ -1276,7 +1278,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                           key={type}
                           type="button"
                           onClick={() => setPrintDocType(type)}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             printDocType === type ? 'bg-ink text-white border-ink shadow-xs' : 'bg-white text-ink border-dove/20 hover:bg-fog'
                           }`}
                         >
@@ -1292,8 +1294,11 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         <button
                           key={size}
                           type="button"
-                          onClick={() => setPrintPageSize(size)}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          onClick={() => {
+                            setPrintPageSize(size);
+                            setPrintZoom(size === 'a4' ? 65 : 100);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             printPageSize === size ? 'bg-ink text-white border-ink shadow-xs' : 'bg-white text-ink border-dove/20 hover:bg-fog'
                           }`}
                         >
@@ -1309,7 +1314,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         <button
                           type="button"
                           onClick={() => setPrintCopies(c => Math.max(1, c - 1))}
-                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold cursor-pointer"
                         >
                           −
                         </button>
@@ -1317,7 +1322,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         <button
                           type="button"
                           onClick={() => setPrintCopies(c => Math.min(10, c + 1))}
-                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold cursor-pointer"
                         >
                           +
                         </button>
@@ -1343,16 +1348,100 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     </button>
                   </div>
 
-                  {/* Right: Preview iframe */}
-                  <div className="flex-1 bg-fog overflow-hidden relative">
-                    <div className="absolute top-2 left-3 text-[10px] text-ash font-bold uppercase tracking-wider">Live Preview</div>
-                    <iframe
-                      key={`${printDocType}-${printCopies}-${printPageSize}`}
-                      srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
-                      title="Print Preview"
-                      className="w-full h-full border-none mt-6"
-                      sandbox="allow-same-origin"
-                    />
+                  {/* Right: Scalable Preview with Interactive Zoom Controls */}
+                  <div className="flex-1 bg-fog/80 overflow-hidden flex flex-col relative">
+                    {/* Live Preview Header Toolbar */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-dove/15 shrink-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-ink uppercase tracking-wider">Live Preview</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-fog text-ash border border-dove/10">
+                          {printPageSize === 'a4' ? 'A4 Document' : '80mm Thermal'}
+                        </span>
+                      </div>
+
+                      {/* Zoom Controls */}
+                      <div className="flex items-center gap-1 bg-fog p-0.5 rounded-lg border border-dove/15 shadow-xs">
+                        <button
+                          type="button"
+                          onClick={() => setPrintZoom(z => Math.max(30, z - 10))}
+                          title="Zoom Out (−)"
+                          className="p-1 rounded-md hover:bg-white text-ink transition-colors cursor-pointer"
+                        >
+                          <ZoomOut className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPrintZoom(printPageSize === 'a4' ? 65 : 100)}
+                          title="Click to reset zoom"
+                          className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-ink hover:bg-white rounded-md transition-colors cursor-pointer min-w-[42px] text-center"
+                        >
+                          {printZoom}%
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPrintZoom(z => Math.min(180, z + 10))}
+                          title="Zoom In (+)"
+                          className="p-1 rounded-md hover:bg-white text-ink transition-colors cursor-pointer"
+                        >
+                          <ZoomIn className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="w-[1px] h-3.5 bg-dove/20 mx-0.5" />
+
+                        {/* Presets */}
+                        {[50, 65, 75, 100].map(preset => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setPrintZoom(preset)}
+                            className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-md transition-colors cursor-pointer ${
+                              printZoom === preset ? 'bg-ink text-white' : 'text-ash hover:text-ink hover:bg-white'
+                            }`}
+                          >
+                            {preset}%
+                          </button>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => setPrintZoom(printPageSize === 'a4' ? 65 : 100)}
+                          title="Fit Whole Document"
+                          className="px-1.5 py-0.5 text-[10px] font-semibold text-ash hover:text-ink hover:bg-white rounded-md transition-colors cursor-pointer"
+                        >
+                          Fit
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Scrollable Viewport with Centered Scaled Content */}
+                    <div className="flex-1 overflow-auto p-4 flex justify-center items-start">
+                      <div
+                        style={{
+                          transform: `scale(${printZoom / 100})`,
+                          transformOrigin: 'top center',
+                          transition: 'transform 0.12s ease-out',
+                          width: printPageSize === 'a4' ? '820px' : '380px',
+                          minHeight: printPageSize === 'a4' ? '1160px' : '550px',
+                          marginBottom: `${Math.max(20, (printZoom / 100) * (printPageSize === 'a4' ? 300 : 100))}px`,
+                        }}
+                        className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20 overflow-hidden"
+                      >
+                        <iframe
+                          key={`${printDocType}-${printCopies}-${printPageSize}-${printModalOrders[0]?.id}`}
+                          srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
+                          title="Print Preview"
+                          className="w-full h-full border-none"
+                          style={{
+                            width: printPageSize === 'a4' ? '820px' : '380px',
+                            minHeight: printPageSize === 'a4' ? '1160px' : '550px',
+                            height: '100%',
+                          }}
+                          sandbox="allow-same-origin"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>

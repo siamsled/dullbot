@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Printer, Palette, Type, MapPin, Phone, Globe,
-  FileText, Check, Eye, Sparkles, RefreshCw
+  FileText, Check, Eye, Sparkles, RefreshCw, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { generatePrintHTML, ReceiptCustomConfig, PrintableOrder } from '@/lib/receipt-generator';
 
@@ -55,6 +55,7 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
   
   // Preview mode toggle
   const [previewPageSize, setPreviewPageSize] = useState<'thermal_80mm' | 'a4'>('a4');
+  const [previewZoom, setPreviewZoom] = useState<number>(65);
   const [previewKey, setPreviewKey] = useState(0);
 
   useEffect(() => {
@@ -242,42 +243,97 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
               <span className="text-xs font-bold text-ink uppercase tracking-wider">Live Template Preview</span>
             </div>
 
-            {/* Switch format pill */}
-            <div className="flex items-center bg-white p-0.5 rounded-inputs border border-dove/20 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setPreviewPageSize('a4')}
-                className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
-                  previewPageSize === 'a4'
-                    ? 'bg-ink text-white shadow-xs'
-                    : 'text-ash hover:text-ink'
-                }`}
-              >
-                A4 Color Invoice
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewPageSize('thermal_80mm')}
-                className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
-                  previewPageSize === 'thermal_80mm'
-                    ? 'bg-ink text-white shadow-xs'
-                    : 'text-ash hover:text-ink'
-                }`}
-              >
-                80mm Thermal (POS)
-              </button>
+            {/* Right controls: format switcher & zoom */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-white p-0.5 rounded-inputs border border-dove/20 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewPageSize('a4');
+                    setPreviewZoom(65);
+                  }}
+                  className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
+                    previewPageSize === 'a4'
+                      ? 'bg-ink text-white shadow-xs'
+                      : 'text-ash hover:text-ink'
+                  }`}
+                >
+                  A4 Color Invoice
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewPageSize('thermal_80mm');
+                    setPreviewZoom(100);
+                  }}
+                  className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
+                    previewPageSize === 'thermal_80mm'
+                      ? 'bg-ink text-white shadow-xs'
+                      : 'text-ash hover:text-ink'
+                  }`}
+                >
+                  80mm Thermal (POS)
+                </button>
+              </div>
+
+              {/* Zoom Controls */}
+              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-dove/15 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewZoom(z => Math.max(30, z - 10))}
+                  title="Zoom Out (−)"
+                  className="p-1 rounded-md hover:bg-fog text-ink transition-colors cursor-pointer"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewZoom(previewPageSize === 'a4' ? 65 : 100)}
+                  title="Reset Zoom"
+                  className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-ink hover:bg-fog rounded-md transition-colors cursor-pointer min-w-[38px] text-center"
+                >
+                  {previewZoom}%
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewZoom(z => Math.min(180, z + 10))}
+                  title="Zoom In (+)"
+                  className="p-1 rounded-md hover:bg-fog text-ink transition-colors cursor-pointer"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Iframe preview */}
-          <div className="flex-1 bg-white rounded-inputs border border-dove/20 overflow-hidden shadow-subtle flex flex-col">
-            <iframe
-              key={`${previewKey}-${previewPageSize}-${accentColor}`}
-              srcDoc={previewHTML}
-              title="Live Receipt Preview"
-              className="w-full h-full min-h-[460px] border-none"
-              sandbox="allow-same-origin"
-            />
+          {/* Iframe preview container with scalable canvas */}
+          <div className="flex-1 bg-white rounded-inputs border border-dove/20 overflow-auto shadow-subtle flex justify-center items-start p-3 min-h-[480px]">
+            <div
+              style={{
+                transform: `scale(${previewZoom / 100})`,
+                transformOrigin: 'top center',
+                transition: 'transform 0.12s ease-out',
+                width: previewPageSize === 'a4' ? '820px' : '380px',
+                minHeight: previewPageSize === 'a4' ? '1160px' : '550px',
+                marginBottom: `${Math.max(20, (previewZoom / 100) * (previewPageSize === 'a4' ? 300 : 100))}px`,
+              }}
+              className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20 overflow-hidden"
+            >
+              <iframe
+                key={`${previewKey}-${previewPageSize}-${accentColor}`}
+                srcDoc={previewHTML}
+                title="Live Receipt Preview"
+                className="w-full h-full border-none"
+                style={{
+                  width: previewPageSize === 'a4' ? '820px' : '380px',
+                  minHeight: previewPageSize === 'a4' ? '1160px' : '550px',
+                  height: '100%',
+                }}
+                sandbox="allow-same-origin"
+              />
+            </div>
           </div>
 
           <div className="pt-3 flex items-center justify-between text-[11px] text-ash">
