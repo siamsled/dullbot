@@ -35,15 +35,27 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  const { data: currentStats = stats, isLoading: loadingStats, isFetching } = useQuery({
+  // Cache stats per timeframe so switching between Daily, Weekly, Monthly, Yearly is 100% instant with 0 database requests
+  const [statsCache, setStatsCache] = useState<Record<string, ShopStats>>({
+    weekly: stats,
+  });
+
+  const { data: currentStats = statsCache[rangeType] || stats } = useQuery({
     queryKey: ['overview-stats', shop.id, rangeType, customStart, customEnd],
     queryFn: async () => {
       if (rangeType === 'custom' && (!customStart || !customEnd)) return stats;
       const res = await fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined);
-      return res.success && res.stats ? res.stats : stats;
+      if (res.success && res.stats) {
+        setStatsCache(prev => ({ ...prev, [rangeType]: res.stats }));
+        return res.stats;
+      }
+      return stats;
     },
-    initialData: rangeType === 'weekly' && !customStart && !customEnd ? stats : undefined,
-    staleTime: 0,
+    initialData: statsCache[rangeType] || (rangeType === 'weekly' ? stats : undefined),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
@@ -216,11 +228,6 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Overview</h1>
-              {isFetching && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 border border-blue-200 animate-pulse">
-                  <Sparkles className="w-3 h-3 animate-spin" /> Refreshing…
-                </span>
-              )}
             </div>
             <p className="text-ash text-xs sm:text-sm mt-1">Live operational pulse, customer activity, and AI assistant performance.</p>
           </div>

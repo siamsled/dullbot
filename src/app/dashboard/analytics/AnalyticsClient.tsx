@@ -133,14 +133,24 @@ export default function AnalyticsClient({
     cancellationBreakdown: initialCancellationBreakdown,
   };
 
-  const { data, isFetching } = useQuery({
+  const [dataCache, setDataCache] = useState<Record<number, any>>({
+    [initialRange]: initialDataObj,
+  });
+
+  const { data = dataCache[activeRange] || initialDataObj } = useQuery({
     queryKey: ['analytics-data', activeRange],
     queryFn: async () => {
       const res = await fetchAnalyticsByRange(activeRange);
+      if (res) {
+        setDataCache(prev => ({ ...prev, [activeRange]: res }));
+      }
       return res;
     },
-    initialData: activeRange === initialRange ? initialDataObj : undefined,
-    staleTime: 0,
+    initialData: dataCache[activeRange] || (activeRange === initialRange ? initialDataObj : undefined),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const handleRangeChange = (newRange: number) => {
@@ -199,11 +209,6 @@ export default function AnalyticsClient({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Analytics</h1>
-              {isFetching && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 border border-blue-200 animate-pulse">
-                  <Sparkles className="w-3 h-3 animate-spin" /> Updating…
-                </span>
-              )}
             </div>
             <p className="text-ash text-xs sm:text-sm mt-1">
               Business intelligence, conversion velocity, and unit profitability metrics.
