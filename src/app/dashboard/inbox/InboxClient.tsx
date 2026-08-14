@@ -856,7 +856,7 @@ export default function InboxClient({
   };
 
   return (
-    <div className="flex flex-col h-full gap-4 p-6 overflow-hidden">
+    <div className="flex flex-col h-full gap-4 px-4 pt-4 pb-2 overflow-hidden">
       {/* Launch Control Panel Banner redirect */}
       {!hardRequirementsMet && !isBannerDismissed && (
         <div className="bg-apricot-wash border border-rust/10 p-4 rounded-cards flex items-center justify-between shrink-0">
@@ -898,12 +898,12 @@ export default function InboxClient({
             </div>
 
             {/* Channel Filters */}
-            <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10">
+            <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
               <button
                 type="button"
                 onClick={() => setChannelFilter('all')}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
-                  channelFilter === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  channelFilter === 'all' ? 'bg-white text-ink shadow-sm border border-dove/20' : 'text-ash hover:text-ink hover:bg-dove/5'
                 }`}
               >
                 All ({conversations.filter(c => !c.is_test).length})
@@ -911,8 +911,8 @@ export default function InboxClient({
               <button
                 type="button"
                 onClick={() => setChannelFilter('messenger')}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
-                  channelFilter === 'messenger' ? 'bg-[#0084FF] text-white shadow-xs' : 'text-ash hover:text-[#0084FF]'
+                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  channelFilter === 'messenger' ? 'bg-[#0084FF] text-white shadow-sm border border-[#0084FF]/20' : 'text-ash hover:text-[#0084FF] hover:bg-dove/5'
                 }`}
               >
                 <ChannelIcon channel="messenger" className="w-3 h-3 shrink-0" />
@@ -921,8 +921,8 @@ export default function InboxClient({
               <button
                 type="button"
                 onClick={() => setChannelFilter('instagram')}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
-                  channelFilter === 'instagram' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-xs' : 'text-ash hover:text-pink-600'
+                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  channelFilter === 'instagram' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-sm border border-pink-500/20' : 'text-ash hover:text-pink-600 hover:bg-dove/5'
                 }`}
               >
                 <ChannelIcon channel="instagram" className="w-3 h-3 shrink-0" />
@@ -931,8 +931,8 @@ export default function InboxClient({
               <button
                 type="button"
                 onClick={() => setChannelFilter('whatsapp')}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1 ${
-                  channelFilter === 'whatsapp' ? 'bg-[#25D366] text-white shadow-xs' : 'text-ash hover:text-[#25D366]'
+                className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  channelFilter === 'whatsapp' ? 'bg-[#25D366] text-white shadow-sm border border-[#25D366]/20' : 'text-ash hover:text-[#25D366] hover:bg-dove/5'
                 }`}
               >
                 <ChannelIcon channel="whatsapp" className="w-3 h-3 shrink-0" />
@@ -941,7 +941,7 @@ export default function InboxClient({
             </div>
 
             {/* Category / Status Filters */}
-            <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10">
+            <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
               {[
                 { id: 'all', label: 'All Status' },
                 { id: 'tickets', label: 'Tickets' },
@@ -964,14 +964,9 @@ export default function InboxClient({
                       }
                       return true;
                     });
-                    if (nextFiltered.length > 0 && !nextFiltered.some(c => c.id === activeId)) {
-                      setActiveId(nextFiltered[0].id);
-                    } else if (nextFiltered.length === 0) {
-                      setActiveId(null);
-                    }
                   }}
-                  className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center ${
-                    filter === tab.id ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+                  className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center ${
+                    filter === tab.id ? 'bg-white text-ink shadow-sm border border-dove/20' : 'text-ash hover:text-ink hover:bg-dove/5'
                   }`}
                 >
                   {tab.label}
@@ -1582,10 +1577,11 @@ export default function InboxClient({
         )}
 
         {/* Customer Context Sidebar */}
-        {activeId && activeConv && showSidebar && (
-          <div className="w-72 shrink-0 border-l border-dove/20 bg-white flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {activeId && activeConv && (
+          <div className={`shrink-0 bg-white flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${showSidebar ? 'w-72 border-l border-dove/20 opacity-100' : 'w-0 border-l-0 opacity-0'}`}>
+            <div className="w-72 h-full flex flex-col">
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <h3 className="text-xs font-bold text-ink uppercase tracking-widest">Customer Context</h3>
 
               {/* AI Briefing Card — shown when in takeover or ticket mode */}
@@ -1770,6 +1766,7 @@ export default function InboxClient({
               >
                 <CheckCircle2 className="w-3.5 h-3.5" /> Mark as Resolved
               </button>
+            </div>
             </div>
           </div>
         )}

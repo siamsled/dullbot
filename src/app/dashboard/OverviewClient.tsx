@@ -333,7 +333,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
             href="/dashboard/orders"
             className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
               (currentStats.pendingOrders ?? 0) > 0
-                ? 'bg-apricot-wash border-rust/30 hover:border-rust hover:shadow-hover'
+                ? 'bg-white border-rust/30 hover:border-rust hover:shadow-hover'
                 : 'bg-white border-dove/10 hover:border-dove/30'
             }`}
           >
@@ -359,7 +359,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
             href="/dashboard/orders"
             className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
               (currentStats.paymentMismatches ?? 0) > 0
-                ? 'bg-apricot-wash border-rust/30 hover:border-rust hover:shadow-hover'
+                ? 'bg-white border-rose-300 hover:border-rose-400 hover:shadow-hover'
                 : 'bg-white border-dove/10 hover:border-dove/30'
             }`}
           >
@@ -378,7 +378,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
             href="/dashboard/inventory"
             className={`p-4 rounded-cards border shadow-subtle flex items-center justify-between transition-all group ${
               (currentStats.lowStockProducts ?? 0) > 0
-                ? 'bg-apricot-wash border-rust/30 hover:border-rust hover:shadow-hover'
+                ? 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-hover'
                 : 'bg-white border-dove/10 hover:border-dove/30'
             }`}
           >
@@ -402,10 +402,10 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
       >
         {[
-          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs prev', icon: Package, variant: 'default' as const },
+          { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs prev', icon: Package, variant: 'warm' as const },
           { label: 'Orders', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs prev', icon: Package, variant: 'default' as const },
           { label: 'Avg Order Value', value: `৳${(currentStats.aovTotal ?? 0).toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.aovDelta, sub: 'vs prev', icon: TrendingUp, variant: 'default' as const },
-          { label: 'Conversion %', value: `${currentStats.inquiryConvRate ?? 0}%`, series: currentStats.convSeries, delta: null, sub: 'inquiries → orders', icon: Users, variant: 'default' as const },
+          { label: 'Conversion %', value: `${currentStats.inquiryConvRate ?? 0}%`, series: currentStats.convSeries, delta: null, sub: 'inquiries → orders', icon: Users, variant: 'cool' as const },
           { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'handling chats', icon: Activity, variant: 'default' as const },
           { label: 'Customer Pulse', value: `${currentStats.todayNewCustomers ?? 0} new / ${currentStats.todayReturningCustomers ?? 0} rpt`, series: currentStats.ordersSeries, delta: null, sub: "today's split", icon: Users, variant: 'default' as const },
         ].map((tile, idx) => (
