@@ -8,26 +8,42 @@ async function getShopId(): Promise<string | null> {
 }
 
 export async function getPostAutomations() {
-  const shopId = await getShopId();
-  if (!shopId) return [];
-  const { data } = await supabaseAdmin
-    .from('post_automations')
-    .select('*')
-    .eq('shop_id', shopId)
-    .order('created_at', { ascending: false });
-  return data || [];
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return [];
+    const { data, error } = await supabaseAdmin
+      .from('post_automations')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (error.code !== 'PGRST205') {
+        console.warn('[SOCIAL] getPostAutomations error:', error.message);
+      }
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.warn('[SOCIAL] getPostAutomations exception:', err);
+    return [];
+  }
 }
 
 export async function getPostAutomation(postId: string) {
-  const shopId = await getShopId();
-  if (!shopId) return null;
-  const { data } = await supabaseAdmin
-    .from('post_automations')
-    .select('*')
-    .eq('shop_id', shopId)
-    .eq('post_id', postId)
-    .maybeSingle();
-  return data;
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return null;
+    const { data, error } = await supabaseAdmin
+      .from('post_automations')
+      .select('*')
+      .eq('shop_id', shopId)
+      .eq('post_id', postId)
+      .maybeSingle();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 export async function upsertPostAutomation(payload: {
@@ -66,7 +82,13 @@ export async function upsertPostAutomation(payload: {
 
       if (updateErr) {
         console.error('[SOCIAL] Update error:', updateErr);
-        return { success: false, error: updateErr.message };
+        const isMissingTable = updateErr.code === 'PGRST205' || updateErr.message?.includes('schema cache');
+        return {
+          success: false,
+          error: isMissingTable
+            ? 'Database table "post_automations" is pending. Please run supabase/migrations/20260815_social_post_automations.sql in Supabase SQL Editor.'
+            : updateErr.message
+        };
       }
       return { success: true };
     }
@@ -84,7 +106,13 @@ export async function upsertPostAutomation(payload: {
 
     if (insertErr) {
       console.error('[SOCIAL] Insert error:', insertErr);
-      return { success: false, error: insertErr.message };
+      const isMissingTable = insertErr.code === 'PGRST205' || insertErr.message?.includes('schema cache');
+      return {
+        success: false,
+        error: isMissingTable
+          ? 'Database table "post_automations" is pending. Please run supabase/migrations/20260815_social_post_automations.sql in Supabase SQL Editor.'
+          : insertErr.message
+      };
     }
     return { success: true };
   } catch (err: any) {
@@ -102,7 +130,15 @@ export async function deletePostAutomation(postId: string) {
       .delete()
       .eq('shop_id', shopId)
       .eq('post_id', postId);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      const isMissingTable = error.code === 'PGRST205' || error.message?.includes('schema cache');
+      return {
+        success: false,
+        error: isMissingTable
+          ? 'Database table "post_automations" is pending. Please run supabase/migrations/20260815_social_post_automations.sql in Supabase SQL Editor.'
+          : error.message
+      };
+    }
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to delete automation' };
@@ -233,7 +269,13 @@ export async function togglePostAutomationStatus(postId: string, enabled: boolea
 
       if (updateErr) {
         console.error('[SOCIAL] Error updating automation:', updateErr);
-        return { success: false, error: updateErr.message };
+        const isMissingTable = updateErr.code === 'PGRST205' || updateErr.message?.includes('schema cache');
+        return {
+          success: false,
+          error: isMissingTable
+            ? 'Database table "post_automations" is pending. Please run supabase/migrations/20260815_social_post_automations.sql in Supabase SQL Editor.'
+            : updateErr.message
+        };
       }
       return { success: true, enabled: true, data: updated };
     }
@@ -261,7 +303,13 @@ export async function togglePostAutomationStatus(postId: string, enabled: boolea
 
     if (insertErr) {
       console.error('[SOCIAL] Error inserting automation:', insertErr);
-      return { success: false, error: insertErr.message };
+      const isMissingTable = insertErr.code === 'PGRST205' || insertErr.message?.includes('schema cache');
+      return {
+        success: false,
+        error: isMissingTable
+          ? 'Database table "post_automations" is pending. Please run supabase/migrations/20260815_social_post_automations.sql in Supabase SQL Editor.'
+          : insertErr.message
+      };
     }
 
     return { success: true, enabled: true, data: inserted };

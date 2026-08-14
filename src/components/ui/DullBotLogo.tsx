@@ -250,7 +250,7 @@ export default function DullBotLogo({
           border-radius: 2px;
           background: currentColor;
           transform-origin: center;
-          animation: db-brow 18s ease-in-out infinite;
+          animation: db-brow 4.5s ease-in-out infinite;
         }
 
         .db-eye-blink {
@@ -260,7 +260,7 @@ export default function DullBotLogo({
           width: 100%;
           height: 78%;
           transform-origin: center;
-          animation: db-eyewrap 18s ease-in-out infinite;
+          animation: db-eyewrap 4.5s ease-in-out infinite;
         }
 
         .db-eye-white {
@@ -283,7 +283,7 @@ export default function DullBotLogo({
           border-radius: 50%;
           background: #e8266d;
           transform: translate(var(--look-x, 0px), var(--look-y, 0px));
-          animation: db-pupil 18s ease-in-out infinite;
+          animation: db-pupil 4.5s ease-in-out infinite;
           will-change: transform;
         }
 
@@ -299,27 +299,30 @@ export default function DullBotLogo({
         }
 
         @keyframes db-brow {
-          0%, 6%      { transform: translateY(0) rotate(-6deg); }
-          8%          { transform: translateY(1.5px) rotate(-4deg); }
-          10%, 46%    { transform: translateY(0) rotate(-6deg); }
-          48%         { transform: translateY(-1px) rotate(-5deg); }
-          50%, 100%   { transform: translateY(0) rotate(-6deg); }
+          0%, 18%     { transform: translateY(0) rotate(-6deg); }
+          22%         { transform: translateY(1.2px) rotate(-4deg); }
+          26%, 56%    { transform: translateY(0) rotate(-6deg); }
+          60%         { transform: translateY(1.5px) rotate(-3deg); }
+          64%         { transform: translateY(-0.8px) rotate(-7deg); }
+          72%, 100%   { transform: translateY(0) rotate(-6deg); }
         }
 
         @keyframes db-eyewrap {
-          0%, 6%     { transform: scale(1, 1); }
-          7.5%       { transform: scale(1, 0.06); }
-          9%         { transform: scale(1, 1); }
-          47%        { transform: scale(1, 1); }
-          48.5%      { transform: scale(1, 0.06); }
-          50%, 100%  { transform: scale(1, 1); }
+          0%, 20%     { transform: scale(1, 1); }
+          22.5%       { transform: scale(1, 0.05); }
+          25%         { transform: scale(1, 1); }
+          58%         { transform: scale(1, 1); }
+          60%         { transform: scale(1, 0.05); }
+          61.5%       { transform: scale(1, 0.8); }
+          63%         { transform: scale(1, 0.05); }
+          65.5%, 100% { transform: scale(1, 1); }
         }
 
         @keyframes db-pupil {
-          0%, 20%    { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
-          26%, 42%   { transform: translate(calc(var(--look-x, 0px) - 1.5px), var(--look-y, 0px)) scale(1); }
-          54%, 70%   { transform: translate(calc(var(--look-x, 0px) + 1.5px), var(--look-y, 0px)) scale(1); }
-          78%, 100%  { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          0%, 20%     { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          28%, 48%    { transform: translate(calc(var(--look-x, 0px) - 1.8px), calc(var(--look-y, 0px) + 0.5px)) scale(1); }
+          54%, 74%    { transform: translate(calc(var(--look-x, 0px) + 1.6px), calc(var(--look-y, 0px) - 0.4px)) scale(1.02); }
+          82%, 100%   { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
         }
 
         .db-toggle {

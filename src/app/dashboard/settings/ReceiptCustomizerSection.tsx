@@ -55,7 +55,7 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
   
   // Preview mode toggle
   const [previewPageSize, setPreviewPageSize] = useState<'thermal_80mm' | 'a4'>('a4');
-  const [previewZoom, setPreviewZoom] = useState<number>(65);
+  const [previewZoom, setPreviewZoom] = useState<number>(48);
   const [previewKey, setPreviewKey] = useState(0);
 
   useEffect(() => {
@@ -244,15 +244,15 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
             </div>
 
             {/* Right controls: format switcher & zoom */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center bg-white p-0.5 rounded-inputs border border-dove/20 shadow-xs">
                 <button
                   type="button"
                   onClick={() => {
                     setPreviewPageSize('a4');
-                    setPreviewZoom(65);
+                    setPreviewZoom(48);
                   }}
-                  className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
                     previewPageSize === 'a4'
                       ? 'bg-ink text-white shadow-xs'
                       : 'text-ash hover:text-ink'
@@ -266,7 +266,7 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
                     setPreviewPageSize('thermal_80mm');
                     setPreviewZoom(100);
                   }}
-                  className={`px-3 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-inputs transition-all cursor-pointer ${
                     previewPageSize === 'thermal_80mm'
                       ? 'bg-ink text-white shadow-xs'
                       : 'text-ash hover:text-ink'
@@ -276,11 +276,11 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
                 </button>
               </div>
 
-              {/* Zoom Controls */}
+              {/* Zoom Controls with Quick Presets */}
               <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-dove/15 shadow-xs">
                 <button
                   type="button"
-                  onClick={() => setPreviewZoom(z => Math.max(30, z - 10))}
+                  onClick={() => setPreviewZoom(z => Math.max(30, z - 8))}
                   title="Zoom Out (−)"
                   className="p-1 rounded-md hover:bg-fog text-ink transition-colors cursor-pointer"
                 >
@@ -289,7 +289,7 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
 
                 <button
                   type="button"
-                  onClick={() => setPreviewZoom(previewPageSize === 'a4' ? 65 : 100)}
+                  onClick={() => setPreviewZoom(previewPageSize === 'a4' ? 48 : 100)}
                   title="Reset Zoom"
                   className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-ink hover:bg-fog rounded-md transition-colors cursor-pointer min-w-[38px] text-center"
                 >
@@ -298,12 +298,27 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
 
                 <button
                   type="button"
-                  onClick={() => setPreviewZoom(z => Math.min(180, z + 10))}
+                  onClick={() => setPreviewZoom(z => Math.min(160, z + 8))}
                   title="Zoom In (+)"
                   className="p-1 rounded-md hover:bg-fog text-ink transition-colors cursor-pointer"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
+
+                <div className="w-[1px] h-3.5 bg-dove/20 mx-0.5" />
+
+                {[40, 48, 65, 100].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setPreviewZoom(preset)}
+                    className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-md transition-colors cursor-pointer ${
+                      previewZoom === preset ? 'bg-ink text-white' : 'text-ash hover:text-ink hover:bg-fog'
+                    }`}
+                  >
+                    {preset === 48 ? 'Fit' : `${preset}%`}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
