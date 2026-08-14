@@ -448,7 +448,7 @@ export default function CatalogueTable({
         const allLive = selectedProducts.length > 0 && liveCount === selectedProducts.length;
 
         return (
-          <div className="bg-ink text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 flex-wrap shadow-xl border border-white/10">
+          <div className="bg-[#121214] text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 flex-wrap shadow-2xl border border-white/15 backdrop-blur-md">
             <span className="text-xs font-bold font-mono text-white/90">{selected.size} selected</span>
             <div className="h-4 w-px bg-white/20" />
             <div className="flex gap-2 flex-wrap items-center">
@@ -456,7 +456,7 @@ export default function CatalogueTable({
                 <button
                   type="button"
                   onClick={() => onBulkToggle(Array.from(selected), true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all shadow-xs"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   Set Live {selected.size > 1 ? `(${selected.size})` : ''}
@@ -465,7 +465,7 @@ export default function CatalogueTable({
                 <button
                   type="button"
                   onClick={() => onBulkToggle(Array.from(selected), false)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all shadow-xs"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
                   <EyeOff className="w-3.5 h-3.5" />
                   Set Hidden {selected.size > 1 ? `(${selected.size})` : ''}
@@ -475,7 +475,7 @@ export default function CatalogueTable({
                   <button
                     type="button"
                     onClick={() => onBulkToggle(Array.from(selected), true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     Set Live ({hiddenCount})
@@ -483,7 +483,7 @@ export default function CatalogueTable({
                   <button
                     type="button"
                     onClick={() => onBulkToggle(Array.from(selected), false)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all cursor-pointer"
                   >
                     <EyeOff className="w-3.5 h-3.5" />
                     Set Hidden ({liveCount})
@@ -493,7 +493,7 @@ export default function CatalogueTable({
               <button
                 type="button"
                 onClick={() => setShowBulkCategory(v => !v)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10 cursor-pointer"
               >
                 <Tag className="w-3.5 h-3.5" />
                 Reassign Category
@@ -506,7 +506,7 @@ export default function CatalogueTable({
                     setSelected(new Set());
                   }
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete
@@ -514,7 +514,7 @@ export default function CatalogueTable({
               <button
                 type="button"
                 onClick={() => setSelected(new Set())}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear
@@ -526,7 +526,7 @@ export default function CatalogueTable({
                   value={bulkCategory}
                   onChange={e => setBulkCategory(e.target.value)}
                   placeholder="Category name..."
-                  className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                  className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/50 focus:bg-white/15"
                 />
                 <button
                   type="button"
@@ -538,7 +538,7 @@ export default function CatalogueTable({
                       setBulkCategory('');
                     }
                   }}
-                  className="px-4 py-1.5 rounded-xl bg-white text-ink text-xs font-bold hover:bg-fog transition-colors"
+                  className="px-4 py-1.5 rounded-xl bg-white text-zinc-950 text-xs font-bold hover:bg-zinc-200 transition-colors cursor-pointer"
                 >
                   Apply
                 </button>
