@@ -124,11 +124,7 @@ export default function DullBotLogo({
           letter-spacing: -0.03em;
           font-size: ${sc.fontSize};
           line-height: 1;
-          color: #16161a;
-        }
-        :global(.dark) .db-word,
-        .dark .db-word {
-          color: #f4f4f5;
+          color: currentColor;
         }
 
         .db-part {
@@ -163,13 +159,9 @@ export default function DullBotLogo({
           height: ${sc.browHeight};
           margin-left: -30%;
           border-radius: 2px;
-          background: #16161a;
+          background: currentColor;
           transform-origin: center;
           animation: db-brow 5.6s ease-in-out infinite;
-        }
-        :global(.dark) .db-brow,
-        .dark .db-brow {
-          background: #f4f4f5;
         }
 
         .db-eye-blink {
@@ -186,18 +178,13 @@ export default function DullBotLogo({
           width: 100%;
           height: 100%;
           border-radius: 50%;
-          border: ${sc.borderWidth} solid #16161a;
+          border: ${sc.borderWidth} solid currentColor;
           background: #ffffff;
           box-sizing: border-box;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
-        }
-        :global(.dark) .db-eye-white,
-        .dark .db-eye-white {
-          border-color: #f4f4f5;
-          background: #18181b;
         }
 
         .db-eye-pupil {

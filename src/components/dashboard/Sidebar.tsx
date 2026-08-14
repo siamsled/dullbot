@@ -200,7 +200,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             <div className="w-6 h-6" aria-hidden="true" />
 
             {/* Centered Logo */}
-            <Link href="/dashboard" className="flex items-center justify-center hover:opacity-90 transition-opacity">
+            <Link href="/dashboard" className="flex items-center justify-center text-ink hover:opacity-90 transition-opacity">
               <DullBotLogo collapsed={false} size="sm" />
             </Link>
 
@@ -220,7 +220,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
               className="p-1 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center"
               title="Expand sidebar"
             >
-              <DullBotLogo collapsed={true} size="sm" />
+              <DullBotLogo collapsed={true} size="sm" className="text-ink" />
             </button>
           </div>
         )}
