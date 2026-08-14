@@ -22,9 +22,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   return (
-    <div className="h-screen bg-pure-white flex overflow-hidden">
+    <div className="h-screen bg-pure-white dark:bg-[#09090b] flex overflow-hidden">
       <Sidebar initialShop={shop} />
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-pure-white">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-pure-white dark:bg-[#09090b]">
         {children}
       </main>
     </div>

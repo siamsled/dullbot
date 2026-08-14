@@ -188,17 +188,17 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       onMouseLeave={() => {
         if (isCollapsed) setIsHovered(false);
       }}
-      className={`bg-fog border-r border-dove/20 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${
+      className={`bg-fog dark:bg-[#0c0c0e] border-r border-dove/20 dark:border-zinc-800/80 hidden md:flex md:flex-col shrink-0 transition-all duration-300 relative z-30 ${
         isEffectiveExpanded ? 'w-56' : 'w-16'
       }`}
     >
       {/* Top Header */}
-      <div className={`h-16 flex items-center border-b border-dove/10 shrink-0 overflow-hidden transition-all duration-300 ${
+      <div className={`h-16 flex items-center border-b border-dove/10 dark:border-zinc-800/80 shrink-0 overflow-hidden transition-all duration-300 ${
         isEffectiveExpanded ? 'justify-between pl-14 pr-3.5' : 'justify-center px-0'
       }`}>
         <Link
           href="/dashboard"
-          className="flex items-center text-ink hover:opacity-90 transition-opacity shrink-0"
+          className="flex items-center text-ink dark:text-zinc-100 hover:opacity-90 transition-opacity shrink-0"
           title="DullBot Dashboard"
         >
           <DullBotLogo collapsed={!isEffectiveExpanded} size="sm" />
@@ -207,10 +207,10 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         {isEffectiveExpanded && (
           <button
             onClick={togglePin}
-            className="w-7 h-7 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center shrink-0 border border-transparent hover:border-dove/20"
+            className="w-7 h-7 rounded-lg text-ash dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-dove/15 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center justify-center shrink-0 border border-transparent hover:border-dove/20 dark:hover:border-zinc-700"
             title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
           >
-            <PanelLeftClose className="w-4 h-4 text-ash hover:text-ink transition-colors" />
+            <PanelLeftClose className="w-4 h-4 text-ash dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 transition-colors" />
           </button>
         )}
       </div>
@@ -236,11 +236,11 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
               title={!isEffectiveExpanded ? item.name : undefined}
               className={`flex items-center px-3 h-10 rounded-xl text-xs font-semibold transition-all duration-300 relative cursor-pointer ${
                 isActive
-                  ? 'bg-white text-ink shadow-subtle border border-dove/10 font-bold'
-                  : 'text-graphite hover:text-ink hover:bg-dove/10 border border-transparent'
+                  ? 'bg-white dark:bg-zinc-800/90 text-ink dark:text-zinc-100 shadow-subtle border border-dove/10 dark:border-zinc-700 font-bold'
+                  : 'text-graphite dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-dove/10 dark:hover:bg-zinc-800/60 border border-transparent'
               } ${!isEffectiveExpanded ? 'justify-center px-0' : ''}`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-ash'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink dark:text-zinc-100' : 'text-ash dark:text-zinc-400'}`} />
               <div 
                 className={`flex items-center overflow-hidden transition-all duration-300 whitespace-nowrap ${
                   isEffectiveExpanded ? 'w-[140px] opacity-100 ml-2.5' : 'w-0 opacity-0 ml-0'
@@ -291,11 +291,11 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       </nav>
 
       {/* Footer Theme Switch & Shop Profile */}
-      <div className="p-3 border-t border-dove/10 shrink-0 space-y-2">
+      <div className="p-3 border-t border-dove/10 dark:border-zinc-800/80 shrink-0 space-y-2">
         {/* Theme Switch Row */}
         {isEffectiveExpanded ? (
           <div className="flex items-center justify-between px-1.5 py-1 text-xs">
-            <span className="text-[11px] font-semibold text-graphite">Appearance</span>
+            <span className="text-[11px] font-semibold text-graphite dark:text-zinc-400">Appearance</span>
             <ThemeToggle size="md" />
           </div>
         ) : (
@@ -306,14 +306,14 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
         {/* User / Shop Card */}
         {isEffectiveExpanded ? (
-          <div className="bg-white border border-dove/15 rounded-xl p-2 flex items-center justify-between shadow-subtle">
+          <div className="bg-white dark:bg-zinc-900 border border-dove/15 dark:border-zinc-800 rounded-xl p-2 flex items-center justify-between shadow-subtle">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 shrink-0 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-ink dark:bg-zinc-800 text-white dark:text-zinc-100 flex items-center justify-center text-xs font-bold shadow-xs">
                 {getInitials(shop?.staffName || shop?.name)}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-ink truncate max-w-[95px]">{shop?.staffName || shop?.name || 'Dull Store'}</span>
-                <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-graphite capitalize">
+                <span className="text-xs font-semibold text-ink dark:text-zinc-100 truncate max-w-[95px]">{shop?.staffName || shop?.name || 'Dull Store'}</span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-graphite dark:text-zinc-400 capitalize">
                   {shop?.isOwner === false ? (
                     <span className="text-rust bg-apricot-wash px-1 rounded border border-rust/10 font-bold">{shop?.staffRole || 'Staff'}</span>
                   ) : (
@@ -325,14 +325,14 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             <button
               onClick={handleSignOut}
               title="Sign out / Switch account"
-              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 rounded-lg text-ash dark:text-zinc-400 hover:text-rust hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : (
           <div className="flex justify-center pb-1">
-            <div className="w-8 h-8 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs" title={shop?.name || 'Dull Store'}>
+            <div className="w-8 h-8 rounded-full bg-ink dark:bg-zinc-800 text-white dark:text-zinc-100 flex items-center justify-center text-xs font-bold shadow-xs" title={shop?.name || 'Dull Store'}>
               {getInitials(shop?.name)}
             </div>
           </div>

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, [data-dark-mode="true"], .dark *));
+
 :root {
   /* Colors - Light Mode (High Contrast & Clean Modern Palette) */
   --color-ink: #0f172a;
