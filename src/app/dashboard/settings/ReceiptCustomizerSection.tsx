@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Printer, Palette, Type, MapPin, Phone, Globe,
-  FileText, Check, Eye, Sparkles, RefreshCw, ZoomIn, ZoomOut
+  FileText, Check, Eye, Sparkles, RefreshCw, ZoomIn, ZoomOut,
+  Image as ImageIcon, UploadCloud, Trash2, Loader2,
 } from 'lucide-react';
 import { generatePrintHTML, ReceiptCustomConfig, PrintableOrder } from '@/lib/receipt-generator';
 
@@ -40,10 +41,11 @@ interface Props {
   shopName: string;
   shopPhone?: string;
   shopAddress?: string;
+  shopLogo?: string;
   onConfigChange?: (config: ReceiptCustomConfig) => void;
 }
 
-export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddress, onConfigChange }: Props) {
+export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddress, shopLogo, onConfigChange }: Props) {
   const [storeName, setStoreName] = useState(shopName || 'Dull Store');
   const [tagline, setTagline] = useState('Automated Social Commerce & Retail');
   const [phone, setPhone] = useState(shopPhone || '+880 1700-000000');
@@ -52,6 +54,9 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
   const [accentColor, setAccentColor] = useState('#17191c');
   const [footerNote, setFooterNote] = useState('Thank you for shopping with us! Scan to follow our new arrivals.');
   const [termsNote, setTermsNote] = useState('Exchanges accepted within 7 days with original invoice. No cash refund.');
+  const [logoUrl, setLogoUrl] = useState<string>(shopLogo || '');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Preview mode toggle
   const [previewPageSize, setPreviewPageSize] = useState<'thermal_80mm' | 'a4'>('a4');
@@ -71,9 +76,16 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
         if (parsed.accentColor) setAccentColor(parsed.accentColor);
         if (parsed.footerNote) setFooterNote(parsed.footerNote);
         if (parsed.termsNote) setTermsNote(parsed.termsNote);
+        if (parsed.logoUrl) setLogoUrl(parsed.logoUrl);
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    if (shopLogo && !logoUrl) {
+      setLogoUrl(shopLogo);
+    }
+  }, [shopLogo]);
 
   const currentConfig: ReceiptCustomConfig = {
     storeName,
@@ -84,6 +96,7 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
     accentColor,
     footerNote,
     termsNote,
+    logoUrl,
   };
 
   const handleFieldChange = (setter: (v: string) => void, val: string) => {
@@ -92,6 +105,40 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
     const updated = { ...currentConfig, storeName: val };
     localStorage.setItem(RECEIPT_CONFIG_KEY, JSON.stringify(currentConfig));
     if (onConfigChange) onConfigChange(currentConfig);
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    setIsUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/inventory/upload-image', {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setLogoUrl(data.url);
+        setPreviewKey(k => k + 1);
+        const updated = { ...currentConfig, logoUrl: data.url };
+        localStorage.setItem(RECEIPT_CONFIG_KEY, JSON.stringify(updated));
+        if (onConfigChange) onConfigChange(updated);
+      } else {
+        alert(data.error || 'Failed to upload logo.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error uploading logo.');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoUrl('');
+    setPreviewKey(k => k + 1);
+    const updated = { ...currentConfig, logoUrl: '' };
+    localStorage.setItem(RECEIPT_CONFIG_KEY, JSON.stringify(updated));
+    if (onConfigChange) onConfigChange(updated);
   };
 
   const previewHTML = generatePrintHTML(
@@ -114,6 +161,64 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
             <h4 className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
               <Type className="w-3.5 h-3.5 text-graphite" /> Header & Brand Details
             </h4>
+
+            {/* Store Logo Uploader */}
+            <div>
+              <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-1.5">
+                Receipt & Invoice Logo (Prints in Top Header)
+              </label>
+              <div className="flex items-center gap-3 p-3 bg-white border border-dove/20 rounded-inputs shadow-xs">
+                <div className="w-12 h-12 rounded-lg bg-fog border border-dove/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Store Logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <ImageIcon className="w-5 h-5 text-ash" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-ink truncate">
+                    {logoUrl ? 'Custom logo active' : 'No logo uploaded (using store name)'}
+                  </p>
+                  <p className="text-[10px] text-ash mt-0.5">
+                    Recommended: Transparent PNG or crisp vector logo
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-2.5 py-1.5 bg-ink text-white text-[11px] font-semibold rounded-md hover:bg-graphite transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    {isUploadingLogo ? <Loader2 className="w-3 h-3 animate-spin" /> : <UploadCloud className="w-3 h-3" />}
+                    {logoUrl ? 'Change' : 'Upload'}
+                  </button>
+
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="p-1.5 text-ash hover:text-rust rounded-md hover:bg-fog transition-colors cursor-pointer"
+                      title="Remove logo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div>
               <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-1">Store / Business Name</label>

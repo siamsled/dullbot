@@ -344,6 +344,47 @@ export async function saveSettings(
   return { success: true };
 }
 
+export async function saveShopLogo(shopId: string, logoUrl: string) {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
+  const { data: currentShop } = await supabaseAdmin
+    .from('shops')
+    .select('prompt_cache_ref')
+    .eq('id', resolvedId)
+    .single();
+
+  let existingMeta: Record<string, any> = {};
+  if (currentShop?.prompt_cache_ref) {
+    try {
+      existingMeta = JSON.parse(currentShop.prompt_cache_ref);
+    } catch {}
+  }
+
+  const updatedPromptCacheRef = JSON.stringify({
+    ...existingMeta,
+    logoUrl,
+  });
+
+  const { error } = await supabaseAdmin
+    .from('shops')
+    .update({ prompt_cache_ref: updatedPromptCacheRef })
+    .eq('id', resolvedId);
+
+  if (error) {
+    console.error('Failed to save shop logo:', error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings');
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
 export async function saveWhatsAppConfig(
   shopId: string,
   payload: { wabaId: string; phoneId: string; token: string }

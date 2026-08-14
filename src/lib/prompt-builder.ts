@@ -174,13 +174,19 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
   1. Collect Customer Name, Phone Number, and Delivery Address.
   2. Inform the customer in your persona's polite voice:
      "অর্ডারটি কনফার্ম করার জন্য আমাদের ${depositReason} (৳${depositAmt}) ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
-  3. Ask them to share the TrxID or last 4 digits of their sending number once sent.
-  4. Once payment intent and address are confirmed, append the order tag [CREATE_ORDER: ...].`;
+  3. MANDATORY PAYMENT PROOF VERIFICATION:
+     Instruct the customer to provide any ONE of the following to confirm payment:
+     • A screenshot (SS) of the money transfer
+     • OR the last 3 digits of the bKash/Nagad account number they sent money from
+     • OR the Transaction ID (TrxID)
+  4. Once payment proof (SS, last 3 digits, or TrxID) and delivery details are provided, append the order tag [CREATE_ORDER: ...].`;
   } else if (confirmationTier === 'prepay_verified') {
     const bkashStr = shop.bkash_number ? `আমাদের বিকাশ/নগদ নম্বর: ${shop.bkash_number}` : '';
     paymentPolicyLine = `CRITICAL 100% PREPAYMENT REQUIREMENT (NO CASH ON DELIVERY):
 - This store requires full 100% payment in advance via bKash/Nagad before order dispatch.
-- Inform the customer to pay the full order amount ${bkashStr ? bkashStr + ' নম্বরে' : ''} and share the TrxID to confirm.`;
+- Inform the customer to pay the full order amount ${bkashStr ? bkashStr + ' নম্বরে' : ''}.
+- MANDATORY PAYMENT PROOF VERIFICATION:
+  Instruct the customer to provide a screenshot (SS) of sending money, the last 3 digits of their account number, or the Transaction ID (TrxID) to lock in the order.`;
   }
 
   const orderTakingLine = `CRITICAL ORDER CREATION RULE: If a customer decides to buy/order a product, you must collect:

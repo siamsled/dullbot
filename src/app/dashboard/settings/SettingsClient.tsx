@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -8,9 +8,10 @@ import {
   ChevronRight, Lock, Globe, Smartphone, AtSign,
   MessageSquare, Check, Copy, ChevronDown, Pencil, Sparkles,
   BookOpen, Palette, Truck, X, Loader2, Coins, Banknote,
+  Camera, UploadCloud, Trash2, Image as ImageIcon,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
+import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, saveShopLogo, getConnectedPages, selectPagesMeta } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 import StaffManagementSection from './staff/StaffManagementSection';
 import ReceiptCustomizerSection from './ReceiptCustomizerSection';
@@ -122,6 +123,9 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [category,       setCategory]       = useState(shop?.category       ?? '');
   const [operatingHours, setOperatingHours] = useState(shop?.operating_hours ?? '');
   const [deliveryAreas,  setDeliveryAreas]  = useState(shop?.delivery_areas  ?? '');
+  const [logoUrl,        setLogoUrl]        = useState<string>(parsedMetaSettings?.logoUrl ?? '');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
   
   const [bizOverview, setBizOverview] = useState(
     shop?.business_overview ? shop.business_overview.split('---TERMS---')[0].trim() : ''
@@ -261,6 +265,44 @@ export default function SettingsClient({ shop }: { shop: any }) {
     });
   };
 
+  const handleLogoUpload = async (file: File) => {
+    setIsUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/inventory/upload-image', {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setLogoUrl(data.url);
+        await saveShopLogo(shop.id, data.url);
+        try {
+          const existing = localStorage.getItem('dullbot_receipt_custom_config');
+          const parsed = existing ? JSON.parse(existing) : {};
+          localStorage.setItem('dullbot_receipt_custom_config', JSON.stringify({ ...parsed, logoUrl: data.url }));
+        } catch {}
+      } else {
+        alert(data.error || 'Failed to upload logo.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error uploading logo.');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setLogoUrl('');
+    await saveShopLogo(shop.id, '');
+    try {
+      const existing = localStorage.getItem('dullbot_receipt_custom_config');
+      const parsed = existing ? JSON.parse(existing) : {};
+      localStorage.setItem('dullbot_receipt_custom_config', JSON.stringify({ ...parsed, logoUrl: '' }));
+    } catch {}
+  };
+
   const handleSave = () => {
     startSaveTransition(async () => {
       const res = await saveSettings(shop.id, {
@@ -304,11 +346,51 @@ export default function SettingsClient({ shop }: { shop: any }) {
         <SettingsCard>
           {/* identity row */}
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-full bg-apricot-wash text-rust flex items-center justify-center text-lg font-bold flex-shrink-0 select-none">
-              {(shop?.name || 'D').charAt(0).toUpperCase()}
+            <div className="relative group flex-shrink-0">
+              <div 
+                onClick={() => logoFileInputRef.current?.click()}
+                className="w-14 h-14 rounded-full bg-apricot-wash text-rust flex items-center justify-center text-lg font-bold select-none overflow-hidden border-2 border-dove/20 group-hover:border-ink transition-all cursor-pointer shadow-xs"
+                title="Click to upload or change store logo"
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt={shop?.name || 'Store'} className="w-full h-full object-cover" />
+                ) : (
+                  (shop?.name || 'D').charAt(0).toUpperCase()
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => logoFileInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-ink text-white shadow-subtle flex items-center justify-center border-2 border-white cursor-pointer hover:scale-110 transition-transform"
+                title="Upload Store Logo"
+              >
+                {isUploadingLogo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+              </button>
+              <input
+                ref={logoFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLogoUpload(file);
+                }}
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-ink truncate">{shop?.name || 'Your Business'}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-ink truncate">{shop?.name || 'Your Business'}</p>
+                {logoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="text-[10px] text-ash hover:text-rust underline cursor-pointer"
+                    title="Remove custom logo"
+                  >
+                    Remove logo
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-ash mt-0.5">
                 {businessTypeLabel[shop?.business_type] || 'E-commerce & Retail'}
                 {shop?.tone_template ? ` · ${toneLabel[shop.tone_template]}` : ''}
@@ -966,6 +1048,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
             shopName={shopName || shop?.name || 'Dull Store'}
             shopPhone={bkashNumber || shop?.bkash_number || '+880 1700-000000'}
             shopAddress={deliveryAreas || shop?.location_address || 'Dhaka, Bangladesh'}
+            shopLogo={logoUrl}
           />
         </SettingsCard>
       </section>

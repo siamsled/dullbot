@@ -13,6 +13,7 @@ export interface ReceiptCustomConfig {
   footerNote?: string;
   termsNote?: string;
   showLogo?: boolean;
+  logoUrl?: string;
 }
 
 export interface PrintableOrder {
@@ -48,6 +49,7 @@ export function generatePrintHTML(
   const accentColor = config?.accentColor || '#17191c';
   const footerNote = config?.footerNote || 'Thank you for shopping with us!';
   const termsNote = config?.termsNote || 'Exchanges accepted within 7 days with original invoice.';
+  const logoUrl = config?.logoUrl;
 
   const isA4 = pageSize === 'a4' || pageSize === 'a5';
   const padded = Array.from({ length: copies }, () => orders).flat();
@@ -71,7 +73,7 @@ export function generatePrintHTML(
         <!-- Header Banner -->
         <div class="invoice-header">
           <div class="brand-left">
-            <div class="logo-mark" style="background: ${accentColor};">${storeName.slice(0, 2).toUpperCase()}</div>
+            ${logoUrl ? `<img src="${logoUrl}" alt="${storeName}" class="brand-logo-img" style="max-height: 48px; max-width: 140px; object-fit: contain; margin-right: 14px; border-radius: 6px;" />` : `<div class="logo-mark" style="background: ${accentColor};">${storeName.slice(0, 2).toUpperCase()}</div>`}
             <div>
               <h1 class="store-title">${storeName}</h1>
               <p class="store-tagline">${tagline}</p>
@@ -253,6 +255,7 @@ export function generatePrintHTML(
     return `
     <div class="thermal-doc">
       <div class="header-center">
+        ${logoUrl ? `<img src="${logoUrl}" alt="${storeName}" style="max-height: 44px; max-width: 120px; object-fit: contain; margin: 0 auto 6px auto; display: block; filter: grayscale(100%) contrast(160%);" />` : ''}
         <h1 class="store-name">${storeName}</h1>
         <p class="tagline">${tagline}</p>
         <p class="contact-info">${phone} · ${address}</p>
