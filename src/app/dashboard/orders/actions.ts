@@ -195,7 +195,13 @@ export async function dispatchToCourierWithProvider(orderId: string, provider: s
 
 export async function cancelOrder(orderId: string, reason: string) {
   try {
-    await verifyOrderOwnership(orderId);
+    const shopId = await verifyOrderOwnership(orderId);
+
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('status, product_id, variant_id')
+      .eq('id', orderId)
+      .single();
 
     // Update order status
     const { error: updateErr } = await supabaseAdmin
@@ -216,6 +222,52 @@ export async function cancelOrder(orderId: string, reason: string) {
         status: 'cancelled',
         note: `Order cancelled by merchant. Reason: ${reason}`
       });
+
+    // If order was confirmed, restore inventory stock
+    if (order && order.status === 'confirmed' && order.product_id) {
+      if (order.variant_id) {
+        const { data: variant } = await supabaseAdmin
+          .from('product_variants')
+          .select('stock')
+          .eq('id', order.variant_id)
+          .single();
+        const newStock = (variant?.stock ?? 0) + 1;
+        await supabaseAdmin
+          .from('product_variants')
+          .update({ stock: newStock })
+          .eq('id', order.variant_id);
+
+        await supabaseAdmin.from('stock_movements').insert({
+          product_id: order.product_id,
+          variant_id: order.variant_id,
+          shop_id: shopId,
+          change_type: 'restock',
+          quantity_delta: 1,
+          resulting_stock: newStock,
+          note: `Restocked after order cancellation (${reason})`
+        });
+      } else {
+        const { data: product } = await supabaseAdmin
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', order.product_id)
+          .single();
+        const newStock = (product?.stock_quantity ?? 0) + 1;
+        await supabaseAdmin
+          .from('products')
+          .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
+          .eq('id', order.product_id);
+
+        await supabaseAdmin.from('stock_movements').insert({
+          product_id: order.product_id,
+          shop_id: shopId,
+          change_type: 'restock',
+          quantity_delta: 1,
+          resulting_stock: newStock,
+          note: `Restocked after order cancellation (${reason})`
+        });
+      }
+    }
 
     return { success: true };
   } catch (err: any) {

@@ -151,10 +151,21 @@ export async function updateProduct(
   productId: string, 
   data: Partial<ProductInput> & { product_images_data?: { url: string; variant_id?: string | null; position: number }[] }
 ) {
+  const shopId = await getShopId();
   const { product_images_data, ...productFields } = data;
   const cleanImages = data.images !== undefined
     ? (data.images ?? []).filter(u => u && !u.startsWith('blob:'))
     : undefined;
+
+  // Fetch current product to check if stock changed
+  const { data: existing } = await supabaseAdmin
+    .from('products')
+    .select('shop_id, stock_quantity, name')
+    .eq('id', productId)
+    .single();
+
+  const oldStock = existing?.stock_quantity ?? 0;
+  const resolvedShopId = existing?.shop_id ?? shopId;
 
   await supabaseAdmin
     .from('products')
@@ -169,6 +180,19 @@ export async function updateProduct(
     await saveProductImages(productId, product_images_data);
   } else if (cleanImages !== undefined) {
     await saveProductImages(productId, cleanImages.map((url, idx) => ({ url, variant_id: null, position: idx })));
+  }
+
+  // If stock_quantity was updated, log a manual adjustment movement
+  if (data.stock_quantity !== undefined && data.stock_quantity !== oldStock) {
+    const delta = data.stock_quantity - oldStock;
+    await supabaseAdmin.from('stock_movements').insert({
+      product_id: productId,
+      shop_id: resolvedShopId,
+      change_type: delta > 0 ? 'restock' : 'manual_adjust',
+      quantity_delta: delta,
+      resulting_stock: data.stock_quantity,
+      note: `Stock updated in product editor (${oldStock} → ${data.stock_quantity})`,
+    });
   }
 
   revalidate();
@@ -273,7 +297,32 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
 }
 
 export async function updateVariant(variantId: string, data: Partial<VariantInput>) {
+  const shopId = await getShopId();
+  const { data: existing } = await supabaseAdmin
+    .from('product_variants')
+    .select('product_id, shop_id, stock, name')
+    .eq('id', variantId)
+    .single();
+
+  const oldStock = existing?.stock ?? 0;
+  const resolvedShopId = existing?.shop_id ?? shopId;
+  const productId = existing?.product_id;
+
   await supabaseAdmin.from('product_variants').update(data).eq('id', variantId);
+
+  if (data.stock !== undefined && data.stock !== oldStock) {
+    const delta = data.stock - oldStock;
+    await supabaseAdmin.from('stock_movements').insert({
+      product_id: productId,
+      variant_id: variantId,
+      shop_id: resolvedShopId,
+      change_type: delta > 0 ? 'restock' : 'manual_adjust',
+      quantity_delta: delta,
+      resulting_stock: data.stock,
+      note: `Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`,
+    });
+  }
+
   revalidate();
 }
 

@@ -105,10 +105,10 @@ export async function POST(request: Request) {
 
     const { data: existingProducts } = await supabaseAdmin
       .from('products')
-      .select('id, name, sku')
+      .select('id, name, sku, stock_quantity')
       .eq('shop_id', shopId);
 
-    const existingMap = new Map((existingProducts || []).map(p => [p.name.toLowerCase(), p.id]));
+    const existingMap = new Map((existingProducts || []).map(p => [p.name.toLowerCase(), p]));
 
     if (format === 'shopify') {
       const shopifyData = data as { products: ShopifyProduct[] };
@@ -142,14 +142,36 @@ export async function POST(request: Request) {
           source: 'api'
         };
 
-        const existingId = existingMap.get(title.toLowerCase());
+        const existing = existingMap.get(title.toLowerCase());
         
-        let targetId = existingId;
-        if (existingId) {
-          await supabaseAdmin.from('products').update(payload).eq('id', existingId);
+        let targetId = existing?.id;
+        if (existing) {
+          await supabaseAdmin.from('products').update(payload).eq('id', existing.id);
+          const oldStock = existing.stock_quantity ?? 0;
+          if (stock !== oldStock) {
+            const delta = stock - oldStock;
+            await supabaseAdmin.from('stock_movements').insert({
+              product_id: existing.id,
+              shop_id: shopId,
+              change_type: 'import',
+              quantity_delta: delta,
+              resulting_stock: stock,
+              note: `Shopify API Sync: Stock updated (${oldStock} → ${stock})`
+            });
+          }
         } else {
           const { data: created } = await supabaseAdmin.from('products').insert(payload).select('id').single();
           targetId = created?.id;
+          if (targetId && stock > 0) {
+            await supabaseAdmin.from('stock_movements').insert({
+              product_id: targetId,
+              shop_id: shopId,
+              change_type: 'import',
+              quantity_delta: stock,
+              resulting_stock: stock,
+              note: 'Shopify API Sync: Initial stock imported'
+            });
+          }
         }
         if (targetId && images.length > 0) {
           await saveProductImages(targetId, images.map((url, idx) => ({ url, variant_id: null, position: idx })));
@@ -165,6 +187,7 @@ export async function POST(request: Request) {
 
       for (const cp of customData) {
         if (!cp.name) continue; 
+        const stock = cp.stock_quantity || 0;
         const payload = {
           shop_id: shopId,
           name: cp.name,
@@ -173,7 +196,7 @@ export async function POST(request: Request) {
           compare_at_price: cp.compare_at_price || null,
           sku: cp.sku || null,
           currency: cp.currency || 'BDT',
-          stock_quantity: cp.stock_quantity || 0,
+          stock_quantity: stock,
           category: cp.category || null,
           images: cp.images || (cp.image_url ? [cp.image_url] : null),
           image_url: cp.image_url || (cp.images && cp.images.length > 0 ? cp.images[0] : null),
@@ -182,12 +205,34 @@ export async function POST(request: Request) {
           source: 'api'
         };
 
-        const existingId = existingMap.get(cp.name.toLowerCase());
+        const existing = existingMap.get(cp.name.toLowerCase());
         
-        if (existingId) {
-          await supabaseAdmin.from('products').update(payload).eq('id', existingId);
+        if (existing) {
+          await supabaseAdmin.from('products').update(payload).eq('id', existing.id);
+          const oldStock = existing.stock_quantity ?? 0;
+          if (stock !== oldStock) {
+            const delta = stock - oldStock;
+            await supabaseAdmin.from('stock_movements').insert({
+              product_id: existing.id,
+              shop_id: shopId,
+              change_type: 'import',
+              quantity_delta: delta,
+              resulting_stock: stock,
+              note: `Custom API Sync: Stock updated (${oldStock} → ${stock})`
+            });
+          }
         } else {
-          await supabaseAdmin.from('products').insert(payload);
+          const { data: created } = await supabaseAdmin.from('products').insert(payload).select('id').single();
+          if (created?.id && stock > 0) {
+            await supabaseAdmin.from('stock_movements').insert({
+              product_id: created.id,
+              shop_id: shopId,
+              change_type: 'import',
+              quantity_delta: stock,
+              resulting_stock: stock,
+              note: 'Custom API Sync: Initial stock imported'
+            });
+          }
         }
         importedCount++;
       }
