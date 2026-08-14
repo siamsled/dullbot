@@ -324,32 +324,43 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
           </div>
 
           {/* Iframe preview container with scalable canvas */}
-          <div className="flex-1 bg-white rounded-inputs border border-dove/20 overflow-auto shadow-subtle flex justify-center items-start p-3 min-h-[480px]">
-            <div
-              style={{
-                transform: `scale(${previewZoom / 100})`,
-                transformOrigin: 'top center',
-                transition: 'transform 0.12s ease-out',
-                width: previewPageSize === 'a4' ? '820px' : '380px',
-                minHeight: previewPageSize === 'a4' ? '1160px' : '550px',
-                marginBottom: `${Math.max(20, (previewZoom / 100) * (previewPageSize === 'a4' ? 300 : 100))}px`,
-              }}
-              className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20 overflow-hidden"
-            >
-              <iframe
-                key={`${previewKey}-${previewPageSize}-${accentColor}`}
-                srcDoc={previewHTML}
-                title="Live Receipt Preview"
-                className="w-full h-full border-none"
-                style={{
-                  width: previewPageSize === 'a4' ? '820px' : '380px',
-                  minHeight: previewPageSize === 'a4' ? '1160px' : '550px',
-                  height: '100%',
-                }}
-                sandbox="allow-same-origin"
-              />
-            </div>
-          </div>
+          {(() => {
+            const baseW = previewPageSize === 'a4' ? 820 : 380;
+            const baseH = previewPageSize === 'a4' ? 1120 : 540;
+            const scale = previewZoom / 100;
+            const scaledW = Math.round(baseW * scale);
+            const scaledH = Math.round(baseH * scale);
+
+            return (
+              <div className="flex-1 bg-white rounded-inputs border border-dove/20 overflow-auto shadow-subtle flex justify-center items-start p-3 max-h-[560px]">
+                <div
+                  style={{
+                    width: `${scaledW}px`,
+                    height: `${scaledH}px`,
+                    overflow: 'hidden',
+                  }}
+                  className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20 transition-all"
+                >
+                  <div
+                    style={{
+                      width: `${baseW}px`,
+                      height: `${baseH}px`,
+                      transform: `scale(${scale})`,
+                      transformOrigin: 'top left',
+                    }}
+                  >
+                    <iframe
+                      key={`${previewKey}-${previewPageSize}-${accentColor}`}
+                      srcDoc={previewHTML}
+                      title="Live Receipt Preview"
+                      className="w-full h-full border-none"
+                      sandbox="allow-same-origin"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="pt-3 flex items-center justify-between text-[11px] text-ash">
             <span>Changes reflect instantly across all POS checkouts & order downloads</span>

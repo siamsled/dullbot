@@ -1416,32 +1416,43 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     </div>
 
                     {/* Scrollable Viewport with Centered Scaled Content */}
-                    <div className="flex-1 overflow-auto p-4 flex justify-center items-start">
-                      <div
-                        style={{
-                          transform: `scale(${printZoom / 100})`,
-                          transformOrigin: 'top center',
-                          transition: 'transform 0.12s ease-out',
-                          width: printPageSize === 'a4' ? '820px' : '380px',
-                          minHeight: printPageSize === 'a4' ? '1160px' : '550px',
-                          marginBottom: `${Math.max(20, (printZoom / 100) * (printPageSize === 'a4' ? 300 : 100))}px`,
-                        }}
-                        className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20 overflow-hidden"
-                      >
-                        <iframe
-                          key={`${printDocType}-${printCopies}-${printPageSize}-${printModalOrders[0]?.id}`}
-                          srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
-                          title="Print Preview"
-                          className="w-full h-full border-none"
-                          style={{
-                            width: printPageSize === 'a4' ? '820px' : '380px',
-                            minHeight: printPageSize === 'a4' ? '1160px' : '550px',
-                            height: '100%',
-                          }}
-                          sandbox="allow-same-origin"
-                        />
-                      </div>
-                    </div>
+                    {(() => {
+                      const baseW = printPageSize === 'a4' ? 820 : 380;
+                      const baseH = printPageSize === 'a4' ? 1120 : 540;
+                      const scale = printZoom / 100;
+                      const scaledW = Math.round(baseW * scale);
+                      const scaledH = Math.round(baseH * scale);
+
+                      return (
+                        <div className="flex-1 overflow-auto p-4 flex justify-center items-start">
+                          <div
+                            style={{
+                              width: `${scaledW}px`,
+                              height: `${scaledH}px`,
+                              overflow: 'hidden',
+                            }}
+                            className="shrink-0 bg-white rounded-xl shadow-md border border-dove/20"
+                          >
+                            <div
+                              style={{
+                                width: `${baseW}px`,
+                                height: `${baseH}px`,
+                                transform: `scale(${scale})`,
+                                transformOrigin: 'top left',
+                              }}
+                            >
+                              <iframe
+                                key={`${printDocType}-${printCopies}-${printPageSize}-${printModalOrders[0]?.id}`}
+                                srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
+                                title="Print Preview"
+                                className="w-full h-full border-none"
+                                sandbox="allow-same-origin"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </motion.div>
