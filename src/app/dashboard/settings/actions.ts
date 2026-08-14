@@ -274,8 +274,18 @@ export async function saveSettings(
   payload: {
     confirmationTier: 'light' | 'deposit_verified' | 'otp_verified' | 'prepay_verified';
     depositSettings?: {
-      depositAmount?: number;
+      depositRuleType?: string;
+      deliveryInsideDhaka?: number;
+      deliveryOutsideDhaka?: number;
+      fixedAmount?: number;
+      percentage?: number;
+      highValueThreshold?: number;
+      highValueDepositAmount?: number;
       depositReason?: string;
+      acceptScreenshot?: boolean;
+      acceptLast3Digits?: boolean;
+      acceptTrxId?: boolean;
+      depositAmount?: number;
       depositType?: string;
     };
     bkashNumber: string;
@@ -309,9 +319,7 @@ export async function saveSettings(
 
     updatedPromptCacheRef = JSON.stringify({
       ...existingMeta,
-      depositAmount: payload.depositSettings.depositAmount ?? 150,
-      depositReason: payload.depositSettings.depositReason ?? 'Delivery charge in advance',
-      depositType: payload.depositSettings.depositType ?? 'delivery_charge',
+      ...payload.depositSettings,
     });
   }
 

@@ -153,7 +153,21 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
   const highValueThreshold = shop.high_value_order_threshold ?? 0;
 
   // Payment & Advance Deposit Policy
-  let depositMeta: { depositAmount?: number; depositReason?: string } | null = null;
+  let depositMeta: {
+    depositRuleType?: string;
+    deliveryInsideDhaka?: number;
+    deliveryOutsideDhaka?: number;
+    fixedAmount?: number;
+    percentage?: number;
+    highValueThreshold?: number;
+    highValueDepositAmount?: number;
+    depositReason?: string;
+    acceptScreenshot?: boolean;
+    acceptLast3Digits?: boolean;
+    acceptTrxId?: boolean;
+    depositAmount?: number;
+  } | null = null;
+
   if (shop.prompt_cache_ref) {
     try {
       depositMeta = JSON.parse(shop.prompt_cache_ref);
@@ -164,22 +178,81 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
   let paymentPolicyLine = '';
 
   if (confirmationTier === 'deposit_verified') {
-    const depositAmt = depositMeta?.depositAmount || 150;
-    const depositReason = depositMeta?.depositReason || 'Delivery charge in advance for order confirmation (ডেলিভারি চার্জ অগ্রিম)';
     const bkashStr = shop.bkash_number ? `আমাদের বিকাশ/নগদ নম্বর: ${shop.bkash_number}` : '';
-    paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT REQUIREMENT (MANDATORY FOR ORDER CONFIRMATION):
-- This store requires a minimum deposit / advance payment before confirming the order.
-- Deposit Policy / Requirement: "${depositReason}" (৳${depositAmt} BDT).
-- When a customer wants to place an order:
-  1. Collect Customer Name, Phone Number, and Delivery Address.
-  2. Inform the customer in your persona's polite voice:
-     "অর্ডারটি কনফার্ম করার জন্য আমাদের ${depositReason} (৳${depositAmt}) ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
-  3. MANDATORY PAYMENT PROOF VERIFICATION:
-     Instruct the customer to provide any ONE of the following to confirm payment:
-     • A screenshot (SS) of the money transfer
-     • OR the last 3 digits of the bKash/Nagad account number they sent money from
-     • OR the Transaction ID (TrxID)
-  4. Once payment proof (SS, last 3 digits, or TrxID) and delivery details are provided, append the order tag [CREATE_ORDER: ...].`;
+    const ruleType = depositMeta?.depositRuleType ?? (depositMeta?.deliveryInsideDhaka ? 'delivery_split' : 'delivery_split');
+    
+    const proofMethods: string[] = [];
+    if (depositMeta?.acceptScreenshot !== false) proofMethods.push('• স্ক্রিনশট (SS) পাঠিয়ে কনফার্ম করুন');
+    if (depositMeta?.acceptLast3Digits !== false) proofMethods.push('• অথবা যে বিকাশ/নগদ নম্বর থেকে টাকা পাঠিয়েছেন তার লাস্ট ৩ ডিজিট জানান');
+    if (depositMeta?.acceptTrxId !== false) proofMethods.push('• অথবা Transaction ID (TrxID) টি জানান');
+    const proofInstruction = proofMethods.length > 0 ? proofMethods.join('\n     ') : '• স্ক্রিনশট, লাস্ট ৩ ডিজিট বা TrxID দিয়ে পেমেন্ট নিশ্চিত করুন';
+
+    if (ruleType === 'delivery_split') {
+      const inside = depositMeta?.deliveryInsideDhaka ?? 80;
+      const outside = depositMeta?.deliveryOutsideDhaka ?? 150;
+      const reason = depositMeta?.depositReason || 'ডেলিভারি চার্জ অগ্রিম প্রযোজ্য';
+      paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT RULE (DELIVERY FEE SPLIT):
+- Inside Dhaka City (ঢাকা সিটির ভেতরে): Advance delivery fee is ৳${inside} BDT.
+- Outside Dhaka City (ঢাকার বাইরে / সারাদেশ): Advance delivery fee is ৳${outside} BDT.
+- Reason: "${reason}".
+- How to enforce when customer wants to buy:
+  1. Collect Customer Name, Phone Number, and full Delivery Address.
+  2. Inspect the customer's delivery address:
+     • If inside Dhaka: instruct them to pay ৳${inside} advance for delivery charge:
+       "আপনার অর্ডারটি কনফার্ম করতে ঢাকা সিটির ডেলিভারি চার্জ ৳${inside} ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
+     • If outside Dhaka: instruct them to pay ৳${outside} advance for delivery charge:
+       "আপনার অর্ডারটি কনফার্ম করতে ঢাকার বাইরের ডেলিভারি চার্জ ৳${outside} ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
+  3. MANDATORY PAYMENT PROOF INSTRUCTION:
+     Ask the customer to provide any ONE of the following to lock in and verify their order:
+     ${proofInstruction}
+  4. Once payment proof (SS, last 3 digits, or TrxID) and address are provided, append the order tag [CREATE_ORDER: ...].`;
+    } else if (ruleType === 'percentage') {
+      const pct = depositMeta?.percentage ?? 50;
+      const reason = depositMeta?.depositReason || `${pct}% অগ্রিম পেমেন্ট`;
+      paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT RULE (PERCENTAGE OF ORDER TOTAL):
+- Advance required: ${pct}% of the total order value.
+- When customer provides order details and delivery address:
+  1. Calculate ${pct}% of their total bill.
+  2. Tell them in a friendly voice:
+     "আমাদের কাস্টম/অর্ডার প্রসেসিং এর জন্য মোট বিলের ${pct}% অগ্রিম ${bkashStr ? bkashStr + ' নম্বরে' : ''} পাঠাতে হবে।"
+  3. MANDATORY PAYMENT PROOF INSTRUCTION:
+     ${proofInstruction}
+  4. Once payment proof is provided, append the order tag [CREATE_ORDER: ...].`;
+    } else if (ruleType === 'high_value_only') {
+      const threshold = depositMeta?.highValueThreshold ?? 3000;
+      const depAmt = depositMeta?.highValueDepositAmount ?? 500;
+      paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT RULE (HIGH VALUE ORDERS ONLY):
+- Orders under ৳${threshold} BDT: 100% Cash on Delivery (no advance payment needed).
+- Orders equal to or above ৳${threshold} BDT: Require ৳${depAmt} BDT advance deposit.
+- When customer places an order:
+  • If total order value is < ৳${threshold}, confirm as Cash on Delivery directly.
+  • If total order value is >= ৳${threshold}, tell them:
+    "যেহেতু আপনার মোট অর্ডার ৳${threshold} টাকার বেশি, তাই বুকিং কনফার্ম করতে ৳${depAmt} অগ্রিম ${bkashStr ? bkashStr + ' নম্বরে' : ''} পাঠাতে হবে।"
+    Payment proof requirement:
+    ${proofInstruction}
+  Once payment proof is given, append the order tag [CREATE_ORDER: ...].`;
+    } else if (ruleType === 'custom_policy') {
+      const customText = depositMeta?.depositReason || 'ডেলিভারি চার্জ অগ্রিম প্রযোজ্য';
+      paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT RULE (CUSTOM STORE POLICY):
+- Policy: "${customText}".
+- When customer provides their delivery details, politely instruct them according to this store policy ${bkashStr ? 'using ' + bkashStr : ''}.
+- Payment proof requirement:
+  ${proofInstruction}
+- Once verified, append the order tag [CREATE_ORDER: ...].`;
+    } else {
+      // Fixed amount
+      const amount = depositMeta?.fixedAmount ?? depositMeta?.depositAmount ?? 200;
+      const reason = depositMeta?.depositReason || 'বুকিং কনফার্মেশন ডিপোজিট';
+      paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT RULE (FLAT FIXED AMOUNT):
+- Flat advance deposit required: ৳${amount} BDT.
+- Reason: "${reason}".
+- When customer places an order:
+  1. Collect Name, Phone, and Delivery Address.
+  2. Tell them: "অর্ডারটি কনফার্ম করতে ${reason} (৳${amount}) ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
+  3. Ask for payment verification proof:
+     ${proofInstruction}
+  4. Once payment proof is provided, append the order tag [CREATE_ORDER: ...].`;
+    }
   } else if (confirmationTier === 'prepay_verified') {
     const bkashStr = shop.bkash_number ? `আমাদের বিকাশ/নগদ নম্বর: ${shop.bkash_number}` : '';
     paymentPolicyLine = `CRITICAL 100% PREPAYMENT REQUIREMENT (NO CASH ON DELIVERY):
