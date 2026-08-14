@@ -42,36 +42,71 @@ export async function upsertPostAutomation(payload: {
   send_as_messenger: boolean;
   product_ids?: string[];
 }) {
-  const shopId = await getShopId();
-  if (!shopId) return { success: false, error: 'Not authenticated' };
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, error: 'Not authenticated or shop session expired' };
 
-  const { error } = await supabaseAdmin
-    .from('post_automations')
-    .upsert(
-      {
+    const { data: existing } = await supabaseAdmin
+      .from('post_automations')
+      .select('id')
+      .eq('shop_id', shopId)
+      .eq('post_id', payload.post_id)
+      .maybeSingle();
+
+    if (existing) {
+      const { error: updateErr } = await supabaseAdmin
+        .from('post_automations')
+        .update({
+          ...payload,
+          delete_examples: payload.delete_examples || [],
+          product_ids: payload.product_ids || [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+
+      if (updateErr) {
+        console.error('[SOCIAL] Update error:', updateErr);
+        return { success: false, error: updateErr.message };
+      }
+      return { success: true };
+    }
+
+    const { error: insertErr } = await supabaseAdmin
+      .from('post_automations')
+      .insert({
         shop_id: shopId,
         ...payload,
         delete_examples: payload.delete_examples || [],
         product_ids: payload.product_ids || [],
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'shop_id,post_id' }
-    );
+      });
 
-  if (error) return { success: false, error: error.message };
-  return { success: true };
+    if (insertErr) {
+      console.error('[SOCIAL] Insert error:', insertErr);
+      return { success: false, error: insertErr.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error('[SOCIAL] Exception in upsertPostAutomation:', err);
+    return { success: false, error: err.message || 'Failed to save automation' };
+  }
 }
 
 export async function deletePostAutomation(postId: string) {
-  const shopId = await getShopId();
-  if (!shopId) return { success: false, error: 'Not authenticated' };
-  const { error } = await supabaseAdmin
-    .from('post_automations')
-    .delete()
-    .eq('shop_id', shopId)
-    .eq('post_id', postId);
-  if (error) return { success: false, error: error.message };
-  return { success: true };
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, error: 'Not authenticated' };
+    const { error } = await supabaseAdmin
+      .from('post_automations')
+      .delete()
+      .eq('shop_id', shopId)
+      .eq('post_id', postId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to delete automation' };
+  }
 }
 
 export async function getShopProducts() {
@@ -156,39 +191,83 @@ export async function togglePostAutomationStatus(postId: string, enabled: boolea
   preview_text?: string;
   thumbnail_url?: string;
 }) {
-  const shopId = await getShopId();
-  if (!shopId) return { success: false, error: 'Not authenticated' };
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, error: 'Not authenticated or shop session expired' };
 
-  if (!enabled) {
-    const { error } = await supabaseAdmin
+    if (!enabled) {
+      const { error } = await supabaseAdmin
+        .from('post_automations')
+        .delete()
+        .eq('shop_id', shopId)
+        .eq('post_id', postId);
+      if (error) {
+        console.error('[SOCIAL] Error deleting automation:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, enabled: false };
+    }
+
+    // 1. Check if row exists
+    const { data: existing } = await supabaseAdmin
       .from('post_automations')
-      .delete()
+      .select('*')
       .eq('shop_id', shopId)
-      .eq('post_id', postId);
-    if (error) return { success: false, error: error.message };
-    return { success: true, enabled: false };
-  } else {
-    const { data: inserted, error } = await supabaseAdmin
-      .from('post_automations')
-      .upsert(
-        {
-          shop_id: shopId,
-          post_id: postId,
-          post_platform: postData?.platform || 'facebook',
-          post_preview_text: postData?.preview_text || '',
-          post_thumbnail_url: postData?.thumbnail_url || undefined,
+      .eq('post_id', postId)
+      .maybeSingle();
+
+    if (existing) {
+      const { data: updated, error: updateErr } = await supabaseAdmin
+        .from('post_automations')
+        .update({
           reply_as_comment: true,
           send_as_messenger: true,
-          delete_negative: false,
+          post_platform: postData?.platform || existing.post_platform || 'facebook',
+          post_preview_text: postData?.preview_text || existing.post_preview_text || '',
+          post_thumbnail_url: postData?.thumbnail_url || existing.post_thumbnail_url || undefined,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'shop_id,post_id' }
-      )
+        })
+        .eq('id', existing.id)
+        .select('*')
+        .single();
+
+      if (updateErr) {
+        console.error('[SOCIAL] Error updating automation:', updateErr);
+        return { success: false, error: updateErr.message };
+      }
+      return { success: true, enabled: true, data: updated };
+    }
+
+    // 2. Insert new row
+    const { data: inserted, error: insertErr } = await supabaseAdmin
+      .from('post_automations')
+      .insert({
+        shop_id: shopId,
+        post_id: postId,
+        post_platform: postData?.platform || 'facebook',
+        post_preview_text: postData?.preview_text || '',
+        post_thumbnail_url: postData?.thumbnail_url || undefined,
+        reply_as_comment: true,
+        send_as_messenger: true,
+        delete_negative: false,
+        instructions: '',
+        delete_examples: [],
+        product_ids: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .select('*')
       .single();
 
-    if (error) return { success: false, error: error.message };
+    if (insertErr) {
+      console.error('[SOCIAL] Error inserting automation:', insertErr);
+      return { success: false, error: insertErr.message };
+    }
+
     return { success: true, enabled: true, data: inserted };
+  } catch (err: any) {
+    console.error('[SOCIAL] Exception in togglePostAutomationStatus:', err);
+    return { success: false, error: err.message || 'Failed to toggle automation' };
   }
 }
 

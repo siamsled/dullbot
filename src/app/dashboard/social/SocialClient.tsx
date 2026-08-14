@@ -6,7 +6,7 @@ import {
   MessageSquare, Send, Trash2, Package, Plus, ExternalLink,
   ChevronRight, ChevronDown, Loader2, X, Settings, AlertTriangle,
   Megaphone, RefreshCw, Image as ImageIcon, CheckCircle2, Sparkles,
-  ArrowDown, ArrowUp
+  ArrowDown, ArrowUp, AlertCircle
 } from 'lucide-react';
 import {
   upsertPostAutomation,
@@ -670,6 +670,7 @@ export default function SocialClient({
   const [automations, setAutomations] = useState<PostAutomation[]>(initialAutomations);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Platform & Sort filters
   const [platformFilter, setPlatformFilter] = useState<'all' | 'facebook' | 'instagram'>('all');
@@ -684,6 +685,7 @@ export default function SocialClient({
 
   const loadConnectedPosts = async () => {
     setLoadingPosts(true);
+    setErrorMessage(null);
     const res = await fetchConnectedSocialPosts();
     setIsConnected(res.connected);
     if (res.shopName) setShopName(res.shopName);
@@ -697,6 +699,7 @@ export default function SocialClient({
 
   const handleToggleAutomation = async (post: ConnectedPostItem, targetEnabled: boolean) => {
     setTogglingPostId(post.post_id);
+    setErrorMessage(null);
     const res = await togglePostAutomationStatus(post.post_id, targetEnabled, {
       platform: post.platform,
       preview_text: post.preview_text,
@@ -707,10 +710,14 @@ export default function SocialClient({
     if (res.success) {
       if (res.enabled && res.data) {
         setAutomations(prev => [res.data, ...prev.filter(x => x.post_id !== post.post_id)]);
+        setExpandedId(post.post_id);
       } else {
         setAutomations(prev => prev.filter(x => x.post_id !== post.post_id));
         if (expandedId === post.post_id) setExpandedId(null);
       }
+    } else {
+      setErrorMessage(res.error || 'Failed to toggle automation status.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -765,6 +772,23 @@ export default function SocialClient({
             Paste Post URL
           </button>
         </div>
+
+        {/* Error Alert Banner */}
+        {errorMessage && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="p-1 hover:bg-rose-100 rounded-full transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-rose-600" />
+            </button>
+          </div>
+        )}
 
         {/* Control & Filter Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2 bg-white rounded-cards border border-dove/10 shadow-subtle">
