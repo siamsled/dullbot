@@ -685,10 +685,10 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                     <span className="text-sm font-bold font-mono text-ink">{Math.round((currentStats.funnelOrderIntent || 0) * 0.82)}</span>
                     <span className="text-[9px] text-ash block mt-0.5">82% initiated</span>
                   </div>
-                  <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                    <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase block mb-0.5">Recovered</span>
-                    <span className="text-sm font-bold font-mono text-emerald-700 dark:text-emerald-300">{currentStats.funnelConfirmed}</span>
-                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">Confirmed paid</span>
+                  <div className="p-2.5 rounded-2xl bg-fog border border-dove/10">
+                    <span className="text-[10px] text-ash font-bold uppercase block mb-0.5">Recovered</span>
+                    <span className="text-sm font-bold font-mono text-ink">{currentStats.funnelConfirmed}</span>
+                    <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">Confirmed paid</span>
                   </div>
                 </div>
               </div>
