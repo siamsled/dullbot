@@ -168,7 +168,6 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
 
   const navItems = rawNavItems.filter(item => {
     if (isOwner || userPermissions.includes('*')) return true;
-    if (item.permission === 'overview') return true; // Overview always accessible
     return userPermissions.includes(item.permission);
   });
 

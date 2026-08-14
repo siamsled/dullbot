@@ -16,6 +16,7 @@ import {
 import { StaffRole } from '@/lib/supabase-admin';
 
 const PERMISSION_OPTIONS = [
+  { id: 'overview', label: 'Store Overview', desc: 'View store metrics, revenue cards, and quick summary' },
   { id: 'orders', label: 'Orders & Fulfillment', desc: 'View, verify payments, and dispatch courier orders' },
   { id: 'pos', label: 'Point of Sale (POS)', desc: 'Create manual in-store walk-in sales & print receipts' },
   { id: 'inbox', label: 'Live Inbox', desc: 'Read customer messages and take over chat conversations' },
@@ -29,25 +30,25 @@ const ROLE_PRESETS: { id: StaffRole; label: string; desc: string; perms: string[
     id: 'cashier',
     label: 'Cashier / POS Operator',
     desc: 'Strictly limited to taking sales and managing orders',
-    perms: ['orders', 'pos'],
+    perms: ['overview', 'orders', 'pos'],
   },
   {
     id: 'support',
     label: 'Customer Support',
     desc: 'Chat communication and order status lookup',
-    perms: ['inbox', 'orders'],
+    perms: ['overview', 'inbox', 'orders'],
   },
   {
     id: 'manager',
     label: 'Store Manager',
     desc: 'Full operational control over catalog, sales, and analytics',
-    perms: ['orders', 'pos', 'inbox', 'inventory', 'analytics'],
+    perms: ['overview', 'orders', 'pos', 'inbox', 'inventory', 'analytics'],
   },
   {
     id: 'custom',
     label: 'Custom Role',
     desc: 'Configure tailored access per employee',
-    perms: ['orders', 'pos'],
+    perms: ['overview', 'orders', 'pos'],
   },
 ];
 
@@ -62,7 +63,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<StaffRole>('cashier');
-  const [selectedPerms, setSelectedPerms] = useState<string[]>(['orders', 'pos']);
+  const [selectedPerms, setSelectedPerms] = useState<string[]>(['overview', 'orders', 'pos']);
   const [formError, setFormError] = useState('');
 
   const loadStaff = async () => {
@@ -122,7 +123,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
         setEmail('');
         setPassword('');
         setSelectedRole('cashier');
-        setSelectedPerms(['orders', 'pos']);
+        setSelectedPerms(['overview', 'orders', 'pos']);
         await loadStaff();
       } else {
         setFormError(res.error || 'Failed to create staff member.');

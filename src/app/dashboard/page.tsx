@@ -13,6 +13,21 @@ export default async function DashboardOverview() {
     redirect('/login');
   }
 
+  // RBAC permission check: if staff member doesn't have overview permission, redirect to permitted tab
+  if (!shop.isOwner && !shop.permissions?.includes('*') && !shop.permissions?.includes('overview')) {
+    if (shop.permissions?.includes('orders') || shop.permissions?.includes('pos')) {
+      redirect('/dashboard/orders');
+    } else if (shop.permissions?.includes('inbox')) {
+      redirect('/dashboard/inbox');
+    } else if (shop.permissions?.includes('inventory')) {
+      redirect('/dashboard/inventory');
+    } else if (shop.permissions?.includes('analytics')) {
+      redirect('/dashboard/analytics');
+    } else if (shop.permissions?.includes('settings')) {
+      redirect('/dashboard/settings');
+    }
+  }
+
   // Fetch product count for checklist verification
   const { count: productCount } = await supabaseAdmin
     .from('products')
