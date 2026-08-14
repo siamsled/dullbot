@@ -428,7 +428,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const agingPendingCount = orders.filter(o => o.status === 'pending_verification' && new Date(o.createdAt).getTime() < twoHoursAgo).length;
 
   return (
-    <div className="flex-1 overflow-y-auto h-full w-full bg-pure-white dark:bg-[#09090b]">
+    <div className="flex-1 w-full bg-pure-white dark:bg-[#09090b]">
       <div className="w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6 relative">
 
         {/* ── 1. HEADER & MAIN ACTIONS ────────────────────────────────────── */}
@@ -694,11 +694,11 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           animate="show"
           className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 relative"
         >
-          <div className="overflow-x-auto rounded-3xl">
+          <div className="w-full rounded-3xl">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-40 shadow-xs bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-dove/15 dark:border-zinc-800/80">
+              <thead className="sticky top-0 z-30 shadow-xs bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md">
                 <tr className="border-b border-dove/15 dark:border-zinc-800/80">
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 w-10 border-b border-dove/15 dark:border-zinc-800/80">
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 w-10 border-b border-dove/15 dark:border-zinc-800/80">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -706,15 +706,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       className="rounded border-dove/30 dark:border-zinc-700 focus:ring-ink dark:focus:ring-zinc-400 cursor-pointer dark:bg-zinc-900"
                     />
                   </th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
-                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ash dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ash dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
                     {filtered.length} row{filtered.length !== 1 ? 's' : ''}
                   </th>
                 </tr>
