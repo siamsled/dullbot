@@ -28,7 +28,7 @@ export default function UiverseGlowButton({
   };
 
   const variantClasses = {
-    dark: 'bg-[#17191c] text-white dark:bg-white dark:text-[#090b0e] shadow-[0_4px_20px_-4px_rgba(23,25,28,0.4)] hover:shadow-[0_6px_24px_-2px_rgba(23,25,28,0.6)] border border-white/10 dark:border-transparent',
+    dark: 'bg-[#17191c] text-white dark:bg-[#FFFFFF] dark:text-[#090b0e] shadow-[0_4px_20px_-4px_rgba(23,25,28,0.4)] hover:shadow-[0_6px_24px_-2px_rgba(23,25,28,0.6)] border border-white/10 dark:border-transparent',
     rust: 'bg-[#5d2a1a] text-white shadow-[0_4px_20px_-4px_rgba(93,42,26,0.5)] hover:shadow-[0_6px_24px_-2px_rgba(93,42,26,0.7)] border border-white/10',
     glass: 'bg-white/80 dark:bg-[#1f242d] backdrop-blur-md text-[#17191c] dark:text-[#f8fafc] border border-dove/20 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:bg-white dark:hover:bg-[#282e3a]',
   };

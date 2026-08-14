@@ -715,7 +715,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         key={o.id}
                         variants={itemVariants}
                         onClick={() => setActiveOrderId(o.id)}
-                        className={`hover:bg-fog/40 dark:hover:bg-white/5 transition-all cursor-pointer ${isChecked ? 'bg-fog/50 dark:bg-white/10' : ''
+                        className={`hover:bg-fog/40 transition-all cursor-pointer ${isChecked ? 'bg-fog/50' : ''
                           }`}
                       >
                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
@@ -728,15 +728,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{o.customerName}</p>
+                            <p className="text-sm font-semibold text-ink leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
                               <span className="w-3.5 h-3.5 bg-sky-wash text-ink rounded-full flex items-center justify-center text-[8px] font-bold" title="Repeat Customer">🔄</span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{o.customerPhone}</p>
+                          <p className="text-xs text-ash font-mono mt-0.5">{o.customerPhone}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[180px] line-clamp-2" title={o.customerAddress}>
+                          <p className="text-xs text-ash max-w-[180px] line-clamp-2" title={o.customerAddress}>
                             {o.customerAddress}
                           </p>
                         </td>
@@ -753,10 +753,10 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                                 <Package className="w-4 h-4 text-ash" />
                               </div>
                             )}
-                            <span className="truncate font-medium text-slate-700 dark:text-slate-200">{titleString}</span>
+                            <span className="truncate font-medium text-ink">{titleString}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-slate-100">
+                        <td className="px-6 py-4 text-sm font-bold text-ink">
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
                         <td className="px-6 py-4">
@@ -767,7 +767,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isRefunded) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-300">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-purple-50 border-purple-200 text-purple-700">
                                   Refunded
                                 </span>
                               );
@@ -775,7 +775,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isCancelled) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 border-slate-200 text-slate-700">
                                   Cancelled
                                 </span>
                               );
@@ -783,14 +783,14 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isPaid) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-green-50 dark:bg-emerald-950/40 border-green-200 dark:border-emerald-500/30 text-green-700 dark:text-emerald-300">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-green-50 border-green-200 text-green-700">
                                   Paid
                                 </span>
                               );
                             }
 
                             return (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 border-amber-200 text-amber-700">
                                 Pending
                               </span>
                             );
@@ -987,7 +987,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       )}
 
                       {activeOrder.status === 'cancelled' || activeOrder.fulfillmentStatus === 'cancelled' ? (
-                        <div className="flex items-center gap-2 p-2.5 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 rounded-inputs text-xs border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2 p-2.5 bg-slate-100 text-slate-700 rounded-inputs text-xs border border-slate-200">
                           <AlertTriangle className="w-4 h-4 text-slate-500 shrink-0" />
                           <span>This order was cancelled. Payment verification is disabled.</span>
                         </div>

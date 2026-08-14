@@ -255,7 +255,7 @@ export default function MessengerInput({
       {/* Center Input Area */}
       <div className="flex-1 relative flex items-center">
         {isRecording ? (
-          <div className="w-full bg-[#F0F2F5] dark:bg-[#21262d] h-[36px] rounded-full flex items-center justify-between px-4 border border-transparent dark:border-white/10">
+          <div className="w-full bg-[#F0F2F5] h-[36px] rounded-full flex items-center justify-between px-4 border border-transparent">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-sm font-medium text-ink">{formatTime(recordingTime)}</span>
@@ -263,7 +263,7 @@ export default function MessengerInput({
             <button 
               type="button"
               onClick={stopRecording}
-              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-full transition-colors cursor-pointer"
+              className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
             >
               <StopCircle className="w-5 h-5" />
             </button>
@@ -281,13 +281,13 @@ export default function MessengerInput({
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder={placeholderText}
-              className="w-full bg-[#F0F2F5] dark:bg-[#21262d] rounded-full pl-4 pr-10 h-[36px] text-[15px] text-[#050505] dark:text-[#f0f6fc] placeholder:text-[#65676B] dark:placeholder:text-[#8b949e] border border-transparent dark:border-white/10 focus:outline-none"
+              className="w-full bg-[#F0F2F5] rounded-full pl-4 pr-10 h-[36px] text-[15px] text-[#050505] placeholder:text-[#65676B] border border-transparent focus:outline-none"
             />
             <button 
               type="button"
               onClick={handleEmoji}
               disabled={disabled}
-              className="absolute right-2 p-1 text-[#0084FF] rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
+              className="absolute right-2 p-1 text-[#0084FF] rounded-full hover:bg-black/5 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Smile className="w-[22px] h-[22px]" strokeWidth={2.5} />
             </button>

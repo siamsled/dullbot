@@ -62,7 +62,174 @@
   --surface-ink: #0f172a;
 }
 
-/* Dark mode disabled to enforce standard light theme across dashboard */
+/* ─── SLEEK DARK MODE VERCEL-INSPIRED THEME ──────────────── */
+[data-dark-mode="true"],
+.dark {
+  /* Semantic color tokens — Tailwind utilities that reference these vars (bg-ink, text-ash, etc.)
+     automatically invert in dark mode with ultra crisp contrast. */
+  --color-ink: #f4f4f5;
+  --color-pure-white: #000000;
+  --color-fog: #121214;
+  --color-ash: #a1a1aa;
+  --color-graphite: #cbd5e1;
+  --color-dove: #71717a;
+  --color-slate: #94a3b8;
+  --color-obsidian: #ffffff;
+  --color-rust: #fb923c;
+  --color-apricot-wash: rgba(251, 146, 60, 0.15);
+  --color-sky-wash: rgba(56, 189, 248, 0.15);
+
+  --surface-canvas: #000000;
+  --surface-fog: #121214;
+  --surface-card: #0a0a0a;
+  --surface-warm-tint: rgba(251, 146, 60, 0.15);
+  --surface-cool-tint: rgba(56, 189, 248, 0.15);
+  --surface-ink: #f4f4f5;
+  --shadow-subtle: 0px 0px 0px 1px rgba(255, 255, 255, 0.08), 0px 8px 24px -4px rgba(0, 0, 0, 0.8);
+
+  color-scheme: dark;
+}
+
+/* ── Dark body base ── */
+.dark body {
+  background-color: var(--surface-canvas);
+  color: var(--color-ink);
+}
+
+/* ── Form controls: inputs need explicit dark styling since browsers style them natively ── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: #0a0a0a;
+  color: #f4f4f5;
+  border-color: #27272a;
+  color-scheme: dark;
+}
+
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+  color-scheme: dark;
+  accent-color: #f4f4f5;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #71717a;
+}
+
+/* ── Chat bubbles: hardcoded #E4E6EB hex can't be swapped via CSS vars ── */
+.dark .bg-\[\#E4E6EB\] {
+  background-color: #121214 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #27272a !important;
+}
+
+.dark .text-\[\#050505\] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#65676B\] {
+  color: #a1a1aa !important;
+}
+
+.dark .bg-\[\#E4E6EB\]\/60 {
+  background-color: rgba(18, 18, 20, 0.8) !important;
+  color: #a1a1aa !important;
+}
+
+.dark .bg-\[\#F0F2F5\] {
+  background-color: #121214 !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+}
+
+/* ── bg-white surfaces & opacity variants: card panels, dropdowns, wrappers ── */
+.dark .bg-white {
+  background-color: #0a0a0a;
+}
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80 {
+  background-color: rgba(10, 10, 10, 0.95);
+}
+
+/* ── bg-ink buttons & badges: in dark mode bg-ink is light, so text and icons must be dark ── */
+.dark .bg-ink,
+.dark .bg-ink.text-white,
+.dark .bg-ink .text-white {
+  color: #000000 !important;
+}
+.dark .bg-ink svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+/* ── Status pill badges in dark mode: high contrast muted background with vibrant readable text ── */
+.dark .bg-green-50, .dark .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+.dark .text-green-700, .dark .text-green-800 {
+  color: #4ade80 !important;
+}
+.dark .border-green-200 {
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.dark .bg-blue-50, .dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+.dark .text-blue-700, .dark .text-blue-800 {
+  color: #60a5fa !important;
+}
+.dark .border-blue-200 {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark .bg-red-50, .dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+.dark .text-red-700, .dark .text-red-800 {
+  color: #f87171 !important;
+}
+.dark .border-red-200, .dark .border-red-200\/80 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-50, .dark .bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+.dark .text-amber-700, .dark .text-amber-800, .dark .text-yellow-700, .dark .text-yellow-800 {
+  color: #fbbf24 !important;
+}
+.dark .border-amber-200, .dark .border-yellow-200 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark .bg-purple-50, .dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  color: #c084fc !important;
+}
+.dark .text-purple-700, .dark .text-purple-800 {
+  color: #c084fc !important;
+}
+.dark .border-purple-200 {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+.dark .bg-slate-50, .dark .bg-slate-100 {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+}
+.dark .text-slate-700, .dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+.dark .border-slate-200 {
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
 
 
 @theme {
