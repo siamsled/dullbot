@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
+import DullBotLogo from '@/components/ui/DullBotLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,13 +94,13 @@ function LoginContent() {
       {/* ── GravityStarsBackground ── */}
       <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0">
         <GravityStarsBackground
-          starsCount={100}
-          starsSize={2.5}
-          starsOpacity={0.8}
-          glowIntensity={20}
-          movementSpeed={0.35}
-          mouseInfluence={120}
-          gravityStrength={80}
+          starsCount={80}
+          starsSize={2}
+          starsOpacity={0.7}
+          glowIntensity={12}
+          movementSpeed={0.2}
+          mouseInfluence={75}
+          gravityStrength={25}
           className="absolute inset-0 size-full text-white"
         />
         {/* ── Card Stage (Fixed Inset Center) ── */}
@@ -134,21 +135,11 @@ function LoginContent() {
               }}
             >
               {/* Logo & Header */}
-              <div className="text-center mb-9">
-                <Link href="/" className="inline-block">
-                  <span
-                    style={{
-                      fontFamily: 'Georgia, serif',
-                      fontSize: 38,
-                      fontWeight: 300,
-                      letterSpacing: '-0.03em',
-                      color: '#ffffff',
-                    }}
-                  >
-                    dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 24, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
-                  </span>
+              <div className="text-center mb-8 flex flex-col items-center justify-center">
+                <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
+                  <DullBotLogo size="lg" className="text-white" />
                 </Link>
-                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 13, marginTop: 6, fontWeight: 500, letterSpacing: '0.04em' }}>
+                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 13, marginTop: 8, fontWeight: 500, letterSpacing: '0.04em' }}>
                   Sign in or create an account with Google
                 </p>
               </div>

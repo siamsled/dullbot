@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Package, Settings, Sparkles, Box, Zap, LogOut, Sliders, BarChart, AlertTriangle, Megaphone, UtensilsCrossed, ArrowLeftRight, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -193,18 +193,24 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       }`}
     >
       {/* Top Header */}
-      <div className="h-16 flex items-center justify-between px-3 border-b border-dove/10 shrink-0">
+      <div className="h-16 flex items-center justify-between px-2.5 border-b border-dove/10 shrink-0">
         {isEffectiveExpanded ? (
-          <div className="flex items-center justify-between w-full">
-            <Link href="/dashboard" className="flex items-center hover:opacity-90 transition-opacity">
+          <div className="grid grid-cols-[24px_1fr_24px] items-center w-full">
+            {/* Left Balance Spacer */}
+            <div className="w-6 h-6" aria-hidden="true" />
+
+            {/* Centered Logo */}
+            <Link href="/dashboard" className="flex items-center justify-center hover:opacity-90 transition-opacity">
               <DullBotLogo collapsed={false} size="sm" />
             </Link>
+
+            {/* Right Collapse Pin Button */}
             <button
               onClick={togglePin}
-              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20 ml-1"
+              className="w-6 h-6 rounded-md text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
               title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
             >
-              <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
+              <PanelLeftClose className={`w-3.5 h-3.5 transition-colors ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
             </button>
           </div>
         ) : (

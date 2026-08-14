@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import UiverseGridBackground from '@/components/ui/UiverseGridBackground';
 import { Check, ArrowRight, Zap, TrendingUp, Rocket } from 'lucide-react';
+import DullBotLogo from '@/components/ui/DullBotLogo';
 
 const PLANS = [
   {
@@ -81,11 +82,9 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-3xl relative z-10">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block">
-              <span className="font-serif text-3xl tracking-tight text-ink font-light">
-                dull<span className="font-normal font-sans text-xl text-ash">bot.</span>
-              </span>
+          <div className="text-center mb-8 flex flex-col items-center justify-center">
+            <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
+              <DullBotLogo size="lg" className="mb-1" />
             </Link>
             <p className="mt-2 text-ash text-sm">
               {step === 'plan' ? 'Choose your recharge pack' : 'Create your account'}

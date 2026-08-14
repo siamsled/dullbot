@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { GravityStarsBackground } from '@/components/ui/gravity-stars-bg';
-import SiriOrb from '@/components/ui/siri-orb';
+import DullBotLogo from '@/components/ui/DullBotLogo';
 import StepBusinessType from './steps/StepBusinessType';
 import StepChannels from './steps/StepChannels';
 import StepContext from './steps/StepContext';
@@ -107,13 +107,13 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   return (
     <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0">
       <GravityStarsBackground
-        starsCount={100}
-        starsSize={2.5}
-        starsOpacity={0.8}
-        glowIntensity={20}
-        movementSpeed={0.35}
-        mouseInfluence={120}
-        gravityStrength={80}
+        starsCount={80}
+        starsSize={2}
+        starsOpacity={0.7}
+        glowIntensity={12}
+        movementSpeed={0.2}
+        mouseInfluence={75}
+        gravityStrength={25}
         className="absolute inset-0 size-full text-white"
       />
       {/* Full-screen centered layout */}
@@ -127,28 +127,15 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
         */}
         <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto">
 
-          {/* ── Card Header: Siri Orb + Logo + Merchant Badge + Switch Account + Step Counter ── */}
+          {/* ── Card Header: DullBot Logo + Merchant Badge + Switch Account + Step Counter ── */}
           <div className="relative flex items-center justify-between px-6 sm:px-8 pt-6 pb-2 shrink-0 gap-2">
             {isLaunchScreen ? (
               <>
                 <div className="flex items-center gap-3">
-                  <SiriOrb size="34px" state="listening" />
-                  <div className="flex items-baseline gap-2">
-                    <span
-                      style={{
-                        fontFamily: 'Georgia, serif',
-                        fontSize: 28,
-                        fontWeight: 300,
-                        letterSpacing: '-0.03em',
-                        color: '#ffffff',
-                      }}
-                    >
-                      dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 17, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
-                    </span>
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-white/40 hidden xs:inline">
-                      for merchants
-                    </span>
-                  </div>
+                  <DullBotLogo size="md" className="text-white" />
+                  <span className="text-[10px] font-semibold tracking-widest uppercase text-white/40 hidden xs:inline ml-1">
+                    for merchants
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2.5 sm:gap-3">
@@ -182,24 +169,10 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
             ) : (
               <>
                 <div className="flex items-center gap-3 sm:gap-3.5">
-                  <SiriOrb size="36px" state="listening" className="mr-0.5 shrink-0" />
-                  
-                  <div className="flex items-baseline gap-2">
-                    <span
-                      style={{
-                        fontFamily: 'Georgia, serif',
-                        fontSize: 28,
-                        fontWeight: 300,
-                        letterSpacing: '-0.03em',
-                        color: '#ffffff',
-                      }}
-                    >
-                      dull<span style={{ fontFamily: 'sans-serif', fontWeight: 500, fontSize: 18, color: 'rgba(255, 255, 255, 0.6)' }}>bot.</span>
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent hidden xs:inline">
-                      for merchants
-                    </span>
-                  </div>
+                  <DullBotLogo size="md" className="text-white" />
+                  <span className="text-[10px] sm:text-[11px] font-semibold tracking-widest uppercase bg-gradient-to-r from-white/70 via-white/40 to-white/20 bg-clip-text text-transparent hidden xs:inline ml-1">
+                    for merchants
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2.5 sm:gap-3">
