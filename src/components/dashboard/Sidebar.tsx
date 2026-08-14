@@ -194,7 +194,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
     >
       {/* Top Header */}
       <div className={`h-16 flex items-center border-b border-dove/10 shrink-0 overflow-hidden transition-all duration-300 ${
-        isEffectiveExpanded ? 'justify-between pl-12 pr-3.5' : 'justify-center px-0'
+        isEffectiveExpanded ? 'justify-between pl-14 pr-3.5' : 'justify-center px-0'
       }`}>
         <Link
           href="/dashboard"
