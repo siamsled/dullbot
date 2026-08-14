@@ -13,7 +13,6 @@ import { QRCodeSVG } from 'qrcode.react';
 import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 import StaffManagementSection from './staff/StaffManagementSection';
-import SiteLanguageSection from './SiteLanguageSection';
 import ReceiptCustomizerSection from './ReceiptCustomizerSection';
 
 /* ─── constants ─────────────────────────────────────────── */
@@ -852,26 +851,7 @@ export default function SettingsClient({ shop }: { shop: any }) {
         </SettingsCard>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          SECTION 6 — SITE LANGUAGE PREFERENCES (TOP 20)
-          ══════════════════════════════════════════════════ */}
-      <section>
-        <SectionLabel>Site Language & Regional Locale</SectionLabel>
-        <SettingsCard>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-fog border border-dove/20 flex items-center justify-center text-ink shadow-xs">
-              <Globe className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-ink text-sm">Dashboard & Website Language</h3>
-              <p className="text-xs text-ash">Select your preferred interface language from the top 20 global languages.</p>
-            </div>
-          </div>
-          <SiteLanguageSection
-            currentLanguageMix={shop?.language_mix || 'english'}
-          />
-        </SettingsCard>
-      </section>
+
 
       {/* ══════════════════════════════════════════════════════
           SECTION 7 — RECEIPT & INVOICE CUSTOMIZER
