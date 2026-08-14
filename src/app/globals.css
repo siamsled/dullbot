@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors */
-  --color-ink: #17191c;
+  /* Colors - Light Mode (High Contrast & Clean Modern Palette) */
+  --color-ink: #0f172a;
   --color-pure-white: #ffffff;
-  --color-fog: #f7f7f8;
-  --color-ash: #4c4c4c;
-  --color-graphite: #777b86;
-  --color-dove: #a3a6af;
-  --color-slate: #8b8c8d;
+  --color-fog: #f8fafc;
+  --color-ash: #475569;
+  --color-graphite: #334155;
+  --color-dove: #94a3b8;
+  --color-slate: #64748b;
   --color-obsidian: #000000;
-  --color-rust: #5d2a1a;
-  --color-apricot-wash: #fbe1d1;
-  --color-sky-wash: #d3e3fc;
+  --color-rust: #c2410c;
+  --color-apricot-wash: #ffedd5;
+  --color-sky-wash: #e0f2fe;
 
   /* Typography — Fonts mapped to CSS variables */
   --font-signifier: var(--font-newsreader), 'Newsreader', 'Times New Roman', Georgia, serif;
@@ -51,41 +51,41 @@
   --radius-buttons: 9999px;
 
   /* Shadows */
-  --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+  --shadow-subtle: 0px 0px 0px 1px rgba(0, 0, 0, 0.06), 0px 1px 3px 0px rgba(0, 0, 0, 0.05), 0px 10px 15px -3px rgba(0, 0, 0, 0.04);
 
   /* Surfaces */
   --surface-canvas: #ffffff;
-  --surface-fog: #f7f7f8;
+  --surface-fog: #f8fafc;
   --surface-card: #ffffff;
-  --surface-warm-tint: #fbe1d1;
-  --surface-cool-tint: #d3e3fc;
-  --surface-ink: #17191c;
+  --surface-warm-tint: #ffedd5;
+  --surface-cool-tint: #e0f2fe;
+  --surface-ink: #0f172a;
 }
 
-/* ─── SLEEK DARK MODE OBSIDIAN THEME ──────────────── */
+/* ─── SLEEK DARK MODE VERCEL-INSPIRED THEME ──────────────── */
 [data-dark-mode="true"],
 .dark {
   /* Semantic color tokens — Tailwind utilities that reference these vars (bg-ink, text-ash, etc.)
-     automatically invert in dark mode. No !important overrides needed. */
-  --color-ink: #ededed;
+     automatically invert in dark mode with ultra crisp contrast. */
+  --color-ink: #f4f4f5;
   --color-pure-white: #000000;
-  --color-fog: #111111;
-  --color-ash: #888888;
-  --color-graphite: #a1a1aa;
-  --color-dove: #333333;
-  --color-slate: #71717a;
+  --color-fog: #121214;
+  --color-ash: #a1a1aa;
+  --color-graphite: #cbd5e1;
+  --color-dove: #71717a;
+  --color-slate: #94a3b8;
   --color-obsidian: #ffffff;
   --color-rust: #fb923c;
   --color-apricot-wash: rgba(251, 146, 60, 0.15);
   --color-sky-wash: rgba(56, 189, 248, 0.15);
 
   --surface-canvas: #000000;
-  --surface-fog: #111111;
+  --surface-fog: #121214;
   --surface-card: #0a0a0a;
   --surface-warm-tint: rgba(251, 146, 60, 0.15);
   --surface-cool-tint: rgba(56, 189, 248, 0.15);
-  --surface-ink: #ededed;
-  --shadow-subtle: 0px 0px 0px 1px rgba(255,255,255,0.07), 0px 8px 24px -4px rgba(0,0,0,0.6);
+  --surface-ink: #f4f4f5;
+  --shadow-subtle: 0px 0px 0px 1px rgba(255, 255, 255, 0.08), 0px 8px 24px -4px rgba(0, 0, 0, 0.8);
 
   color-scheme: dark;
 }
@@ -101,25 +101,31 @@
 .dark select,
 .dark textarea {
   background-color: #0a0a0a;
-  color: #ededed;
-  border-color: #333333;
+  color: #f4f4f5;
+  border-color: #27272a;
   color-scheme: dark;
+}
+
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+  color-scheme: dark;
+  accent-color: #f4f4f5;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #888888;
+  color: #71717a;
 }
 
 /* ── Chat bubbles: hardcoded #E4E6EB hex can't be swapped via CSS vars ── */
 .dark .bg-\[\#E4E6EB\] {
-  background-color: #111111 !important;
-  color: #ededed !important;
-  border: 1px solid #333333 !important;
+  background-color: #121214 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #27272a !important;
 }
 
 .dark .text-\[\#050505\] {
-  color: #ededed !important;
+  color: #f4f4f5 !important;
 }
 
 .dark .text-\[\#65676B\] {
@@ -127,25 +133,80 @@
 }
 
 .dark .bg-\[\#E4E6EB\]\/60 {
-  background-color: rgba(17, 17, 17, 0.8) !important;
+  background-color: rgba(18, 18, 20, 0.8) !important;
   color: #a1a1aa !important;
 }
 
-/* ── bg-white surfaces: card panels, dropdowns, wrappers need to darken ──
-   Note: opacity variants (bg-white/95) use --tw-bg-opacity and are NOT
-   matched by the plain .bg-white class selector, so opacity variants are safe. */
+/* ── bg-white surfaces & opacity variants: card panels, dropdowns, wrappers ── */
 .dark .bg-white {
   background-color: #0a0a0a;
 }
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80 {
+  background-color: rgba(10, 10, 10, 0.95);
+}
 
-/* ── bg-ink buttons: in dark mode bg-ink becomes light, so text
-   needs to be dark to remain readable. text-white on a light bg = invisible. ── */
-.dark .bg-ink {
-  color: #000000;
+/* ── bg-ink buttons & badges: in dark mode bg-ink is light, so text and icons must be dark ── */
+.dark .bg-ink,
+.dark .bg-ink.text-white,
+.dark .bg-ink .text-white {
+  color: #000000 !important;
 }
 .dark .bg-ink svg {
-  color: #000000;
+  color: #000000 !important;
+  stroke: #000000 !important;
 }
+
+/* ── Status pill badges in dark mode: high contrast muted background with vibrant readable text ── */
+.dark .bg-green-50, .dark .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+.dark .text-green-700, .dark .text-green-800 {
+  color: #4ade80 !important;
+}
+
+.dark .bg-blue-50, .dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+.dark .text-blue-700, .dark .text-blue-800 {
+  color: #60a5fa !important;
+}
+
+.dark .bg-red-50, .dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+.dark .text-red-700, .dark .text-red-800 {
+  color: #f87171 !important;
+}
+
+.dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-50, .dark .bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+.dark .text-amber-700, .dark .text-amber-800, .dark .text-yellow-700, .dark .text-yellow-800 {
+  color: #fbbf24 !important;
+}
+
+.dark .bg-purple-50, .dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  color: #c084fc !important;
+}
+.dark .text-purple-700, .dark .text-purple-800 {
+  color: #c084fc !important;
+}
+
+.dark .bg-slate-50, .dark .bg-slate-100 {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+}
+.dark .text-slate-700, .dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
 
 @theme {
   --color-ink: var(--color-ink);

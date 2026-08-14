@@ -231,7 +231,7 @@ export default function CatalogueTable({
             <p className="text-sm text-ash ml-2">Scraped products awaiting approval before the AI can sell them.</p>
           </div>
           <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-fog/95/95 backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
+            <thead className="sticky top-0 z-10 bg-fog backdrop-blur-md text-xs text-ash uppercase tracking-wider border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 font-medium text-right">Price</th>

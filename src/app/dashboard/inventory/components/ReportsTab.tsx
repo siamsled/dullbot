@@ -416,7 +416,7 @@ export default function ReportsTab({ stats, lowStockProducts }: Props) {
           </div>
 
           <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 text-xs text-ash uppercase tracking-wider bg-fog/95/95 backdrop-blur-md border-b border-dove/15 shadow-xs">
+            <thead className="sticky top-0 z-10 text-xs text-ash uppercase tracking-wider bg-fog backdrop-blur-md border-b border-dove/15 shadow-xs">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Product</th>
                 <th className="px-4 py-2.5 font-medium text-right">Current Stock</th>
