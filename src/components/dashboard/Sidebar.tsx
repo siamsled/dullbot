@@ -8,6 +8,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import DullBotLogo from '@/components/ui/DullBotLogo';
 
 const UNLOCK_ANIM_KEY = 'dullbot_unlocked_anim';
 const SIDEBAR_COLLAPSED_KEY = 'dullbot_sidebar_collapsed';
@@ -192,27 +193,28 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       }`}
     >
       {/* Top Header */}
-      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10 shrink-0">
+      <div className="h-16 flex items-center justify-between px-3 border-b border-dove/10 shrink-0">
         {isEffectiveExpanded ? (
           <div className="flex items-center justify-between w-full">
-            <span className="text-xl font-serif font-semibold tracking-tight text-ink px-1">DullBot</span>
+            <Link href="/dashboard" className="flex items-center hover:opacity-90 transition-opacity">
+              <DullBotLogo collapsed={false} size="sm" />
+            </Link>
             <button
               onClick={togglePin}
-              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
+              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20 ml-1"
               title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
             >
               <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between w-full px-1">
-            <span className="text-base font-serif font-bold tracking-tight text-ink">DB</span>
+          <div className="flex items-center justify-center w-full">
             <button
               onClick={togglePin}
-              className="p-1.5 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
+              className="p-1 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center"
               title="Expand sidebar"
             >
-              <ChevronRight className="w-4 h-4 text-ash" />
+              <DullBotLogo collapsed={true} size="sm" />
             </button>
           </div>
         )}
