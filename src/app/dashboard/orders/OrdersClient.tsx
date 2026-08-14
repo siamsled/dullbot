@@ -9,7 +9,7 @@ import {
   AlertTriangle, Filter, ClipboardList, HelpCircle, X, ExternalLink,
   ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
   Printer, ChevronDown, Smartphone, ShieldCheck, ShoppingBag, Banknote, Hourglass,
-  Sparkles, Phone, MapPin, Receipt, ArrowUpRight
+  Sparkles, Phone, MapPin, Receipt, ArrowUpRight, Repeat
 } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
@@ -743,7 +743,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     const fConfig = FULFILLMENT_COLORS[o.fulfillmentStatus] ?? { label: o.fulfillmentStatus, bg: 'bg-fog dark:bg-zinc-900 border-dove/20 dark:border-zinc-800', text: 'text-zinc-700 dark:text-zinc-300' };
 
                     // Find repeat customer: has prior orders in database
-                    const isRepeatCustomer = orders.filter(item => item.customerPhone === o.customerPhone).length > 1;
+                    const priorOrdersCount = orders.filter(item => item.customerPhone && item.customerPhone !== 'Walk-in' && item.customerPhone === o.customerPhone).length;
+                    const isRepeatCustomer = priorOrdersCount > 1;
 
                     return (
                       <motion.tr
@@ -763,11 +764,20 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                           />
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <p className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
-                              <span className="px-1.5 py-0.2 bg-sky-wash text-blue-700 dark:text-sky-400 border border-blue-200 dark:border-sky-800 rounded-full text-[9px] font-bold" title="Repeat Customer">
-                                🔄 Repeat
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-tight bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 dark:from-sky-400/15 dark:via-indigo-400/15 dark:to-purple-400/15 text-sky-700 dark:text-sky-300 border border-sky-500/25 dark:border-sky-400/30 shadow-[0_1px_3px_rgba(56,189,248,0.12)] shrink-0 transition-all hover:scale-105"
+                                title={`${priorOrdersCount} orders placed by this customer`}
+                              >
+                                <Repeat className="w-2.5 h-2.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                                <span>Repeat</span>
+                                {priorOrdersCount >= 2 && (
+                                  <span className="font-mono text-[9px] font-bold text-sky-800 dark:text-sky-200 opacity-80">
+                                    {priorOrdersCount}x
+                                  </span>
+                                )}
                               </span>
                             )}
                           </div>
