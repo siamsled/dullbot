@@ -688,37 +688,31 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         </AnimatePresence>
 
         {/* ── 6. ORDERS TABLE ─────────────────────────────────────────────── */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 relative overflow-hidden"
-        >
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[1020px] text-left border-collapse">
-              <thead className="sticky top-0 z-30 shadow-xs bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md">
-                <tr className="border-b border-dove/15 dark:border-zinc-800/80">
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 w-12 border-b border-dove/15 dark:border-zinc-800/80">
-                    <input
-                      type="checkbox"
-                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-zinc-500 cursor-pointer accent-zinc-900 dark:accent-white"
-                    />
-                  </th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 text-[11px] font-bold text-zinc-400 dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
-                    {filtered.length} row{filtered.length !== 1 ? 's' : ''}
-                  </th>
-                </tr>
-              </thead>
+        <div className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-30 shadow-xs">
+              <tr className="border-b border-dove/15 dark:border-zinc-800/80">
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 w-12 border-b border-dove/15 dark:border-zinc-800/80 first:rounded-tl-3xl shadow-xs">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-zinc-500 cursor-pointer accent-zinc-900 dark:accent-white"
+                  />
+                </th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Customer</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Delivery Address</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Product(s)</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Amount</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Payment</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Fulfillment</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Courier</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap shadow-xs">Date</th>
+                <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 text-[11px] font-bold text-zinc-400 dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right last:rounded-tr-3xl shadow-xs">
+                  {filtered.length} row{filtered.length !== 1 ? 's' : ''}
+                </th>
+              </tr>
+            </thead>
               <tbody className="divide-y divide-dove/10 dark:divide-zinc-800/60">
                 {filtered.length === 0 ? (
                   <tr>
@@ -886,7 +880,6 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               </tbody>
             </table>
           </div>
-        </motion.div>
 
         {/* ── 7. SLIDE-OVER DETAILS DRAWER ────────────────────────────────── */}
         <AnimatePresence>
