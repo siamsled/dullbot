@@ -179,57 +179,58 @@
 
 /* ── bg-white surfaces & opacity variants: card panels, dropdowns, wrappers ── */
 .dark .bg-white {
-  background-color: #0a0a0a;
+  background-color: #0d0d10;
 }
 .dark .bg-white\/95,
 .dark .bg-white\/90,
 .dark .bg-white\/80 {
-  background-color: rgba(10, 10, 10, 0.95);
+  background-color: rgba(13, 13, 16, 0.95);
 }
 
-/* ── bg-ink buttons & badges: in dark mode bg-ink is light, so text and icons must be dark ── */
-.dark .bg-ink,
-.dark .bg-ink.text-white,
-.dark .bg-ink .text-white {
+/* ── bg-ink primary CTA buttons: in dark mode, standalone buttons invert cleanly to white with black text ── */
+.dark button.bg-ink:not(.border-ink),
+.dark a.bg-ink:not(.border-ink) {
+  background-color: #f4f4f5 !important;
   color: #000000 !important;
 }
-.dark .bg-ink svg {
+.dark button.bg-ink:not(.border-ink) svg,
+.dark a.bg-ink:not(.border-ink) svg {
   color: #000000 !important;
   stroke: #000000 !important;
 }
 
 /* ── Status pill badges in dark mode: high contrast muted background with vibrant readable text ── */
-.dark .bg-green-50, .dark .bg-green-100 {
-  background-color: rgba(34, 197, 94, 0.15) !important;
-  color: #4ade80 !important;
+.dark .bg-green-50, .dark .bg-green-100, .dark .bg-emerald-50, .dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
 }
-.dark .text-green-700, .dark .text-green-800 {
-  color: #4ade80 !important;
+.dark .text-green-700, .dark .text-green-800, .dark .text-emerald-700, .dark .text-emerald-800 {
+  color: #34d399 !important;
 }
-.dark .border-green-200 {
-  border-color: rgba(34, 197, 94, 0.3) !important;
-}
-
-.dark .bg-blue-50, .dark .bg-blue-100 {
-  background-color: rgba(59, 130, 246, 0.15) !important;
-  color: #60a5fa !important;
-}
-.dark .text-blue-700, .dark .text-blue-800 {
-  color: #60a5fa !important;
-}
-.dark .border-blue-200 {
-  border-color: rgba(59, 130, 246, 0.3) !important;
+.dark .border-green-200, .dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
-.dark .bg-red-50, .dark .bg-red-100 {
-  background-color: rgba(239, 68, 68, 0.15) !important;
-  color: #f87171 !important;
+.dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-sky-50, .dark .bg-sky-100 {
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
 }
-.dark .text-red-700, .dark .text-red-800 {
-  color: #f87171 !important;
+.dark .text-blue-700, .dark .text-blue-800, .dark .text-sky-700, .dark .text-sky-800 {
+  color: #38bdf8 !important;
 }
-.dark .border-red-200, .dark .border-red-200\/80 {
-  border-color: rgba(239, 68, 68, 0.3) !important;
+.dark .border-blue-200, .dark .border-sky-200 {
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+.dark .bg-red-50, .dark .bg-red-100, .dark .bg-rose-50, .dark .bg-rose-100, .dark .bg-rose-50\/50 {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  color: #fb7185 !important;
+}
+.dark .text-red-700, .dark .text-red-800, .dark .text-rose-700, .dark .text-rose-800 {
+  color: #fb7185 !important;
+}
+.dark .border-red-200, .dark .border-red-200\/80, .dark .border-rose-200 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
 }
 
 .dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-50, .dark .bg-yellow-100 {

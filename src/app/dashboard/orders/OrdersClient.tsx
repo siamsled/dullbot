@@ -428,21 +428,21 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const agingPendingCount = orders.filter(o => o.status === 'pending_verification' && new Date(o.createdAt).getTime() < twoHoursAgo).length;
 
   return (
-    <div className="flex-1 overflow-y-auto h-full w-full bg-pure-white">
+    <div className="flex-1 overflow-y-auto h-full w-full bg-pure-white dark:bg-[#09090b]">
       <div className="w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6 relative">
 
         {/* ── 1. HEADER & MAIN ACTIONS ────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-dove/15 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-dove/15 dark:border-zinc-800/80 pb-6">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Orders</h1>
+              <h1 className="text-3xl sm:text-4xl font-serif text-ink dark:text-zinc-100 tracking-tight font-bold">Orders</h1>
               {isFetching && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 border border-blue-200 animate-pulse">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 dark:text-sky-400 border border-blue-200 dark:border-sky-800 animate-pulse">
                   <Sparkles className="w-3 h-3 animate-spin" /> Live Sync…
                 </span>
               )}
             </div>
-            <p className="text-ash text-xs sm:text-sm mt-1">
+            <p className="text-ash dark:text-zinc-400 text-xs sm:text-sm mt-1">
               Review payments, dispatch couriers, and process in-person retail POS checkout sales.
             </p>
           </div>
@@ -451,7 +451,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
             <button
               type="button"
               onClick={() => handleExportCSV()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-fog border border-dove/20 text-ink font-bold rounded-full hover:bg-dove/15 transition-all text-xs shadow-xs cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 bg-fog dark:bg-zinc-900 border border-dove/20 dark:border-zinc-800 text-ink dark:text-zinc-200 font-bold rounded-full hover:bg-dove/15 dark:hover:bg-zinc-800 transition-all text-xs shadow-xs cursor-pointer active:scale-95"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -459,7 +459,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
             <button
               type="button"
               onClick={() => setPosModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-2 bg-ink text-white font-bold rounded-full hover:bg-black transition-all text-xs shadow-xs cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-5 py-2 bg-ink dark:bg-white text-white dark:text-black font-bold rounded-full hover:bg-black dark:hover:bg-zinc-200 transition-all text-xs shadow-xs cursor-pointer active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               New POS Order
@@ -470,34 +470,34 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         {/* ── 2. OPERATIONAL KPI STRIP ────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Cash in Till */}
-          <div className="bg-white rounded-3xl p-5 border border-dove/20 shadow-xs hover:border-dove/40 transition-all flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-950/80 rounded-3xl p-5 border border-dove/20 dark:border-zinc-800/80 shadow-xs hover:border-dove/40 dark:hover:border-zinc-700 transition-all flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Today's Cash in Till</span>
-              <p className="text-2xl font-serif font-bold text-ink leading-none font-mono">৳{todayCashInTill.toLocaleString()}</p>
-              <span className="text-[10px] text-ash mt-1 block">Physical register drawer cash</span>
+              <span className="text-[10px] font-bold text-ash dark:text-zinc-400 uppercase tracking-wider block mb-1">Today's Cash in Till</span>
+              <p className="text-2xl font-serif font-bold text-ink dark:text-zinc-100 leading-none font-mono">৳{todayCashInTill.toLocaleString()}</p>
+              <span className="text-[10px] text-ash dark:text-zinc-400 mt-1 block">Physical register drawer cash</span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 shadow-xs">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800/50 shadow-xs">
               <Banknote className="w-6 h-6" />
             </div>
           </div>
 
           {/* Sales Origin Split (POS vs Chat) */}
-          <div className="bg-white rounded-3xl p-5 border border-dove/20 shadow-xs hover:border-dove/40 transition-all flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-950/80 rounded-3xl p-5 border border-dove/20 dark:border-zinc-800/80 shadow-xs hover:border-dove/40 dark:hover:border-zinc-700 transition-all flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Today's Sales Channel Split</span>
+              <span className="text-[10px] font-bold text-ash dark:text-zinc-400 uppercase tracking-wider block mb-1">Today's Sales Channel Split</span>
               <div className="flex items-center gap-3 mt-1">
                 <div>
-                  <span className="text-sm font-bold text-ink font-mono">৳{todayPosRevenue.toLocaleString()}</span>
-                  <span className="text-[9px] text-ash block font-medium">🛍️ POS ({todayPosOrders.length})</span>
+                  <span className="text-sm font-bold text-ink dark:text-zinc-100 font-mono">৳{todayPosRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash dark:text-zinc-400 block font-medium">🛍️ POS ({todayPosOrders.length})</span>
                 </div>
-                <div className="w-px h-6 bg-dove/20" />
+                <div className="w-px h-6 bg-dove/20 dark:bg-zinc-800" />
                 <div>
-                  <span className="text-sm font-bold text-ink font-mono">৳{todayChatRevenue.toLocaleString()}</span>
-                  <span className="text-[9px] text-ash block font-medium">💬 Chat AI ({todayChatOrders.length})</span>
+                  <span className="text-sm font-bold text-ink dark:text-zinc-100 font-mono">৳{todayChatRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash dark:text-zinc-400 block font-medium">💬 Chat AI ({todayChatOrders.length})</span>
                 </div>
               </div>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-sky-wash text-blue-600 flex items-center justify-center border border-blue-200/50 shadow-xs">
+            <div className="w-11 h-11 rounded-2xl bg-sky-wash text-blue-600 dark:text-sky-400 flex items-center justify-center border border-blue-200/50 dark:border-sky-800/50 shadow-xs">
               <ShoppingBag className="w-6 h-6" />
             </div>
           </div>
@@ -505,22 +505,22 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           {/* Pending Verification Aging */}
           <div className={`rounded-3xl p-5 border shadow-xs flex items-center justify-between transition-all ${
             agingPendingCount > 0 
-              ? 'bg-rose-50/50 border-rose-200' 
-              : 'bg-white border-dove/20'
+              ? 'bg-rose-50/50 border-rose-200 dark:bg-rose-950/25 dark:border-rose-800/50' 
+              : 'bg-white dark:bg-zinc-950/80 border border-dove/20 dark:border-zinc-800/80'
           }`}>
             <div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider block mb-1 ${agingPendingCount > 0 ? 'text-rose-700' : 'text-ash'}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider block mb-1 ${agingPendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-ash dark:text-zinc-400'}`}>
                 Payment Verification Aging
               </span>
-              <p className="text-2xl font-serif font-bold text-ink leading-none font-mono">
+              <p className="text-2xl font-serif font-bold text-ink dark:text-zinc-100 leading-none font-mono">
                 {agingPendingCount} {agingPendingCount === 1 ? 'order' : 'orders'}
               </p>
-              <span className="text-[10px] text-ash mt-1 block">
+              <span className={`text-[10px] mt-1 block ${agingPendingCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-ash dark:text-zinc-400'}`}>
                 {agingPendingCount > 0 ? '⚠️ Awaiting check > 2 hours' : 'All verifications up to date'}
               </span>
             </div>
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs border ${
-              agingPendingCount > 0 ? 'bg-white text-rose-700 border-rose-200' : 'bg-fog text-ash border-dove/10'
+              agingPendingCount > 0 ? 'bg-white dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/60' : 'bg-fog text-ash border-dove/10 dark:bg-zinc-900 dark:border-zinc-800'
             }`}>
               <Hourglass className="w-6 h-6" />
             </div>
@@ -530,7 +530,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         {/* ── 3. LIFECYCLE FUNNEL PILLS ───────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
           {/* Main Funnel Stages */}
-          <div className="lg:col-span-8 bg-white rounded-3xl shadow-xs border border-dove/20 p-2 flex flex-wrap sm:flex-nowrap gap-1.5 items-stretch">
+          <div className="lg:col-span-8 bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 p-2 flex flex-wrap sm:flex-nowrap gap-1.5 items-stretch">
             {mainFunnel.map((stage) => {
               const isActive = activeStage === stage.key;
               return (
@@ -540,18 +540,18 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                   onClick={() => setActiveStage(stage.key)}
                   className={`flex-1 min-w-[120px] flex flex-col p-3 rounded-2xl border transition-all text-left group active:scale-[0.98] ${
                     isActive
-                      ? 'bg-ink border-ink text-white shadow-xs'
-                      : 'bg-white border-transparent hover:bg-fog text-ink'
+                      ? 'bg-ink border-ink text-white dark:bg-zinc-800 dark:border-zinc-700 dark:text-white shadow-xs'
+                      : 'bg-white dark:bg-zinc-950/40 border-transparent hover:bg-fog dark:hover:bg-zinc-900 text-ink dark:text-zinc-200'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white/80' : 'text-ash group-hover:text-ink'}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white/90' : 'text-ash group-hover:text-ink dark:text-zinc-400 dark:group-hover:text-zinc-200'}`}>
                       {stage.label}
                     </span>
-                    <stage.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-ash'}`} />
+                    <stage.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-ash dark:text-zinc-500'}`} />
                   </div>
                   <span className="text-xl font-serif font-bold leading-none mb-0.5 font-mono">{stage.count}</span>
-                  <span className={`text-[9px] ${isActive ? 'text-white/60' : 'text-ash'}`}>{stage.desc}</span>
+                  <span className={`text-[9px] ${isActive ? 'text-white/70' : 'text-ash dark:text-zinc-400'}`}>{stage.desc}</span>
                 </button>
               );
             })}
@@ -565,19 +565,19 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               onClick={() => setActiveStage(activeStage === 'needs_review' ? 'all' : 'needs_review')}
               className={`p-3.5 flex flex-col justify-between rounded-3xl border text-left transition-all active:scale-[0.98] ${
                 activeStage === 'needs_review'
-                  ? 'bg-ink border-ink text-white'
-                  : 'bg-white border-dove/20 hover:border-amber-300 text-ink shadow-xs'
+                  ? 'bg-ink border-ink text-white dark:bg-zinc-800 dark:border-zinc-700 dark:text-white'
+                  : 'bg-white dark:bg-zinc-950/80 border-dove/20 dark:border-zinc-800/80 hover:border-amber-300 dark:hover:border-amber-500/40 text-ink dark:text-zinc-200 shadow-xs'
               }`}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'needs_review' ? 'text-white/80' : 'text-amber-700'}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'needs_review' ? 'text-white/90' : 'text-amber-700 dark:text-amber-400'}`}>
                   Needs Review
                 </span>
-                <AlertTriangle className={`w-3.5 h-3.5 ${activeStage === 'needs_review' ? 'text-white' : 'text-amber-600'}`} />
+                <AlertTriangle className={`w-3.5 h-3.5 ${activeStage === 'needs_review' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
               </div>
               <div className="mt-2">
                 <span className="text-xl font-serif font-bold leading-none font-mono">{countNeedsReview}</span>
-                <p className="text-[9px] text-ash mt-0.5">Discrepancy flags</p>
+                <p className="text-[9px] text-ash dark:text-zinc-400 mt-0.5">Discrepancy flags</p>
               </div>
             </button>
 
@@ -587,19 +587,19 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               onClick={() => setActiveStage(activeStage === 'cancelled' ? 'all' : 'cancelled')}
               className={`p-3.5 flex flex-col justify-between rounded-3xl border text-left transition-all active:scale-[0.98] ${
                 activeStage === 'cancelled'
-                  ? 'bg-ink border-ink text-white'
-                  : 'bg-white border-dove/20 hover:border-rose-300 text-ink shadow-xs'
+                  ? 'bg-ink border-ink text-white dark:bg-zinc-800 dark:border-zinc-700 dark:text-white'
+                  : 'bg-white dark:bg-zinc-950/80 border-dove/20 dark:border-zinc-800/80 hover:border-rose-300 dark:hover:border-rose-500/40 text-ink dark:text-zinc-200 shadow-xs'
               }`}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'cancelled' ? 'text-white/80' : 'text-ash'}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'cancelled' ? 'text-white/90' : 'text-ash dark:text-zinc-400'}`}>
                   Cancelled
                 </span>
-                <X className={`w-3.5 h-3.5 ${activeStage === 'cancelled' ? 'text-white' : 'text-ash'}`} />
+                <X className={`w-3.5 h-3.5 ${activeStage === 'cancelled' ? 'text-white' : 'text-ash dark:text-zinc-500'}`} />
               </div>
               <div className="mt-2">
                 <span className="text-xl font-serif font-bold leading-none font-mono">{countCancelled}</span>
-                <p className="text-[9px] text-ash mt-0.5">Aborted orders</p>
+                <p className="text-[9px] text-ash dark:text-zinc-400 mt-0.5">Aborted orders</p>
               </div>
             </button>
           </div>
@@ -608,20 +608,20 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
         {/* ── 4. FILTER & SEARCH BAR ─────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ash" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ash dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search customer, phone, tracking ID, or product..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-dove/20 rounded-full text-xs focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink transition-all shadow-xs text-ink placeholder:text-ash"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900/90 border border-dove/20 dark:border-zinc-800 rounded-full text-xs focus:outline-none focus:border-ink dark:focus:border-zinc-500 focus:ring-1 focus:ring-ink dark:focus:ring-zinc-500 transition-all shadow-xs text-ink dark:text-zinc-100 placeholder:text-ash dark:placeholder:text-zinc-500"
             />
           </div>
           {activeStage !== 'all' && (
             <button
               type="button"
               onClick={() => setActiveStage('all')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-rust hover:bg-apricot-wash rounded-full transition-colors self-start border border-dashed border-rust/30"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-rust dark:text-orange-400 hover:bg-apricot-wash dark:hover:bg-orange-950/30 rounded-full transition-colors self-start border border-dashed border-rust/30 dark:border-orange-500/30"
             >
               Filter Active: {activeStage.replace('_', ' ')} <X className="w-3.5 h-3.5" />
             </button>
@@ -635,15 +635,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-ink text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-5 border border-white/10 backdrop-blur-md"
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-ink dark:bg-zinc-900 text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-5 border border-white/10 dark:border-zinc-700 backdrop-blur-md"
             >
               <span className="text-xs font-bold text-white/90 font-mono">{selectedIds.size} selected</span>
-              <div className="h-4 w-px bg-white/20" />
+              <div className="h-4 w-px bg-white/20 dark:bg-zinc-700" />
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleBulkVerify}
-                  className="px-3.5 py-1.5 bg-white text-ink font-bold rounded-full text-xs hover:bg-white/90 transition-colors shadow-xs"
+                  className="px-3.5 py-1.5 bg-white text-ink dark:bg-white dark:text-black font-bold rounded-full text-xs hover:bg-white/90 transition-colors shadow-xs"
                 >
                   Confirm Payments
                 </button>
@@ -692,29 +692,29 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="bg-white rounded-3xl shadow-xs border border-dove/20 relative"
+          className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 relative"
         >
           <div className="overflow-x-auto rounded-3xl">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-40 shadow-xs bg-white/95 backdrop-blur-md">
-                <tr className="border-b border-dove/15">
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 w-10 border-b border-dove/15">
+              <thead className="sticky top-0 z-40 shadow-xs bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-dove/15 dark:border-zinc-800/80">
+                <tr className="border-b border-dove/15 dark:border-zinc-800/80">
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 w-10 border-b border-dove/15 dark:border-zinc-800/80">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
                       onChange={toggleSelectAll}
-                      className="rounded border-dove/30 focus:ring-ink cursor-pointer"
+                      className="rounded border-dove/30 dark:border-zinc-700 focus:ring-ink dark:focus:ring-zinc-400 cursor-pointer dark:bg-zinc-900"
                     />
                   </th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Customer</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Delivery Address</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Product(s)</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Amount</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Payment</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Fulfillment</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Courier</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Date</th>
-                  <th className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ash font-mono border-b border-dove/15 whitespace-nowrap text-right">
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
+                  <th className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ash dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
                     {filtered.length} row{filtered.length !== 1 ? 's' : ''}
                   </th>
                 </tr>
