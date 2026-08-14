@@ -530,3 +530,47 @@ export async function createPosOrder(payload: PosOrderPayload) {
   }
 }
 
+/**
+ * Updates a product's SKU/Barcode in Supabase so physical barcode scanner guns can ring it up instantly.
+ */
+export async function updateProductSku(productId: string, sku: string) {
+  try {
+    const shop = await assertShopPermission('inventory');
+    const cleanSku = sku.trim();
+
+    if (!cleanSku) {
+      return { success: false, error: 'SKU cannot be empty.' };
+    }
+
+    // Check if another product in this shop already has this SKU
+    const { data: existing } = await supabaseAdmin
+      .from('products')
+      .select('id, name')
+      .eq('shop_id', shop.id)
+      .ilike('sku', cleanSku)
+      .neq('id', productId)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: false, error: `SKU "${cleanSku}" is already registered to "${existing.name}".` };
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('products')
+      .update({ sku: cleanSku, updated_at: new Date().toISOString() })
+      .eq('id', productId)
+      .eq('shop_id', shop.id)
+      .select('id, name, sku')
+      .single();
+
+    if (error || !updated) {
+      throw new Error(error?.message || 'Failed to update SKU.');
+    }
+
+    return { success: true, product: updated };
+  } catch (err: any) {
+    console.error('Error updating product SKU:', err);
+    return { success: false, error: err.message || 'Failed to save SKU.' };
+  }
+}
+
