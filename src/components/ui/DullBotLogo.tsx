@@ -3,28 +3,20 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * DullBot logo — "The Fracture" (Entity-inspired)
+ * DullBot logo — "The Eye" v2
  *
- * Takes the visual idea from the Entity — a mass that shatters into
- * fragments and reassembles itself, glowing at the seams — without
- * borrowing its menace. A solid square glyph periodically breaks into
- * four shards, drifts apart with a faint red-orange glow filling the
- * gaps, hangs there for a beat, then snaps back together with a
- * slight elastic overshoot. Read as intelligence taking something
- * apart and putting it back together with an answer, not a threat.
+ * The 'o' in bot is an expressive pupil with emotional range:
+ * a pre-blink twitch before it properly closes, a double-blink,
+ * glances left then right, and an occasional surprised widen with
+ * the brow lifting and pupil dilating.
  *
- * All four shards share one @keyframes rule — each just carries its
- * own CSS custom properties (--dx/--dy/--rot) for which direction it
- * flies, so the shatter stays perfectly synced without four separate
- * animations to keep in sync by hand.
+ * Three elements (the eyebrow, the eye itself, the pupil) each run
+ * their own animation on the same timeline.
  *
- * The glyph is already square, so collapsing doesn't crop anything —
- * the wordmark just folds away and the fracture becomes the icon,
- * still shattering and reassembling at any size.
+ * A tiny fixed highlight sits in the pupil's corner for a living cartoon eye look.
  *
- * Click the mark (or the button) to toggle. Drive it programmatically
- * with `collapsed` + `onToggle` as controlled props if you wire this
- * into a real header/breakpoint.
+ * Collapsing folds the rest of the word away ("dullb" and "t") and lets
+ * the eye grow into the square mark.
  */
 
 export interface DullBotLogoProps {
@@ -49,11 +41,11 @@ export default function DullBotLogo({
 
   useEffect(() => {
     if (isControlled || autoPlayed) return;
-    const t1 = setTimeout(() => setInternalCollapsed(true), 1800);
+    const t1 = setTimeout(() => setInternalCollapsed(true), 2200);
     const t2 = setTimeout(() => {
       setInternalCollapsed(false);
       setAutoPlayed(true);
-    }, 3400);
+    }, 3800);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -70,37 +62,46 @@ export default function DullBotLogo({
     }
   };
 
-  const sizeScales = {
+  const scales = {
     sm: {
-      glyph: 'w-6 h-6',
-      glyphCollapsed: 'w-7 h-7',
-      text: 'text-lg',
-      wordMaxWidth: 'max-w-[100px]',
-      gap: 'gap-2',
-      offset: 5,
+      fontSize: '20px',
+      dullbWidth: 48,
+      tWidth: 14,
+      eyeWidth: 18,
+      eyeHeight: 22,
+      collapsedEyeWidth: 26,
+      collapsedEyeHeight: 30,
+      borderWidth: '2px',
+      browHeight: '2px',
     },
     md: {
-      glyph: 'w-8 h-8',
-      glyphCollapsed: 'w-9 h-9',
-      text: 'text-2xl',
-      wordMaxWidth: 'max-w-[140px]',
-      gap: 'gap-3',
-      offset: 7,
+      fontSize: '28px',
+      dullbWidth: 68,
+      tWidth: 18,
+      eyeWidth: 25,
+      eyeHeight: 30,
+      collapsedEyeWidth: 36,
+      collapsedEyeHeight: 42,
+      borderWidth: '2.5px',
+      browHeight: '2.5px',
     },
     lg: {
-      glyph: 'w-10 h-10',
-      glyphCollapsed: 'w-13 h-13',
-      text: 'text-4xl',
-      wordMaxWidth: 'max-w-[210px]',
-      gap: 'gap-4',
-      offset: 9,
+      fontSize: '38px',
+      dullbWidth: 92,
+      tWidth: 24,
+      eyeWidth: 34,
+      eyeHeight: 40,
+      collapsedEyeWidth: 50,
+      collapsedEyeHeight: 58,
+      borderWidth: '3px',
+      browHeight: '3px',
     },
   };
 
-  const cur = sizeScales[size] || sizeScales.md;
+  const sc = scales[size] || scales.md;
 
   return (
-    <div className={`db-logo-root inline-flex flex-col items-center justify-center select-none ${className}`}>
+    <div className={`db-eye-logo-root inline-flex flex-col items-center justify-center select-none ${className}`}>
       <style>{`
         .db-frame {
           position: relative;
@@ -116,81 +117,145 @@ export default function DullBotLogo({
             border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .db-glyph {
-          position: relative;
-          flex-shrink: 0;
-          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                      height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .db-glow {
-          position: absolute;
-          inset: -30%;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(232, 42, 30, 0.65) 0%, rgba(232, 42, 30, 0) 68%);
-          opacity: 0;
-          animation: db-glow 3.2s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        .db-shard {
-          position: absolute;
-          inset: 0;
-          background: #16161a;
-          animation: db-fracture 3.2s cubic-bezier(0.5, 0, 0.15, 1) infinite;
-        }
-        :global(.dark) .db-shard,
-        .dark .db-shard {
-          background: #f4f4f5;
-        }
-
-        .db-shard.tl { clip-path: polygon(0 0, 100% 0, 50% 50%); --dx: 0px; --dy: -${cur.offset}px; --rot: -10deg; animation-delay: 0s; }
-        .db-shard.tr { clip-path: polygon(100% 0, 100% 100%, 50% 50%); --dx: ${cur.offset}px; --dy: 0px; --rot: 10deg; animation-delay: 0.05s; }
-        .db-shard.br { clip-path: polygon(100% 100%, 0 100%, 50% 50%); --dx: 0px; --dy: ${cur.offset}px; --rot: -10deg; animation-delay: 0.1s; }
-        .db-shard.bl { clip-path: polygon(0 100%, 0 0, 50% 50%); --dx: -${cur.offset}px; --dy: 0px; --rot: 10deg; animation-delay: 0.15s; }
-
-        .db-frame.collapsed .db-shard.tl { --dy: -${Math.round(cur.offset * 1.35)}px; }
-        .db-frame.collapsed .db-shard.tr { --dx: ${Math.round(cur.offset * 1.35)}px; }
-        .db-frame.collapsed .db-shard.br { --dy: ${Math.round(cur.offset * 1.35)}px; }
-        .db-frame.collapsed .db-shard.bl { --dx: -${Math.round(cur.offset * 1.35)}px; }
-
-        @keyframes db-fracture {
-          0%, 10%   { transform: translate(0, 0) rotate(0deg); }
-          32%       { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
-          55%       { transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) * 1.15)) rotate(calc(var(--rot) * 1.2)); }
-          70%       { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(calc(var(--rot) * 0.3)); }
-          82%       { transform: translate(calc(var(--dx) * -0.08), calc(var(--dy) * -0.08)) rotate(0deg); }
-          100%      { transform: translate(0, 0) rotate(0deg); }
-        }
-
-        @keyframes db-glow {
-          0%, 10%   { opacity: 0; }
-          32%       { opacity: 0.55; }
-          55%       { opacity: 0.75; }
-          82%       { opacity: 0.1; }
-          100%      { opacity: 0; }
-        }
-
         .db-word {
+          display: flex;
+          align-items: center;
           font-weight: 800;
           letter-spacing: -0.03em;
+          font-size: ${sc.fontSize};
           line-height: 1;
           color: #16161a;
-          display: inline-block;
-          overflow: hidden;
-          white-space: nowrap;
-          margin-left: 10px;
-          opacity: 1;
-          transition:
-            max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-            margin-left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-            opacity 0.3s ease;
         }
         :global(.dark) .db-word,
         .dark .db-word {
           color: #f4f4f5;
         }
-        .db-frame.collapsed .db-word { max-width: 0; margin-left: 0; opacity: 0; }
+
+        .db-part {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          transition: max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+          opacity: 1;
+        }
+        .db-frame.collapsed .db-part { max-width: 0 !important; opacity: 0; }
+
+        .db-eye-outer {
+          position: relative;
+          width: ${sc.eyeWidth}px;
+          height: ${sc.eyeHeight}px;
+          flex-shrink: 0;
+          margin: 0 1px;
+          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .db-frame.collapsed .db-eye-outer {
+          width: ${sc.collapsedEyeWidth}px;
+          height: ${sc.collapsedEyeHeight}px;
+          margin: 0;
+        }
+
+        .db-brow {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          width: 60%;
+          height: ${sc.browHeight};
+          margin-left: -30%;
+          border-radius: 2px;
+          background: #16161a;
+          transform-origin: center;
+          animation: db-brow 5.6s ease-in-out infinite;
+        }
+        :global(.dark) .db-brow,
+        .dark .db-brow {
+          background: #f4f4f5;
+        }
+
+        .db-eye-blink {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 78%;
+          transform-origin: center;
+          animation: db-eyewrap 5.6s ease-in-out infinite;
+        }
+
+        .db-eye-white {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: ${sc.borderWidth} solid #16161a;
+          background: #ffffff;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        }
+        :global(.dark) .db-eye-white,
+        .dark .db-eye-white {
+          border-color: #f4f4f5;
+          background: #18181b;
+        }
+
+        .db-eye-pupil {
+          position: relative;
+          width: 44%;
+          height: 44%;
+          border-radius: 50%;
+          background: #e8266d;
+          animation: db-pupil 5.6s ease-in-out infinite;
+        }
+
+        .db-eye-glint {
+          position: absolute;
+          top: 14%;
+          left: 16%;
+          width: 32%;
+          height: 32%;
+          border-radius: 50%;
+          background: #ffffff;
+          opacity: 0.9;
+        }
+
+        @keyframes db-brow {
+          0%, 12%     { transform: translateY(0) rotate(-6deg); }
+          16%         { transform: translateY(2px) rotate(-4deg); }
+          20%, 25%    { transform: translateY(0) rotate(-6deg); }
+          48%, 51%    { transform: translateY(0) rotate(-6deg); }
+          72%         { transform: translateY(-1px) rotate(-6deg); }
+          76%         { transform: translateY(-4px) rotate(-2deg); }
+          84%         { transform: translateY(1px) rotate(-7deg); }
+          90%, 100%   { transform: translateY(0) rotate(-6deg); }
+        }
+
+        @keyframes db-eyewrap {
+          0%, 12%    { transform: scale(1, 1); }
+          16%        { transform: scale(1, 0.85); }
+          20%        { transform: scale(1, 1); }
+          22%        { transform: scale(1, 0.06); }
+          25%        { transform: scale(1, 1); }
+          46%        { transform: scale(1, 1); }
+          48%        { transform: scale(1, 0.06); }
+          51%        { transform: scale(1, 1); }
+          72%        { transform: scale(1.05, 1.05); }
+          76%        { transform: scale(1.2, 1.2); }
+          84%        { transform: scale(0.96, 0.96); }
+          90%, 100%  { transform: scale(1, 1); }
+        }
+
+        @keyframes db-pupil {
+          0%, 28%    { transform: translateX(0) scale(1); }
+          34%, 44%   { transform: translateX(-26%) scale(1); }
+          51%        { transform: translateX(-26%) scale(1); }
+          58%, 66%   { transform: translateX(24%) scale(1); }
+          70%        { transform: translateX(0) scale(1); }
+          76%        { transform: translateX(0) scale(1.28); }
+          84%        { transform: translateX(0) scale(0.95); }
+          90%, 100%  { transform: translateX(0) scale(1); }
+        }
 
         .db-toggle {
           font-family: inherit;
@@ -209,7 +274,7 @@ export default function DullBotLogo({
         .db-toggle:hover { color: #16161a; border-color: #16161a; }
 
         @media (prefers-reduced-motion: reduce) {
-          .db-frame, .db-glyph, .db-glow, .db-shard, .db-word {
+          .db-frame, .db-part, .db-brow, .db-eye-blink, .db-eye-pupil {
             animation: none !important;
             transition: none !important;
           }
@@ -223,15 +288,19 @@ export default function DullBotLogo({
         aria-pressed={collapsed}
         aria-label="Toggle DullBot logo between wordmark and square mark"
       >
-        <div className={`db-glyph ${collapsed ? cur.glyphCollapsed : cur.glyph}`}>
-          <div className="db-glow" />
-          <div className="db-shard tl" />
-          <div className="db-shard tr" />
-          <div className="db-shard br" />
-          <div className="db-shard bl" />
-        </div>
-        <span className={`db-word ${cur.text} ${collapsed ? 'max-w-0' : cur.wordMaxWidth}`}>
-          dullbot
+        <span className="db-word">
+          <span className="db-part" style={{ maxWidth: sc.dullbWidth }}>dullb</span>
+          <span className="db-eye-outer">
+            <span className="db-brow" />
+            <span className="db-eye-blink">
+              <span className="db-eye-white">
+                <span className="db-eye-pupil">
+                  <span className="db-eye-glint" />
+                </span>
+              </span>
+            </span>
+          </span>
+          <span className="db-part" style={{ maxWidth: sc.tWidth }}>t</span>
         </span>
       </div>
 
@@ -243,3 +312,4 @@ export default function DullBotLogo({
     </div>
   );
 }
+export { DullBotLogo as DullBotLogoEye };
