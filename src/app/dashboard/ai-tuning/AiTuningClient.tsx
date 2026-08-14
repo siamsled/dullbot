@@ -446,12 +446,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {chatHistory.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center gap-3 pb-8">
-                    <div className="w-12 h-12 rounded-full bg-apricot-wash flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-rust" />
-                    </div>
+                    <PersonaAvatar
+                      name={selectedPersona?.name || ''}
+                      className="w-16 h-16 ring-4 ring-fog dark:ring-zinc-800 shadow-md transition-transform hover:scale-105"
+                    />
                     <div>
-                      <p className="text-sm font-medium text-ink mb-1">Chat with {selectedPersona?.name}</p>
-                      <p className="text-xs text-graphite max-w-xs leading-relaxed">
+                      <p className="text-base font-serif font-bold text-ink dark:text-zinc-100 mb-0.5">Chat with {selectedPersona?.name}</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 max-w-xs leading-relaxed">
                         Send a message to see how this persona responds to your customers.
                       </p>
                     </div>
@@ -469,13 +470,16 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                                 ))}
                               </div>
                             </div>
-                            <div className="flex justify-end">
+                            <div className="flex justify-end items-end gap-2">
                               <div className="flex flex-col max-w-[65%] items-end gap-1">
                                 {d.reply.split('|||').map((msg, mi) => (
                                   <div key={mi} className="px-4 py-2 text-[15px] bg-[#0084FF] text-white rounded-2xl rounded-tr-sm text-left">
                                     {msg}
                                   </div>
                                 ))}
+                              </div>
+                              <div className="shrink-0 mb-1">
+                                <PersonaAvatar name={selectedPersona?.name || ''} className="w-6 h-6 ring-1 ring-black/10 dark:ring-white/10" />
                               </div>
                             </div>
                           </div>
@@ -490,8 +494,13 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                       const segments = msg.content === '…' ? [{ type: 'text' as const, content: '…' }] : parseMessageSegments(msg.content);
                       
                       return (
-                        <div key={i} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
-                          <div className={`flex flex-col max-w-[65%] gap-1 ${isCustomer ? 'items-start' : 'items-end'}`}>
+                        <div key={i} className={`flex gap-2 items-end ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+                          {!isCustomer && (
+                            <div className="order-2 shrink-0 mb-1">
+                              <PersonaAvatar name={selectedPersona?.name || ''} className="w-6 h-6 ring-1 ring-black/10 dark:ring-white/10" />
+                            </div>
+                          )}
+                          <div className={`flex flex-col max-w-[65%] gap-1 ${isCustomer ? 'items-start' : 'items-end order-1'}`}>
                             {segments.map((segment, bi) => {
                               const isFirst = bi === 0;
                               return (
