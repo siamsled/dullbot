@@ -7,7 +7,7 @@ import {
   Settings, MessageCircle, Link2, ShieldCheck, CreditCard,
   ChevronRight, Lock, Globe, Smartphone, AtSign,
   MessageSquare, Check, Copy, ChevronDown, Pencil, Sparkles,
-  BookOpen, Palette, Truck, X, Loader2,
+  BookOpen, Palette, Truck, X, Loader2, Coins, Banknote,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { disconnectFacebook, saveSettings, saveWidgetEnabled, saveWhatsAppConfig, getConnectedPages, selectPagesMeta } from './actions';
@@ -74,10 +74,19 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [agentEnabled, setAgentEnabled] = useState(shop?.agent_enabled ?? true);
 
   /* payment verification */
-  const [confirmationTier,         setConfirmationTier]         = useState<'light' | 'otp_verified' | 'prepay_verified'>(shop?.confirmation_tier ?? 'light');
-  const [bkashNumber,              setBkashNumber]              = useState(shop?.bkash_number ?? '');
+  const parseWaRef = (refStr?: string | null) => {
+    if (!refStr) return null;
+    try { return JSON.parse(refStr); } catch (e) { return null; }
+  };
+  const parsedMetaSettings = parseWaRef(shop?.prompt_cache_ref);
+
+  const [confirmationTier,          setConfirmationTier]          = useState<'light' | 'deposit_verified' | 'otp_verified' | 'prepay_verified'>(shop?.confirmation_tier ?? 'light');
+  const [depositAmount,             setDepositAmount]             = useState<number>(parsedMetaSettings?.depositAmount ?? 150);
+  const [depositReason,             setDepositReason]             = useState<string>(parsedMetaSettings?.depositReason ?? 'Delivery charge in advance for order confirmation');
+  const [depositType,               setDepositType]               = useState<'delivery_charge' | 'fixed' | 'custom'>(parsedMetaSettings?.depositType ?? 'delivery_charge');
+  const [bkashNumber,               setBkashNumber]               = useState(shop?.bkash_number ?? '');
   const [paymentVerificationMethod, setPaymentVerificationMethod] = useState<'none' | 'merchant_api' | 'notification_app'>(shop?.payment_verification_method ?? 'none');
-  const [bkashAppKey,   setBkashAppKey]   = useState(shop?.bkashConfig?.app_key   ?? '');
+  const [bkashAppKey,    setBkashAppKey]    = useState(shop?.bkashConfig?.app_key   ?? '');
   const [bkashAppSecret, setBkashAppSecret] = useState(shop?.bkashConfig?.app_secret ?? '');
   const [bkashUsername,  setBkashUsername]  = useState(shop?.bkashConfig?.username   ?? '');
   const [bkashPassword,  setBkashPassword]  = useState(shop?.bkashConfig?.password   ?? '');
@@ -87,15 +96,9 @@ export default function SettingsClient({ shop }: { shop: any }) {
   const [nagadPublicKey,   setNagadPublicKey]   = useState(shop?.nagadConfig?.public_key   ?? '');
   
   /* whatsapp */
-  const parseWaRef = (refStr?: string | null) => {
-    if (!refStr) return null;
-    try { return JSON.parse(refStr); } catch (e) { return null; }
-  };
-  const parsedWaSettings = parseWaRef(shop?.prompt_cache_ref);
-
-  const [waWabaId, setWaWabaId] = useState(parsedWaSettings?.wabaId ?? shop?.whatsapp_business_account_id ?? '');
-  const [waPhoneId, setWaPhoneId] = useState(parsedWaSettings?.phoneId ?? shop?.whatsapp_phone_number_id ?? '');
-  const [waToken, setWaToken] = useState(parsedWaSettings?.token ?? shop?.whatsapp_access_token ?? '');
+  const [waWabaId, setWaWabaId] = useState(parsedMetaSettings?.wabaId ?? shop?.whatsapp_business_account_id ?? '');
+  const [waPhoneId, setWaPhoneId] = useState(parsedMetaSettings?.phoneId ?? shop?.whatsapp_phone_number_id ?? '');
+  const [waToken, setWaToken] = useState(parsedMetaSettings?.token ?? shop?.whatsapp_access_token ?? '');
   const [isWaSaving, startWaSave] = useTransition();
 
 
@@ -262,6 +265,11 @@ export default function SettingsClient({ shop }: { shop: any }) {
     startSaveTransition(async () => {
       const res = await saveSettings(shop.id, {
         confirmationTier,
+        depositSettings: {
+          depositAmount: Number(depositAmount) || 150,
+          depositReason: depositReason.trim(),
+          depositType,
+        },
         bkashNumber,
         agentEnabled,
         paymentVerificationMethod,
@@ -691,9 +699,10 @@ export default function SettingsClient({ shop }: { shop: any }) {
               onChange={e => setConfirmationTier(e.target.value as any)}
               className={inputCls}
             >
-              <option value="light">Light (Address Only)</option>
+              <option value="light">Light (Address Only — 100% COD)</option>
+              <option value="deposit_verified">Minimum Deposit / Advance (e.g. Delivery Charge)</option>
+              <option value="prepay_verified">Full Advance Payment (100% Prepay via bKash/Nagad)</option>
               <option value="otp_verified">OTP Verified (SMS)</option>
-              <option value="prepay_verified">Prepay Verified (bKash/Nagad)</option>
             </select>
           </SettingsCard>
 
@@ -714,6 +723,91 @@ export default function SettingsClient({ shop }: { shop: any }) {
               className={inputCls}
             />
           </SettingsCard>
+
+          {/* Minimum Deposit / Advance Requirement Configuration */}
+          <AnimatePresence>
+            {confirmationTier === 'deposit_verified' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="md:col-span-2"
+              >
+                <SettingsCard className="border-amber-500/20 bg-amber-500/[0.02]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-amber-100 text-amber-800 rounded-lg flex-shrink-0">
+                      <Coins className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Minimum Advance Deposit Policy</p>
+                      <p className="text-[11px] text-ash">
+                        AI will instruct customers to send this advance amount before confirming and creating the order
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-1.5">
+                        Deposit Amount (৳ BDT)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ash text-xs font-mono font-bold">৳</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={depositAmount}
+                          onChange={e => setDepositAmount(Number(e.target.value) || 0)}
+                          placeholder="150"
+                          className={`${inputCls} pl-8 font-mono font-semibold`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-1.5">
+                        Custom Reasoning / Customer Policy Note
+                      </label>
+                      <input
+                        type="text"
+                        value={depositReason}
+                        onChange={e => setDepositReason(e.target.value)}
+                        placeholder="e.g. Delivery charge in advance for order confirmation (ডেলিভারি চার্জ অগ্রিম)"
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preset Suggestions */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-dove/10">
+                    <span className="text-[10px] font-semibold text-ash">Suggestions:</span>
+                    {[
+                      { label: 'Delivery Charge in Advance', amount: 150, text: 'Delivery charge in advance for order confirmation (ডেলিভারি চার্জ অগ্রিম প্রযোজ্য)' },
+                      { label: '৳120 Inside / ৳150 Outside Dhaka', amount: 150, text: 'Advance delivery fee (৳120 inside Dhaka / ৳150 outside Dhaka)' },
+                      { label: '৳200 Booking Deposit', amount: 200, text: '৳200 booking deposit required to confirm courier dispatch' },
+                      { label: '৳500 Custom Made Item Deposit', amount: 500, text: '৳500 advance deposit required for custom crafted items' },
+                    ].map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setDepositAmount(preset.amount);
+                          setDepositReason(preset.text);
+                        }}
+                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md border transition-all cursor-pointer ${
+                          depositReason === preset.text
+                            ? 'bg-ink text-white border-ink'
+                            : 'bg-white text-ash border-dove/20 hover:text-ink hover:border-dove/40'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </SettingsCard>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </div>
 

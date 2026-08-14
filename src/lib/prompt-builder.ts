@@ -29,6 +29,10 @@ type ShopTuningSettings = {
   abusive_block_threshold?: number | null;
   high_value_order_threshold?: number | null;
   off_topic_tolerance?: string | null;
+  confirmation_tier?: string | null;
+  bkash_number?: string | null;
+  prompt_cache_ref?: string | null;
+  [key: string]: any;
 };
 
 type VariantRow = {
@@ -147,6 +151,38 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     : `If a customer tries to engage in casual chat, off-topic discussions, or asks personal questions, gently redirect them. CRITICAL: DO NOT copy this phrase word-for-word. Rephrase this core message naturally in your own words: "${offTopicMsg}"`;
 
   const highValueThreshold = shop.high_value_order_threshold ?? 0;
+
+  // Payment & Advance Deposit Policy
+  let depositMeta: { depositAmount?: number; depositReason?: string } | null = null;
+  if (shop.prompt_cache_ref) {
+    try {
+      depositMeta = JSON.parse(shop.prompt_cache_ref);
+    } catch {}
+  }
+
+  const confirmationTier = shop.confirmation_tier ?? 'light';
+  let paymentPolicyLine = '';
+
+  if (confirmationTier === 'deposit_verified') {
+    const depositAmt = depositMeta?.depositAmount || 150;
+    const depositReason = depositMeta?.depositReason || 'Delivery charge in advance for order confirmation (ডেলিভারি চার্জ অগ্রিম)';
+    const bkashStr = shop.bkash_number ? `আমাদের বিকাশ/নগদ নম্বর: ${shop.bkash_number}` : '';
+    paymentPolicyLine = `CRITICAL ADVANCE DEPOSIT REQUIREMENT (MANDATORY FOR ORDER CONFIRMATION):
+- This store requires a minimum deposit / advance payment before confirming the order.
+- Deposit Policy / Requirement: "${depositReason}" (৳${depositAmt} BDT).
+- When a customer wants to place an order:
+  1. Collect Customer Name, Phone Number, and Delivery Address.
+  2. Inform the customer in your persona's polite voice:
+     "অর্ডারটি কনফার্ম করার জন্য আমাদের ${depositReason} (৳${depositAmt}) ${bkashStr ? bkashStr + ' নম্বরে' : ''} অগ্রিম পাঠাতে হবে।"
+  3. Ask them to share the TrxID or last 4 digits of their sending number once sent.
+  4. Once payment intent and address are confirmed, append the order tag [CREATE_ORDER: ...].`;
+  } else if (confirmationTier === 'prepay_verified') {
+    const bkashStr = shop.bkash_number ? `আমাদের বিকাশ/নগদ নম্বর: ${shop.bkash_number}` : '';
+    paymentPolicyLine = `CRITICAL 100% PREPAYMENT REQUIREMENT (NO CASH ON DELIVERY):
+- This store requires full 100% payment in advance via bKash/Nagad before order dispatch.
+- Inform the customer to pay the full order amount ${bkashStr ? bkashStr + ' নম্বরে' : ''} and share the TrxID to confirm.`;
+  }
+
   const orderTakingLine = `CRITICAL ORDER CREATION RULE: If a customer decides to buy/order a product, you must collect:
 1. Customer Name
 2. Phone Number
@@ -154,7 +190,8 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
 
 Once you have gathered all 3 details AND the user has confirmed their intent to purchase, you MUST append the following tag to the very end of your final response (on a new line):
 [CREATE_ORDER: {"product_id": "<PRODUCT_UUID>", "variant_name": "<VARIANT_NAME_OR_NULL>", "customer_name": "<NAME>", "customer_phone": "<PHONE>", "customer_address": "<ADDRESS>"}]
-Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODUCTS list below, <VARIANT_NAME_OR_NULL> with the name of the variant if selected (or null), and the customer's details. DO NOT output the tag until you have all 3 details. Keep your response short and append this tag quietly at the end. ${highValueThreshold > 0 ? `Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.` : ''}`;
+Replace <PRODUCT_UUID> with the exact UUID of the product from the CURRENT PRODUCTS list below, <VARIANT_NAME_OR_NULL> with the name of the variant if selected (or null), and the customer's details. DO NOT output the tag until you have all 3 details. Keep your response short and append this tag quietly at the end. ${highValueThreshold > 0 ? `Note: any order over ${highValueThreshold} BDT will be flagged for human review before confirmation.` : ''}
+${paymentPolicyLine ? `\n${paymentPolicyLine}` : ''}`;
 
   const greetingRule = `CRITICAL GREETING & SALAM ETIQUETTE RULES:
 1. STRICT SALAM LOGIC (MANDATORY):

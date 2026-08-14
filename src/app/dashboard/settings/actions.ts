@@ -272,7 +272,12 @@ export async function saveWidgetEnabled(shopId: string, enabled: boolean) {
 export async function saveSettings(
   shopId: string,
   payload: {
-    confirmationTier: 'light' | 'otp_verified' | 'prepay_verified';
+    confirmationTier: 'light' | 'deposit_verified' | 'otp_verified' | 'prepay_verified';
+    depositSettings?: {
+      depositAmount?: number;
+      depositReason?: string;
+      depositType?: string;
+    };
     bkashNumber: string;
     agentEnabled: boolean;
     paymentVerificationMethod: 'none' | 'merchant_api' | 'notification_app';
@@ -286,18 +291,48 @@ export async function saveSettings(
   const nagadConfigEncrypted = payload.nagadConfig ? encrypt(JSON.stringify(payload.nagadConfig)) : null;
   const courierConfigEncrypted = payload.courierConfig ? encrypt(JSON.stringify(payload.courierConfig)) : null;
 
+  // Preserve existing prompt_cache_ref and merge depositSettings
+  let updatedPromptCacheRef: string | undefined = undefined;
+  if (payload.depositSettings) {
+    const { data: currentShop } = await supabaseAdmin
+      .from('shops')
+      .select('prompt_cache_ref')
+      .eq('id', shopId)
+      .single();
+
+    let existingMeta: Record<string, any> = {};
+    if (currentShop?.prompt_cache_ref) {
+      try {
+        existingMeta = JSON.parse(currentShop.prompt_cache_ref);
+      } catch {}
+    }
+
+    updatedPromptCacheRef = JSON.stringify({
+      ...existingMeta,
+      depositAmount: payload.depositSettings.depositAmount ?? 150,
+      depositReason: payload.depositSettings.depositReason ?? 'Delivery charge in advance',
+      depositType: payload.depositSettings.depositType ?? 'delivery_charge',
+    });
+  }
+
+  const updateFields: any = {
+    confirmation_tier: payload.confirmationTier,
+    bkash_number: payload.bkashNumber,
+    agent_enabled: payload.agentEnabled,
+    payment_verification_method: payload.paymentVerificationMethod,
+    bkash_config_encrypted: bkashConfigEncrypted,
+    nagad_config_encrypted: nagadConfigEncrypted,
+    courier_provider: payload.courierProvider || null,
+    courier_config_encrypted: courierConfigEncrypted,
+  };
+
+  if (updatedPromptCacheRef !== undefined) {
+    updateFields.prompt_cache_ref = updatedPromptCacheRef;
+  }
+
   const { error: shopErr } = await supabaseAdmin
     .from('shops')
-    .update({
-      confirmation_tier: payload.confirmationTier,
-      bkash_number: payload.bkashNumber,
-      agent_enabled: payload.agentEnabled,
-      payment_verification_method: payload.paymentVerificationMethod,
-      bkash_config_encrypted: bkashConfigEncrypted,
-      nagad_config_encrypted: nagadConfigEncrypted,
-      courier_provider: payload.courierProvider || null,
-      courier_config_encrypted: courierConfigEncrypted,
-    })
+    .update(updateFields)
     .eq('id', shopId);
 
   if (shopErr) {
