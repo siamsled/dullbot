@@ -250,7 +250,7 @@ export default function DullBotLogo({
           border-radius: 2px;
           background: currentColor;
           transform-origin: center;
-          animation: db-brow 5.6s ease-in-out infinite;
+          animation: db-brow 18s ease-in-out infinite;
         }
 
         .db-eye-blink {
@@ -260,7 +260,7 @@ export default function DullBotLogo({
           width: 100%;
           height: 78%;
           transform-origin: center;
-          animation: db-eyewrap 5.6s ease-in-out infinite;
+          animation: db-eyewrap 18s ease-in-out infinite;
         }
 
         .db-eye-white {
@@ -283,7 +283,7 @@ export default function DullBotLogo({
           border-radius: 50%;
           background: #e8266d;
           transform: translate(var(--look-x, 0px), var(--look-y, 0px));
-          animation: db-pupil 5.6s ease-in-out infinite;
+          animation: db-pupil 18s ease-in-out infinite;
           will-change: transform;
         }
 
@@ -299,40 +299,27 @@ export default function DullBotLogo({
         }
 
         @keyframes db-brow {
-          0%, 12%     { transform: translateY(0) rotate(-6deg); }
-          16%         { transform: translateY(2px) rotate(-4deg); }
-          20%, 25%    { transform: translateY(0) rotate(-6deg); }
-          48%, 51%    { transform: translateY(0) rotate(-6deg); }
-          72%         { transform: translateY(-1px) rotate(-6deg); }
-          76%         { transform: translateY(-4px) rotate(-2deg); }
-          84%         { transform: translateY(1px) rotate(-7deg); }
-          90%, 100%   { transform: translateY(0) rotate(-6deg); }
+          0%, 6%      { transform: translateY(0) rotate(-6deg); }
+          8%          { transform: translateY(1.5px) rotate(-4deg); }
+          10%, 46%    { transform: translateY(0) rotate(-6deg); }
+          48%         { transform: translateY(-1px) rotate(-5deg); }
+          50%, 100%   { transform: translateY(0) rotate(-6deg); }
         }
 
         @keyframes db-eyewrap {
-          0%, 12%    { transform: scale(1, 1); }
-          16%        { transform: scale(1, 0.85); }
-          20%        { transform: scale(1, 1); }
-          22%        { transform: scale(1, 0.06); }
-          25%        { transform: scale(1, 1); }
-          46%        { transform: scale(1, 1); }
-          48%        { transform: scale(1, 0.06); }
-          51%        { transform: scale(1, 1); }
-          72%        { transform: scale(1.05, 1.05); }
-          76%        { transform: scale(1.2, 1.2); }
-          84%        { transform: scale(0.96, 0.96); }
-          90%, 100%  { transform: scale(1, 1); }
+          0%, 6%     { transform: scale(1, 1); }
+          7.5%       { transform: scale(1, 0.06); }
+          9%         { transform: scale(1, 1); }
+          47%        { transform: scale(1, 1); }
+          48.5%      { transform: scale(1, 0.06); }
+          50%, 100%  { transform: scale(1, 1); }
         }
 
         @keyframes db-pupil {
-          0%, 28%    { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
-          34%, 44%   { transform: translate(calc(var(--look-x, 0px) - 2px), var(--look-y, 0px)) scale(1); }
-          51%        { transform: translate(calc(var(--look-x, 0px) - 2px), var(--look-y, 0px)) scale(1); }
-          58%, 66%   { transform: translate(calc(var(--look-x, 0px) + 2px), var(--look-y, 0px)) scale(1); }
-          70%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
-          76%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1.28); }
-          84%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(0.95); }
-          90%, 100%  { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          0%, 20%    { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          26%, 42%   { transform: translate(calc(var(--look-x, 0px) - 1.5px), var(--look-y, 0px)) scale(1); }
+          54%, 70%   { transform: translate(calc(var(--look-x, 0px) + 1.5px), var(--look-y, 0px)) scale(1); }
+          78%, 100%  { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
         }
 
         .db-toggle {
