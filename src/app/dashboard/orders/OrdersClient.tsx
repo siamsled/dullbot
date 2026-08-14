@@ -632,7 +632,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
         {/* ── 5. BATCH ACTION FLOATING TOOLBAR ────────────────────────────── */}
         <AnimatePresence>
-          {selectedIds.size >= 2 && (
+          {selectedIds.size >= 1 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
