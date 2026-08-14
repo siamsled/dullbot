@@ -317,19 +317,96 @@ export async function getShopStats(
 }
 
 export async function getRevenueTrend(shopId: string, days: number) {
+  const isAllTime = days > 365;
+  const since = isAllTime ? new Date(0).toISOString() : nDaysAgo(days);
+
   const { data: orders } = await supabaseAdmin
     .from('orders')
     .select('created_at, total_amount')
     .eq('shop_id', shopId)
-    .gte('created_at', nDaysAgo(days))
+    .gte('created_at', since)
     .order('created_at');
 
-  const map: Record<string, number> = {};
+  const orderMap: Record<string, number> = {};
   for (const o of orders ?? []) {
     const date = dhakaDateStr(o.created_at);
-    map[date] = (map[date] ?? 0) + Number(o.total_amount ?? 0);
+    orderMap[date] = (orderMap[date] ?? 0) + Number(o.total_amount ?? 0);
   }
-  return Object.entries(map)
+
+  // 1. If 7 days or 30 days: Return daily buckets for every day in the range
+  if (days <= 30 && !isAllTime) {
+    const result = [];
+    const count = days === 7 ? 7 : 30;
+    const now = new Date();
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dStr = dhakaDateStr(d.toISOString());
+      const label = dStr.slice(5); // 'MM-DD'
+      result.push({
+        date: label,
+        revenue: Math.round(orderMap[dStr] ?? 0),
+      });
+    }
+    return result;
+  }
+
+  // 2. If 90 days: Return 12-13 weekly buckets
+  if (days <= 90 && !isAllTime) {
+    const result = [];
+    const weeksCount = 13;
+    const now = new Date();
+    for (let w = weeksCount - 1; w >= 0; w--) {
+      const wStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+      const wEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      
+      let sum = 0;
+      for (const [dStr, rev] of Object.entries(orderMap)) {
+        const d = new Date(dStr);
+        if (d >= wStart && d < wEnd) {
+          sum += rev;
+        }
+      }
+      const label = dhakaDateStr(wEnd.toISOString()).slice(5);
+      result.push({
+        date: label,
+        revenue: Math.round(sum),
+      });
+    }
+    return result;
+  }
+
+  // 3. If All Time: Group by month
+  if (orders && orders.length > 0) {
+    const firstOrderDate = new Date(orders[0].created_at);
+    const now = new Date();
+    const result = [];
+    
+    const startYear = firstOrderDate.getFullYear();
+    const startMonth = firstOrderDate.getMonth();
+    const endYear = now.getFullYear();
+    const endMonth = now.getMonth();
+    
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        const monthPrefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+        let sum = 0;
+        for (const [dStr, rev] of Object.entries(orderMap)) {
+          if (dStr.startsWith(monthPrefix)) {
+            sum += rev;
+          }
+        }
+        result.push({
+          date: monthPrefix.slice(2),
+          revenue: Math.round(sum),
+        });
+      }
+    }
+    if (result.length > 0) return result;
+  }
+
+  return Object.entries(orderMap)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, revenue]) => ({ date: date.slice(5), revenue: Math.round(revenue) }));
 }
@@ -353,7 +430,9 @@ export async function getPeakOrderTimes(shopId: string, days: number) {
 }
 
 export async function getCustomerGrowth(shopId: string, days: number) {
-  const since = nDaysAgo(days);
+  const isAllTime = days > 365;
+  const since = isAllTime ? new Date(0).toISOString() : nDaysAgo(days);
+
   const { data: orders } = await supabaseAdmin
     .from('orders')
     .select('created_at, customer_phone')
@@ -362,18 +441,80 @@ export async function getCustomerGrowth(shopId: string, days: number) {
     .order('created_at');
 
   const firstSeen: Record<string, string> = {};
-  const { data: allPrior } = await supabaseAdmin
-    .from('orders')
-    .select('customer_phone, created_at')
-    .eq('shop_id', shopId)
-    .lt('created_at', since)
-    .order('created_at');
-  for (const o of allPrior ?? []) {
-    if (o.customer_phone && !firstSeen[o.customer_phone]) {
-      firstSeen[o.customer_phone] = o.created_at;
+  if (!isAllTime) {
+    const { data: allPrior } = await supabaseAdmin
+      .from('orders')
+      .select('customer_phone, created_at')
+      .eq('shop_id', shopId)
+      .lt('created_at', since)
+      .order('created_at');
+    for (const o of allPrior ?? []) {
+      if (o.customer_phone && !firstSeen[o.customer_phone]) {
+        firstSeen[o.customer_phone] = o.created_at;
+      }
     }
   }
 
+  // 1. Daily buckets for 7d
+  if (days <= 7 && !isAllTime) {
+    const result = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dStr = dhakaDateStr(d.toISOString());
+      const dayOrders = (orders ?? []).filter(o => dhakaDateStr(o.created_at) === dStr);
+      let newC = 0;
+      let returning = 0;
+      for (const o of dayOrders) {
+        const ph = o.customer_phone ?? '';
+        if (!firstSeen[ph]) {
+          newC++;
+          if (ph) firstSeen[ph] = o.created_at;
+        } else {
+          returning++;
+        }
+      }
+      result.push({
+        week: dStr.slice(5),
+        new: newC,
+        returning,
+      });
+    }
+    return result;
+  }
+
+  // 2. 4 Weekly buckets for 30d
+  if (days <= 30 && !isAllTime) {
+    const result = [];
+    const now = new Date();
+    for (let w = 3; w >= 0; w--) {
+      const wStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+      const wEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const weekOrders = (orders ?? []).filter(o => {
+        const t = new Date(o.created_at);
+        return t >= wStart && t < wEnd;
+      });
+      let newC = 0;
+      let returning = 0;
+      for (const o of weekOrders) {
+        const ph = o.customer_phone ?? '';
+        if (!firstSeen[ph]) {
+          newC++;
+          if (ph) firstSeen[ph] = o.created_at;
+        } else {
+          returning++;
+        }
+      }
+      result.push({
+        week: dhakaDateStr(wEnd.toISOString()).slice(5),
+        new: newC,
+        returning,
+      });
+    }
+    return result;
+  }
+
+  // 3. Default week aggregation for 90d and All Time
   const weekMap: Record<string, { newC: number; returning: number }> = {};
   for (const o of orders ?? []) {
     const d = toDhakaDate(o.created_at);

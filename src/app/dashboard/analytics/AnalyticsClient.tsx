@@ -137,7 +137,7 @@ export default function AnalyticsClient({
     [initialRange]: initialDataObj,
   });
 
-  const { data = dataCache[activeRange] || initialDataObj } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ['analytics-data', activeRange],
     queryFn: async () => {
       const res = await fetchAnalyticsByRange(activeRange);
@@ -146,12 +146,12 @@ export default function AnalyticsClient({
       }
       return res;
     },
-    initialData: dataCache[activeRange] || (activeRange === initialRange ? initialDataObj : undefined),
+    initialData: dataCache[activeRange],
     staleTime: 1000 * 60 * 15,
-    gcTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
   });
+
+  const currentData = data || dataCache[activeRange] || initialDataObj;
 
   const handleRangeChange = (newRange: number) => {
     setActiveRange(newRange);
@@ -179,7 +179,8 @@ export default function AnalyticsClient({
     inventoryRunway = [],
     courierPerformance = [],
     paymentBreakdown = [],
-  } = (data as any) || {};
+    cancellationBreakdown = [],
+  } = (currentData as any) || {};
 
   // ── Derived Summary Metrics for Revenue Trend Context ──
   const totalPeriodRevenue = (revenueTrend || []).reduce((acc: number, r: any) => acc + (Number(r.revenue) || 0), 0);
@@ -209,6 +210,11 @@ export default function AnalyticsClient({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Analytics</h1>
+              {isFetching && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 border border-blue-200 animate-pulse">
+                  <Sparkles className="w-3 h-3 animate-spin" /> Recalculating…
+                </span>
+              )}
             </div>
             <p className="text-ash text-xs sm:text-sm mt-1">
               Business intelligence, conversion velocity, and unit profitability metrics.
