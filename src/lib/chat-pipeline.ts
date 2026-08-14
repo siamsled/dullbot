@@ -248,11 +248,6 @@ export async function billGeminiCall(
 // Returns null to fall through to Gemini if the lookup yields no useful data.
 
 const STATIC_PREFILTER: { trigger: RegExp; reply: string }[] = [
-  // Greetings
-  {
-    trigger: /^(hi|hello|hey|helo|heloo|salaam|salam|assalamualaikum|walaikum|আস্সালামু আলাইকুম|ওয়ালাইকুম|কেমন আছ|kemon acho|wadup|waddup|sup\??|yo\b|what['']?s up)/i,
-    reply: 'হ্যালো! কী সাহায্য করতে পারি?',
-  },
   // Thanks / closing
   {
     trigger: /^(thank|thanks|tnx|thx|ty\b|dhonnobad|ধন্যবাদ|shukriya|জাজাকাল্লাহ|jazakallah|ok done|okok|okay done|বাই|bye|আল্লাহ হাফেজ|allah hafez|khoda hafez)/i,
