@@ -191,6 +191,17 @@ export default function ProductSlideOver({
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
 
+  useEffect(() => {
+    setIsActive(product?.is_active ?? true);
+    setPrice(product?.price?.toString() ?? '');
+    setCompareAtPrice(product?.compare_at_price?.toString() ?? '');
+    setCostPrice(product?.cost_price?.toString() ?? '');
+    setSku(product?.sku ?? '');
+    setStock(product?.stock_quantity?.toString() ?? '0');
+    setLowStockThreshold(product?.low_stock_threshold?.toString() ?? '5');
+    setDefaultSupplierId(product?.default_supplier_id ?? '');
+  }, [product]);
+
   // Variants
   const [variants, setVariants] = useState<(Variant & { _isNew?: boolean; _deleted?: boolean })[]>(() => {
     return (initialVariants ?? []).map(v => {
@@ -603,17 +614,18 @@ export default function ProductSlideOver({
           </h2>
           <div className="flex items-center gap-3">
             {!isNew && !isScraped && (
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <span className="text-xs text-ash">Draft</span>
+              <div className="flex items-center gap-2 select-none">
+                <span className={`text-xs font-bold ${!isActive ? 'text-amber-600' : 'text-ash'}`}>Hidden</span>
                 <button
                   type="button"
                   onClick={() => setIsActive(v => !v)}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${isActive ? 'bg-ink' : 'bg-dove/40'}`}
+                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${isActive ? 'bg-emerald-600' : 'bg-dove/40'}`}
+                  title={isActive ? 'Product is Live in Store (click to hide)' : 'Product is Hidden from Store (click to set live)'}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isActive ? 'left-5' : 'left-0.5'}`} />
                 </button>
-                <span className="text-xs text-ash">Live</span>
-              </label>
+                <span className={`text-xs font-bold ${isActive ? 'text-emerald-600' : 'text-ash'}`}>Live</span>
+              </div>
             )}
             <button onClick={onClose} className="p-1.5 rounded-lg text-graphite hover:text-ink hover:bg-fog transition-colors">
               <X className="w-4 h-4" />

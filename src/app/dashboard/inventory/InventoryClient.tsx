@@ -188,9 +188,9 @@ export default function InventoryClient({
   };
 
   const handleBulkToggle = (ids: string[], active: boolean) => {
+    setProducts(prev => prev.map(p => ids.includes(p.id) ? { ...p, is_active: active } : p));
     startTransition(async () => {
       await bulkToggleVisibility(ids, active);
-      setProducts(prev => prev.map(p => ids.includes(p.id) ? { ...p, is_active: active } : p));
     });
   };
 

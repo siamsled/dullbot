@@ -191,12 +191,20 @@ export async function bulkDeleteProducts(ids: string[]) {
 }
 
 export async function bulkToggleVisibility(ids: string[], makeActive: boolean) {
-  if (!ids.length) return;
-  await supabaseAdmin
+  if (!ids.length) return { success: true };
+  const shopId = await getShopId();
+  const { error } = await supabaseAdmin
     .from('products')
     .update({ is_active: makeActive, updated_at: new Date().toISOString() })
-    .in('id', ids);
+    .in('id', ids)
+    .eq('shop_id', shopId);
+
+  if (error) {
+    console.error('Failed to bulk toggle product visibility:', error);
+    return { success: false, error: error.message };
+  }
   revalidate();
+  return { success: true };
 }
 
 export async function bulkReassignCategory(ids: string[], category: string) {

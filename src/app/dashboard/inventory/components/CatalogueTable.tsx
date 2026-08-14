@@ -426,71 +426,113 @@ export default function CatalogueTable({
       </div>
 
       {/* Bulk action bar */}
-      {selected.size > 0 && (
-        <div className="bg-ink text-white rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
-          <span className="text-sm font-medium">{selected.size} selected</span>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => { onBulkToggle(Array.from(selected), true); setSelected(new Set()); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-tags bg-white/10 hover:bg-white/20 text-xs transition-colors"
-            >
-              <Eye className="w-3 h-3" />
-              Set Live
-            </button>
-            <button
-              onClick={() => { onBulkToggle(Array.from(selected), false); setSelected(new Set()); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-tags bg-white/10 hover:bg-white/20 text-xs transition-colors"
-            >
-              <EyeOff className="w-3 h-3" />
-              Set Hidden
-            </button>
-            <button
-              onClick={() => setShowBulkCategory(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-tags bg-white/10 hover:bg-white/20 text-xs transition-colors"
-            >
-              <Tag className="w-3 h-3" />
-              Reassign Category
-            </button>
-            <button
-              onClick={() => { if (confirm(`Delete ${selected.size} products?`)) { onBulkDelete(Array.from(selected)); setSelected(new Set()); } }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-tags bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </button>
-            <button
-              onClick={() => setSelected(new Set())}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-tags bg-white/10 hover:bg-white/20 text-xs transition-colors"
-            >
-              <X className="w-3 h-3" />
-              Clear
-            </button>
-          </div>
-          {showBulkCategory && (
-            <div className="flex gap-2 w-full mt-1">
-              <input
-                value={bulkCategory}
-                onChange={e => setBulkCategory(e.target.value)}
-                placeholder="Category name"
-                className="flex-1 bg-white/10 border border-white/20 rounded-inputs px-3 py-1.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
-              />
+      {selected.size > 0 && (() => {
+        const selectedProducts = products.filter(p => selected.has(p.id));
+        const hiddenCount = selectedProducts.filter(p => !p.is_active).length;
+        const liveCount = selectedProducts.filter(p => p.is_active).length;
+        const allHidden = selectedProducts.length > 0 && hiddenCount === selectedProducts.length;
+        const allLive = selectedProducts.length > 0 && liveCount === selectedProducts.length;
+
+        return (
+          <div className="bg-ink text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 flex-wrap shadow-xl border border-white/10">
+            <span className="text-xs font-bold font-mono text-white/90">{selected.size} selected</span>
+            <div className="h-4 w-px bg-white/20" />
+            <div className="flex gap-2 flex-wrap items-center">
+              {allHidden ? (
+                <button
+                  type="button"
+                  onClick={() => onBulkToggle(Array.from(selected), true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all shadow-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Set Live {selected.size > 1 ? `(${selected.size})` : ''}
+                </button>
+              ) : allLive ? (
+                <button
+                  type="button"
+                  onClick={() => onBulkToggle(Array.from(selected), false)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all shadow-xs"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  Set Hidden {selected.size > 1 ? `(${selected.size})` : ''}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onBulkToggle(Array.from(selected), true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition-all"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Set Live ({hiddenCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onBulkToggle(Array.from(selected), false)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition-all"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                    Set Hidden ({liveCount})
+                  </button>
+                </>
+              )}
               <button
+                type="button"
+                onClick={() => setShowBulkCategory(v => !v)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                Reassign Category
+              </button>
+              <button
+                type="button"
                 onClick={() => {
-                  if (bulkCategory.trim()) {
-                    onBulkReassign(Array.from(selected), bulkCategory.trim());
+                  if (confirm(`Delete ${selected.size} products?`)) {
+                    onBulkDelete(Array.from(selected));
                     setSelected(new Set());
-                    setShowBulkCategory(false);
-                    setBulkCategory('');
                   }
                 }}
-                className="px-4 py-1.5 rounded-inputs bg-white text-ink text-xs font-medium hover:bg-fog transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold transition-colors"
               >
-                Apply
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelected(new Set())}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Clear
               </button>
             </div>
-          )}
-        </div>
-      )}
+            {showBulkCategory && (
+              <div className="flex gap-2 w-full mt-2 pt-2 border-t border-white/10">
+                <input
+                  value={bulkCategory}
+                  onChange={e => setBulkCategory(e.target.value)}
+                  placeholder="Category name..."
+                  className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (bulkCategory.trim()) {
+                      onBulkReassign(Array.from(selected), bulkCategory.trim());
+                      setSelected(new Set());
+                      setShowBulkCategory(false);
+                      setBulkCategory('');
+                    }
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-white text-ink text-xs font-bold hover:bg-fog transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Main Table ───────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
@@ -626,7 +668,17 @@ export default function CatalogueTable({
                           <span className="bg-apricot-wash text-rust text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Reorder</span>
                         )}
                         {!p.is_active && !p.draft && (
-                          <span className="bg-fog text-dove text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Hidden</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onBulkToggle([p.id], true);
+                            }}
+                            className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Product is Hidden. Click to set Live in store"
+                          >
+                            <EyeOff className="w-2.5 h-2.5" /> Hidden
+                          </button>
                         )}
                       </div>
                       {p.sku && <p className="text-xs text-dove mt-0.5">SKU: {p.sku}</p>}
