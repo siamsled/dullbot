@@ -94,17 +94,6 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
 
   const businessType = shop.business_type || 'retail';
 
-  // 1. Dynamic Insight Callout
-  const getInsightCallout = () => {
-    if (currentStats.revenueTotal > 5000) {
-      return "Peak order surge detected: Strong conversion velocity across recent active sessions.";
-    }
-    if (currentStats.autopilotRate > 80) {
-      return `AI Autopilot handled ${currentStats.autopilotRate}% of customer conversations without human intervention.`;
-    }
-    return "Dhaka metropolitan region is currently your top performing district by confirmed order volume.";
-  };
-
   // If Business Classification is not completed yet — show the type picker
   if (!isClassificationDone) {
     return (
@@ -274,29 +263,14 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                 />
               </div>
             )}
-          </div>
-        </div>
 
-        {/* ── INSIGHT BAR & QUICK ACTION BUTTONS ─────────────────────────── */}
-        <div className="bg-white rounded-3xl border border-dove/20 px-5 py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 shrink-0">
-              <Sparkles className="w-4 h-4 animate-pulse" />
-            </div>
-            <p className="text-xs font-bold text-ink leading-relaxed">
-              <span className="text-purple-600 uppercase tracking-wider text-[10px] mr-1.5">Live Insight:</span>
-              {getInsightCallout()}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-between sm:justify-end shrink-0">
-            {/* AI Credits Balance */}
+            {/* AI Credits Balance Pill */}
             <Link
               href="/dashboard/credits"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
                 (currentStats.creditBalance ?? 0) < 50
                   ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                  : 'bg-fog text-ink border-dove/20 hover:border-dove/40'
+                  : 'bg-fog text-ink border-dove/20 hover:border-dove/40 shadow-xs'
               }`}
               title="Click to manage AI reply credits"
             >
@@ -304,10 +278,10 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               <span>{(currentStats.creditBalance ?? 0).toLocaleString()} AI replies</span>
             </Link>
 
-            {/* Quick POS Order Button */}
+            {/* Quick POS / New Order Action Button */}
             <Link
               href="/dashboard/orders"
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-white text-xs font-bold rounded-full hover:bg-black transition-all shadow-xs"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-ink text-white text-xs font-bold rounded-full hover:bg-black transition-all shadow-xs active:scale-95"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>New Order</span>
