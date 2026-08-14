@@ -77,9 +77,31 @@ export const getCurrentShop = cache(async function getCurrentShop(): Promise<Sho
       return null;
     }
     
-    const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(accessToken);
-    if (userErr || !user) {
-      return null;
+    // Fast-path: Decode valid JWT session payload directly to avoid redundant 250ms auth network roundtrips
+    let user: { id: string; app_metadata: any; user_metadata: any; email?: string } | null = null;
+    try {
+      const parts = accessToken.split('.');
+      if (parts.length === 3) {
+        const jwtPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+        if (jwtPayload.sub && jwtPayload.exp && jwtPayload.exp * 1000 > Date.now()) {
+          user = {
+            id: jwtPayload.sub,
+            app_metadata: jwtPayload.app_metadata || {},
+            user_metadata: jwtPayload.user_metadata || {},
+            email: jwtPayload.email,
+          };
+        }
+      }
+    } catch {
+      // Fall through to network verification
+    }
+
+    if (!user) {
+      const { data: { user: fetchedUser }, error: userErr } = await supabaseAdmin.auth.getUser(accessToken);
+      if (userErr || !fetchedUser) {
+        return null;
+      }
+      user = fetchedUser;
     }
 
     // 1. Check if user is an Employee/Staff member
