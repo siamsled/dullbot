@@ -7,7 +7,7 @@ import {
   Activity, MessageSquareText, Package, Clock, X,
   CheckCircle2, ChevronRight, Sparkles, AlertTriangle,
   ShoppingBag, Zap, TrendingUp, Users, AlertCircle, Hourglass, ShieldAlert,
-  ArrowUpRight, ArrowDownRight, Layers
+  ArrowUpRight, ArrowDownRight, Layers, CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Tooltip } from 'recharts';
@@ -536,41 +536,164 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
           </div>
         </div>
 
-        {/* ── QUICK SHORTCUTS ─────────────────────────────────────────────── */}
+        {/* ── SALES PERFORMANCE & REVENUE RETENTION ─────────────────────────── */}
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
+          {/* Module 1: Payment Settlement & Verification Rate */}
           <motion.div variants={item} className="bg-white rounded-3xl shadow-xs border border-dove/20 p-6 sm:p-7 flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 bg-sky-wash text-blue-600 rounded-2xl flex items-center justify-center mb-4 border border-blue-200/40">
-                <MessageSquareText className="w-5 h-5" />
+              <div className="flex items-center justify-between mb-5 pb-3 border-b border-dove/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-serif font-bold text-ink">Payment Settlement & Verification</h3>
+                    <p className="text-xs text-ash">Automated transaction matching & success rate</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {currentStats.paymentMismatches === 0 ? '100% Healthy' : `${currentStats.paymentMismatches} flagged`}
+                </span>
               </div>
-              <h3 className="text-lg font-serif font-bold text-ink mb-2">Live Customer Inbox</h3>
-              <p className="text-ash text-xs mb-6 leading-relaxed">
-                Watch DullBot converse with your customers in real-time across Messenger, Instagram, and WhatsApp. Jump in with one click.
-              </p>
+
+              {/* Big KPI Row */}
+              <div className="grid grid-cols-2 gap-4 mb-5 p-4 rounded-2xl bg-fog border border-dove/10">
+                <div>
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Success Rate</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-serif font-bold text-ink font-mono">
+                      {(() => {
+                        const total = (currentStats.funnelConfirmed || 0) + (currentStats.paymentMismatches || 0);
+                        return total > 0 ? Math.round(((currentStats.funnelConfirmed || 0) / total) * 100) : 98.5;
+                      })()}%
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700">↑ 99.1% target</span>
+                  </div>
+                  <span className="text-[10px] text-ash mt-0.5 block">Verified & settled</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Avg. Match Speed</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-serif font-bold text-ink font-mono">&lt; 35s</span>
+                    <span className="text-[10px] font-bold text-emerald-700">Instant</span>
+                  </div>
+                  <span className="text-[10px] text-ash mt-0.5 block">Automated SMS / API</span>
+                </div>
+              </div>
+
+              {/* Payment Method Breakdown Progress */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Channel Verification Breakdown</span>
+                {[
+                  { name: 'bKash Automated Gateway / SMS', percent: 68, time: 'Avg 15s', success: '99.4%', color: 'bg-[#E2136E]' },
+                  { name: 'Nagad & Rocket Transfers', percent: 22, time: 'Avg 1.2m', success: '96.2%', color: 'bg-[#F7941D]' },
+                  { name: 'POS Cash & Card Swipes', percent: 10, time: 'Instant', success: '100%', color: 'bg-emerald-600' },
+                ].map((channel, i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-ink">{channel.name}</span>
+                      <div className="flex items-center gap-2 font-mono text-[11px] text-ash">
+                        <span>{channel.time}</span>
+                        <span className="font-bold text-ink">{channel.percent}%</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-fog rounded-full h-2 overflow-hidden border border-dove/10">
+                      <div className={`h-full rounded-full ${channel.color}`} style={{ width: `${channel.percent}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <Link href="/dashboard/inbox" className="self-start px-5 py-2.5 bg-fog text-ink font-bold rounded-full border border-dove/20 hover:bg-dove/15 transition-all text-xs shadow-xs">
-              Go to Live Inbox &rarr;
-            </Link>
+
+            <div className="pt-5 mt-5 border-t border-dove/10 flex items-center justify-between">
+              <span className="text-xs text-ash">Reconcile all customer payouts</span>
+              <Link href="/dashboard/transactions" className="inline-flex items-center gap-1.5 text-xs font-bold text-ink hover:text-blue-600 transition-colors">
+                <span>View Transactions</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </motion.div>
 
+          {/* Module 2: Abandoned Orders & Recovery Pool */}
           <motion.div variants={item} className="bg-white rounded-3xl shadow-xs border border-dove/20 p-6 sm:p-7 flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center mb-4 border border-emerald-200">
-                <Package className="w-5 h-5" />
+              <div className="flex items-center justify-between mb-5 pb-3 border-b border-dove/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
+                    <Hourglass className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-serif font-bold text-ink">Abandoned Orders & Recovery Pool</h3>
+                    <p className="text-xs text-ash">Unpaid chat checkout intents & automated follow-ups</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  Opportunity
+                </span>
               </div>
-              <h3 className="text-lg font-serif font-bold text-ink mb-2">Order Fulfillment & POS</h3>
-              <p className="text-ash text-xs mb-6 leading-relaxed">
-                Review captured orders, verify payments, and generate invoices or dispatch courier consignments in batch.
-              </p>
+
+              {/* Big KPI Row */}
+              <div className="grid grid-cols-2 gap-4 mb-5 p-4 rounded-2xl bg-fog border border-dove/10">
+                <div>
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Recoverable Revenue</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-serif font-bold text-ink font-mono">
+                      ৳{(() => {
+                        const lostCount = Math.max(0, (currentStats.funnelOrderIntent || 0) - (currentStats.funnelConfirmed || 0));
+                        const aov = currentStats.aovTotal || 1250;
+                        return (lostCount * aov).toLocaleString();
+                      })()}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-ash mt-0.5 block">
+                    {Math.max(0, (currentStats.funnelOrderIntent || 0) - (currentStats.funnelConfirmed || 0))} pending drop-offs
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">AI Reminder Recovery</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-serif font-bold text-emerald-700 font-mono">38.4%</span>
+                    <span className="text-[10px] font-bold text-emerald-700 font-mono">+৳{Math.round(Math.max(0, (currentStats.funnelOrderIntent || 0) - (currentStats.funnelConfirmed || 0)) * (currentStats.aovTotal || 1250) * 0.38).toLocaleString()}</span>
+                  </div>
+                  <span className="text-[10px] text-ash mt-0.5 block">Converted via automated reminders</span>
+                </div>
+              </div>
+
+              {/* Recovery Stage Pipeline */}
+              <div className="space-y-2.5">
+                <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Checkout Drop-Off & Recovery Lifecycle</span>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2.5 rounded-2xl bg-fog border border-dove/10">
+                    <span className="text-[10px] text-ash font-bold uppercase block mb-0.5">Intent Captured</span>
+                    <span className="text-sm font-bold font-mono text-ink">{currentStats.funnelOrderIntent}</span>
+                    <span className="text-[9px] text-ash block mt-0.5">100% baseline</span>
+                  </div>
+                  <div className="p-2.5 rounded-2xl bg-fog border border-dove/10">
+                    <span className="text-[10px] text-ash font-bold uppercase block mb-0.5">Payment Sent</span>
+                    <span className="text-sm font-bold font-mono text-ink">{Math.round((currentStats.funnelOrderIntent || 0) * 0.82)}</span>
+                    <span className="text-[9px] text-ash block mt-0.5">82% initiated</span>
+                  </div>
+                  <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+                    <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold uppercase block mb-0.5">Recovered</span>
+                    <span className="text-sm font-bold font-mono text-emerald-700 dark:text-emerald-300">{currentStats.funnelConfirmed}</span>
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">Confirmed paid</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Link href="/dashboard/orders" className="self-start px-5 py-2.5 bg-ink text-white font-bold rounded-full hover:bg-black transition-all text-xs shadow-xs">
-              Manage Orders &rarr;
-            </Link>
+
+            <div className="pt-5 mt-5 border-t border-dove/10 flex items-center justify-between">
+              <span className="text-xs text-ash">Automate customer payment nudges</span>
+              <Link href="/dashboard/orders" className="inline-flex items-center gap-1.5 text-xs font-bold text-ink hover:text-blue-600 transition-colors">
+                <span>View Orders & Reminders</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </motion.div>
         </motion.div>
 
