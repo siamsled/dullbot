@@ -334,17 +334,10 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex justify-center pb-1">
             <div className="w-8 h-8 rounded-full bg-ink text-white flex items-center justify-center text-xs font-bold shadow-xs" title={shop?.name || 'Dull Store'}>
               {getInitials(shop?.name)}
             </div>
-            <button
-              onClick={handleSignOut}
-              title="Sign out"
-              className="p-1.5 rounded-lg text-ash hover:text-rust hover:bg-red-50 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
         )}
       </div>

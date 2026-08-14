@@ -11,6 +11,7 @@ import {
   Percent, ShoppingCart, Truck, AlertOctagon, Package, ArrowUpRight, Flame, CheckCircle2
 } from 'lucide-react';
 import { fetchAnalyticsByRange } from './actions';
+import { CourierLogo } from '@/components/ui/CourierLogos';
 
 interface Props {
   range: number;
@@ -544,8 +545,8 @@ export default function AnalyticsClient({
             {courierPerformance.map((c: any) => (
               <div key={c.provider} className="flex items-center justify-between p-3 bg-fog rounded-inputs border border-dove/5 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-white text-ink flex items-center justify-center font-bold text-xs shadow-xs">
-                    {c.provider[0]}
+                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-1.5 shadow-xs border border-dove/10 shrink-0">
+                    <CourierLogo provider={c.provider} className="w-full h-full object-contain" />
                   </div>
                   <div>
                     <span className="font-semibold text-ink block">{c.provider}</span>

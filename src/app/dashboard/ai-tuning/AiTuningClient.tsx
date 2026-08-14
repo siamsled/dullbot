@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown, Wand2, RefreshCw, Send, Loader2, Info, Plus, 
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments } from '@/lib/message-parser';
 import { saveAiTuning, addExampleReply, deleteExampleReply, testPersonaResponse } from './actions';
+import { PersonaAvatar } from '@/components/ui/PersonaAvatar';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -269,13 +270,18 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
     <div className="flex h-full overflow-hidden bg-fog">
 
       {/* ── Left Sidebar: Persona Picker ────────────────────────────────────── */}
-      <aside className="w-72 shrink-0 bg-white border-r border-dove/20 flex flex-col">
+      <aside className="w-80 shrink-0 bg-white border-r border-dove/20 flex flex-col">
         <div className="px-5 pt-6 pb-4 border-b border-dove/20">
-          <h1 className="text-2xl font-serif text-ink tracking-tight leading-tight">Persona Agents</h1>
-          <p className="text-xs text-graphite mt-1">Choose the voice of your AI</p>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-serif font-bold text-ink tracking-tight">Persona Agents</h1>
+            <span className="text-[10px] font-bold text-ash uppercase tracking-wider bg-fog px-2 py-0.5 rounded-full border border-dove/10">
+              {personas.length} Available
+            </span>
+          </div>
+          <p className="text-xs text-graphite mt-1">Choose the custom voice and tone of your AI</p>
         </div>
 
-        <div className="overflow-y-auto py-3 px-3 space-y-1">
+        <div className="overflow-y-auto py-3 px-3 space-y-1.5 flex-1">
           {personas.map(p => {
             const isSelected = p.id === personaId;
             const isSaved = p.id === savedPersonaId;
@@ -283,46 +289,57 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               <button
                 key={p.id}
                 onClick={() => setPersonaId(p.id)}
-                className={`w-full text-left px-3 py-3.5 rounded-[16px] transition-all group relative ${
+                className={`w-full text-left p-3 rounded-2xl transition-all duration-200 group relative flex items-start gap-3 active:scale-[0.98] ${
                   isSelected
-                    ? 'bg-ink text-white shadow-md'
+                    ? 'bg-ink text-white shadow-md ring-1 ring-white/10'
                     : isSaved
-                      ? 'bg-fog ring-1 ring-ink/20 text-ink'
-                      : 'hover:bg-fog text-ink'
+                      ? 'bg-fog ring-1 ring-ink/20 text-ink hover:bg-dove/10'
+                      : 'hover:bg-fog text-ink border border-transparent hover:border-dove/10'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-[13px] font-semibold leading-tight ${isSelected ? 'text-white' : 'text-ink'}`}>
-                    {p.name}
-                  </span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {isSaved && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold tracking-wide leading-none ${
-                        isSelected ? 'bg-apricot-wash text-rust' : 'bg-ink text-white'
-                      }`}>
-                        {shop?.tone_template ? 'Selected during onboarding' : 'Live'}
-                      </span>
-                    )}
-                    {isSelected
-                      ? <Check className="w-3.5 h-3.5 text-white/70" />
-                      : <ChevronRight className="w-3.5 h-3.5 text-dove group-hover:text-graphite" />
-                    }
+                {/* Rounded Candy Avatar */}
+                <PersonaAvatar
+                  name={p.name}
+                  className="w-11 h-11 ring-2 ring-white/30 shadow-xs"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <span className={`text-[13px] font-bold leading-tight truncate ${isSelected ? 'text-white' : 'text-ink'}`}>
+                      {p.name}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isSaved && (
+                        <span className={`text-[8.5px] px-1.5 py-0.5 rounded-full font-bold tracking-wide leading-none ${
+                          isSelected ? 'bg-apricot-wash text-rust' : 'bg-ink text-white'
+                        }`}>
+                          {shop?.tone_template ? 'Active' : 'Live'}
+                        </span>
+                      )}
+                      {isSelected ? (
+                        <Check className="w-3.5 h-3.5 text-white/90" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-dove group-hover:text-graphite transition-colors" />
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p className={`text-[11px] leading-snug ${isSelected ? 'text-white/65' : 'text-graphite'}`}>
-                  {p.tagline}
-                </p>
-                <div className="flex gap-1.5 mt-2 flex-wrap">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    isSelected ? 'bg-white/15 text-white/80' : 'bg-apricot-wash text-rust'
-                  }`}>
-                    {JOB_FUNCTION_LABELS[p.job_function] ?? p.job_function}
-                  </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    isSelected ? 'bg-white/15 text-white/80' : 'bg-sky-wash text-blue-700'
-                  }`}>
-                    {LANGUAGE_STYLE_LABELS[p.language_style] ?? p.language_style}
-                  </span>
+
+                  <p className={`text-[11px] leading-snug line-clamp-1 mb-2 ${isSelected ? 'text-white/70' : 'text-graphite'}`}>
+                    {p.tagline}
+                  </p>
+
+                  <div className="flex gap-1.5 flex-wrap items-center">
+                    <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-semibold ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-apricot-wash text-rust border border-rust/10'
+                    }`}>
+                      {JOB_FUNCTION_LABELS[p.job_function] ?? p.job_function}
+                    </span>
+                    <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-semibold ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-sky-wash text-blue-700 border border-blue-200/40'
+                    }`}>
+                      {LANGUAGE_STYLE_LABELS[p.language_style] ?? p.language_style}
+                    </span>
+                  </div>
                 </div>
               </button>
             );
@@ -367,26 +384,32 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
       <main className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="bg-white border-b border-dove/20 px-8 pt-4 pb-0 shrink-0">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl font-serif text-ink tracking-tight leading-none">{selectedPersona?.name}</h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-apricot-wash text-rust font-medium">
-                  {JOB_FUNCTION_LABELS[selectedPersona?.job_function ?? ''] ?? selectedPersona?.job_function}
-                </span>
-              </div>
-              <p className="text-xs text-graphite mb-1.5">{selectedPersona?.tagline}</p>
-              {selectedPersona && (
-                <div className="flex flex-wrap gap-1">
-                  {selectedPersona.personality_traits.map(t => (
-                    <span key={t} className="text-[10px] px-1.5 py-0.5 bg-fog text-graphite rounded-full leading-none">#{t}</span>
-                  ))}
-                  {selectedPersona.best_for.map(t => (
-                    <span key={t} className="text-[10px] px-1.5 py-0.5 bg-sky-wash/60 text-blue-700 rounded-full leading-none">{t}</span>
-                  ))}
+        <div className="bg-white border-b border-dove/20 px-8 pt-5 pb-0 shrink-0">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <PersonaAvatar
+                name={selectedPersona?.name || ''}
+                className="w-14 h-14 ring-4 ring-fog shadow-sm"
+              />
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-xl font-serif font-bold text-ink tracking-tight leading-none">{selectedPersona?.name}</h2>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-apricot-wash text-rust font-bold border border-rust/10">
+                    {JOB_FUNCTION_LABELS[selectedPersona?.job_function ?? ''] ?? selectedPersona?.job_function}
+                  </span>
                 </div>
-              )}
+                <p className="text-xs text-graphite mb-2">{selectedPersona?.tagline}</p>
+                {selectedPersona && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPersona.personality_traits.map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 bg-fog text-graphite rounded-full font-medium border border-dove/10 leading-none">#{t}</span>
+                    ))}
+                    {selectedPersona.best_for.map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 bg-sky-wash text-blue-700 rounded-full font-medium border border-blue-200/40 leading-none">{t}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -177,7 +177,7 @@ export default function MessengerInput({
   const placeholderText = isTakeover ? 'Type a reply as human...' : placeholder;
 
   return (
-    <div className="flex flex-col w-full bg-white border-t border-[#E5E5E5]">
+    <div className="flex flex-col w-full bg-white border-t border-dove/20">
       {replyingTo && (() => {
         const isImage = replyingTo.text.startsWith('IMAGE:') || /!\[.*?\]\((.*?)\)/.test(replyingTo.text);
         const imageUrl = replyingTo.text.startsWith('IMAGE:') 
@@ -185,24 +185,24 @@ export default function MessengerInput({
           : replyingTo.text.match(/!\[.*?\]\((.*?)\)/)?.[1];
 
         return (
-          <div className="flex items-center justify-between px-4 py-2 bg-[#F0F2F5]/50 border-b border-[#E5E5E5]">
+          <div className="flex items-center justify-between px-4 py-2 bg-fog border-b border-dove/20">
             <div className="flex flex-col flex-1 overflow-hidden">
-              <span className="text-[12px] font-semibold text-[#050505]">Replying to</span>
+              <span className="text-[12px] font-semibold text-ink">Replying to</span>
               {isImage ? (
                 <div className="flex items-center gap-2 mt-1">
                   <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
                     <img src={imageUrl} alt="Replying to image" className="h-full w-full object-cover" />
                   </div>
-                  <span className="text-[13px] text-[#65676B] italic">Photo</span>
+                  <span className="text-[13px] text-ash italic">Photo</span>
                 </div>
               ) : (
-                <span className="text-[13px] text-[#65676B] truncate">{replyingTo.text}</span>
+                <span className="text-[13px] text-ash truncate">{replyingTo.text}</span>
               )}
             </div>
             <button 
               type="button" 
               onClick={onCancelReply}
-              className="p-1 rounded-full text-[#65676B] hover:bg-black/5 transition-colors shrink-0"
+              className="p-1 rounded-full text-ash hover:bg-black/5 transition-colors shrink-0"
             >
               <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -217,7 +217,7 @@ export default function MessengerInput({
       {!isRecording && (
         <div className="flex items-center gap-1 shrink-0 text-[#0084FF]">
           <button 
-            type="button"
+            type="button" 
             onClick={startRecording}
             disabled={disabled}
             className="p-1.5 rounded-full hover:bg-black/5 transition-colors disabled:opacity-50"
@@ -226,7 +226,7 @@ export default function MessengerInput({
           </button>
           
           <button 
-            type="button"
+            type="button" 
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled}
             className="p-1.5 rounded-full hover:bg-black/5 transition-colors disabled:opacity-50"
@@ -242,7 +242,7 @@ export default function MessengerInput({
           />
 
           <button 
-            type="button"
+            type="button" 
             onClick={handleSticker}
             disabled={disabled}
             className="p-1.5 rounded-full hover:bg-black/5 transition-colors disabled:opacity-50"
@@ -255,13 +255,13 @@ export default function MessengerInput({
       {/* Center Input Area */}
       <div className="flex-1 relative flex items-center">
         {isRecording ? (
-          <div className="w-full bg-[#F0F2F5] h-[36px] rounded-full flex items-center justify-between px-4 border border-transparent">
+          <div className="w-full bg-fog h-[36px] rounded-full flex items-center justify-between px-4 border border-transparent">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-sm font-medium text-ink">{formatTime(recordingTime)}</span>
             </div>
             <button 
-              type="button"
+              type="button" 
               onClick={stopRecording}
               className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
             >
@@ -270,7 +270,7 @@ export default function MessengerInput({
           </div>
         ) : (
           <>
-            <input
+            <input 
               ref={inputRef}
               type="text"
               value={text}
@@ -281,7 +281,7 @@ export default function MessengerInput({
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder={placeholderText}
-              className="w-full bg-[#F0F2F5] rounded-full pl-4 pr-10 h-[36px] text-[15px] text-[#050505] placeholder:text-[#65676B] border border-transparent focus:outline-none"
+              className="w-full bg-fog rounded-full pl-4 pr-10 h-[36px] text-[15px] text-ink placeholder:text-ash border border-transparent focus:outline-none"
             />
             <button 
               type="button"

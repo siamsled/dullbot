@@ -19,6 +19,7 @@ import {
   updateInternalNote, toggleNeedsReview, bulkConfirmPayment,
   bulkDispatchToCourier
 } from './actions';
+import { CourierLogo } from '@/components/ui/CourierLogos';
 
 type LineItem = {
   id: string;
@@ -803,9 +804,14 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </td>
                         <td className="px-6 py-4">
                           {o.courierTrackingId ? (
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-ink uppercase tracking-wider">{o.courierProvider}</span>
-                              <span className="text-[10px] font-mono text-graphite mt-0.5">{o.courierTrackingId}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded bg-white p-1 shadow-xs border border-dove/10 flex items-center justify-center shrink-0">
+                                <CourierLogo provider={o.courierProvider || ''} className="w-full h-full object-contain" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-ink uppercase tracking-wider">{o.courierProvider}</span>
+                                <span className="text-[10px] font-mono text-graphite mt-0.5">{o.courierTrackingId}</span>
+                              </div>
                             </div>
                           ) : (
                             <span className="text-xs text-graphite">—</span>
