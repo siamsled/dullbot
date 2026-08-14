@@ -1,10 +1,8 @@
 'use server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 import { buildSystemPrompt } from '@/lib/prompt-builder';
 import { invokeGemini } from '@/lib/gemini';
-
-const SHOP_SLUG = 'dull-store';
 
 import fs from 'fs';
 import path from 'path';
@@ -34,22 +32,15 @@ export async function saveAiTuning(payload: {
   deposit_refund_policy: string;
 }) {
   logDebug('saveAiTuning started');
-  logDebug(`Payload keys: ${Object.keys(payload).join(', ')}`);
 
   try {
-    logDebug('Fetching sample shop settings schema...');
-    const { data: sampleShop, error: fetchError } = await supabaseAdmin
-      .from('shops')
-      .select('*')
-      .eq('slug', SHOP_SLUG)
-      .single();
-
-    if (fetchError || !sampleShop) {
-      logDebug(`Fetch schema error: ${fetchError?.message}`);
-      return { success: false, error: fetchError?.message || 'Failed to fetch shop settings schema.' };
+    const currentShop = await getCurrentShop();
+    if (!currentShop) {
+      logDebug('saveAiTuning error: No active shop session');
+      return { success: false, error: 'Unauthorized: Please log in to save AI Tuning settings.' };
     }
 
-    logDebug(`Shop ID fetched: ${sampleShop.id}`);
+    logDebug(`Shop ID fetched: ${currentShop.id}`);
 
     const updateData: Record<string, any> = {
       tuning_updated_at: new Date().toISOString(),
@@ -57,19 +48,19 @@ export async function saveAiTuning(payload: {
       prompt_cache_ref: null
     };
 
-    const validColumns = Object.keys(sampleShop);
+    const validColumns = Object.keys(currentShop);
     for (const key of Object.keys(payload)) {
       if (validColumns.includes(key) && key !== 'tuning_updated_at' && key !== 'persona_updated_at' && key !== 'prompt_cache_ref') {
         updateData[key] = (payload as any)[key];
       }
     }
 
-    logDebug(`Updating shop table with keys: ${Object.keys(updateData).join(', ')}`);
+    logDebug(`Updating shop table for ID ${currentShop.id} with keys: ${Object.keys(updateData).join(', ')}`);
     
     const { error } = await supabaseAdmin
       .from('shops')
       .update(updateData)
-      .eq('slug', SHOP_SLUG);
+      .eq('id', currentShop.id);
 
     if (error) {
       logDebug(`Supabase update error: ${error.message}`);
@@ -77,7 +68,7 @@ export async function saveAiTuning(payload: {
     }
 
     logDebug('Clearing response cache...');
-    const { error: cacheError } = await supabaseAdmin.from('response_cache').delete().eq('shop_id', sampleShop.id);
+    const { error: cacheError } = await supabaseAdmin.from('response_cache').delete().eq('shop_id', currentShop.id);
     if (cacheError) {
       logDebug(`Cache clear error (ignored): ${cacheError.message}`);
     }
@@ -138,12 +129,16 @@ export async function testPersonaResponse(
     .eq('id', personaId)
     .single();
 
-  // Fetch shop to get ID and products
-  const { data: shop } = await supabaseAdmin
-    .from('shops')
-    .select('*')
-    .eq('slug', SHOP_SLUG)
-    .single();
+  // Fetch current shop or fallback
+  let shop = await getCurrentShop();
+  if (!shop) {
+    const { data: firstShop } = await supabaseAdmin
+      .from('shops')
+      .select('*')
+      .limit(1)
+      .single();
+    shop = firstShop;
+  }
 
   if (!shop) return { success: false, error: 'Shop not found' };
 

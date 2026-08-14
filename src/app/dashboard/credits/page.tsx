@@ -1,8 +1,7 @@
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCurrentShop, supabaseAdmin } from '@/lib/supabase-admin';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, TrendingDown, Clock, AlertTriangle, CreditCard } from 'lucide-react';
-
-
 
 function formatCredits(n: number) {
   return n.toFixed(4);
@@ -17,15 +16,8 @@ function formatBDT(usd: number) {
 export const dynamic = 'force-dynamic';
 
 export default async function CreditsPage() {
-  const shopSlug = 'dull-store';
-
-  const { data: shop } = await supabaseAdmin
-    .from('shops')
-    .select('id, name, credit_balance, low_balance_notified_at')
-    .eq('slug', shopSlug)
-    .single();
-
-  if (!shop) return <div className="p-8 text-ash">Shop not found.</div>;
+  const shop = await getCurrentShop();
+  if (!shop) redirect('/login');
 
   const { data: logs } = await supabaseAdmin
     .from('usage_logs')
