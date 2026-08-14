@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
@@ -8,7 +8,8 @@ import {
   Package, Clock, CheckCircle2, Search, ArrowRight, ShieldAlert,
   AlertTriangle, Filter, ClipboardList, HelpCircle, X, ExternalLink,
   ChevronRight, Calendar, User, Truck, Check, RefreshCw, Download,
-  Printer, ChevronDown, Smartphone, ShieldCheck, ShoppingBag, Banknote, Hourglass
+  Printer, ChevronDown, Smartphone, ShieldCheck, ShoppingBag, Banknote, Hourglass,
+  Sparkles, Phone, MapPin, Receipt, ArrowUpRight
 } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { OrdersListSkeleton } from '@/components/ui/SkeletonLoaders';
@@ -61,10 +62,10 @@ type Order = {
 
 const FULFILLMENT_COLORS: Record<string, { label: string; bg: string; text: string }> = {
   awaiting_dispatch: { label: 'Awaiting Dispatch', bg: 'bg-fog border-dove/20', text: 'text-ink' },
-  dispatched: { label: 'Dispatched', bg: 'bg-sky-wash border-dove/10', text: 'text-ink' },
-  in_transit: { label: 'In Transit', bg: 'bg-sky-wash border-dove/10', text: 'text-ink' },
-  delivered: { label: 'Delivered', bg: 'bg-green-50 border-green-150', text: 'text-green-800' },
-  cancelled: { label: 'Cancelled', bg: 'bg-apricot-wash border-rust/10', text: 'text-rust' },
+  dispatched: { label: 'Dispatched', bg: 'bg-sky-wash border-blue-200', text: 'text-blue-700' },
+  in_transit: { label: 'In Transit', bg: 'bg-sky-wash border-blue-200', text: 'text-blue-700' },
+  delivered: { label: 'Delivered', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
+  cancelled: { label: 'Cancelled', bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700' },
 };
 
 function fmt(isoString: string) {
@@ -72,7 +73,7 @@ function fmt(isoString: string) {
 }
 
 export default function OrdersClient({ shopId, orders: initial }: { shopId: string; orders: Order[] }) {
-  const { data: fetchedOrders = initial, isLoading: loadingOrders } = useQuery({
+  const { data: fetchedOrders = initial, isLoading: loadingOrders, isFetching } = useQuery({
     queryKey: ['orders', shopId],
     queryFn: () => initial,
     initialData: initial,
@@ -229,11 +230,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
   // Calculate funnel numbers dynamically
   const countPending = orders.filter(o => o.status === 'pending_verification').length;
-  const countConfirmed = orders.filter(o => o.status === 'confirmed' && o.fulfillmentStatus === 'awaiting_dispatch').length;
+  const countConfirmed = orders.filter(o => o.status === 'confirmed' && orderIsAwaitingDispatch(o)).length;
   const countDispatched = orders.filter(o => o.fulfillmentStatus === 'dispatched' || o.fulfillmentStatus === 'in_transit').length;
   const countDelivered = orders.filter(o => o.fulfillmentStatus === 'delivered').length;
   const countNeedsReview = orders.filter(o => o.needsReview).length;
   const countCancelled = orders.filter(o => o.status === 'cancelled' || o.fulfillmentStatus === 'cancelled').length;
+
+  function orderIsAwaitingDispatch(o: Order) {
+    return o.fulfillmentStatus === 'awaiting_dispatch' || !o.fulfillmentStatus;
+  }
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filtered.length) {
@@ -255,10 +260,11 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
   // Funnel elements list
   const mainFunnel = [
+    { key: 'all', label: 'All Orders', count: orders.length, icon: Package, desc: 'Full order history' },
     { key: 'pending_payment', label: 'Pending Payment', count: countPending, icon: Clock, desc: 'Needs TrxID check' },
-    { key: 'confirmed', label: 'Confirmed', count: countConfirmed, icon: CheckCircle2, desc: 'Ready for dispatch' },
-    { key: 'dispatched', label: 'Dispatched', count: countDispatched, icon: Truck, desc: 'In transit' },
-    { key: 'delivered', label: 'Delivered', count: countDelivered, icon: Check, desc: 'Receipt verified' },
+    { key: 'confirmed', label: 'Ready to Dispatch', count: countConfirmed, icon: CheckCircle2, desc: 'Payment confirmed' },
+    { key: 'dispatched', label: 'In Transit', count: countDispatched, icon: Truck, desc: 'Courier dispatched' },
+    { key: 'delivered', label: 'Delivered', count: countDelivered, icon: Check, desc: 'Completed orders' },
   ];
 
   // Actions overrides
@@ -422,26 +428,38 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
   const agingPendingCount = orders.filter(o => o.status === 'pending_verification' && new Date(o.createdAt).getTime() < twoHoursAgo).length;
 
   return (
-    <div className="flex-1 overflow-y-auto h-full w-full">
-      <div className="max-w-[1200px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 relative">
+    <div className="flex-1 overflow-y-auto h-full w-full bg-pure-white">
+      <div className="max-w-[1240px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 relative">
 
-        {/* HEADER SECTION */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        {/* ── 1. HEADER & MAIN ACTIONS ────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-dove/15 pb-6">
           <div>
-            <h1 className="text-[44px] font-serif text-ink tracking-tight leading-none mb-1.5">Orders</h1>
-            <p className="text-ash text-sm">Review payments, dispatch couriers, and process in-store POS sales.</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Orders</h1>
+              {isFetching && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-wash text-blue-600 border border-blue-200 animate-pulse">
+                  <Sparkles className="w-3 h-3 animate-spin" /> Live Sync…
+                </span>
+              )}
+            </div>
+            <p className="text-ash text-xs sm:text-sm mt-1">
+              Review payments, dispatch couriers, and process in-person retail POS checkout sales.
+            </p>
           </div>
+
           <div className="flex items-center gap-2.5 self-start sm:self-auto">
             <button
+              type="button"
               onClick={() => handleExportCSV()}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-fog border border-dove/20 text-ink font-semibold rounded-buttons hover:bg-dove/15 transition-all text-xs shadow-subtle cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-fog border border-dove/20 text-ink font-bold rounded-full hover:bg-dove/15 transition-all text-xs shadow-xs cursor-pointer active:scale-95"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </button>
             <button
+              type="button"
               onClick={() => setPosModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-ink text-white font-semibold rounded-buttons hover:bg-black transition-all text-xs shadow-subtle cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2 bg-ink text-white font-bold rounded-full hover:bg-black transition-all text-xs shadow-xs cursor-pointer active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               New POS Order
@@ -449,199 +467,219 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           </div>
         </div>
 
-        {/* POS TILL & AGING ALERT STRIP */}
+        {/* ── 2. OPERATIONAL KPI STRIP ────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Cash in Till */}
-          <div className="bg-white rounded-cards p-4 border border-dove/10 shadow-subtle flex items-center justify-between">
+          <div className="bg-white rounded-3xl p-5 border border-dove/20 shadow-xs hover:border-dove/40 transition-all flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Today's Cash in Till</span>
-              <p className="text-2xl font-serif font-medium text-ink leading-none">৳{todayCashInTill.toLocaleString()}</p>
-              <span className="text-[10px] text-ash mt-1 block">Physical drawer cash from POS</span>
+              <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Today's Cash in Till</span>
+              <p className="text-2xl font-serif font-bold text-ink leading-none font-mono">৳{todayCashInTill.toLocaleString()}</p>
+              <span className="text-[10px] text-ash mt-1 block">Physical register drawer cash</span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-150 shadow-xs">
-              <Banknote className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200 shadow-xs">
+              <Banknote className="w-6 h-6" />
             </div>
           </div>
 
           {/* Sales Origin Split (POS vs Chat) */}
-          <div className="bg-white rounded-cards p-4 border border-dove/10 shadow-subtle flex items-center justify-between">
+          <div className="bg-white rounded-3xl p-5 border border-dove/20 shadow-xs hover:border-dove/40 transition-all flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1">Today's Sales Split</span>
-              <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1">Today's Sales Channel Split</span>
+              <div className="flex items-center gap-3 mt-1">
                 <div>
-                  <span className="text-xs font-bold text-ink font-mono">৳{todayPosRevenue.toLocaleString()}</span>
-                  <span className="text-[9px] text-ash block">🛍️ In-Person POS ({todayPosOrders.length})</span>
+                  <span className="text-sm font-bold text-ink font-mono">৳{todayPosRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash block font-medium">🛍️ POS ({todayPosOrders.length})</span>
                 </div>
                 <div className="w-px h-6 bg-dove/20" />
                 <div>
-                  <span className="text-xs font-bold text-ink font-mono">৳{todayChatRevenue.toLocaleString()}</span>
-                  <span className="text-[9px] text-ash block">💬 Chat AI ({todayChatOrders.length})</span>
+                  <span className="text-sm font-bold text-ink font-mono">৳{todayChatRevenue.toLocaleString()}</span>
+                  <span className="text-[9px] text-ash block font-medium">💬 Chat AI ({todayChatOrders.length})</span>
                 </div>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-fog text-ink flex items-center justify-center border border-dove/10 shadow-xs">
-              <ShoppingBag className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-2xl bg-sky-wash text-blue-600 flex items-center justify-center border border-blue-200/50 shadow-xs">
+              <ShoppingBag className="w-6 h-6" />
             </div>
           </div>
 
           {/* Pending Verification Aging */}
-          <div className={`rounded-cards p-4 border shadow-subtle flex items-center justify-between transition-colors ${
+          <div className={`rounded-3xl p-5 border shadow-xs flex items-center justify-between transition-all ${
             agingPendingCount > 0 
-              ? 'bg-apricot-wash/50 border-rust/20' 
-              : 'bg-white border-dove/10'
+              ? 'bg-rose-50/50 border-rose-200' 
+              : 'bg-white border-dove/20'
           }`}>
             <div>
-              <span className="text-[10px] font-bold text-rust uppercase tracking-wider block mb-1">Pending Payment Aging</span>
-              <p className="text-2xl font-serif font-medium text-ink leading-none">
+              <span className={`text-[10px] font-bold uppercase tracking-wider block mb-1 ${agingPendingCount > 0 ? 'text-rose-700' : 'text-ash'}`}>
+                Payment Verification Aging
+              </span>
+              <p className="text-2xl font-serif font-bold text-ink leading-none font-mono">
                 {agingPendingCount} {agingPendingCount === 1 ? 'order' : 'orders'}
               </p>
               <span className="text-[10px] text-ash mt-1 block">
-                {agingPendingCount > 0 ? 'Stuck pending > 2 hours' : 'All verifications up to date'}
+                {agingPendingCount > 0 ? '⚠️ Awaiting check > 2 hours' : 'All verifications up to date'}
               </span>
             </div>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-xs border ${
-              agingPendingCount > 0 ? 'bg-white text-rust border-rust/10' : 'bg-fog text-ash border-dove/10'
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs border ${
+              agingPendingCount > 0 ? 'bg-white text-rose-700 border-rose-200' : 'bg-fog text-ash border-dove/10'
             }`}>
-              <Hourglass className="w-5 h-5" />
+              <Hourglass className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        {/* LIFE-CYCLE FUNNEL STRIP */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3.5">
-          {/* Main Funnel Path */}
-          <div className="md:col-span-4 bg-white rounded-cards shadow-subtle border border-dove/10 p-2 flex flex-col sm:flex-row gap-1.5 items-stretch">
+        {/* ── 3. LIFECYCLE FUNNEL PILLS ───────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Main Funnel Stages */}
+          <div className="lg:col-span-8 bg-white rounded-3xl shadow-xs border border-dove/20 p-2 flex flex-wrap sm:flex-nowrap gap-1.5 items-stretch">
             {mainFunnel.map((stage) => {
               const isActive = activeStage === stage.key;
               return (
                 <button
                   key={stage.key}
-                  onClick={() => setActiveStage(isActive ? 'all' : stage.key)}
-                  className={`flex-1 flex flex-col p-3 rounded-inputs border transition-all text-left group ${isActive
-                      ? 'bg-ink border-ink text-white shadow-subtle'
+                  type="button"
+                  onClick={() => setActiveStage(stage.key)}
+                  className={`flex-1 min-w-[120px] flex flex-col p-3 rounded-2xl border transition-all text-left group active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-ink border-ink text-white shadow-xs'
                       : 'bg-white border-transparent hover:bg-fog text-ink'
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-pure-white/70' : 'text-graphite group-hover:text-ink'}`}>{stage.label}</span>
-                    <stage.icon className={`w-3.5 h-3.5 ${isActive ? 'text-pure-white' : 'text-graphite'}`} />
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white/80' : 'text-ash group-hover:text-ink'}`}>
+                      {stage.label}
+                    </span>
+                    <stage.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-ash'}`} />
                   </div>
-                  <span className="text-2xl font-serif font-medium leading-none mb-1">{stage.count}</span>
-                  <span className={`text-[9px] ${isActive ? 'text-pure-white/60' : 'text-ash'}`}>{stage.desc}</span>
+                  <span className="text-xl font-serif font-bold leading-none mb-0.5 font-mono">{stage.count}</span>
+                  <span className={`text-[9px] ${isActive ? 'text-white/60' : 'text-ash'}`}>{stage.desc}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Off-Funnel Review & Cancelled Category */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-2">
+          {/* Off-Funnel: Needs Review & Cancelled */}
+          <div className="lg:col-span-4 grid grid-cols-2 gap-2">
             {/* Needs Review */}
             <button
+              type="button"
               onClick={() => setActiveStage(activeStage === 'needs_review' ? 'all' : 'needs_review')}
-              className={`p-3 flex flex-col justify-between rounded-cards border text-left transition-all ${activeStage === 'needs_review'
+              className={`p-3.5 flex flex-col justify-between rounded-3xl border text-left transition-all active:scale-[0.98] ${
+                activeStage === 'needs_review'
                   ? 'bg-ink border-ink text-white'
-                  : 'bg-white border-dove/10 hover:border-rust/20 text-ink shadow-subtle'
-                }`}
+                  : 'bg-white border-dove/20 hover:border-amber-300 text-ink shadow-xs'
+              }`}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'needs_review' ? 'text-pure-white/70' : 'text-rust'}`}>Needs Review</span>
-                <AlertTriangle className={`w-3.5 h-3.5 ${activeStage === 'needs_review' ? 'text-pure-white' : 'text-rust'}`} />
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'needs_review' ? 'text-white/80' : 'text-amber-700'}`}>
+                  Needs Review
+                </span>
+                <AlertTriangle className={`w-3.5 h-3.5 ${activeStage === 'needs_review' ? 'text-white' : 'text-amber-600'}`} />
               </div>
-              <div>
-                <span className="text-2xl font-serif font-medium leading-none">{countNeedsReview}</span>
-                <p className="text-[9px] text-ash mt-1">Payment discrepancies</p>
+              <div className="mt-2">
+                <span className="text-xl font-serif font-bold leading-none font-mono">{countNeedsReview}</span>
+                <p className="text-[9px] text-ash mt-0.5">Discrepancy flags</p>
               </div>
             </button>
 
             {/* Cancelled */}
             <button
+              type="button"
               onClick={() => setActiveStage(activeStage === 'cancelled' ? 'all' : 'cancelled')}
-              className={`p-3 flex flex-col justify-between rounded-cards border text-left transition-all ${activeStage === 'cancelled'
+              className={`p-3.5 flex flex-col justify-between rounded-3xl border text-left transition-all active:scale-[0.98] ${
+                activeStage === 'cancelled'
                   ? 'bg-ink border-ink text-white'
-                  : 'bg-white border-dove/10 hover:border-dove/20 text-ink shadow-subtle'
-                }`}
+                  : 'bg-white border-dove/20 hover:border-rose-300 text-ink shadow-xs'
+              }`}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'cancelled' ? 'text-pure-white/70' : 'text-graphite'}`}>Cancelled</span>
-                <X className={`w-3.5 h-3.5 ${activeStage === 'cancelled' ? 'text-pure-white' : 'text-graphite'}`} />
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStage === 'cancelled' ? 'text-white/80' : 'text-ash'}`}>
+                  Cancelled
+                </span>
+                <X className={`w-3.5 h-3.5 ${activeStage === 'cancelled' ? 'text-white' : 'text-ash'}`} />
               </div>
-              <div>
-                <span className="text-2xl font-serif font-medium leading-none">{countCancelled}</span>
-                <p className="text-[9px] text-ash mt-1">Refused or aborted</p>
+              <div className="mt-2">
+                <span className="text-xl font-serif font-bold leading-none font-mono">{countCancelled}</span>
+                <p className="text-[9px] text-ash mt-0.5">Aborted orders</p>
               </div>
             </button>
           </div>
         </div>
 
-        {/* FILTER & SEARCH BAR */}
+        {/* ── 4. FILTER & SEARCH BAR ─────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-graphite" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ash" />
             <input
               type="text"
-              placeholder="Search customer, phone, tracking ref, or product..."
+              placeholder="Search customer, phone, tracking ID, or product..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink transition-all shadow-subtle"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-dove/20 rounded-full text-xs focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink transition-all shadow-xs text-ink placeholder:text-ash"
             />
           </div>
           {activeStage !== 'all' && (
             <button
+              type="button"
               onClick={() => setActiveStage('all')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rust hover:bg-apricot-wash rounded-buttons transition-colors self-start border border-dashed border-rust/10"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-rust hover:bg-apricot-wash rounded-full transition-colors self-start border border-dashed border-rust/30"
             >
-              Clear Filter: {activeStage.replace('_', ' ')} <X className="w-3.5 h-3.5" />
+              Filter Active: {activeStage.replace('_', ' ')} <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* BATCH ACTION FLOATING CARD */}
+        {/* ── 5. BATCH ACTION FLOATING TOOLBAR ────────────────────────────── */}
         <AnimatePresence>
           {selectedIds.size >= 2 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-ink text-white px-5 py-3.5 rounded-cards shadow-subtle flex items-center gap-6 border border-pure-white/10"
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-ink text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-5 border border-white/10 backdrop-blur-md"
             >
-              <span className="text-xs font-semibold text-pure-white/80">{selectedIds.size} selected</span>
-              <div className="h-4 w-px bg-pure-white/20" />
+              <span className="text-xs font-bold text-white/90 font-mono">{selectedIds.size} selected</span>
+              <div className="h-4 w-px bg-white/20" />
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleBulkVerify}
-                  className="px-3.5 py-1.5 bg-white text-ink font-semibold rounded-buttons text-xs hover:bg-pure-white/95 transition-colors shadow-sm"
+                  className="px-3.5 py-1.5 bg-white text-ink font-bold rounded-full text-xs hover:bg-white/90 transition-colors shadow-xs"
                 >
                   Confirm Payments
                 </button>
                 <button
+                  type="button"
                   onClick={handleBulkDispatch}
-                  className="px-3.5 py-1.5 bg-pure-white/10 text-white font-semibold rounded-buttons text-xs hover:bg-pure-white/15 transition-colors"
+                  className="px-3.5 py-1.5 bg-white/10 text-white font-bold rounded-full text-xs hover:bg-white/20 transition-colors"
                 >
                   Dispatch Courier
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     const targetList = orders.filter(o => selectedIds.has(o.id));
                     handlePrintReceipts(targetList);
                   }}
-                  className="px-3.5 py-1.5 bg-pure-white/10 text-white font-semibold rounded-buttons text-xs hover:bg-pure-white/15 transition-colors flex items-center gap-1"
+                  className="px-3.5 py-1.5 bg-white/10 text-white font-bold rounded-full text-xs hover:bg-white/20 transition-colors flex items-center gap-1"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print Receipts
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     const targetList = orders.filter(o => selectedIds.has(o.id));
                     handleExportCSV(targetList);
                   }}
-                  className="px-3.5 py-1.5 bg-pure-white/10 text-white font-semibold rounded-buttons text-xs hover:bg-pure-white/15 transition-colors"
+                  className="px-3.5 py-1.5 bg-white/10 text-white font-bold rounded-full text-xs hover:bg-white/20 transition-colors"
                 >
                   Export CSV
                 </button>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedIds(new Set())}
-                className="p-1 text-pure-white/60 hover:text-white rounded-full transition-colors"
+                className="p-1 text-white/60 hover:text-white rounded-full transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -649,24 +687,23 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           )}
         </AnimatePresence>
 
-        {/* TABLE */}
-        {/* TABLE */}
+        {/* ── 6. ORDERS TABLE ─────────────────────────────────────────────── */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="bg-white rounded-cards shadow-subtle border border-dove/15 relative"
+          className="bg-white rounded-3xl shadow-xs border border-dove/20 relative overflow-hidden"
         >
-          <div className="px-6 py-4 border-b border-dove/15 flex items-center justify-between">
-            <h2 className="text-xs font-bold text-ink uppercase tracking-wider">All Orders</h2>
-            <span className="text-[11px] font-semibold text-graphite">{filtered.length} row{filtered.length !== 1 ? 's' : ''}</span>
+          <div className="px-6 py-4 border-b border-dove/15 flex items-center justify-between bg-fog/30">
+            <h2 className="text-xs font-bold text-ink uppercase tracking-wider">Orders Roster</h2>
+            <span className="text-[11px] font-bold text-ash font-mono">{filtered.length} row{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
-          <div className="overflow-auto max-h-[68vh]">
+          <div className="overflow-x-auto max-h-[68vh]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-dove/15">
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 w-10 border-b border-dove/15">
+                <tr className="border-b border-dove/15 bg-fog/60">
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 w-10 border-b border-dove/15">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -674,28 +711,28 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       className="rounded border-dove/30 focus:ring-ink cursor-pointer"
                     />
                   </th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Customer</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Address</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Product(s)</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Amount</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Payment</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Fulfillment</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Courier</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 text-[10px] font-bold text-graphite uppercase tracking-wider border-b border-dove/15">Date</th>
-                  <th className="sticky top-0 z-20 bg-white px-6 py-3.5 w-12 border-b border-dove/15"></th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Customer</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Delivery Address</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Product(s)</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Amount</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Payment</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Fulfillment</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Courier</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Date</th>
+                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 w-12 border-b border-dove/15"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/10">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-16 text-center">
+                    <td colSpan={10} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 bg-fog rounded-full flex items-center justify-center mb-3 text-graphite border border-dove/5">
-                          <Package className="w-5 h-5 opacity-40" />
+                        <div className="w-12 h-12 bg-fog rounded-full flex items-center justify-center mb-3 text-ash border border-dove/10">
+                          <Package className="w-6 h-6 opacity-40" />
                         </div>
-                        <p className="text-sm font-semibold text-ink mb-1">No orders found</p>
+                        <p className="text-sm font-bold text-ink mb-1">No orders found</p>
                         <p className="text-xs text-ash max-w-xs leading-relaxed">
-                          Try adjusting your search query or selecting a different funnel stage.
+                          Try adjusting your search query or selecting a different funnel stage filter.
                         </p>
                       </div>
                     </td>
@@ -706,7 +743,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     const firstItemName = o.lineItems[0]?.product_name ?? 'Catalog Product';
                     const titleString = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
                     const isChecked = selectedIds.has(o.id);
-                    const fConfig = FULFILLMENT_COLORS[o.fulfillmentStatus] ?? { label: o.fulfillmentStatus, bg: 'bg-fog', text: 'text-ink' };
+                    const fConfig = FULFILLMENT_COLORS[o.fulfillmentStatus] ?? { label: o.fulfillmentStatus, bg: 'bg-fog border-dove/20', text: 'text-ink' };
 
                     // Find repeat customer: has prior orders in database
                     const isRepeatCustomer = orders.filter(item => item.customerPhone === o.customerPhone).length > 1;
@@ -716,8 +753,9 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         key={o.id}
                         variants={itemVariants}
                         onClick={() => setActiveOrderId(o.id)}
-                        className={`hover:bg-fog/40 transition-all cursor-pointer ${isChecked ? 'bg-fog/50' : ''
-                          }`}
+                        className={`hover:bg-fog/50 transition-all cursor-pointer ${
+                          isChecked ? 'bg-fog/70' : ''
+                        }`}
                       >
                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -729,9 +767,11 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-ink leading-tight">{o.customerName}</p>
+                            <p className="text-xs sm:text-sm font-bold text-ink leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
-                              <span className="w-3.5 h-3.5 bg-sky-wash text-ink rounded-full flex items-center justify-center text-[8px] font-bold" title="Repeat Customer">🔄</span>
+                              <span className="px-1.5 py-0.2 bg-sky-wash text-blue-700 border border-blue-200 rounded-full text-[9px] font-bold" title="Repeat Customer">
+                                🔄 Repeat
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-ash font-mono mt-0.5">{o.customerPhone}</p>
@@ -741,23 +781,23 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                             {o.customerAddress}
                           </p>
                         </td>
-                        <td className="px-6 py-4 text-sm max-w-[200px]">
-                          <div className="flex items-center gap-2">
+                        <td className="px-6 py-4 text-xs max-w-[200px]">
+                          <div className="flex items-center gap-2.5">
                             {o.lineItems[0]?.imageUrl ? (
                               <img
                                 src={o.lineItems[0].imageUrl}
                                 alt=""
-                                className="w-8 h-8 rounded object-cover border border-dove/10 shrink-0"
+                                className="w-8 h-8 rounded-xl object-cover border border-dove/20 shrink-0"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded bg-fog flex items-center justify-center border border-dove/10 shrink-0">
+                              <div className="w-8 h-8 rounded-xl bg-fog flex items-center justify-center border border-dove/20 shrink-0">
                                 <Package className="w-4 h-4 text-ash" />
                               </div>
                             )}
-                            <span className="truncate font-medium text-ink">{titleString}</span>
+                            <span className="truncate font-bold text-ink">{titleString}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-ink">
+                        <td className="px-6 py-4 text-sm font-bold text-ink font-mono">
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
                         <td className="px-6 py-4">
@@ -784,7 +824,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isPaid) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-green-50 border-green-200 text-green-700">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 border-emerald-200 text-emerald-700">
                                   Paid
                                 </span>
                               );
@@ -805,19 +845,19 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         <td className="px-6 py-4">
                           {o.courierTrackingId ? (
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded bg-white p-1 shadow-xs border border-dove/10 flex items-center justify-center shrink-0">
+                              <div className="w-6 h-6 rounded-lg bg-white p-1 shadow-xs border border-dove/20 flex items-center justify-center shrink-0">
                                 <CourierLogo provider={o.courierProvider || ''} className="w-full h-full object-contain" />
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-[10px] font-bold text-ink uppercase tracking-wider">{o.courierProvider}</span>
-                                <span className="text-[10px] font-mono text-graphite mt-0.5">{o.courierTrackingId}</span>
+                                <span className="text-[10px] font-mono text-ash mt-0.5">{o.courierTrackingId}</span>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-graphite">—</span>
+                            <span className="text-xs text-ash font-mono">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-xs text-ash whitespace-nowrap">{fmt(o.createdAt)}</td>
+                        <td className="px-6 py-4 text-xs text-ash font-mono whitespace-nowrap">{fmt(o.createdAt)}</td>
                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1.5">
                             {o.needsReview && (
@@ -825,7 +865,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                             )}
                             <Link
                               href={`/dashboard/inbox?phone=${o.customerPhone}`}
-                              className="p-1 text-graphite hover:text-ink rounded hover:bg-fog transition-colors"
+                              className="p-1.5 text-ash hover:text-ink rounded-lg hover:bg-fog transition-colors"
+                              title="Open in Live Inbox"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                             </Link>
@@ -840,7 +881,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           </div>
         </motion.div>
 
-        {/* DETAIL SLIDE-OVER PANEL */}
+        {/* ── 7. SLIDE-OVER DETAILS DRAWER ────────────────────────────────── */}
         <AnimatePresence>
           {activeOrderId && activeOrder && (
             <>
@@ -850,142 +891,147 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 animate={{ opacity: 0.4 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setActiveOrderId(null)}
-                className="fixed inset-0 z-50 bg-black"
+                className="fixed inset-0 z-50 bg-black backdrop-blur-xs"
               />
-              {/* Drawer */}
+              {/* Drawer Container */}
               <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                className="fixed top-0 right-0 z-50 h-full w-full max-w-[540px] bg-white shadow-2xl flex flex-col justify-between overflow-y-auto border-l border-dove/20"
+                className="fixed top-0 right-0 z-50 h-full w-full max-w-[560px] bg-white shadow-2xl flex flex-col justify-between overflow-y-auto border-l border-dove/20"
               >
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-dove/15 flex items-center justify-between bg-fog/20">
+                <div className="px-6 py-5 border-b border-dove/15 flex items-center justify-between bg-fog/30 shrink-0">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-serif font-medium text-ink">Order Details</h2>
+                      <h2 className="text-lg font-serif font-bold text-ink">Order #{activeOrder.id.slice(0, 8)}</h2>
                       {activeOrder.needsReview && (
-                        <span className="px-2.5 py-0.5 bg-apricot-wash border border-rust/10 text-rust rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span className="px-2.5 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Flagged
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-graphite font-mono mt-0.5">#{activeOrder.id}</p>
+                    <p className="text-[10px] text-ash font-mono mt-0.5">{fmt(activeOrder.createdAt)}</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setActiveOrderId(null)}
-                    className="p-1.5 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
+                    className="p-2 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Body Content */}
-                <div className="flex-1 p-6 space-y-8">
+                <div className="flex-1 p-6 space-y-6">
                   {/* 1. Line Items Section */}
-                  <div className="space-y-3.5">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-2">
-                      <Package className="w-4 h-4 text-ink" /> Line Items
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider flex items-center gap-2">
+                      <Package className="w-4 h-4 text-ink" /> Purchased Items
                     </h3>
-                    <div className="bg-fog rounded-inputs p-4 border border-dove/10 space-y-3">
+                    <div className="bg-fog rounded-2xl p-4 border border-dove/15 space-y-3">
                       {activeOrder.lineItems.map((li) => (
                         <div key={li.id} className="flex items-center gap-3 text-xs">
                           {li.imageUrl ? (
                             <img
                               src={li.imageUrl}
                               alt={li.product_name}
-                              className="w-10 h-10 object-cover rounded-images border border-dove/10"
+                              className="w-10 h-10 object-cover rounded-xl border border-dove/10"
                             />
                           ) : (
-                            <div className="w-10 h-10 bg-white border border-dove/10 rounded-images flex items-center justify-center text-graphite">
+                            <div className="w-10 h-10 bg-white border border-dove/10 rounded-xl flex items-center justify-center text-ash">
                               <Package className="w-4 h-4" />
                             </div>
                           )}
                           <div className="flex-1 pr-4">
-                            <p className="font-semibold text-ink leading-tight">{li.product_name}</p>
-                            <p className="text-[10px] text-graphite font-mono mt-0.5">Qty {li.quantity} &times; ৳{li.unit_price.toLocaleString()}</p>
+                            <p className="font-bold text-ink leading-tight">{li.product_name}</p>
+                            <p className="text-[10px] text-ash font-mono mt-0.5">Qty {li.quantity} &times; ৳{li.unit_price.toLocaleString()}</p>
                           </div>
-                          <span className="font-semibold text-ink">৳{(li.quantity * li.unit_price).toLocaleString()}</span>
+                          <span className="font-bold text-ink font-mono">৳{(li.quantity * li.unit_price).toLocaleString()}</span>
                         </div>
                       ))}
                       <div className="h-px bg-dove/15 my-2" />
                       <div className="flex justify-between text-xs text-ash">
-                        <span>Delivery Charge</span>
-                        <span>৳100</span>
+                        <span>Delivery Fee</span>
+                        <span className="font-mono">৳100</span>
                       </div>
-                      <div className="flex justify-between text-sm font-bold text-ink">
-                        <span>Total Amount</span>
-                        <span>৳{activeOrder.totalAmount?.toLocaleString() ?? '—'}</span>
+                      <div className="flex justify-between text-sm font-bold text-ink pt-1">
+                        <span>Grand Total</span>
+                        <span className="font-mono text-base">৳{activeOrder.totalAmount?.toLocaleString() ?? '—'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* 2. Customer Contact Block */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-2">
-                      <User className="w-4 h-4 text-ink" /> Customer Contact
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider flex items-center gap-2">
+                      <User className="w-4 h-4 text-ink" /> Customer Information
                     </h3>
-                    <div className="bg-white border border-dove/15 rounded-cards p-4 flex justify-between items-start">
+                    <div className="bg-white border border-dove/20 rounded-2xl p-4 flex justify-between items-start shadow-xs">
                       <div className="space-y-1">
-                        <p className="text-sm font-semibold text-ink">{activeOrder.customerName}</p>
-                        <p className="text-xs text-graphite font-mono">{activeOrder.customerPhone}</p>
-                        <p className="text-xs text-ash leading-relaxed mt-1.5 bg-fog p-2.5 rounded-inputs border border-dove/5">{activeOrder.customerAddress}</p>
+                        <p className="text-sm font-bold text-ink">{activeOrder.customerName}</p>
+                        <p className="text-xs text-ash font-mono">{activeOrder.customerPhone}</p>
+                        <p className="text-xs text-ash leading-relaxed mt-1.5 bg-fog p-2.5 rounded-xl border border-dove/10 font-medium">
+                          {activeOrder.customerAddress}
+                        </p>
                       </div>
                       <Link
                         href={`/dashboard/inbox?phone=${activeOrder.customerPhone}`}
-                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-rust hover:underline uppercase tracking-wider bg-apricot-wash px-3 py-1.5 rounded-buttons"
+                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-blue-700 hover:underline uppercase tracking-wider bg-sky-wash px-3 py-1.5 rounded-full border border-blue-200"
                       >
-                        Inbox <ChevronRight className="w-3 h-3" />
+                        Live Chat <ChevronRight className="w-3 h-3" />
                       </Link>
                     </div>
                   </div>
 
                   {/* 3. Payment Verification Section */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-2">
-                      <ClipboardList className="w-4 h-4 text-ink" /> Payment Verification
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-ink" /> Payment Status & Verification
                     </h3>
-                    <div className="bg-white border border-dove/15 rounded-cards p-4 space-y-4">
+                    <div className="bg-white border border-dove/20 rounded-2xl p-4 space-y-4 shadow-xs">
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                          <span className="text-[10px] text-graphite uppercase tracking-wider">Method</span>
-                          <p className="font-semibold text-ink mt-0.5">{activeOrder.paymentMethod ? activeOrder.paymentMethod.replace('_', ' ') : '—'}</p>
+                          <span className="text-[10px] text-ash uppercase tracking-wider font-bold">Method</span>
+                          <p className="font-bold text-ink mt-0.5">{activeOrder.paymentMethod ? activeOrder.paymentMethod.replace('_', ' ') : '—'}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-graphite uppercase tracking-wider">Trx ID / Ref</span>
-                          <p className="font-mono font-semibold text-ink mt-0.5">{activeOrder.paymentTransactionRef || '—'}</p>
+                          <span className="text-[10px] text-ash uppercase tracking-wider font-bold">Trx ID / Ref</span>
+                          <p className="font-mono font-bold text-ink mt-0.5">{activeOrder.paymentTransactionRef || '—'}</p>
                         </div>
                       </div>
 
-                      {/* SMS-captured bKash TrxIDs from Android Companion */}
+                      {/* SMS-captured bKash TrxIDs */}
                       {activeOrder.paymentVerifications && activeOrder.paymentVerifications.length > 0 && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
-                            <Smartphone className="w-3.5 h-3.5 text-graphite" />
-                            <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider">Captured via Android Companion</span>
+                            <Smartphone className="w-3.5 h-3.5 text-ash" />
+                            <span className="text-[10px] font-bold text-ash uppercase tracking-wider">Captured via Android Companion</span>
                           </div>
                           {activeOrder.paymentVerifications.map((pv: any) => (
-                            <div key={pv.id} className={`flex items-center justify-between p-2.5 rounded-inputs text-xs border ${pv.status === 'confirmed' ? 'bg-green-50 border-green-200' :
-                                pv.status === 'mismatch' ? 'bg-apricot-wash border-rust/20' :
-                                  'bg-sky-wash/40 border-dove/20'
-                              }`}>
+                            <div key={pv.id} className={`flex items-center justify-between p-2.5 rounded-xl text-xs border ${
+                              pv.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200' :
+                              pv.status === 'mismatch' ? 'bg-rose-50 border-rose-200' :
+                              'bg-sky-wash border-blue-200'
+                            }`}>
                               <div className="space-y-0.5">
-                                <p className="font-mono font-semibold text-ink">{pv.matched_reference || pv.customer_provided_ref || '(no ref)'}</p>
-                                <p className="text-[10px] text-graphite">৳{pv.expected_amount?.toLocaleString()} · {pv.status}</p>
+                                <p className="font-mono font-bold text-ink">{pv.matched_reference || pv.customer_provided_ref || '(no ref)'}</p>
+                                <p className="text-[10px] text-ash">৳{pv.expected_amount?.toLocaleString()} · {pv.status}</p>
                               </div>
                               {pv.status === 'pending' && activeOrder.status !== 'confirmed' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setManualTrxRef(pv.matched_reference || pv.customer_provided_ref || '');
                                   }}
-                                  className="px-2.5 py-1 bg-ink text-white rounded-buttons text-[10px] font-semibold hover:bg-black transition-colors flex items-center gap-1"
+                                  className="px-2.5 py-1 bg-ink text-white rounded-full text-[10px] font-bold hover:bg-black transition-colors flex items-center gap-1"
                                 >
                                   <ShieldCheck className="w-3 h-3" /> Use this
                                 </button>
                               )}
                               {pv.status === 'confirmed' && (
-                                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                               )}
                             </div>
                           ))}
@@ -993,37 +1039,38 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       )}
 
                       {activeOrder.status === 'cancelled' || activeOrder.fulfillmentStatus === 'cancelled' ? (
-                        <div className="flex items-center gap-2 p-2.5 bg-slate-100 text-slate-700 rounded-inputs text-xs border border-slate-200">
+                        <div className="flex items-center gap-2 p-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs border border-slate-200 font-medium">
                           <AlertTriangle className="w-4 h-4 text-slate-500 shrink-0" />
-                          <span>This order was cancelled. Payment verification is disabled.</span>
+                          <span>This order was cancelled. Payment verification is locked.</span>
                         </div>
                       ) : activeOrder.status !== 'confirmed' ? (
                         <div className="pt-2 space-y-2">
-                          <span className="text-[10px] font-semibold text-rust uppercase tracking-wider block">Verify Payment Manually</span>
-                          <p className="text-[10px] text-graphite leading-relaxed">
-                            Enter the bKash/Nagad TrxID the customer sent, or click &#8220;Use this&#8221; above if the Android companion already captured it.
+                          <span className="text-[10px] font-bold text-rust uppercase tracking-wider block">Verify Payment Manually</span>
+                          <p className="text-[10px] text-ash leading-relaxed">
+                            Enter the bKash/Nagad TrxID received from customer, or choose an SMS match above.
                           </p>
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="Enter Transaction ID (e.g. 9H7A2K1L9S)..."
+                              placeholder="Enter Transaction ID (e.g. 9H7A2K1L)..."
                               value={manualTrxRef}
                               onChange={e => setManualTrxRef(e.target.value)}
-                              className="flex-1 px-3 py-2 bg-fog border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all"
+                              className="flex-1 px-3.5 py-2 bg-fog border border-dove/20 rounded-xl text-xs focus:outline-none focus:border-ink transition-all font-mono text-ink"
                             />
                             <button
+                              type="button"
                               onClick={handleVerifyPayment}
                               disabled={isVerifying || !manualTrxRef.trim()}
-                              className="px-4 py-2 bg-ink text-white font-semibold rounded-buttons text-xs hover:bg-black disabled:opacity-40 transition-colors shadow-subtle shrink-0"
+                              className="px-4 py-2 bg-ink text-white font-bold rounded-xl text-xs hover:bg-black disabled:opacity-40 transition-colors shadow-xs shrink-0"
                             >
                               {isVerifying ? 'Confirming...' : 'Verify'}
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 p-2 bg-green-50 text-green-800 rounded-inputs text-xs border border-green-150">
-                          <CheckCircle2 className="w-4 h-4 text-green-700 shrink-0" />
-                          <span>Payment verified successfully on {activeOrder.paymentVerifiedAt ? fmt(activeOrder.paymentVerifiedAt) : '—'}</span>
+                        <div className="flex items-center gap-2 p-2.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs border border-emerald-200 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                          <span>Payment verified on {activeOrder.paymentVerifiedAt ? fmt(activeOrder.paymentVerifiedAt) : '—'}</span>
                         </div>
                       )}
                     </div>
@@ -1031,45 +1078,46 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                   {/* 4. Courier Dispatch Section */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider flex items-center gap-2">
                       <Truck className="w-4 h-4 text-ink" /> Courier Fulfillment
                     </h3>
-                    <div className="bg-white border border-dove/15 rounded-cards p-4 space-y-4">
+                    <div className="bg-white border border-dove/20 rounded-2xl p-4 space-y-4 shadow-xs">
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                          <span className="text-[10px] text-graphite uppercase tracking-wider">Courier Provider</span>
-                          <p className="font-semibold text-ink mt-0.5 uppercase">{activeOrder.courierProvider || '—'}</p>
+                          <span className="text-[10px] text-ash uppercase tracking-wider font-bold">Courier Provider</span>
+                          <p className="font-bold text-ink mt-0.5 uppercase">{activeOrder.courierProvider || '—'}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-graphite uppercase tracking-wider">Tracking Number</span>
-                          <p className="font-mono font-semibold text-ink mt-0.5">{activeOrder.courierTrackingId || '—'}</p>
+                          <span className="text-[10px] text-ash uppercase tracking-wider font-bold">Tracking Number</span>
+                          <p className="font-mono font-bold text-ink mt-0.5">{activeOrder.courierTrackingId || '—'}</p>
                         </div>
                       </div>
 
                       {activeOrder.status === 'confirmed' && !activeOrder.courierTrackingId && (
                         <div className="space-y-2.5 pt-1">
                           <div>
-                            <span className="text-[10px] font-semibold text-graphite uppercase tracking-wider block mb-1.5">Select Courier</span>
+                            <span className="text-[10px] font-bold text-ash uppercase tracking-wider block mb-1.5">Select Courier Provider</span>
                             <div className="relative">
                               <select
                                 value={selectedCourier}
                                 onChange={e => setSelectedCourier(e.target.value)}
-                                className="w-full appearance-none px-3 py-2 pr-8 bg-fog border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all font-semibold text-ink uppercase cursor-pointer"
+                                className="w-full appearance-none px-3.5 py-2.5 pr-8 bg-fog border border-dove/20 rounded-xl text-xs focus:outline-none focus:border-ink transition-all font-bold text-ink uppercase cursor-pointer"
                               >
-                                <option value="pathao">Pathao (~1.8d avg delivery)</option>
-                                <option value="steadfast">Steadfast (~2.1d avg delivery)</option>
-                                <option value="redx">RedX (~2.5d avg delivery)</option>
-                                <option value="paperfly">Paperfly (~3.0d avg delivery)</option>
-                                <option value="ecourier">eCourier (~2.2d avg delivery)</option>
-                                <option value="manual">Manual (no API)</option>
+                                <option value="pathao">Pathao (~1.8d avg fulfillment)</option>
+                                <option value="steadfast">Steadfast (~2.1d avg fulfillment)</option>
+                                <option value="redx">RedX (~2.5d avg fulfillment)</option>
+                                <option value="paperfly">Paperfly (~3.0d avg fulfillment)</option>
+                                <option value="ecourier">eCourier (~2.2d avg fulfillment)</option>
+                                <option value="manual">Manual (Self delivery)</option>
                               </select>
-                              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-graphite pointer-events-none" />
+                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none" />
                             </div>
                           </div>
                           <button
+                            type="button"
                             onClick={handleDispatch}
                             disabled={isDispatching}
-                            className="w-full py-2.5 bg-ink text-white font-semibold rounded-buttons text-xs hover:bg-black disabled:opacity-40 transition-colors shadow-subtle flex items-center justify-center gap-1.5"
+                            className="w-full py-2.5 bg-ink text-white font-bold rounded-xl text-xs hover:bg-black disabled:opacity-40 transition-colors shadow-xs flex items-center justify-center gap-1.5"
                           >
                             {isDispatching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
                             Dispatch via {selectedCourier.charAt(0).toUpperCase() + selectedCourier.slice(1)}
@@ -1079,45 +1127,46 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     </div>
                   </div>
 
-                  {/* 5. vertical Timeline audit trail */}
-                  <div className="space-y-3.5">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider flex items-center gap-2">
-                      <ClipboardList className="w-4 h-4 text-ink" /> Order Timeline & Logs
+                  {/* 5. Timeline Audit Trail */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-ink" /> Lifecycle Timeline
                     </h3>
-                    <div className="relative pl-4 border-l-2 border-dove/15 space-y-6">
+                    <div className="relative pl-4 border-l-2 border-dove/20 space-y-4">
                       {activeOrder.statusHistory.map((log) => (
                         <div key={log.id} className="relative">
                           <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-white border-2 border-ink rounded-full" />
                           <div className="text-xs">
                             <div className="flex justify-between items-center mb-0.5">
-                              <span className="font-semibold text-ink uppercase tracking-wider text-[9px]">{log.status.replace('_', ' ')}</span>
-                              <span className="text-[9px] text-graphite font-mono">{fmt(log.created_at)}</span>
+                              <span className="font-bold text-ink uppercase tracking-wider text-[9px]">{log.status.replace('_', ' ')}</span>
+                              <span className="text-[9px] text-ash font-mono">{fmt(log.created_at)}</span>
                             </div>
-                            <p className="text-ash leading-relaxed">{log.note}</p>
+                            <p className="text-ash leading-relaxed font-medium">{log.note}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* 6. Administrative Manual Actions */}
+                  {/* 6. Administrative Actions */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-graphite uppercase tracking-wider">Control Panel Actions</h3>
-                    <div className="bg-fog/50 border border-dove/15 rounded-cards p-4 space-y-4">
+                    <h3 className="text-xs font-bold text-ash uppercase tracking-wider">Control Panel Actions</h3>
+                    <div className="bg-fog rounded-2xl p-4 border border-dove/15 space-y-4">
                       {/* Note editor */}
                       <div className="space-y-1.5">
-                        <span className="text-[10px] text-graphite uppercase tracking-wider block font-semibold">Internal Note</span>
+                        <span className="text-[10px] text-ash uppercase tracking-wider block font-bold">Internal Note</span>
                         <textarea
                           rows={2}
                           value={internalNoteInput}
                           onChange={e => setInternalNoteInput(e.target.value)}
                           placeholder="Save details only visible to store owners..."
-                          className="w-full p-2.5 bg-white border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-ink transition-all resize-none"
+                          className="w-full p-2.5 bg-white border border-dove/20 rounded-xl text-xs focus:outline-none focus:border-ink transition-all resize-none text-ink"
                         />
                         <button
+                          type="button"
                           onClick={handleSaveNote}
                           disabled={isSavingNote || internalNoteInput.trim() === activeOrder.internalNote}
-                          className="px-3.5 py-1.5 bg-ink text-white font-semibold rounded-buttons text-[10px] hover:bg-black disabled:opacity-40 transition-colors shadow-sm self-end"
+                          className="px-3.5 py-1.5 bg-ink text-white font-bold rounded-full text-[10px] hover:bg-black disabled:opacity-40 transition-colors shadow-xs self-end"
                         >
                           {isSavingNote ? 'Saving...' : 'Save Note'}
                         </button>
@@ -1128,18 +1177,21 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       <div className="flex gap-2 justify-between">
                         {/* Flag review */}
                         <button
+                          type="button"
                           onClick={handleToggleReview}
-                          className={`px-4 py-2 border rounded-buttons text-xs font-semibold transition-all ${activeOrder.needsReview
-                              ? 'bg-apricot-wash text-rust border-rust/20 hover:bg-white'
-                              : 'bg-white text-ink border-dove/30 hover:bg-fog'
-                            }`}
+                          className={`px-4 py-2 border rounded-full text-xs font-bold transition-all ${
+                            activeOrder.needsReview
+                              ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-white'
+                              : 'bg-white text-ink border-dove/20 hover:bg-fog'
+                          }`}
                         >
                           {activeOrder.needsReview ? 'Clear Review Flag' : 'Flag for Review'}
                         </button>
                         {/* Print Receipt */}
                         <button
+                          type="button"
                           onClick={() => handlePrintReceipts([activeOrder])}
-                          className="px-4 py-2 border border-dove/30 bg-white text-ink rounded-buttons text-xs font-semibold hover:bg-fog transition-all flex items-center gap-1.5"
+                          className="px-4 py-2 border border-dove/20 bg-white text-ink rounded-full text-xs font-bold hover:bg-fog transition-all flex items-center gap-1.5 shadow-xs"
                         >
                           <Printer className="w-3.5 h-3.5" />
                           Print Receipt
@@ -1148,19 +1200,20 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                       {activeOrder.status !== 'cancelled' && (
                         <div className="pt-2 border-t border-dove/15 space-y-2">
-                          <span className="text-[10px] text-rust font-semibold uppercase tracking-wider block">Cancel Order</span>
+                          <span className="text-[10px] text-rose-700 font-bold uppercase tracking-wider block">Cancel Order</span>
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="Reason for cancelling order (required)..."
+                              placeholder="Reason for cancellation..."
                               value={cancellationReason}
                               onChange={e => setCancellationReason(e.target.value)}
-                              className="flex-1 px-3 py-2 bg-white border border-dove/30 rounded-inputs text-xs focus:outline-none focus:border-rust transition-all"
+                              className="flex-1 px-3 py-2 bg-white border border-dove/20 rounded-xl text-xs focus:outline-none focus:border-rose-400 transition-all text-ink"
                             />
                             <button
+                              type="button"
                               onClick={handleCancel}
                               disabled={isCancelling || !cancellationReason.trim()}
-                              className="px-4 py-2 bg-rust text-white font-semibold rounded-buttons text-xs hover:bg-red-800 disabled:opacity-40 transition-colors shadow-sm shrink-0"
+                              className="px-4 py-2 bg-rose-600 text-white font-bold rounded-xl text-xs hover:bg-rose-700 disabled:opacity-40 transition-colors shadow-xs shrink-0"
                             >
                               Cancel
                             </button>
@@ -1176,7 +1229,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           )}
         </AnimatePresence>
 
-        {/* ── PRINT MANAGER MODAL ───────────────────────────────────────── */}
+        {/* ── 8. PRINT MANAGER MODAL ─────────────────────────────────────── */}
         <AnimatePresence>
           {printModalOpen && (
             <>
@@ -1185,26 +1238,27 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setPrintModalOpen(false)}
-                className="fixed inset-0 z-50 bg-black"
+                className="fixed inset-0 z-50 bg-black backdrop-blur-xs"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                className="fixed inset-x-4 top-12 bottom-12 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[820px] z-50 bg-white rounded-cards shadow-2xl flex flex-col overflow-hidden border border-dove/20"
+                className="fixed inset-x-4 top-12 bottom-12 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[840px] z-50 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-dove/20"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-dove/15 bg-fog/30 shrink-0">
                   <div>
-                    <h2 className="text-base font-serif font-medium text-ink">Print Manager</h2>
+                    <h2 className="text-base font-serif font-bold text-ink">Print Manager</h2>
                     <p className="text-[11px] text-ash mt-0.5">
-                      {printModalOrders.length} order{printModalOrders.length !== 1 ? 's' : ''} selected
+                      {printModalOrders.length} order{printModalOrders.length !== 1 ? 's' : ''} queued for printing
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setPrintModalOpen(false)}
-                    className="p-1.5 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
+                    className="p-2 text-ash hover:text-ink hover:bg-fog rounded-full transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1214,51 +1268,56 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                 <div className="flex flex-1 overflow-hidden">
                   {/* Left: Controls */}
                   <div className="w-56 shrink-0 border-r border-dove/15 p-5 space-y-6 overflow-y-auto">
-
                     {/* Document Type */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Document Type</label>
+                      <label className="text-[10px] font-bold text-ash uppercase tracking-wider block">Document Type</label>
                       {(['receipt', 'packing_slip', 'label'] as const).map(type => (
                         <button
                           key={type}
+                          type="button"
                           onClick={() => setPrintDocType(type)}
-                          className={`w-full text-left px-3 py-2 rounded-inputs text-xs font-medium border transition-all ${printDocType === type ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-dove/20 hover:bg-fog'
-                            }`}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                            printDocType === type ? 'bg-ink text-white border-ink shadow-xs' : 'bg-white text-ink border-dove/20 hover:bg-fog'
+                          }`}
                         >
-                          {type === 'receipt' ? '🧾 Receipt' : type === 'packing_slip' ? '📦 Packing Slip' : '🏷 Shipping Label'}
+                          {type === 'receipt' ? '🧾 Thermal Receipt' : type === 'packing_slip' ? '📦 Packing Slip' : '🏷 Shipping Label'}
                         </button>
                       ))}
                     </div>
 
                     {/* Page Size */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Page Size</label>
+                      <label className="text-[10px] font-bold text-ash uppercase tracking-wider block">Paper Size</label>
                       {(['thermal_80mm', 'a4'] as const).map(size => (
                         <button
                           key={size}
+                          type="button"
                           onClick={() => setPrintPageSize(size)}
-                          className={`w-full text-left px-3 py-2 rounded-inputs text-xs font-medium border transition-all ${printPageSize === size ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-dove/20 hover:bg-fog'
-                            }`}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                            printPageSize === size ? 'bg-ink text-white border-ink shadow-xs' : 'bg-white text-ink border-dove/20 hover:bg-fog'
+                          }`}
                         >
-                          {size === 'thermal_80mm' ? '🖨 Thermal (80mm)' : '📄 A4 Paper'}
+                          {size === 'thermal_80mm' ? '🖨 Thermal (80mm)' : '📄 Standard A4'}
                         </button>
                       ))}
                     </div>
 
                     {/* Copies */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">Copies per Order</label>
+                      <label className="text-[10px] font-bold text-ash uppercase tracking-wider block">Copies per Order</label>
                       <div className="flex items-center gap-2">
                         <button
+                          type="button"
                           onClick={() => setPrintCopies(c => Math.max(1, c - 1))}
-                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-inputs text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
                         >
                           −
                         </button>
-                        <span className="text-sm font-semibold text-ink w-6 text-center">{printCopies}</span>
+                        <span className="text-sm font-bold text-ink w-6 text-center font-mono">{printCopies}</span>
                         <button
+                          type="button"
                           onClick={() => setPrintCopies(c => Math.min(10, c + 1))}
-                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-inputs text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-fog border border-dove/20 rounded-xl text-ink hover:bg-dove/20 transition-colors text-sm font-bold"
                         >
                           +
                         </button>
@@ -1267,6 +1326,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                     {/* Print CTA */}
                     <button
+                      type="button"
                       onClick={() => {
                         const html = buildPrintDocument(printModalOrders, printDocType, printCopies, printPageSize);
                         const win = window.open('', '_blank');
@@ -1276,7 +1336,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         win.focus();
                         setTimeout(() => { win.print(); }, 400);
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-graphite transition-colors shadow-subtle cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white rounded-full text-xs font-bold hover:bg-black transition-colors shadow-xs cursor-pointer"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       Print Now
@@ -1284,8 +1344,8 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                   </div>
 
                   {/* Right: Preview iframe */}
-                  <div className="flex-1 bg-dove/5 overflow-hidden relative">
-                    <div className="absolute top-2 left-3 text-[10px] text-ash font-medium uppercase tracking-wider">Live Preview</div>
+                  <div className="flex-1 bg-fog overflow-hidden relative">
+                    <div className="absolute top-2 left-3 text-[10px] text-ash font-bold uppercase tracking-wider">Live Preview</div>
                     <iframe
                       key={`${printDocType}-${printCopies}-${printPageSize}`}
                       srcDoc={buildPrintDocument(printModalOrders.slice(0, 1), printDocType, 1, printPageSize)}
@@ -1300,7 +1360,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           )}
         </AnimatePresence>
 
-        {/* POS CHECKOUT MODAL */}
+        {/* ── 9. POS CHECKOUT MODAL ───────────────────────────────────────── */}
         <PosModal
           isOpen={posModalOpen}
           onClose={() => setPosModalOpen(false)}
