@@ -193,36 +193,23 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       }`}
     >
       {/* Top Header */}
-      <div className="h-16 flex items-center justify-between px-2.5 border-b border-dove/10 shrink-0">
-        {isEffectiveExpanded ? (
-          <div className="grid grid-cols-[24px_1fr_24px] items-center w-full">
-            {/* Left Balance Spacer */}
-            <div className="w-6 h-6" aria-hidden="true" />
+      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10 shrink-0 overflow-hidden">
+        <Link
+          href="/dashboard"
+          className="flex items-center text-ink hover:opacity-90 transition-opacity shrink-0"
+          title="DullBot Dashboard"
+        >
+          <DullBotLogo collapsed={!isEffectiveExpanded} size="sm" />
+        </Link>
 
-            {/* Centered Logo */}
-            <Link href="/dashboard" className="flex items-center justify-center text-ink hover:opacity-90 transition-opacity">
-              <DullBotLogo collapsed={false} size="sm" />
-            </Link>
-
-            {/* Right Collapse Pin Button */}
-            <button
-              onClick={togglePin}
-              className="w-6 h-6 rounded-md text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-dove/20"
-              title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
-            >
-              <PanelLeftClose className={`w-3.5 h-3.5 transition-colors ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center w-full">
-            <button
-              onClick={togglePin}
-              className="p-1 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center"
-              title="Expand sidebar"
-            >
-              <DullBotLogo collapsed={true} size="sm" className="text-ink" />
-            </button>
-          </div>
+        {isEffectiveExpanded && (
+          <button
+            onClick={togglePin}
+            className="w-7 h-7 rounded-md text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center shrink-0 border border-transparent hover:border-dove/20"
+            title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
+          >
+            <PanelLeftClose className={`w-4 h-4 transition-colors ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
+          </button>
         )}
       </div>
 

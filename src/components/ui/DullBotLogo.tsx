@@ -1,22 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 /**
  * DullBot logo — "The Eye" v2
  *
- * The 'o' in bot is an expressive pupil with emotional range:
- * a pre-blink twitch before it properly closes, a double-blink,
- * glances left then right, and an occasional surprised widen with
- * the brow lifting and pupil dilating.
- *
- * Three elements (the eyebrow, the eye itself, the pupil) each run
- * their own animation on the same timeline.
- *
- * A tiny fixed highlight sits in the pupil's corner for a living cartoon eye look.
- *
- * Collapsing folds the rest of the word away ("dullb" and "t") and lets
- * the eye grow into the square mark.
+ * An expressive animated logo with:
+ * - Dynamic cursor tracking: the pupil smoothly looks towards where the mouse cursor is located on the screen!
+ * - Multi-layer emotion loop: pre-blink twitch, double blink, glances, and surprised brow-lift / pupil dilation.
+ * - Smooth, non-jittery morphing between full wordmark ("dullbot") and square mark on sidebar collapse.
+ * - Theme-adaptive currentColor contrast.
  */
 
 export interface DullBotLogoProps {
@@ -39,6 +32,8 @@ export default function DullBotLogo({
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
   const [autoPlayed, setAutoPlayed] = useState(false);
 
+  const eyeRef = useRef<HTMLSpanElement | null>(null);
+
   useEffect(() => {
     if (isControlled || autoPlayed) return;
     const t1 = setTimeout(() => setInternalCollapsed(true), 2200);
@@ -50,8 +45,66 @@ export default function DullBotLogo({
       clearTimeout(t1);
       clearTimeout(t2);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isControlled, autoPlayed]);
+
+  // ── Dynamic Cursor Tracking ──
+  useEffect(() => {
+    let animFrame: number;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    const maxTravel = size === 'sm' ? 3.5 : size === 'md' ? 4.5 : 6;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!eyeRef.current) return;
+      const rect = eyeRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const dx = e.clientX - centerX;
+      const dy = e.clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist === 0) {
+        targetX = 0;
+        targetY = 0;
+      } else {
+        const angle = Math.atan2(dy, dx);
+        const norm = Math.min(dist / 280, 1);
+        targetX = Math.cos(angle) * norm * maxTravel;
+        targetY = Math.sin(angle) * norm * maxTravel;
+      }
+    };
+
+    const handleMouseLeave = () => {
+      targetX = 0;
+      targetY = 0;
+    };
+
+    const updateLoop = () => {
+      currentX += (targetX - currentX) * 0.18;
+      currentY += (targetY - currentY) * 0.18;
+
+      if (eyeRef.current) {
+        eyeRef.current.style.setProperty('--look-x', `${currentX.toFixed(2)}px`);
+        eyeRef.current.style.setProperty('--look-y', `${currentY.toFixed(2)}px`);
+      }
+
+      animFrame = requestAnimationFrame(updateLoop);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave);
+    animFrame = requestAnimationFrame(updateLoop);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      cancelAnimationFrame(animFrame);
+    };
+  }, [size]);
 
   const toggle = () => {
     setAutoPlayed(true);
@@ -111,10 +164,6 @@ export default function DullBotLogo({
           cursor: pointer;
           background: transparent;
           box-sizing: border-box;
-          transition:
-            width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-            height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-            border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .db-word {
@@ -131,10 +180,14 @@ export default function DullBotLogo({
           display: inline-block;
           overflow: hidden;
           white-space: nowrap;
-          transition: max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+          transition: max-width 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease;
           opacity: 1;
+          will-change: max-width, opacity;
         }
-        .db-frame.collapsed .db-part { max-width: 0 !important; opacity: 0; }
+        .db-frame.collapsed .db-part {
+          max-width: 0 !important;
+          opacity: 0;
+        }
 
         .db-eye-outer {
           position: relative;
@@ -142,8 +195,11 @@ export default function DullBotLogo({
           height: ${sc.eyeHeight}px;
           flex-shrink: 0;
           margin: 0 1px;
-          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                      height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                      height 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                      margin 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+          transform-origin: center center;
+          will-change: width, height;
         }
         .db-frame.collapsed .db-eye-outer {
           width: ${sc.collapsedEyeWidth}px;
@@ -193,7 +249,9 @@ export default function DullBotLogo({
           height: 44%;
           border-radius: 50%;
           background: #e8266d;
+          transform: translate(var(--look-x, 0px), var(--look-y, 0px));
           animation: db-pupil 5.6s ease-in-out infinite;
+          will-change: transform;
         }
 
         .db-eye-glint {
@@ -234,14 +292,14 @@ export default function DullBotLogo({
         }
 
         @keyframes db-pupil {
-          0%, 28%    { transform: translateX(0) scale(1); }
-          34%, 44%   { transform: translateX(-26%) scale(1); }
-          51%        { transform: translateX(-26%) scale(1); }
-          58%, 66%   { transform: translateX(24%) scale(1); }
-          70%        { transform: translateX(0) scale(1); }
-          76%        { transform: translateX(0) scale(1.28); }
-          84%        { transform: translateX(0) scale(0.95); }
-          90%, 100%  { transform: translateX(0) scale(1); }
+          0%, 28%    { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          34%, 44%   { transform: translate(calc(var(--look-x, 0px) - 2px), var(--look-y, 0px)) scale(1); }
+          51%        { transform: translate(calc(var(--look-x, 0px) - 2px), var(--look-y, 0px)) scale(1); }
+          58%, 66%   { transform: translate(calc(var(--look-x, 0px) + 2px), var(--look-y, 0px)) scale(1); }
+          70%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
+          76%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1.28); }
+          84%        { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(0.95); }
+          90%, 100%  { transform: translate(var(--look-x, 0px), var(--look-y, 0px)) scale(1); }
         }
 
         .db-toggle {
@@ -277,7 +335,7 @@ export default function DullBotLogo({
       >
         <span className="db-word">
           <span className="db-part" style={{ maxWidth: sc.dullbWidth }}>dullb</span>
-          <span className="db-eye-outer">
+          <span ref={eyeRef} className="db-eye-outer">
             <span className="db-brow" />
             <span className="db-eye-blink">
               <span className="db-eye-white">
