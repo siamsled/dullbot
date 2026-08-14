@@ -14,7 +14,7 @@ const PAGE_SIZE = 25;
 
 type SortField = 'name' | 'price' | 'stock_quantity' | 'updated_at';
 type SortDir = 'asc' | 'desc';
-type FilterChip = 'all' | 'low_stock' | 'out_of_stock' | 'draft' | 'needs_reorder' | 'manual' | 'scraped';
+type FilterChip = 'all' | 'low_stock' | 'out_of_stock' | 'draft' | 'scraped' | 'needs_reorder' | 'hidden';
 
 interface ReorderCandidate { id: string }
 
@@ -83,9 +83,8 @@ export default function CatalogueTable({
   shopId,
   websiteUrl,
 }: Props) {
-  const search = searchQuery;
-  const setSearch = onSearchQueryChange;
   const [filter, setFilter] = useState<FilterChip>('all');
+  const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortField>('updated_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(0);
@@ -127,14 +126,14 @@ export default function CatalogueTable({
       case 'draft':
         list = list.filter(p => p.draft);
         break;
+      case 'scraped':
+        list = list.filter(p => p.source === 'scraped');
+        break;
       case 'needs_reorder':
         list = list.filter(p => reorderIds.has(p.id));
         break;
-      case 'manual':
-        list = list.filter(p => p.source === 'manual');
-        break;
-      case 'scraped':
-        list = list.filter(p => p.source === 'scraped');
+      case 'hidden':
+        list = list.filter(p => !p.is_active && !p.draft);
         break;
     }
 
@@ -158,9 +157,12 @@ export default function CatalogueTable({
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const toggleSort = (field: SortField) => {
-    if (sort === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSort(field); setSortDir('asc'); }
-    setPage(0);
+    if (sort === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSort(field);
+      setSortDir('asc');
+    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -170,33 +172,30 @@ export default function CatalogueTable({
       : <ChevronDown className="w-3 h-3 text-ink" />;
   };
 
-  const allPageSelected = paged.length > 0 && paged.every(p => selected.has(p.id));
   const toggleSelectAll = () => {
-    if (allPageSelected) {
-      setSelected(prev => { const next = new Set(prev); paged.forEach(p => next.delete(p.id)); return next; });
+    if (selected.size === paged.length) {
+      setSelected(new Set());
     } else {
-      setSelected(prev => { const next = new Set(prev); paged.forEach(p => next.add(p.id)); return next; });
+      setSelected(new Set(paged.map(p => p.id)));
     }
   };
 
+  const allPageSelected = paged.length > 0 && paged.every(p => selected.has(p.id));
+
   const handleSync = async () => {
-    if (!syncUrl) return;
+    if (!syncUrl.trim()) return;
     setSyncLoading(true);
     setSyncMsg('');
-    setSyncSuccess(false);
-
     try {
-      const res = await fetch('/api/inventory/sync', {
+      const res = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopId, url: syncUrl, format: syncFormat }),
+        body: JSON.stringify({ shopId, url: syncUrl.trim(), format: syncFormat }),
       });
       const data = await res.json();
-      
       if (res.ok) {
         setSyncSuccess(true);
-        setSyncMsg(data.message);
-        setTimeout(() => window.location.reload(), 1500);
+        setSyncMsg(`Synced ${data.count || 0} products.`);
       } else {
         setSyncMsg(data.error || 'Sync failed.');
       }
@@ -211,10 +210,10 @@ export default function CatalogueTable({
     { value: 'all', label: 'All' },
     { value: 'low_stock', label: 'Low Stock' },
     { value: 'out_of_stock', label: 'Out of Stock' },
-    { value: 'draft', label: 'Draft' },
+    { value: 'draft', label: 'Shelf (Draft)' },
+    { value: 'scraped', label: 'Scraped (External API)' },
     { value: 'needs_reorder', label: 'Needs Reorder' },
-    { value: 'manual', label: 'Manual' },
-    { value: 'scraped', label: 'Scraped' },
+    { value: 'hidden', label: 'Hidden' },
   ];
 
   const draftProducts = products.filter(p => p.draft);
@@ -402,27 +401,42 @@ export default function CatalogueTable({
 
       {/* Filter chips */}
       <div className="flex flex-wrap gap-2">
-        {FILTER_CHIPS.map(c => (
-          <button
-            key={c.value}
-            onClick={() => { setFilter(c.value); setPage(0); setSelected(new Set()); }}
-            className={`px-3 py-1.5 rounded-tags text-xs font-medium transition-colors ${
-              filter === c.value ? 'bg-ink text-white' : 'bg-white border border-dove/20 text-ash hover:text-ink hover:border-ink/30'
-            }`}
-          >
-            {c.label}
-            {c.value === 'low_stock' && products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold ?? 5)).length > 0 && (
-              <span className="ml-1.5 bg-apricot-wash text-rust text-[10px] px-1 rounded-full">
-                {products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold ?? 5)).length}
-              </span>
-            )}
-            {c.value === 'needs_reorder' && reorderCandidates.length > 0 && (
-              <span className="ml-1.5 bg-apricot-wash text-rust text-[10px] px-1 rounded-full">
-                {reorderCandidates.length}
-              </span>
-            )}
-          </button>
-        ))}
+        {FILTER_CHIPS.map(c => {
+          let count = 0;
+          if (c.value === 'all') count = products.length;
+          else if (c.value === 'low_stock') count = products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold ?? 5)).length;
+          else if (c.value === 'out_of_stock') count = products.filter(p => p.stock_quantity === 0).length;
+          else if (c.value === 'draft') count = products.filter(p => p.draft).length;
+          else if (c.value === 'scraped') count = products.filter(p => p.source === 'scraped').length;
+          else if (c.value === 'needs_reorder') count = reorderCandidates.length;
+          else if (c.value === 'hidden') count = products.filter(p => !p.is_active && !p.draft).length;
+
+          return (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => { setFilter(c.value); setPage(0); setSelected(new Set()); }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer ${
+                filter === c.value
+                  ? 'bg-ink text-white shadow-xs'
+                  : 'bg-white border border-dove/20 text-ash hover:text-ink hover:border-ink/40'
+              }`}
+            >
+              <span>{c.label}</span>
+              {count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                  filter === c.value
+                    ? 'bg-white/20 text-white'
+                    : c.value === 'low_stock' || c.value === 'needs_reorder' || c.value === 'out_of_stock'
+                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                      : 'bg-fog text-graphite border border-dove/10'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Bulk action bar */}
