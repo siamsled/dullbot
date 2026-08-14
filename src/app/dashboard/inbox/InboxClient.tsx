@@ -1039,7 +1039,7 @@ export default function InboxClient({
                   <button
                     key={conv.id}
                     onClick={() => setActiveId(conv.id)}
-                    className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${activeId === conv.id ? 'bg-white shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
+                    className={`w-full text-left p-4 border-b border-dove/5 transition-colors flex items-center gap-3 relative ${activeId === conv.id ? 'bg-dove/20 shadow-sm border-l-4 border-l-ink' : 'hover:bg-dove/10 border-l-4 border-l-transparent'
                       }`}
                   >
                     {/* Avatar with Channel Overlay Badge */}
