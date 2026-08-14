@@ -45,8 +45,8 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
       const res = await fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined);
       return res.success && res.stats ? res.stats : stats;
     },
-    initialData: stats,
-    staleTime: 1000 * 60 * 5,
+    initialData: rangeType === 'weekly' && !customStart && !customEnd ? stats : undefined,
+    staleTime: 0,
   });
 
   useEffect(() => {

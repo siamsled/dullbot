@@ -117,27 +117,44 @@ export default function AnalyticsClient({
   const [activeRange, setActiveRange] = useState(initialRange);
   const [hoveredCell, setHoveredCell] = useState<{ day: string; session: string; count: number; pct: number } | null>(null);
 
+  const initialDataObj = {
+    revenueTrend: initialRevenueTrend,
+    peakTimes: initialPeakTimes,
+    customerGrowth: initialCustomerGrowth,
+    topRegions: initialTopRegions,
+    channelPerformance: initialChannelPerformance,
+    topProducts: initialTopProducts,
+    paymentStats: initialPaymentStats,
+    profitMargins: initialProfitMargins,
+    basketAnalysis: initialBasketAnalysis,
+    inventoryRunway: initialInventoryRunway,
+    courierPerformance: initialCourierPerformance,
+    paymentBreakdown: initialPaymentBreakdown,
+    cancellationBreakdown: initialCancellationBreakdown,
+  };
+
   const { data, isFetching } = useQuery({
-    queryKey: ['analytics', activeRange],
-    queryFn: () => fetchAnalyticsByRange(activeRange),
-    initialData: {
-      revenueTrend: initialRevenueTrend,
-      peakTimes: initialPeakTimes,
-      customerGrowth: initialCustomerGrowth,
-      topRegions: initialTopRegions,
-      channelPerformance: initialChannelPerformance,
-      topProducts: initialTopProducts,
-      paymentStats: initialPaymentStats,
-      profitMargins: initialProfitMargins,
-      basketAnalysis: initialBasketAnalysis,
-      inventoryRunway: initialInventoryRunway,
-      courierPerformance: initialCourierPerformance,
-      paymentBreakdown: initialPaymentBreakdown,
-      cancellationBreakdown: initialCancellationBreakdown,
+    queryKey: ['analytics-data', activeRange],
+    queryFn: async () => {
+      const res = await fetchAnalyticsByRange(activeRange);
+      return res;
     },
-    staleTime: 1000 * 60 * 5,
-    placeholderData: (prev) => prev,
+    initialData: activeRange === initialRange ? initialDataObj : undefined,
+    staleTime: 0,
   });
+
+  const handleRangeChange = (newRange: number) => {
+    setActiveRange(newRange);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (newRange === 30) {
+        url.searchParams.delete('range');
+      } else {
+        url.searchParams.set('range', String(newRange));
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
 
   const {
     revenueTrend = [],
@@ -199,7 +216,7 @@ export default function AnalyticsClient({
               <button
                 key={d}
                 type="button"
-                onClick={() => setActiveRange(d)}
+                onClick={() => handleRangeChange(d)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
                   activeRange === d
                     ? 'bg-ink text-white shadow-sm'
@@ -211,7 +228,7 @@ export default function AnalyticsClient({
             ))}
             <button
               type="button"
-              onClick={() => setActiveRange(0)}
+              onClick={() => handleRangeChange(0)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
                 activeRange === 0
                   ? 'bg-ink text-white shadow-sm'
