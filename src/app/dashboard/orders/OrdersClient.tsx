@@ -692,18 +692,18 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="bg-white rounded-3xl shadow-xs border border-dove/20 relative overflow-hidden"
+          className="bg-white rounded-3xl shadow-xs border border-dove/20 relative"
         >
-          <div className="px-6 py-4 border-b border-dove/15 flex items-center justify-between bg-fog/30">
+          <div className="px-6 py-4 border-b border-dove/15 flex items-center justify-between bg-fog/30 rounded-t-3xl">
             <h2 className="text-xs font-bold text-ink uppercase tracking-wider">Orders Roster</h2>
             <span className="text-[11px] font-bold text-ash font-mono">{filtered.length} row{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
-          <div className="overflow-x-auto max-h-[68vh]">
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-dove/15 bg-fog/60">
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 w-10 border-b border-dove/15">
+              <thead className="sticky top-0 z-30 shadow-xs">
+                <tr className="border-b border-dove/15 bg-fog/95 backdrop-blur-md">
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 w-10 border-b border-dove/15">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -711,15 +711,15 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                       className="rounded border-dove/30 focus:ring-ink cursor-pointer"
                     />
                   </th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Customer</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Delivery Address</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Product(s)</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Amount</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Payment</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Fulfillment</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Courier</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15">Date</th>
-                  <th className="sticky top-0 z-20 bg-fog/90 backdrop-blur-sm px-6 py-3.5 w-12 border-b border-dove/15"></th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Customer</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Delivery Address</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Product(s)</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Amount</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Payment</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Fulfillment</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Courier</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 text-[10px] font-bold text-ash uppercase tracking-wider border-b border-dove/15 whitespace-nowrap">Date</th>
+                  <th className="sticky top-0 z-30 bg-fog/95 backdrop-blur-md px-6 py-3.5 w-12 border-b border-dove/15"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dove/10">
