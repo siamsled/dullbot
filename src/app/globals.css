@@ -60,6 +60,23 @@
   --surface-warm-tint: #ffedd5;
   --surface-cool-tint: #e0f2fe;
   --surface-ink: #0f172a;
+
+  /* Analytics Semantic Visualization Tokens */
+  --analytics-primary: #2563eb;
+  --analytics-primary-hover: #1d4ed8;
+  --analytics-primary-light: rgba(37, 99, 235, 0.12);
+  --analytics-secondary: #7c3aed;
+  --analytics-secondary-light: rgba(124, 58, 237, 0.12);
+  --analytics-positive: #059669;
+  --analytics-positive-light: rgba(5, 150, 105, 0.12);
+  --analytics-warning: #d97706;
+  --analytics-warning-light: rgba(217, 119, 6, 0.12);
+  --analytics-negative: #dc2626;
+  --analytics-negative-light: rgba(220, 38, 38, 0.12);
+  --analytics-grid: rgba(0, 0, 0, 0.06);
+  --analytics-axis: #64748b;
+  --analytics-card-bg: #ffffff;
+  --analytics-card-elevated: #f8fafc;
 }
 
 /* ─── SLEEK DARK MODE VERCEL-INSPIRED THEME ──────────────── */
@@ -86,6 +103,23 @@
   --surface-cool-tint: rgba(56, 189, 248, 0.15);
   --surface-ink: #f4f4f5;
   --shadow-subtle: 0px 0px 0px 1px rgba(255, 255, 255, 0.08), 0px 8px 24px -4px rgba(0, 0, 0, 0.8);
+
+  /* Analytics Semantic Visualization Tokens (Dark Mode) */
+  --analytics-primary: #38bdf8;
+  --analytics-primary-hover: #7dd3fc;
+  --analytics-primary-light: rgba(56, 189, 248, 0.15);
+  --analytics-secondary: #a855f7;
+  --analytics-secondary-light: rgba(168, 85, 247, 0.15);
+  --analytics-positive: #34d399;
+  --analytics-positive-light: rgba(52, 211, 153, 0.15);
+  --analytics-warning: #fbbf24;
+  --analytics-warning-light: rgba(251, 191, 36, 0.15);
+  --analytics-negative: #f87171;
+  --analytics-negative-light: rgba(248, 113, 113, 0.15);
+  --analytics-grid: rgba(255, 255, 255, 0.08);
+  --analytics-axis: #94a3b8;
+  --analytics-card-bg: #0d0d10;
+  --analytics-card-elevated: #16161a;
 
   color-scheme: dark;
 }
