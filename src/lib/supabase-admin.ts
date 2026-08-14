@@ -27,6 +27,7 @@ export interface ShopWithAuth {
   slug: string;
   isOwner: boolean;
   staffRole: StaffRole;
+  staffRoleTitle?: string;
   permissions: string[];
   staffUserId?: string;
   staffEmail?: string;
@@ -131,6 +132,7 @@ export const getCurrentShop = cache(async function getCurrentShop(): Promise<Sho
         ...shop,
         isOwner: false,
         staffRole,
+        staffRoleTitle: user.app_metadata?.custom_role_title || user.app_metadata?.role_title || '',
         permissions,
         staffUserId: user.id,
         staffEmail: user.email,

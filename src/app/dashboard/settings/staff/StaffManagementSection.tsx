@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Shield, KeyRound, Check, X,
-  Trash2, AlertTriangle, UserCheck, UserX, Loader2, Sparkles, ChevronRight
+  Trash2, AlertTriangle, UserCheck, UserX, Loader2, Sparkles, ChevronRight, Edit3
 } from 'lucide-react';
 import {
   listStaffMembers,
@@ -47,15 +47,25 @@ const ROLE_PRESETS: { id: StaffRole; label: string; desc: string; perms: string[
   {
     id: 'custom',
     label: 'Custom Role',
-    desc: 'Configure tailored access per employee',
+    desc: 'Configure custom role title & tailored access per employee',
     perms: ['overview', 'orders', 'pos'],
   },
+];
+
+const ROLE_TITLE_SUGGESTIONS = [
+  'Lead Dispatcher',
+  'Night Cashier',
+  'Warehouse Lead',
+  'Senior Support',
+  'Sales Associate',
+  'Inventory Specialist'
 ];
 
 export default function StaffManagementSection({ shopId, isOwner }: { shopId: string; isOwner: boolean }) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Form State
@@ -63,6 +73,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<StaffRole>('cashier');
+  const [customRoleTitle, setCustomRoleTitle] = useState('');
   const [selectedPerms, setSelectedPerms] = useState<string[]>(['overview', 'orders', 'pos']);
   const [formError, setFormError] = useState('');
 
@@ -80,6 +91,30 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
       loadStaff();
     }
   }, [shopId, isOwner]);
+
+  const openAddModal = () => {
+    setEditingStaff(null);
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setSelectedRole('cashier');
+    setCustomRoleTitle('');
+    setSelectedPerms(['overview', 'orders', 'pos']);
+    setFormError('');
+    setModalOpen(true);
+  };
+
+  const openEditModal = (s: StaffMember) => {
+    setEditingStaff(s);
+    setFullName(s.fullName);
+    setEmail(s.email);
+    setPassword('');
+    setSelectedRole(s.role);
+    setCustomRoleTitle(s.customRoleTitle || '');
+    setSelectedPerms(s.permissions);
+    setFormError('');
+    setModalOpen(true);
+  };
 
   const handleRoleSelect = (roleId: StaffRole) => {
     setSelectedRole(roleId);
@@ -99,34 +134,48 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
     });
   };
 
-  const handleCreateStaff = (e: React.FormEvent) => {
+  const handleSubmitStaff = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
-    if (!email.trim() || !password.trim()) {
+    if (!editingStaff && (!email.trim() || !password.trim())) {
       setFormError('Email and password are required.');
       return;
     }
 
     startTransition(async () => {
-      const res = await createStaffMember(shopId, {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password: password.trim(),
-        role: selectedRole,
-        permissions: selectedPerms,
-      });
+      if (editingStaff) {
+        const res = await updateStaffMember(editingStaff.id, {
+          fullName: fullName.trim(),
+          role: selectedRole,
+          customRoleTitle: customRoleTitle.trim(),
+          permissions: selectedPerms,
+          ...(password.trim().length >= 6 ? { password: password.trim() } : {}),
+        });
 
-      if (res.success) {
-        setModalOpen(false);
-        setFullName('');
-        setEmail('');
-        setPassword('');
-        setSelectedRole('cashier');
-        setSelectedPerms(['overview', 'orders', 'pos']);
-        await loadStaff();
+        if (res.success) {
+          setModalOpen(false);
+          await loadStaff();
+        } else {
+          setFormError(res.error || 'Failed to update staff member.');
+        }
       } else {
-        setFormError(res.error || 'Failed to create staff member.');
+        const res = await createStaffMember(shopId, {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          role: selectedRole,
+          customRoleTitle: customRoleTitle.trim(),
+          permissions: selectedPerms,
+        });
+
+        if (res.success) {
+          setModalOpen(false);
+          openAddModal();
+          await loadStaff();
+        } else {
+          setFormError(res.error || 'Failed to create staff member.');
+        }
       }
     });
   };
@@ -175,7 +224,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
         </div>
 
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={openAddModal}
           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-ink text-white rounded-buttons text-xs font-semibold hover:bg-black transition-all shadow-subtle cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -210,8 +259,8 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                     <span className={`w-1.5 h-1.5 rounded-full ${s.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                     {s.status}
                   </span>
-                  <span className="px-2 py-0.5 bg-fog text-graphite rounded-md text-[10px] font-medium border border-dove/10 capitalize">
-                    {s.role}
+                  <span className="px-2 py-0.5 bg-fog text-graphite rounded-md text-[10px] font-semibold border border-dove/10 capitalize">
+                    {s.customRoleTitle || (s.role === 'custom' ? 'Custom Role' : s.role)}
                   </span>
                 </div>
                 <p className="text-xs text-ash font-mono mt-0.5">{s.email}</p>
@@ -226,10 +275,20 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
 
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <button
+                  type="button"
+                  onClick={() => openEditModal(s)}
+                  disabled={isPending}
+                  title="Edit permissions & role title"
+                  className="px-2.5 py-1.5 rounded-buttons text-xs font-semibold border border-dove/20 bg-white text-ink hover:bg-fog transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-ash" />
+                  <span>Edit</span>
+                </button>
+                <button
                   onClick={() => handleToggleStatus(s)}
                   disabled={isPending}
                   title={s.status === 'active' ? 'Suspend access' : 'Activate access'}
-                  className={`px-3 py-1.5 rounded-buttons text-xs font-semibold border transition-all ${
+                  className={`px-3 py-1.5 rounded-buttons text-xs font-semibold border transition-all cursor-pointer ${
                     s.status === 'active'
                       ? 'bg-white text-ash border-dove/20 hover:text-rust hover:border-rust/30'
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
@@ -240,7 +299,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                 <button
                   onClick={() => handleDelete(s)}
                   disabled={isPending}
-                  className="p-1.5 text-ash hover:text-rust rounded-lg hover:bg-rose-50 transition-colors"
+                  className="p-1.5 text-ash hover:text-rust rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                   title="Delete employee account"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -251,7 +310,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
         </div>
       )}
 
-      {/* Add Staff Modal */}
+      {/* Add / Edit Staff Modal */}
       <AnimatePresence>
         {modalOpen && (
           <motion.div
@@ -270,18 +329,20 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
               <div className="px-6 py-4 border-b border-dove/10 flex items-center justify-between bg-fog/30">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-ink" />
-                  <h3 className="text-sm font-semibold text-ink">Add New Employee</h3>
+                  <h3 className="text-sm font-semibold text-ink">
+                    {editingStaff ? 'Edit Employee & Role' : 'Add New Employee'}
+                  </h3>
                 </div>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="p-1 text-ash hover:text-ink rounded-full transition-colors"
+                  className="p-1 text-ash hover:text-ink rounded-full transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleCreateStaff} className="p-6 overflow-y-auto space-y-4">
+              <form onSubmit={handleSubmitStaff} className="p-6 overflow-y-auto space-y-4">
                 {formError && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-inputs text-red-700 text-xs flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -311,22 +372,23 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                     <input
                       type="email"
                       required
+                      disabled={!!editingStaff}
                       placeholder="staff@store.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="w-full px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors"
+                      className="w-full px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-1">
-                    Initial Password (min 6 chars)
+                    {editingStaff ? 'New Password (leave blank to keep unchanged)' : 'Initial Password (min 6 chars)'}
                   </label>
                   <input
                     type="password"
-                    required
-                    placeholder="••••••••"
+                    required={!editingStaff}
+                    placeholder={editingStaff ? 'Leave blank to keep existing password' : '••••••••'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full px-3 py-2 bg-fog border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors"
@@ -365,6 +427,46 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                   </div>
                 </div>
 
+                {/* Custom Role Title / Designation Input */}
+                <div className="p-3 bg-fog/60 rounded-inputs border border-dove/15 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider">
+                      Role Name / Designation
+                    </label>
+                    <span className="text-[10px] text-ash">Optional badge title</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Lead Dispatcher, Night Auditor, Warehouse Lead"
+                    value={customRoleTitle}
+                    onChange={e => setCustomRoleTitle(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-dove/20 rounded-inputs text-xs text-ink focus:outline-none focus:border-ink transition-colors shadow-2xs"
+                  />
+                  {/* Quick Preset Title Suggestions */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[9px] text-ash font-medium">Suggestions:</span>
+                    {ROLE_TITLE_SUGGESTIONS.map(title => (
+                      <button
+                        key={title}
+                        type="button"
+                        onClick={() => {
+                          setCustomRoleTitle(title);
+                          if (selectedRole !== 'custom') {
+                            setSelectedRole('custom');
+                          }
+                        }}
+                        className={`px-2 py-0.5 text-[9px] font-semibold rounded-md border transition-all cursor-pointer ${
+                          customRoleTitle === title
+                            ? 'bg-ink text-white border-ink'
+                            : 'bg-white text-ash border-dove/20 hover:text-ink hover:border-dove/40'
+                        }`}
+                      >
+                        {title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Granular Permissions Checkbox Matrix */}
                 <div>
                   <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-2">
@@ -399,7 +501,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
-                    className="px-4 py-2 bg-fog text-ink font-semibold rounded-buttons text-xs hover:bg-dove/20 transition-colors"
+                    className="px-4 py-2 bg-fog text-ink font-semibold rounded-buttons text-xs hover:bg-dove/20 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -409,7 +511,7 @@ export default function StaffManagementSection({ shopId, isOwner }: { shopId: st
                     className="px-5 py-2 bg-ink text-white font-semibold rounded-buttons text-xs hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-subtle cursor-pointer"
                   >
                     {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Save Employee
+                    {editingStaff ? 'Save Changes' : 'Save Employee'}
                   </button>
                 </div>
               </form>

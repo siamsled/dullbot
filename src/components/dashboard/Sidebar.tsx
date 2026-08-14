@@ -314,7 +314,7 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
                 <span className="text-xs font-semibold text-ink dark:text-zinc-100 truncate max-w-[95px]">{shop?.staffName || shop?.name || 'Dull Store'}</span>
                 <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-graphite dark:text-zinc-400 capitalize">
                   {shop?.isOwner === false ? (
-                    <span className="text-rust bg-apricot-wash px-1 rounded border border-rust/10 font-bold">{shop?.staffRole || 'Staff'}</span>
+                    <span className="text-rust bg-apricot-wash px-1 rounded border border-rust/10 font-bold">{shop?.staffRoleTitle || shop?.staffRole || 'Staff'}</span>
                   ) : (
                     <span className="text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">Owner</span>
                   )}

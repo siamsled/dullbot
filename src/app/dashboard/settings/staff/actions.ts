@@ -8,6 +8,7 @@ export interface StaffMember {
   email: string;
   fullName: string;
   role: StaffRole;
+  customRoleTitle?: string;
   permissions: string[];
   status: 'active' | 'suspended';
   createdAt: string;
@@ -31,6 +32,7 @@ export async function listStaffMembers(shopId: string): Promise<{ success: boole
         email: u.email || '',
         fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Staff Member',
         role: (u.app_metadata?.role || 'cashier') as StaffRole,
+        customRoleTitle: u.app_metadata?.custom_role_title || u.app_metadata?.role_title || '',
         permissions: Array.isArray(u.app_metadata?.permissions) ? u.app_metadata.permissions : ['orders', 'pos'],
         status: (u.app_metadata?.status || 'active') as 'active' | 'suspended',
         createdAt: u.created_at,
@@ -59,6 +61,7 @@ export async function createStaffMember(
     password: string;
     fullName: string;
     role: StaffRole;
+    customRoleTitle?: string;
     permissions: string[];
   }
 ): Promise<{ success: boolean; user?: StaffMember; error?: string }> {
@@ -68,6 +71,7 @@ export async function createStaffMember(
 
     const cleanEmail = payload.email.trim().toLowerCase();
     const cleanRole = payload.role;
+    const cleanRoleTitle = payload.customRoleTitle?.trim() || '';
     const cleanPermissions = payload.permissions.length > 0 ? payload.permissions : ['orders', 'pos'];
 
     if (!cleanEmail || !payload.password || payload.password.length < 6) {
@@ -88,6 +92,7 @@ export async function createStaffMember(
         is_staff: true,
         shop_id: shopId,
         role: cleanRole,
+        custom_role_title: cleanRoleTitle,
         permissions: cleanPermissions,
         status: 'active',
         password_hash: passwordHash,
@@ -107,6 +112,7 @@ export async function createStaffMember(
         email: data.user.email || cleanEmail,
         fullName: payload.fullName.trim() || cleanEmail.split('@')[0],
         role: cleanRole,
+        customRoleTitle: cleanRoleTitle,
         permissions: cleanPermissions,
         status: 'active',
         createdAt: data.user.created_at,
@@ -125,6 +131,7 @@ export async function updateStaffMember(
   staffUserId: string,
   payload: {
     role?: StaffRole;
+    customRoleTitle?: string;
     permissions?: string[];
     status?: 'active' | 'suspended';
     fullName?: string;
@@ -154,6 +161,7 @@ export async function updateStaffMember(
     const nextAppMeta = {
       ...userRes.user.app_metadata,
       ...(payload.role ? { role: payload.role } : {}),
+      ...(payload.customRoleTitle !== undefined ? { custom_role_title: payload.customRoleTitle.trim() } : {}),
       ...(payload.permissions ? { permissions: payload.permissions } : {}),
       ...(payload.status ? { status: payload.status } : {}),
       ...passwordHashUpdates,
