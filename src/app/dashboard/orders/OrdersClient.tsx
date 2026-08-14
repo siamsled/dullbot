@@ -692,43 +692,43 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 relative"
+          className="bg-white dark:bg-zinc-950/80 rounded-3xl shadow-xs border border-dove/20 dark:border-zinc-800/80 relative overflow-hidden"
         >
-          <div className="w-full rounded-3xl">
-            <table className="w-full text-left border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[1020px] text-left border-collapse">
               <thead className="sticky top-0 z-30 shadow-xs bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md">
                 <tr className="border-b border-dove/15 dark:border-zinc-800/80">
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 w-10 border-b border-dove/15 dark:border-zinc-800/80">
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 w-12 border-b border-dove/15 dark:border-zinc-800/80">
                     <input
                       type="checkbox"
                       checked={filtered.length > 0 && selectedIds.size === filtered.length}
                       onChange={toggleSelectAll}
-                      className="rounded border-dove/30 dark:border-zinc-700 focus:ring-ink dark:focus:ring-zinc-400 cursor-pointer dark:bg-zinc-900"
+                      className="w-4 h-4 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-zinc-500 cursor-pointer accent-zinc-900 dark:accent-white"
                     />
                   </th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ink dark:text-zinc-200 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
-                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-6 py-4 text-[11px] font-bold text-ash dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Customer</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Delivery Address</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Product(s)</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Amount</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Payment</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Fulfillment</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Courier</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-4 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap">Date</th>
+                  <th className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-5 py-4 text-[11px] font-bold text-zinc-400 dark:text-zinc-400 font-mono border-b border-dove/15 dark:border-zinc-800/80 whitespace-nowrap text-right">
                     {filtered.length} row{filtered.length !== 1 ? 's' : ''}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-dove/10">
+              <tbody className="divide-y divide-dove/10 dark:divide-zinc-800/60">
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 bg-fog rounded-full flex items-center justify-center mb-3 text-ash border border-dove/10">
+                        <div className="w-12 h-12 bg-fog dark:bg-zinc-900 rounded-full flex items-center justify-center mb-3 text-ash dark:text-zinc-500 border border-dove/10 dark:border-zinc-800">
                           <Package className="w-6 h-6 opacity-40" />
                         </div>
-                        <p className="text-sm font-bold text-ink mb-1">No orders found</p>
-                        <p className="text-xs text-ash max-w-xs leading-relaxed">
+                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">No orders found</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
                           Try adjusting your search query or selecting a different funnel stage filter.
                         </p>
                       </div>
@@ -740,7 +740,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                     const firstItemName = o.lineItems[0]?.product_name ?? 'Catalog Product';
                     const titleString = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
                     const isChecked = selectedIds.has(o.id);
-                    const fConfig = FULFILLMENT_COLORS[o.fulfillmentStatus] ?? { label: o.fulfillmentStatus, bg: 'bg-fog border-dove/20', text: 'text-ink' };
+                    const fConfig = FULFILLMENT_COLORS[o.fulfillmentStatus] ?? { label: o.fulfillmentStatus, bg: 'bg-fog dark:bg-zinc-900 border-dove/20 dark:border-zinc-800', text: 'text-zinc-700 dark:text-zinc-300' };
 
                     // Find repeat customer: has prior orders in database
                     const isRepeatCustomer = orders.filter(item => item.customerPhone === o.customerPhone).length > 1;
@@ -750,54 +750,54 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
                         key={o.id}
                         variants={itemVariants}
                         onClick={() => setActiveOrderId(o.id)}
-                        className={`hover:bg-fog/50 transition-all cursor-pointer ${
-                          isChecked ? 'bg-fog/70' : ''
+                        className={`hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer ${
+                          isChecked ? 'bg-zinc-100/80 dark:bg-zinc-800/60' : ''
                         }`}
                       >
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleSelect(o.id)}
-                            className="rounded border-dove/30 focus:ring-ink"
+                            className="w-4 h-4 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-zinc-500 cursor-pointer accent-zinc-900 dark:accent-white"
                           />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-xs sm:text-sm font-bold text-ink leading-tight">{o.customerName}</p>
+                            <p className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight">{o.customerName}</p>
                             {isRepeatCustomer && (
-                              <span className="px-1.5 py-0.2 bg-sky-wash text-blue-700 border border-blue-200 rounded-full text-[9px] font-bold" title="Repeat Customer">
+                              <span className="px-1.5 py-0.2 bg-sky-wash text-blue-700 dark:text-sky-400 border border-blue-200 dark:border-sky-800 rounded-full text-[9px] font-bold" title="Repeat Customer">
                                 🔄 Repeat
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-ash font-mono mt-0.5">{o.customerPhone}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">{o.customerPhone}</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <p className="text-xs text-ash max-w-[180px] line-clamp-2" title={o.customerAddress}>
+                        <td className="px-4 py-4">
+                          <p className="text-xs text-zinc-600 dark:text-zinc-300 max-w-[200px] line-clamp-2" title={o.customerAddress}>
                             {o.customerAddress}
                           </p>
                         </td>
-                        <td className="px-6 py-4 text-xs max-w-[200px]">
+                        <td className="px-4 py-4 text-xs max-w-[220px]">
                           <div className="flex items-center gap-2.5">
                             {o.lineItems[0]?.imageUrl ? (
                               <img
                                 src={o.lineItems[0].imageUrl}
                                 alt=""
-                                className="w-8 h-8 rounded-xl object-cover border border-dove/20 shrink-0"
+                                className="w-8 h-8 rounded-xl object-cover border border-dove/20 dark:border-zinc-800 shrink-0"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-xl bg-fog flex items-center justify-center border border-dove/20 shrink-0">
-                                <Package className="w-4 h-4 text-ash" />
+                              <div className="w-8 h-8 rounded-xl bg-fog dark:bg-zinc-900 flex items-center justify-center border border-dove/20 dark:border-zinc-800 shrink-0">
+                                <Package className="w-4 h-4 text-zinc-400" />
                               </div>
                             )}
-                            <span className="truncate font-bold text-ink">{titleString}</span>
+                            <span className="truncate font-bold text-zinc-900 dark:text-zinc-100">{titleString}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-ink font-mono">
+                        <td className="px-4 py-4 text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                           {o.totalAmount != null ? `৳${o.totalAmount.toLocaleString()}` : '—'}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           {(() => {
                             const isCancelled = o.status === 'cancelled' || o.fulfillmentStatus === 'cancelled';
                             const isPaid = o.status === 'confirmed';
@@ -805,7 +805,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isRefunded) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-purple-50 border-purple-200 text-purple-700">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400">
                                   Refunded
                                 </span>
                               );
@@ -813,7 +813,7 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isCancelled) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 border-slate-200 text-slate-700">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300">
                                   Cancelled
                                 </span>
                               );
@@ -821,48 +821,48 @@ export default function OrdersClient({ shopId, orders: initial }: { shopId: stri
 
                             if (isPaid) {
                               return (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 border-emerald-200 text-emerald-700">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400">
                                   Paid
                                 </span>
                               );
                             }
 
                             return (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 border-amber-200 text-amber-700">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400">
                                 Pending
                               </span>
                             );
                           })()}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${fConfig.bg} ${fConfig.text}`}>
                             {fConfig.label}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           {o.courierTrackingId ? (
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-white p-1 shadow-xs border border-dove/20 flex items-center justify-center shrink-0">
+                              <div className="w-6 h-6 rounded-lg bg-white dark:bg-zinc-900 p-1 shadow-xs border border-dove/20 dark:border-zinc-800 flex items-center justify-center shrink-0">
                                 <CourierLogo provider={o.courierProvider || ''} className="w-full h-full object-contain" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-ink uppercase tracking-wider">{o.courierProvider}</span>
-                                <span className="text-[10px] font-mono text-ash mt-0.5">{o.courierTrackingId}</span>
+                                <span className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">{o.courierProvider}</span>
+                                <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">{o.courierTrackingId}</span>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-ash font-mono">—</span>
+                            <span className="text-xs text-zinc-400 font-mono">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-xs text-ash font-mono whitespace-nowrap">{fmt(o.createdAt)}</td>
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-4 text-xs text-zinc-500 dark:text-zinc-400 font-mono whitespace-nowrap">{fmt(o.createdAt)}</td>
+                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1.5">
                             {o.needsReview && (
-                              <span className="text-rust animate-pulse" title={o.reviewReason || 'Review requested'}>🚩</span>
+                              <span className="text-rust dark:text-orange-400 animate-pulse" title={o.reviewReason || 'Review requested'}>🚩</span>
                             )}
                             <Link
                               href={`/dashboard/inbox?phone=${o.customerPhone}`}
-                              className="p-1.5 text-ash hover:text-ink rounded-lg hover:bg-fog transition-colors"
+                              className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                               title="Open in Live Inbox"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
