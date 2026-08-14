@@ -193,7 +193,9 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
       }`}
     >
       {/* Top Header */}
-      <div className="h-16 flex items-center justify-between px-3.5 border-b border-dove/10 shrink-0 overflow-hidden">
+      <div className={`h-16 flex items-center border-b border-dove/10 shrink-0 overflow-hidden transition-all duration-300 ${
+        isEffectiveExpanded ? 'justify-between px-4' : 'justify-center px-0'
+      }`}>
         <Link
           href="/dashboard"
           className="flex items-center text-ink hover:opacity-90 transition-opacity shrink-0"
@@ -205,10 +207,10 @@ export default function Sidebar({ initialShop }: { initialShop?: any }) {
         {isEffectiveExpanded && (
           <button
             onClick={togglePin}
-            className="w-7 h-7 rounded-md text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center shrink-0 border border-transparent hover:border-dove/20"
+            className="w-7 h-7 rounded-lg text-ash hover:text-ink hover:bg-dove/15 transition-all cursor-pointer flex items-center justify-center shrink-0 border border-transparent hover:border-dove/20"
             title={isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
           >
-            <PanelLeftClose className={`w-4 h-4 transition-colors ${isCollapsed ? 'text-blue-600' : 'text-ash'}`} />
+            <PanelLeftClose className="w-4 h-4 text-ash hover:text-ink transition-colors" />
           </button>
         )}
       </div>
