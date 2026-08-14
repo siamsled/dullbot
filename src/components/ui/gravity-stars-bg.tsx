@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-
 import { cn } from '@/lib/utils';
 
 type MouseGravity = 'attract' | 'repel';
@@ -36,15 +35,15 @@ type Particle = {
 };
 
 function GravityStarsBackground({
-  starsCount = 80,
+  starsCount = 50,
   starsSize = 2,
   starsOpacity = 0.7,
-  glowIntensity = 12,
+  glowIntensity = 10,
   glowAnimation = 'ease',
-  movementSpeed = 0.25,
-  mouseInfluence = 80,
+  movementSpeed = 0.2,
+  mouseInfluence = 75,
   mouseGravity = 'attract',
-  gravityStrength = 35,
+  gravityStrength = 25,
   starsInteraction = false,
   starsInteractionType = 'bounce',
   className,
@@ -55,18 +54,12 @@ function GravityStarsBackground({
   const animRef = React.useRef<number | null>(null);
   const starsRef = React.useRef<Particle[]>([]);
   const mouseRef = React.useRef<{ x: number; y: number }>({ x: -9999, y: -9999 });
-  const [dpr, setDpr] = React.useState(1);
+  const colorRef = React.useRef<string>('#ffffff');
+  const dprRef = React.useRef<number>(1);
   const [canvasSize, setCanvasSize] = React.useState({
     width: 800,
     height: 600,
   });
-
-  const readColor = React.useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return '#ffffff';
-    const cs = getComputedStyle(el);
-    return cs.color || '#ffffff';
-  }, []);
 
   const initStars = React.useCallback(
     (w: number, h: number) => {
@@ -102,13 +95,18 @@ function GravityStarsBackground({
     const container = containerRef.current;
     if (!canvas || !container) return;
     const rect = container.getBoundingClientRect();
-    const nextDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
-    setDpr(nextDpr);
+    // Cap DPR at 1.5 to prevent GPU fill-rate bottle-necks on 4k/Retina screens
+    const nextDpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    dprRef.current = nextDpr;
     canvas.width = Math.max(1, Math.floor(rect.width * nextDpr));
     canvas.height = Math.max(1, Math.floor(rect.height * nextDpr));
     canvas.style.width = `${rect.width}px`;
     canvas.style.height = `${rect.height}px`;
     setCanvasSize({ width: rect.width, height: rect.height });
+
+    const cs = getComputedStyle(container);
+    colorRef.current = cs.color || '#ffffff';
+
     if (starsRef.current.length === 0) {
       initStars(rect.width, rect.height);
     } else {
@@ -163,131 +161,54 @@ function GravityStarsBackground({
           p.vy -= ny * g;
         }
 
-        p.opacity = Math.min(1, p.baseOpacity + force * 0.4);
-
-        const targetGlow = 1 + force * 2;
-        const currentGlow = p.glowMultiplier || 1;
-
-        if (glowAnimation === 'instant') {
-          p.glowMultiplier = targetGlow;
-        } else if (glowAnimation === 'ease') {
-          const ease = 0.15;
-          p.glowMultiplier = currentGlow + (targetGlow - currentGlow) * ease;
-        } else {
-          const spring = (targetGlow - currentGlow) * 0.2;
-          const damping = 0.85;
-          p.glowVelocity = (p.glowVelocity || 0) * damping + spring;
-          p.glowMultiplier = currentGlow + (p.glowVelocity || 0);
-        }
+        p.opacity = Math.min(1, p.baseOpacity + force * 0.3);
       } else {
-        p.opacity = Math.max(p.baseOpacity * 0.3, p.opacity - 0.02);
-        const targetGlow = 1;
-        const currentGlow = p.glowMultiplier || 1;
-        if (glowAnimation === 'instant') {
-          p.glowMultiplier = targetGlow;
-        } else if (glowAnimation === 'ease') {
-          const ease = 0.08;
-          p.glowMultiplier = Math.max(
-            1,
-            currentGlow + (targetGlow - currentGlow) * ease,
-          );
-        } else {
-          const spring = (targetGlow - currentGlow) * 0.15;
-          const damping = 0.9;
-          p.glowVelocity = (p.glowVelocity || 0) * damping + spring;
-          p.glowMultiplier = Math.max(1, currentGlow + (p.glowVelocity || 0));
-        }
-      }
-
-      if (starsInteraction) {
-        for (let j = i + 1; j < starsRef.current.length; j++) {
-          const o = starsRef.current[j];
-          const dx2 = o.x - p.x;
-          const dy2 = o.y - p.y;
-          const d = Math.hypot(dx2, dy2);
-          const minD = p.size + o.size + 5;
-          if (d < minD && d > 0) {
-            if (starsInteractionType === 'bounce') {
-              const nx = dx2 / d;
-              const ny = dy2 / d;
-              const rvx = p.vx - o.vx;
-              const rvy = p.vy - o.vy;
-              const speed = rvx * nx + rvy * ny;
-              if (speed < 0) continue;
-              const impulse = (2 * speed) / (p.mass + o.mass);
-              p.vx -= impulse * o.mass * nx;
-              p.vy -= impulse * o.mass * ny;
-              o.vx += impulse * p.mass * nx;
-              o.vy += impulse * p.mass * ny;
-              const overlap = minD - d;
-              const sx = nx * overlap * 0.5;
-              const sy = ny * overlap * 0.5;
-              p.x -= sx;
-              p.y -= sy;
-              o.x += sx;
-              o.y += sy;
-            } else {
-              const mergeForce = (minD - d) / minD;
-              p.glowMultiplier = (p.glowMultiplier || 1) + mergeForce * 0.5;
-              o.glowMultiplier = (o.glowMultiplier || 1) + mergeForce * 0.5;
-              const af = mergeForce * 0.01;
-              p.vx += dx2 * af;
-              p.vy += dy2 * af;
-              o.vx -= dx2 * af;
-              o.vy -= dy2 * af;
-            }
-          }
-        }
+        p.opacity = Math.max(p.baseOpacity * 0.4, p.opacity - 0.01);
       }
 
       p.x += p.vx;
       p.y += p.vy;
-
-      p.vx += (Math.random() - 0.5) * 0.001;
-      p.vy += (Math.random() - 0.5) * 0.001;
-
-      p.vx *= 0.999;
-      p.vy *= 0.999;
 
       if (p.x < 0) p.x = w;
       if (p.x > w) p.x = 0;
       if (p.y < 0) p.y = h;
       if (p.y > h) p.y = 0;
     }
-  }, [
-    canvasSize.width,
-    canvasSize.height,
-    mouseInfluence,
-    mouseGravity,
-    gravityStrength,
-    glowAnimation,
-    starsInteraction,
-    starsInteractionType,
-  ]);
+  }, [canvasSize.width, canvasSize.height, mouseInfluence, mouseGravity, gravityStrength]);
 
   const drawStars = React.useCallback(
     (ctx: CanvasRenderingContext2D) => {
+      const dpr = dprRef.current;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      const color = readColor();
-      for (const p of starsRef.current) {
-        ctx.save();
-        ctx.shadowColor = color;
-        ctx.shadowBlur = glowIntensity * (p.glowMultiplier || 1) * 2;
+      const color = colorRef.current;
+      ctx.fillStyle = color;
+
+      for (let i = 0; i < starsRef.current.length; i++) {
+        const p = starsRef.current[i];
+        const px = p.x * dpr;
+        const py = p.y * dpr;
+        const pr = p.size * dpr;
+
+        // Core star point (fast single draw call)
         ctx.globalAlpha = p.opacity;
-        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(p.x * dpr, p.y * dpr, p.size * dpr, 0, Math.PI * 2);
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
+
+        // Subtle ambient halo (super lightweight 2D alpha halo without shadowBlur penalty)
+        ctx.globalAlpha = p.opacity * 0.2;
+        ctx.beginPath();
+        ctx.arc(px, py, pr * 2.2, 0, Math.PI * 2);
+        ctx.fill();
       }
     },
-    [dpr, glowIntensity, readColor],
+    [],
   );
 
   const animate = React.useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
     updateStars();
     drawStars(ctx);
@@ -303,7 +224,7 @@ function GravityStarsBackground({
         : null;
     if (container && ro) ro.observe(container);
     const onResize = () => resizeCanvas();
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', onResize, { passive: true });
     return () => {
       window.removeEventListener('resize', onResize);
       if (ro && container) ro.disconnect();
@@ -357,8 +278,8 @@ function GravityStarsBackground({
       mouseRef.current = { x: -9999, y: -9999 };
     };
 
-    window.addEventListener('mousemove', handleGlobalPointerMove);
-    window.addEventListener('touchmove', handleGlobalPointerMove);
+    window.addEventListener('mousemove', handleGlobalPointerMove, { passive: true });
+    window.addEventListener('touchmove', handleGlobalPointerMove, { passive: true });
     document.addEventListener('mouseleave', handleGlobalPointerLeave);
     return () => {
       window.removeEventListener('mousemove', handleGlobalPointerMove);
@@ -380,7 +301,7 @@ function GravityStarsBackground({
     <div
       ref={containerRef}
       data-slot="gravity-stars-background"
-      className={cn('relative size-full overflow-hidden', className)}
+      className={cn('relative size-full overflow-hidden will-change-transform', className)}
       onMouseMove={(e) => handlePointerMove(e)}
       onTouchMove={(e) => handlePointerMove(e)}
       {...props}

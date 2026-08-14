@@ -107,13 +107,12 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
   return (
     <div className="fixed inset-0 w-full h-full min-h-screen overflow-hidden bg-black z-0">
       <GravityStarsBackground
-        starsCount={80}
+        starsCount={45}
         starsSize={2}
-        starsOpacity={0.7}
-        glowIntensity={12}
-        movementSpeed={0.2}
-        mouseInfluence={75}
-        gravityStrength={25}
+        starsOpacity={0.75}
+        movementSpeed={0.18}
+        mouseInfluence={65}
+        gravityStrength={20}
         className="absolute inset-0 size-full text-white"
       />
       {/* Full-screen centered layout */}
@@ -123,9 +122,9 @@ export default function OnboardingClient({ shop: initialShop }: { shop: any }) {
           ISLAND CARD
           - Responsive width: max-w-3xl (≈768px)
           - Dynamic responsive height: max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px]
-          - True Frosted Glass (Apple HIG Glassmorphism)
+          - True Frosted Glass (Apple HIG Glassmorphism with GPU acceleration)
         */}
-        <div className="w-full max-w-3xl bg-white/[0.07] backdrop-blur-xl saturate-[160%] rounded-[28px] border border-white/15 shadow-[0_32px_96px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.30),inset_0_-1px_0_0_rgba(255,255,255,0.08)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto">
+        <div className="w-full max-w-3xl bg-zinc-950/85 backdrop-blur-md rounded-[28px] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.2)] flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[720px] min-h-[520px] sm:min-h-[620px] h-auto overflow-hidden text-white pointer-events-auto transform-gpu">
 
           {/* ── Card Header: DullBot Logo + Merchant Badge + Switch Account + Step Counter ── */}
           <div className="relative flex items-center justify-between px-6 sm:px-8 pt-6 pb-2 shrink-0 gap-2">

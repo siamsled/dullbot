@@ -47,62 +47,95 @@ export default function DullBotLogo({
     };
   }, [isControlled, autoPlayed]);
 
-  // ── Dynamic Cursor Tracking ──
+  // ── Ultra-Lightweight Cursor Tracking ──
   useEffect(() => {
-    let animFrame: number;
+    let animFrame: number | null = null;
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
+    let isRunning = false;
 
     const maxTravel = size === 'sm' ? 3.5 : size === 'md' ? 4.5 : 6;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!eyeRef.current) return;
-      const rect = eyeRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+    const tick = () => {
+      const dx = targetX - currentX;
+      const dy = targetY - currentY;
 
-      const dx = e.clientX - centerX;
-      const dy = e.clientY - centerY;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist === 0) {
-        targetX = 0;
-        targetY = 0;
-      } else {
-        const angle = Math.atan2(dy, dx);
-        const norm = Math.min(dist / 280, 1);
-        targetX = Math.cos(angle) * norm * maxTravel;
-        targetY = Math.sin(angle) * norm * maxTravel;
+      if (Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
+        currentX = targetX;
+        currentY = targetY;
+        if (eyeRef.current) {
+          eyeRef.current.style.setProperty('--look-x', `${currentX.toFixed(2)}px`);
+          eyeRef.current.style.setProperty('--look-y', `${currentY.toFixed(2)}px`);
+        }
+        isRunning = false;
+        animFrame = null;
+        return;
       }
-    };
 
-    const handleMouseLeave = () => {
-      targetX = 0;
-      targetY = 0;
-    };
-
-    const updateLoop = () => {
-      currentX += (targetX - currentX) * 0.18;
-      currentY += (targetY - currentY) * 0.18;
+      currentX += dx * 0.25;
+      currentY += dy * 0.25;
 
       if (eyeRef.current) {
         eyeRef.current.style.setProperty('--look-x', `${currentX.toFixed(2)}px`);
         eyeRef.current.style.setProperty('--look-y', `${currentY.toFixed(2)}px`);
       }
 
-      animFrame = requestAnimationFrame(updateLoop);
+      animFrame = requestAnimationFrame(tick);
+    };
+
+    const startTick = () => {
+      if (!isRunning) {
+        isRunning = true;
+        animFrame = requestAnimationFrame(tick);
+      }
+    };
+
+    let lastCalc = 0;
+    let cachedRect: DOMRect | null = null;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!eyeRef.current) return;
+      const now = performance.now();
+      if (!cachedRect || now - lastCalc > 500) {
+        cachedRect = eyeRef.current.getBoundingClientRect();
+        lastCalc = now;
+      }
+
+      const centerX = cachedRect.left + cachedRect.width / 2;
+      const centerY = cachedRect.top + cachedRect.height / 2;
+
+      const diffX = e.clientX - centerX;
+      const diffY = e.clientY - centerY;
+      const dist = Math.hypot(diffX, diffY);
+
+      if (dist === 0) {
+        targetX = 0;
+        targetY = 0;
+      } else {
+        const angle = Math.atan2(diffY, diffX);
+        const norm = Math.min(dist / 280, 1);
+        targetX = Math.cos(angle) * norm * maxTravel;
+        targetY = Math.sin(angle) * norm * maxTravel;
+      }
+
+      startTick();
+    };
+
+    const handleMouseLeave = () => {
+      targetX = 0;
+      targetY = 0;
+      startTick();
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
-    animFrame = requestAnimationFrame(updateLoop);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(animFrame);
+      if (animFrame) cancelAnimationFrame(animFrame);
     };
   }, [size]);
 
