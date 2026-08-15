@@ -1695,23 +1695,6 @@ export default function SettingsClient({ shop }: Props) {
           </section>
         )}
 
-        {/* ── STICKY BOTTOM SAVE ACTION ISLAND ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 right-6 z-40"
-        >
-          <div className="flex items-center gap-2 p-1.5 bg-ink/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 text-white">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white text-ink text-xs font-bold hover:bg-fog transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-xs"
-            >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[3]" />}
-              <span>{isSaving ? 'Saving Changes…' : 'Save Changes'}</span>
-            </button>
-          </div>
-        </motion.div>
 
         {/* ── WHATSAPP API CONFIGURATION MODAL ── */}
         <AnimatePresence>
