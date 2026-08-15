@@ -677,39 +677,44 @@ export default function CatalogueTable({
                         />
                       </td>
 
-                      {/* Thumbnail + Dropdown Toggle */}
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
+                      {/* Thumbnail + Single Dropdown Toggle */}
+                      <td className="px-4 py-3 relative" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-2.5 relative">
                           {hasVariants ? (
                             <button
                               type="button"
                               onClick={() => toggleExpand(p.id)}
-                              className={`p-1.5 rounded-lg text-ash hover:text-ink dark:hover:text-white hover:bg-dove/20 dark:hover:bg-white/10 transition-all cursor-pointer ${
-                                isExpanded ? 'text-ink dark:text-white bg-dove/20 dark:bg-white/10' : ''
+                              className={`w-6 h-6 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 flex items-center justify-center transition-all cursor-pointer shrink-0 z-10 ${
+                                isExpanded ? 'text-zinc-900 dark:text-white bg-zinc-200/50 dark:bg-zinc-800' : ''
                               }`}
-                              title={isExpanded ? 'Collapse variants' : `View ${productVariants.length} variants & stock units`}
+                              title={isExpanded ? 'Collapse variants' : `View ${productVariants.length} variants`}
                             >
-                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ink dark:text-white' : ''}`} />
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-zinc-900 dark:text-white' : ''}`} />
                             </button>
                           ) : (
-                            <div className="w-7 h-7" />
+                            <div className="w-6 h-6 shrink-0" />
+                          )}
+
+                          {/* Stem connecting from bottom of chevron down to child rows */}
+                          {hasVariants && isExpanded && (
+                            <div className="absolute left-[11px] top-[26px] bottom-0 w-px bg-zinc-300 dark:bg-zinc-700 pointer-events-none" />
                           )}
 
                           <div
                             onClick={() => onEditProduct(p)}
-                            className="w-10 h-10 rounded-images bg-fog dark:bg-white/5 flex items-center justify-center overflow-hidden shrink-0 border border-dove/10 cursor-pointer group relative"
+                            className="w-10 h-10 rounded-xl bg-fog dark:bg-white/5 flex items-center justify-center overflow-hidden shrink-0 border border-dove/10 cursor-pointer group relative shadow-2xs"
                           >
                             {primaryImage ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={primaryImage}
-                              alt={p.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                              }}
-                            />
+                              <img
+                                src={primaryImage}
+                                alt={p.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
                             ) : (
                               <Package className="w-5 h-5 text-dove" />
                             )}
@@ -743,20 +748,9 @@ export default function CatalogueTable({
                         </div>
                         {p.sku && <p className="text-xs text-dove mt-0.5">SKU: {p.sku}</p>}
                         {variantInfo && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleExpand(p.id);
-                            }}
-                            className="text-xs text-ash hover:text-ink dark:hover:text-white mt-0.5 flex items-center gap-1 cursor-pointer group"
-                            title="Click to view all variant stock"
-                          >
-                            <span className="group-hover:underline">
-                              {variantInfo.count} variant{variantInfo.count !== 1 ? 's' : ''} · {variantInfo.totalStock} total in stock
-                            </span>
-                            <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                          </button>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            {variantInfo.count} variant{variantInfo.count !== 1 ? 's' : ''} · {variantInfo.totalStock} total in stock
+                          </p>
                         )}
                       </td>
 
@@ -828,25 +822,28 @@ export default function CatalogueTable({
                             isVOutOfStock ? 'opacity-60' : ''
                           } ${isSelected ? 'bg-sky-wash/20' : 'bg-fog/30 dark:bg-white/[0.02]'}`}
                         >
-                          {/* Col 1: Checkbox column with threaded vertical trunk line */}
-                          <td className="pl-5 pr-2 py-2.5 relative" onClick={e => e.stopPropagation()}>
-                            {/* Thread continuous vertical line */}
-                            <div className="absolute left-[38px] top-0 bottom-0 w-px bg-dove/30 dark:bg-zinc-700" />
-                          </td>
+                          {/* Col 1: Empty Clean Cell */}
+                          <td className="pl-5 pr-2 py-2.5" onClick={e => e.stopPropagation()} />
 
-                          {/* Col 2: Thread branch elbow + Variant Thumbnail */}
-                          <td className="px-4 py-2.5 relative" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center gap-2.5 pl-2 relative">
-                              {/* Thread branch curve */}
-                              <div className="absolute -left-2.5 top-0 w-4 h-5 border-b-2 border-l-2 border-dove/40 dark:border-zinc-700 rounded-bl-xl pointer-events-none" />
-                              {!isLast && (
-                                <div className="absolute -left-2.5 top-5 bottom-0 w-px bg-dove/40 dark:bg-zinc-700 pointer-events-none" />
-                              )}
+                          {/* Col 2: Continuous Thread Branch Tree + Variant Thumbnail */}
+                          <td className="px-4 py-2 relative" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-2.5 relative">
+                              {/* Pixel-perfect tree connector */}
+                              <div className="w-6 h-9 relative shrink-0">
+                                {/* Trunk line */}
+                                <div
+                                  className={`absolute left-[11px] top-0 w-px bg-zinc-300 dark:bg-zinc-700 ${
+                                    isLast ? 'h-[18px]' : 'bottom-0'
+                                  }`}
+                                />
+                                {/* Branch elbow */}
+                                <div className="absolute left-[11px] top-0 w-3.5 h-[18px] border-b border-l border-zinc-300 dark:border-zinc-700 rounded-bl-md pointer-events-none" />
+                              </div>
 
                               {/* Variant Thumbnail */}
                               <div
                                 onClick={() => onEditProduct(p)}
-                                className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center overflow-hidden shrink-0 border border-dove/20 dark:border-zinc-800 shadow-2xs group-hover/vrow:ring-2 group-hover/vrow:ring-indigo-500/30 transition-all ml-2"
+                                className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center overflow-hidden shrink-0 border border-dove/20 dark:border-zinc-800 shadow-2xs group-hover/vrow:ring-2 group-hover/vrow:ring-indigo-500/30 transition-all cursor-pointer"
                               >
                                 {variantImage ? (
                                   <img
