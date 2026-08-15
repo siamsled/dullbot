@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { Product, Variant, Props } from './productForm.types';
 import { useProductForm } from './hooks/useProductForm';
 import { useVariants } from './hooks/useVariants';
@@ -14,6 +14,7 @@ import ProductVariants from './ProductVariants';
 import ProductInventory from './ProductInventory';
 import ProductActivity from './ProductActivity';
 import ProductFooter from './ProductFooter';
+import BarcodeScanner from '../BarcodeScanner';
 
 import { addProduct, updateProduct, addVariants, updateVariant, deleteVariant, saveProductMedia, getProductVariants } from '../../actions';
 
@@ -30,6 +31,9 @@ export default function ProductSlideOver({
   // Preview Media state
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video'; title?: string } | null>(null);
 
+  // Scanning target state ('parent' or variant ID)
+  const [scanningTarget, setScanningTarget] = useState<string | null>(null);
+
   // Discard Modal
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
@@ -38,6 +42,56 @@ export default function ProductSlideOver({
   const mediaHook = useProductMedia(product, shopId);
   const variantsHook = useVariants(product, initialVariants);
   const inventoryHook = useInventory(product, variantsHook.state.variants.filter(v => !v._deleted));
+
+  // Hardware USB/Bluetooth barcode scanner HID listener
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = Date.now();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+      const currentTime = Date.now();
+      const timeDiff = currentTime - lastKeyTime;
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (buffer.length >= 2) {
+          const scannedCode = buffer.trim().toUpperCase();
+          buffer = '';
+
+          // If no input is focused, automatically route to the current tab's SKU field
+          if (!isInput) {
+            e.preventDefault();
+            if (activeTab === 'Overview') {
+              formHook.setters.setSku(scannedCode);
+            } else if (activeTab === 'Variants') {
+              // Find the first variant without a SKU, or the first active variant
+              const activeVars = variantsHook.state.variants.filter(v => !v._deleted);
+              const targetVar = activeVars.find(v => !v.sku) || activeVars[0];
+              if (targetVar) {
+                variantsHook.setters.setVariants(prev =>
+                  prev.map(v => v.id === targetVar.id ? { ...v, sku: scannedCode } : v)
+                );
+              }
+            }
+          }
+        }
+      } else if (e.key.length === 1) {
+        // Barcode guns send keystrokes under 50ms apart. Reset buffer if gap is > 200ms
+        if (timeDiff > 200 && buffer.length > 0) {
+          buffer = '';
+        }
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTab, formHook.setters, variantsHook.state.variants, variantsHook.setters]);
 
   const hasUnsavedChanges = formHook.state.hasUnsavedChanges || mediaHook.state.hasUnsavedChanges || variantsHook.state.hasUnsavedChanges;
 
@@ -290,6 +344,7 @@ export default function ProductSlideOver({
                 suppliers={suppliers}
                 defaultSupplierId={formHook.state.defaultSupplierId || ''}
                 setDefaultSupplierId={v => formHook.setters.setErrors({})}
+                onOpenScanner={() => setScanningTarget('parent')}
               />
             )}
             
@@ -314,7 +369,7 @@ export default function ProductSlideOver({
                 parentSku={formHook.state.sku}
                 parentName={formHook.state.name}
                 setPreviewMedia={setPreviewMedia}
-                setScanningTarget={() => {}}
+                setScanningTarget={setScanningTarget}
                 setActiveTab={setActiveTab}
               />
             )}
@@ -362,6 +417,24 @@ export default function ProductSlideOver({
             )}
           </div>
         </div>
+
+        {/* Barcode / Camera Scanner Modal */}
+        {scanningTarget && (
+          <BarcodeScanner
+            onResult={(scannedCode) => {
+              const cleanCode = scannedCode.trim().toUpperCase();
+              if (scanningTarget === 'parent') {
+                formHook.setters.setSku(cleanCode);
+              } else {
+                variantsHook.setters.setVariants(prev =>
+                  prev.map(v => v.id === scanningTarget ? { ...v, sku: cleanCode } : v)
+                );
+              }
+              setScanningTarget(null);
+            }}
+            onClose={() => setScanningTarget(null)}
+          />
+        )}
 
         <ProductFooter
           isPending={isPending}

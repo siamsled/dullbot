@@ -249,14 +249,27 @@ export default function ProductVariants({
                             <input
                               value={v.sku ?? ''}
                               onChange={e => setVariants(prev => prev.map(x => (x.id === v.id ? { ...x, sku: e.target.value.toUpperCase() } : x)))}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  setVariants(prev => prev.map(x => (x.id === v.id ? { ...x, sku: (x.sku || '').trim().toUpperCase() } : x)));
+                                }
+                              }}
+                              onPaste={e => {
+                                const text = e.clipboardData.getData('text');
+                                if (text) {
+                                  e.preventDefault();
+                                  setVariants(prev => prev.map(x => (x.id === v.id ? { ...x, sku: text.trim().toUpperCase() } : x)));
+                                }
+                              }}
                               placeholder="SKU"
                               className="w-full bg-transparent border border-transparent hover:bg-zinc-100/60 dark:hover:bg-zinc-800/60 focus:bg-white dark:focus:bg-zinc-900 rounded-xl pl-2.5 pr-7 py-1.5 text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:border-zinc-300 dark:focus:border-zinc-700 focus:outline-none transition-colors uppercase placeholder:normal-case placeholder:font-sans"
                             />
                             <button
                               type="button"
                               onClick={() => setScanningTarget(v.id)}
-                              className="absolute right-1.5 p-1 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 opacity-0 group-hover/sku:opacity-100 transition-all cursor-pointer rounded-md hover:bg-zinc-200/50 dark:hover:bg-zinc-800"
-                              title="Scan Barcode for SKU"
+                              className="absolute right-1.5 p-1 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 opacity-0 group-hover/sku:opacity-100 focus:opacity-100 transition-all cursor-pointer rounded-md hover:bg-zinc-200/50 dark:hover:bg-zinc-800"
+                              title="Scan Barcode / SKU with camera"
                             >
                               <ScanLine className="w-3.5 h-3.5" />
                             </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, AlertCircle } from 'lucide-react';
+import { ChevronDown, AlertCircle, ScanLine, Barcode } from 'lucide-react';
 
 interface ProductOverviewProps {
   name: string;
@@ -31,6 +31,7 @@ interface ProductOverviewProps {
   suppliers: { id: string; name: string }[];
   defaultSupplierId: string;
   setDefaultSupplierId: (v: string) => void;
+  onOpenScanner?: () => void;
 }
 
 export default function ProductOverview(props: ProductOverviewProps) {
@@ -106,14 +107,42 @@ export default function ProductOverview(props: ProductOverviewProps) {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-ash">SKU</label>
-              <input
-                type="text"
-                value={sku}
-                onChange={e => setSku(e.target.value)}
-                placeholder="e.g. TOTE-001"
-                className="w-full bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none uppercase"
-              />
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-ash">SKU</label>
+                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">Scanner Ready</span>
+              </div>
+              <div className="relative flex items-center group/sku">
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={e => setSku(e.target.value.toUpperCase())}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setSku(sku.trim().toUpperCase());
+                    }
+                  }}
+                  onPaste={e => {
+                    const text = e.clipboardData.getData('text');
+                    if (text) {
+                      e.preventDefault();
+                      setSku(text.trim().toUpperCase());
+                    }
+                  }}
+                  placeholder="e.g. TOTE-001"
+                  className="w-full bg-fog border border-transparent rounded-inputs pl-3.5 pr-8 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none uppercase font-mono tracking-wider placeholder:normal-case placeholder:font-sans"
+                />
+                {props.onOpenScanner && (
+                  <button
+                    type="button"
+                    onClick={props.onOpenScanner}
+                    className="absolute right-2 p-1.5 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-all cursor-pointer rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800"
+                    title="Scan Barcode / SKU with camera"
+                  >
+                    <ScanLine className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="space-y-1 relative">
