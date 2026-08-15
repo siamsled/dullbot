@@ -20,7 +20,7 @@ const BarcodeScanner = dynamic(() => import('./components/BarcodeScanner'), { ss
 
 import {
   approveProduct, rejectProduct,
-  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory, getShopMovements, getShopVariants,
+  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory, getShopMovements,
 } from './actions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -172,22 +172,23 @@ export default function InventoryClient({
       setProducts(prev => prev.map(p => p.id === saved.id ? { ...p, ...saved, updated_at: new Date().toISOString() } : p));
     }
 
-    if (updatedVariants && updatedVariants.length > 0) {
+    // updatedVariants === undefined means the caller didn't track variants (e.g. quick stock adjust).
+    // updatedVariants === [] means the product has no variants (safe to set as-is).
+    // updatedVariants.length > 0 means we have fresh data from DB — replace only this product's variants.
+    if (updatedVariants !== undefined) {
       setVariants(prev => [
         ...prev.filter(v => v.product_id !== saved.id),
-        ...updatedVariants
+        ...updatedVariants,
       ]);
-    } else {
-      const freshVariants = await getShopVariants(shopId);
-      if (freshVariants && freshVariants.length > 0) {
-        setVariants(freshVariants as Variant[]);
-      }
     }
-
-    const latestMovements = await getShopMovements(shopId);
-    setMovements(latestMovements as StockMovement[]);
+    // Note: movements are refreshed by onMovementAdded callback — do NOT double-fetch here.
 
     setSlideOverOpen(false);
+  };
+
+  /** Quick stock update (adjust/restock) — update product state without closing the slide-over */
+  const handleStockUpdated = (updated: Product) => {
+    setProducts(prev => prev.map(p => p.id === updated.id ? { ...p, stock_quantity: updated.stock_quantity } : p));
   };
 
   const handleApprove = (id: string) => {
@@ -359,6 +360,7 @@ export default function InventoryClient({
           shopId={shopId}
           onClose={() => setSlideOverOpen(false)}
           onSaved={handleProductSaved}
+          onStockUpdated={handleStockUpdated}
           onMovementAdded={refreshMovements}
         />
       )}

@@ -84,6 +84,10 @@ export type ProductInput = {
   is_active?: boolean;
   draft?: boolean;
   source?: 'manual' | 'scraped';
+  /** User-supplied reason shown in the stock movement note */
+  stock_change_note?: string;
+  /** When true, no stock movement is written even if stock_quantity changed (use for variant-backed products) */
+  skipProductStockMovement?: boolean;
 };
 
 export async function saveProductImages(
@@ -148,11 +152,11 @@ export async function addProduct(data: ProductInput & { product_images_data?: { 
 }
 
 export async function updateProduct(
-  productId: string, 
+  productId: string,
   data: Partial<ProductInput> & { product_images_data?: { url: string; variant_id?: string | null; position: number }[] }
 ) {
   const shopId = await getShopId();
-  const { product_images_data, ...productFields } = data;
+  const { product_images_data, skipProductStockMovement, stock_change_note, ...productFields } = data;
   const cleanImages = data.images !== undefined
     ? (data.images ?? []).filter(u => u && !u.startsWith('blob:'))
     : undefined;
@@ -172,7 +176,7 @@ export async function updateProduct(
     .update({
       ...productFields,
       ...(cleanImages !== undefined ? { images: cleanImages.length ? cleanImages : null } : {}),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', productId);
 
@@ -182,16 +186,22 @@ export async function updateProduct(
     await saveProductImages(productId, cleanImages.map((url, idx) => ({ url, variant_id: null, position: idx })));
   }
 
-  // If stock_quantity was updated, log a manual adjustment movement
-  if (data.stock_quantity !== undefined && data.stock_quantity !== oldStock) {
+  // Only log a stock movement if stock actually changed AND caller didn't opt out.
+  // variant-backed products skip this because each variant logs its own movement.
+  if (
+    !skipProductStockMovement &&
+    data.stock_quantity !== undefined &&
+    data.stock_quantity !== oldStock
+  ) {
     const delta = data.stock_quantity - oldStock;
+    const baseNote = `Stock updated in product editor (${oldStock} → ${data.stock_quantity})`;
     await supabaseAdmin.from('stock_movements').insert({
       product_id: productId,
       shop_id: resolvedShopId,
       change_type: delta > 0 ? 'restock' : 'manual_adjust',
       quantity_delta: delta,
       resulting_stock: data.stock_quantity,
-      note: `Stock updated in product editor (${oldStock} → ${data.stock_quantity})`,
+      note: stock_change_note?.trim() ? `${stock_change_note.trim()} — ${baseNote}` : baseNote,
     });
   }
 

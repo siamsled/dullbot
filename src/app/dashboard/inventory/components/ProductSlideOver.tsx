@@ -69,6 +69,8 @@ interface Props {
   shopId: string;
   onClose: () => void;
   onSaved: (product: Product, isNew: boolean, savedVariants?: Variant[]) => void;
+  /** Called after a quick stock adjust/restock — updates parent state WITHOUT closing the panel */
+  onStockUpdated?: (product: Product) => void;
   onMovementAdded?: () => void;
 }
 
@@ -149,6 +151,7 @@ export default function ProductSlideOver({
   shopId,
   onClose,
   onSaved,
+  onStockUpdated,
   onMovementAdded,
 }: Props) {
   const [isPending, startTransition] = useTransition();
@@ -475,9 +478,11 @@ export default function ProductSlideOver({
         onSaved({ id: res?.productId ?? '', ...input, currency: 'BDT', draft: false, is_active: input.is_active ?? true }, true, savedVariantsList);
         onMovementAdded?.();
       } else {
+        // For variant-backed products: each variant logs its own movement — skip the parent's aggregate stock movement.
         await updateProduct(product!.id, {
           ...input,
           stock_change_note: stockChangeReason.trim() || undefined,
+          skipProductStockMovement: hasVariants,
         });
 
         // Handle variant changes
@@ -526,10 +531,11 @@ export default function ProductSlideOver({
       setAdjustDelta('');
       setAdjustNote('');
       if (res && 'resultingStock' in res) {
-        onSaved({ ...product!, stock_quantity: res.resultingStock ?? 0 }, false);
+        // Update parent state without closing the panel
+        onStockUpdated?.({ ...product!, stock_quantity: res.resultingStock ?? 0 });
       }
       onMovementAdded?.();
-      // Refresh movements
+      // Refresh movements in this panel
       getStockMovements(product!.id).then(data => setMovements(data as StockMovement[]));
     });
   };
@@ -553,7 +559,8 @@ export default function ProductSlideOver({
       setRestockCost('');
       setRestockSupplierId('');
       if (res && 'resultingStock' in res) {
-        onSaved({ ...product!, stock_quantity: res.resultingStock ?? 0 }, false);
+        // Update parent state without closing the panel
+        onStockUpdated?.({ ...product!, stock_quantity: res.resultingStock ?? 0 });
       }
       onMovementAdded?.();
       getStockMovements(product!.id).then(data => setMovements(data as StockMovement[]));
