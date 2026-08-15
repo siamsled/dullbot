@@ -182,18 +182,56 @@ export default function ProductSlideOver({
             className="relative max-w-full max-h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <div className="relative bg-ink/90 border border-white/15 rounded-cards shadow-2xl overflow-hidden p-3 flex flex-col items-center max-w-[90%] max-h-[85vh]">
-              <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-white">
-                <span className="text-xs font-medium truncate">{previewMedia.title || 'Media Preview'}</span>
-                <button type="button" onClick={() => setPreviewMedia(null)} className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center">
-                  &times;
+            {/* macOS Quick Look Glass Window */}
+            <div className="relative bg-zinc-950/75 dark:bg-black/80 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col items-center max-w-[90vw] max-h-[85vh] transition-all">
+              {/* macOS Titlebar */}
+              <div className="w-full flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.04] select-none">
+                {/* Traffic lights */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMedia(null)}
+                    className="w-3 h-3 rounded-full bg-[#ff5f56] hover:brightness-90 transition-all border border-[#e0443e] cursor-pointer shadow-xs"
+                    title="Close"
+                  />
+                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] opacity-60" />
+                  <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] opacity-60" />
+                </div>
+
+                {/* Title */}
+                <div className="px-3">
+                  <span className="text-xs font-semibold text-zinc-200/90 tracking-wide truncate max-w-xs block">
+                    {previewMedia.title || 'Media Preview'}
+                  </span>
+                </div>
+
+                {/* Spacer or Close Icon */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewMedia(null)}
+                  className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
+                  title="Close preview"
+                >
+                  ✕
                 </button>
               </div>
-              <div className="flex-1 flex items-center justify-center overflow-hidden">
+
+              {/* Media Content */}
+              <div className="p-3 sm:p-5 flex-1 flex items-center justify-center overflow-hidden w-full">
                 {previewMedia.type === 'video' ? (
-                  <video src={previewMedia.url} controls autoPlay playsInline className="max-h-[75vh] max-w-full rounded object-contain" />
+                  <video
+                    src={previewMedia.url}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-h-[70vh] max-w-full rounded-2xl border border-white/10 shadow-xl object-contain"
+                  />
                 ) : (
-                  <img src={previewMedia.url} alt="Preview" className="max-h-[75vh] max-w-full rounded object-contain" />
+                  <img
+                    src={previewMedia.url}
+                    alt={previewMedia.title || 'Preview'}
+                    className="max-h-[70vh] max-w-full rounded-2xl border border-white/10 shadow-xl object-contain"
+                  />
                 )}
               </div>
             </div>
