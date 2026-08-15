@@ -789,11 +789,11 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
     // ── Idempotency: skip if we already processed this comment ────────────
     const { data: existingComment } = await supabaseAdmin
       .from('post_comments')
-      .select('id, private_reply_sent, deleted_at')
+      .select('id, reply_text, is_deleted')
       .eq('comment_id', commentId)
       .maybeSingle();
 
-    if (existingComment?.deleted_at) return; // already deleted
+    if (existingComment?.is_deleted) return; // already deleted
 
     // ── Delete negative comments (Phase 5) ─────────────────────────────────
     if (automation.delete_negative && automation.delete_examples?.length > 0) {
@@ -823,12 +823,11 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
               shop_id: shop.id,
               post_id: automation.post_id,
               comment_id: commentId,
-              commenter_psid: commenterPsid,
+              sender_id: commenterPsid,
               sender_name: commenterName,
               comment_text: commentText,
-              comment_text_normalized: normalizeCommentText(commentText),
               is_deleted: true,
-              deleted_at: new Date().toISOString(),
+              is_negative: true,
             }, { onConflict: 'comment_id' });
             return; // deleted — no need to reply
           }
@@ -841,13 +840,12 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
     if (!automation.reply_as_comment && !automation.send_as_messenger) return;
 
     // ── Deduplication ────────────────────────────────────────────────────────
-    const normalized = normalizeCommentText(commentText);
     const dedupeWindow = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 hour
     const { data: duplicate } = await supabaseAdmin
       .from('post_comments')
       .select('reply_text')
       .eq('post_id', automation.post_id)
-      .eq('comment_text_normalized', normalized)
+      .eq('comment_text', commentText)
       .gte('created_at', dedupeWindow)
       .not('reply_text', 'is', null)
       .maybeSingle();
@@ -906,17 +904,17 @@ Rules:
       );
     }
 
-    // ── Store comment record ─────────────────────────────────────────────────
+    // ── Store comment record in DB ───────────────────────────────────────────
     await supabaseAdmin.from('post_comments').upsert({
       shop_id: shop.id,
       post_id: automation.post_id,
       comment_id: commentId,
-      commenter_psid: commenterPsid,
+      sender_id: commenterPsid,
       sender_name: commenterName,
       comment_text: commentText,
-      comment_text_normalized: normalized,
       reply_text: replyText,
-      replied_at: automation.reply_as_comment ? new Date().toISOString() : null,
+      is_deleted: false,
+      is_negative: false,
     }, { onConflict: 'comment_id' });
 
     // ── Post public comment reply (Phase 3) ──────────────────────────────────
@@ -927,23 +925,16 @@ Rules:
 
     // ── Send private Messenger reply (Phase 4) ────────────────────────────
     if (automation.send_as_messenger && commenterPsid) {
-      const alreadySent = existingComment?.private_reply_sent;
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       const withinWindow = commentCreatedAt > sevenDaysAgo;
 
-      if (!alreadySent && withinWindow) {
+      if (withinWindow) {
         const privateReplyText = replyText.includes('check your inbox')
           ? `Hi ${commenterName}! Thanks for your comment. ${replyText.replace('Please check your inbox for details 🙏', '')} We sent you more details here!`
           : replyText;
 
         const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
         console.log(`[handleCommentEvent] Private reply response for comment ${commentId}:`, prResult);
-        if (prResult.success) {
-          await supabaseAdmin
-            .from('post_comments')
-            .update({ private_reply_sent: true, private_reply_sent_at: new Date().toISOString() })
-            .eq('comment_id', commentId);
-        }
       }
     }
   } catch (err) {

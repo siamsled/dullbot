@@ -591,7 +591,7 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                   shop_id: shopId,
                   post_id: postId,
                   comment_id: commentId,
-                  commenter_psid: senderId,
+                  sender_id: senderId,
                   sender_name: senderName,
                   comment_text: message,
                   created_at: createdAt,
@@ -738,11 +738,10 @@ Rules:
       shop_id: shopId,
       post_id: automation?.post_id || postId,
       comment_id: mockCommentId,
-      commenter_psid: 'test_user',
+      sender_id: 'test_user',
       sender_name: commenterName,
       comment_text: commentText,
       reply_text: replyText,
-      replied_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
     });
 
@@ -871,8 +870,6 @@ export async function sendManualCommentReply(
           post_id: postId,
           comment_id: commentId,
           reply_text: replyText,
-          replied_at: new Date().toISOString(),
-          private_reply_sent: sendAsDm,
         }, { onConflict: 'comment_id' });
         return { success: true, replyId: `reply_${Date.now()}` };
       }
@@ -884,8 +881,6 @@ export async function sendManualCommentReply(
       post_id: postId,
       comment_id: commentId,
       reply_text: replyText,
-      replied_at: new Date().toISOString(),
-      private_reply_sent: sendAsDm,
     }, { onConflict: 'comment_id' });
 
     return {
