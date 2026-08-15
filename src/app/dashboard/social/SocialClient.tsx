@@ -462,6 +462,32 @@ function AutomationTweaksPanel({
     }
   }, [automation, post.post_id]);
 
+  const initialSnapshot = useMemo(() => JSON.stringify({
+    reply_as_comment: !!automation?.reply_as_comment,
+    instructions: (automation?.instructions || '').trim(),
+    delete_negative: !!automation?.delete_negative,
+    delete_examples: automation?.delete_examples || [],
+    send_as_messenger: !!automation?.send_as_messenger,
+    product_ids: (automation?.product_ids || []).slice().sort(),
+  }), [automation]);
+
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(initialSnapshot);
+
+  useEffect(() => {
+    setSavedSnapshot(initialSnapshot);
+  }, [initialSnapshot]);
+
+  const currentSnapshot = JSON.stringify({
+    reply_as_comment: !!config.reply_as_comment,
+    instructions: (config.instructions || '').trim(),
+    delete_negative: !!config.delete_negative,
+    delete_examples: config.delete_examples || [],
+    send_as_messenger: !!config.send_as_messenger,
+    product_ids: (config.product_ids || []).slice().sort(),
+  });
+
+  const isDirty = savedSnapshot !== currentSnapshot;
+
   const toggleProduct = (id: string) => {
     setConfig(prev => ({
       ...prev,
@@ -503,6 +529,7 @@ function AutomationTweaksPanel({
       });
 
       if (result.success) {
+        setSavedSnapshot(currentSnapshot);
         setSaveToast(true);
         onSaved(config);
         setTimeout(() => setSaveToast(false), 3000);
@@ -861,11 +888,13 @@ function AutomationTweaksPanel({
           <button
             type="button"
             onClick={handleSave}
-            disabled={isPending}
-            className={`flex-1 max-w-[180px] py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer ${
+            disabled={isPending || (!isDirty && !saveToast)}
+            className={`flex-1 max-w-[180px] py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-subtle ${
               saveToast
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
-                : 'bg-ink text-pure-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-40'
+                : isDirty
+                ? 'bg-ink hover:bg-black text-pure-white dark:bg-white dark:text-black shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
+                : 'bg-fog dark:bg-white/10 text-ash dark:text-ash border border-dove/20 dark:border-white/10 opacity-60 cursor-default'
             }`}
           >
             {isPending ? (
@@ -878,10 +907,15 @@ function AutomationTweaksPanel({
                 <Check className="w-3.5 h-3.5 stroke-[3] text-white animate-in zoom-in-50 duration-150" />
                 <span className="animate-in fade-in">Saved Changes!</span>
               </>
+            ) : isDirty ? (
+              <>
+                <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-400" />
+                <span>Save Settings</span>
+              </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>Save Settings</span>
+                <Check className="w-3.5 h-3.5 text-ash" />
+                <span>All Saved</span>
               </>
             )}
           </button>
