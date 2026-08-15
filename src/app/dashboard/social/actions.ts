@@ -578,12 +578,24 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
 
             if (items.length > 0) {
               fetchedAny = true;
+              const rowsToCache: any[] = [];
+
               for (const item of items) {
                 const commentId = item.id;
                 const message = item.message || item.text || '';
                 const senderName = item.from?.name || item.username || 'Customer';
                 const senderId = item.from?.id || null;
                 const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+
+                rowsToCache.push({
+                  shop_id: shopId,
+                  post_id: postId,
+                  comment_id: commentId,
+                  commenter_psid: senderId,
+                  sender_name: senderName,
+                  comment_text: message,
+                  created_at: createdAt,
+                });
 
                 if (commentsMap.has(commentId)) {
                   const existing = commentsMap.get(commentId)!;
@@ -607,6 +619,16 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                     source: 'meta_api',
                   });
                 }
+              }
+
+              // Background auto-cache to Supabase for instant 0ms future loads
+              if (rowsToCache.length > 0) {
+                supabaseAdmin
+                  .from('post_comments')
+                  .upsert(rowsToCache, { onConflict: 'comment_id', ignoreDuplicates: true })
+                  .then(({ error: cacheErr }) => {
+                    if (cacheErr) console.warn('[fetchPostComments] Cache notice:', cacheErr.message);
+                  });
               }
               break;
             }
