@@ -20,23 +20,26 @@ envFile.split('\n').forEach(line => {
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function run() {
-  const { data: shops } = await supabase.from('shops').select('id, name');
-  console.log('Shops in DB:', shops);
+  const { data: etaMsgs, error } = await supabase
+    .from('messages')
+    .select('*')
+    .ilike('content', '%eta%');
 
-  const { data: convs, error: convErr } = await supabase
-    .from('conversations')
-    .select('*');
+  console.log('Found eta messages:', etaMsgs?.length, 'Error:', error);
+  for (const m of etaMsgs || []) {
+    console.log('\n--- Message ID:', m.id, 'Sender:', m.sender, 'Created:', m.created_at, 'Conv ID:', m.conversation_id);
+    console.log('Full Raw Content:', m.content);
 
-  console.log('Conversations count:', convs?.length, 'Error:', convErr);
-  for (const c of convs || []) {
-    console.log(`\n=== Conv ID: ${c.id}, Customer: ${c.customer_name || c.meta_name}, Channel: ${c.channel} ===`);
-    const { data: msgs } = await supabase
+    // Fetch surrounding messages in this conversation
+    const { data: surrounding } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', c.id)
+      .eq('conversation_id', m.conversation_id)
       .order('created_at', { ascending: true });
-    for (const m of msgs || []) {
-      console.log(`[${m.sender}]: ${m.content}`);
+
+    console.log('\n--- Full conversation history (' + surrounding?.length + ' messages) ---');
+    for (const s of surrounding || []) {
+      console.log(`[${s.sender}] (${s.created_at}): ${JSON.stringify(s.content)}`);
     }
   }
 }

@@ -1393,10 +1393,13 @@ export default function InboxClient({
                                         return cleaned.replace(/\s+/g, '').toLowerCase().trim();
                                       };
 
+                                      const firstImgUrl = quotedImageSegments[0]?.content;
                                       const quotedCleaned = clean(quotedText || '');
-                                      if (!quotedCleaned) return;
 
                                       const target = [...messages].reverse().find(m => {
+                                        if (m.id === msg.id) return false;
+                                        if (firstImgUrl && m.content.includes(firstImgUrl)) return true;
+                                        if (!quotedCleaned) return false;
                                         const originalCleaned = clean(m.content);
                                         return originalCleaned.includes(quotedCleaned) || quotedCleaned.includes(originalCleaned);
                                       });
@@ -1405,11 +1408,14 @@ export default function InboxClient({
                                         const el = document.getElementById(`message-${target.id}`);
                                         if (el) {
                                           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                          el.style.transition = 'background-color 0.3s ease';
-                                          el.style.backgroundColor = 'rgba(0, 132, 255, 0.15)';
+                                          el.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                                          el.style.backgroundColor = 'rgba(16, 185, 129, 0.18)';
+                                          el.style.borderRadius = '16px';
+                                          el.style.padding = '6px';
                                           setTimeout(() => {
                                             el.style.backgroundColor = 'transparent';
-                                          }, 1200);
+                                            el.style.padding = '0px';
+                                          }, 2000);
                                         }
                                       }
                                     }}
