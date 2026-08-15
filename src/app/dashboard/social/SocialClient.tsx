@@ -1344,7 +1344,7 @@ export default function SocialClient({
   const autoCount = automations.length;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-fog dark:bg-[#09090b]">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-fog dark:bg-[#09090b]">
 
       {/* Top Header Bar */}
       <header className="px-6 py-3 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
