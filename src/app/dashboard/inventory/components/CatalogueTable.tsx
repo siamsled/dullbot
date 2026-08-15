@@ -91,13 +91,13 @@ export default function CatalogueTable({
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [bulkCategory, setBulkCategory] = useState('');
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
-    setExpandedIds(prev => {
+    setCollapsedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -646,7 +646,7 @@ export default function CatalogueTable({
                 const variantInfo = variantSummaries[p.id];
                 const productVariants = variantsByProduct.get(p.id) || [];
                 const hasVariants = productVariants.length > 0;
-                const isExpanded = expandedIds.has(p.id);
+                const isExpanded = !collapsedIds.has(p.id);
 
                 const isLowStock = !variantInfo && p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold ?? 5);
                 const isOutOfStock = !variantInfo && p.stock_quantity === 0;
@@ -701,15 +701,15 @@ export default function CatalogueTable({
                           >
                             {primaryImage ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={primaryImage}
-                                alt={p.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                }}
-                              />
+                            <img
+                              src={primaryImage}
+                              alt={p.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
                             ) : (
                               <Package className="w-5 h-5 text-dove" />
                             )}
@@ -808,81 +808,134 @@ export default function CatalogueTable({
                       </td>
                     </tr>
 
-                    {/* Expandable Variants Breakdown Row */}
-                    {isExpanded && hasVariants && (
-                      <tr className="bg-fog/30 dark:bg-white/[0.02]">
-                        <td colSpan={7} className="py-2.5 px-4 sm:px-8 pl-12 sm:pl-16">
-                          <div className="rounded-2xl bg-pure-white dark:bg-[#121214] border border-dove/15 dark:border-white/10 shadow-subtle p-3.5 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
-                            <div className="flex items-center justify-between gap-2 border-b border-dove/10 dark:border-white/10 pb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-graphite dark:text-ash">
-                                  Variants & In-Stock Units
-                                </span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                                  {productVariants.length} Active Variant{productVariants.length !== 1 ? 's' : ''}
-                                </span>
+                    {/* Threaded Variant Sub-Rows */}
+                    {isExpanded && hasVariants && productVariants.map((v, vIdx) => {
+                      const isLast = vIdx === productVariants.length - 1;
+                      const vStock = v.stock ?? 0;
+                      const isVOutOfStock = vStock === 0;
+                      const isVLowStock = vStock > 0 && vStock <= (p.low_stock_threshold ?? 5);
+
+                      // Variant image lookup from product_images or v.image_url or fallback
+                      const variantImgObj = (p as any).product_images?.find((i: any) => i.variant_id === v.id);
+                      const variantImage = variantImgObj?.url || v.image_url || null;
+                      const vPrice = v.price_override != null ? v.price_override : p.price;
+
+                      return (
+                        <tr
+                          key={v.id}
+                          onClick={() => onEditProduct(p)}
+                          className={`transition-colors cursor-pointer group/vrow hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 border-t border-dove/10 dark:border-white/5 ${
+                            isVOutOfStock ? 'opacity-60' : ''
+                          } ${isSelected ? 'bg-sky-wash/20' : 'bg-fog/30 dark:bg-white/[0.02]'}`}
+                        >
+                          {/* Col 1: Checkbox column with threaded vertical trunk line */}
+                          <td className="pl-5 pr-2 py-2.5 relative" onClick={e => e.stopPropagation()}>
+                            {/* Thread continuous vertical line */}
+                            <div className="absolute left-[38px] top-0 bottom-0 w-px bg-dove/30 dark:bg-zinc-700" />
+                          </td>
+
+                          {/* Col 2: Thread branch elbow + Variant Thumbnail */}
+                          <td className="px-4 py-2.5 relative" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-2.5 pl-2 relative">
+                              {/* Thread branch curve */}
+                              <div className="absolute -left-2.5 top-0 w-4 h-5 border-b-2 border-l-2 border-dove/40 dark:border-zinc-700 rounded-bl-xl pointer-events-none" />
+                              {!isLast && (
+                                <div className="absolute -left-2.5 top-5 bottom-0 w-px bg-dove/40 dark:bg-zinc-700 pointer-events-none" />
+                              )}
+
+                              {/* Variant Thumbnail */}
+                              <div
+                                onClick={() => onEditProduct(p)}
+                                className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center overflow-hidden shrink-0 border border-dove/20 dark:border-zinc-800 shadow-2xs group-hover/vrow:ring-2 group-hover/vrow:ring-indigo-500/30 transition-all ml-2"
+                              >
+                                {variantImage ? (
+                                  <img
+                                    src={variantImage}
+                                    alt={v.name}
+                                    className="w-full h-full object-cover group-hover/vrow:scale-105 transition-transform"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : primaryImage ? (
+                                  <img
+                                    src={primaryImage}
+                                    alt={v.name}
+                                    className="w-full h-full object-cover opacity-75 group-hover/vrow:scale-105 transition-transform"
+                                  />
+                                ) : (
+                                  <Package className="w-4 h-4 text-dove" />
+                                )}
                               </div>
-                              <span className="text-xs text-ash">
-                                Total Available: <strong className="text-ink dark:text-white font-mono">{variantInfo?.totalStock ?? p.stock_quantity}</strong> units
+                            </div>
+                          </td>
+
+                          {/* Col 3: Variant Name & SKU */}
+                          <td className="px-4 py-2.5 max-w-[240px]">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-ink dark:text-white truncate group-hover/vrow:text-indigo-600 dark:group-hover/vrow:text-indigo-400 transition-colors">
+                                {v.name}
+                              </p>
+                              <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-800/40 px-1.5 py-0.2 rounded-md shrink-0">
+                                variant
                               </span>
                             </div>
+                            {v.sku && (
+                              <p className="text-xs font-mono text-ash dark:text-zinc-500 mt-0.5">
+                                SKU: {v.sku}
+                              </p>
+                            )}
+                          </td>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-                              {productVariants.map(v => {
-                                const vStock = v.stock ?? 0;
-                                const isVOutOfStock = vStock === 0;
-                                const isVLowStock = vStock > 0 && vStock <= (p.low_stock_threshold ?? 5);
+                          {/* Col 4: Price */}
+                          <td className="px-4 py-2.5 text-right">
+                            <span className="text-sm font-semibold text-ink dark:text-white font-mono">
+                              ৳{vPrice.toLocaleString('en-BD')}
+                            </span>
+                            {v.price_override != null && v.price_override !== p.price && (
+                              <p className="text-[10px] text-ash">override</p>
+                            )}
+                          </td>
 
-                                return (
-                                  <div
-                                    key={v.id}
-                                    onClick={() => onEditProduct(p)}
-                                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-colors cursor-pointer ${
-                                      isVOutOfStock
-                                        ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/30 hover:border-rose-300'
-                                        : isVLowStock
-                                        ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/30 hover:border-amber-300'
-                                        : 'bg-fog/50 dark:bg-white/[0.03] border-dove/15 dark:border-white/10 hover:border-dove/30'
-                                    }`}
-                                  >
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-bold text-ink dark:text-white truncate">
-                                        {v.name}
-                                      </p>
-                                      {v.sku && (
-                                        <p className="text-[10px] font-mono text-ash truncate mt-0.5">
-                                          SKU: {v.sku}
-                                        </p>
-                                      )}
-                                      <p className="text-[11px] font-semibold text-graphite dark:text-ash mt-0.5">
-                                        ৳{(v.price_override != null ? v.price_override : p.price).toLocaleString('en-BD')}
-                                      </p>
-                                    </div>
-
-                                    <div className="text-right shrink-0">
-                                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg inline-block shadow-2xs ${
-                                        isVOutOfStock
-                                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50'
-                                          : isVLowStock
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/50'
-                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/50'
-                                      }`}>
-                                        {vStock} {vStock === 1 ? 'unit' : 'units'}
-                                      </span>
-                                      <p className={`text-[9px] font-bold uppercase tracking-wider mt-1 ${
-                                        isVOutOfStock ? 'text-rose-600 dark:text-rose-400' : isVLowStock ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
-                                      }`}>
-                                        {isVOutOfStock ? 'Out of Stock' : isVLowStock ? 'Low Stock' : 'In Stock'}
-                                      </p>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                          {/* Col 5: Stock */}
+                          <td className="px-4 py-2.5 text-right">
+                            <div className="inline-flex flex-col items-end gap-0.5">
+                              <span className={`font-mono text-sm font-bold ${
+                                isVOutOfStock ? 'text-rose-600 dark:text-rose-400' : isVLowStock ? 'text-amber-600 dark:text-amber-400' : 'text-ink dark:text-white'
+                              }`}>
+                                {vStock}
+                              </span>
+                              {isVOutOfStock ? (
+                                <span className="bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200/50 dark:border-rose-900/40 text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider">
+                                  Out of stock
+                                </span>
+                              ) : isVLowStock ? (
+                                <span className="bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/50 dark:border-amber-900/40 text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider">
+                                  Low stock
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-ash">in stock</span>
+                              )}
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                          </td>
+
+                          {/* Col 6: Source */}
+                          <td className="px-4 py-2.5">
+                            <span className="text-[11px] text-ash dark:text-zinc-500 font-mono">
+                              —
+                            </span>
+                          </td>
+
+                          {/* Col 7: Updated */}
+                          <td className="px-4 py-2.5 text-xs text-ash whitespace-nowrap">
+                            {p.updated_at
+                              ? new Date(p.updated_at).toLocaleDateString('en-BD', { day: 'numeric', month: 'short' })
+                              : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </Fragment>
                 );
               })}
