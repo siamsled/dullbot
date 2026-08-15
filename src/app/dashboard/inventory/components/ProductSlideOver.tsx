@@ -10,7 +10,7 @@ const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false })
 
 import {
   addProduct, updateProduct, addVariants, updateVariant, deleteVariant,
-  manualStockAdjust, restockProduct, getStockMovements, type ProductInput, type VariantInput,
+  manualStockAdjust, restockProduct, getStockMovements, getProductVariants, type ProductInput, type VariantInput,
   getProductMedia, saveProductMedia,
 } from '../actions';
 import UiverseGlowButton from '@/components/ui/UiverseGlowButton';
@@ -68,7 +68,7 @@ interface Props {
   existingCategories: string[];
   shopId: string;
   onClose: () => void;
-  onSaved: (product: Product, isNew: boolean) => void;
+  onSaved: (product: Product, isNew: boolean, savedVariants?: Variant[]) => void;
   onMovementAdded?: () => void;
 }
 
@@ -188,6 +188,7 @@ export default function ProductSlideOver({
   const variantFileInputRef = useRef<HTMLInputElement>(null);
   const [stock, setStock] = useState(product?.stock_quantity?.toString() ?? '0');
   const [lowStockThreshold, setLowStockThreshold] = useState(product?.low_stock_threshold?.toString() ?? '5');
+  const [stockChangeReason, setStockChangeReason] = useState('');
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
 
@@ -396,6 +397,16 @@ export default function ProductSlideOver({
     if (!name.trim()) e.name = 'Product name is required';
     const p = parseFloat(price);
     if (!price || isNaN(p) || p <= 0) e.price = 'A valid price is required';
+    
+    const activeVariantsList = variants.filter(v => !v._deleted);
+    if (!isNew && activeVariantsList.length === 0) {
+      const newStockVal = parseInt(stock, 10) || 0;
+      const oldStockVal = product?.stock_quantity ?? 0;
+      if (newStockVal !== oldStockVal && !stockChangeReason.trim()) {
+        e.stockReason = 'A reason is required when manually changing stock quantity';
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -456,10 +467,18 @@ export default function ProductSlideOver({
           await saveProductMedia(res.productId, contextMedia.map(m => ({ url: m.url, media_type: m.media_type, tags: m.tags })));
         }
 
-        onSaved({ id: res?.productId ?? '', ...input, currency: 'BDT', draft: false, is_active: input.is_active ?? true }, true);
+        let savedVariantsList: Variant[] = [];
+        if (res?.productId) {
+          savedVariantsList = await getProductVariants(res.productId);
+        }
+
+        onSaved({ id: res?.productId ?? '', ...input, currency: 'BDT', draft: false, is_active: input.is_active ?? true }, true, savedVariantsList);
         onMovementAdded?.();
       } else {
-        await updateProduct(product!.id, input);
+        await updateProduct(product!.id, {
+          ...input,
+          stock_change_note: stockChangeReason.trim() || undefined,
+        });
 
         // Handle variant changes
         for (const v of variants) {
@@ -487,7 +506,9 @@ export default function ProductSlideOver({
         // Save context media
         await saveProductMedia(product!.id, contextMedia.map(m => ({ url: m.url, media_type: m.media_type, tags: m.tags })));
 
-        onSaved({ ...product!, ...input }, false);
+        const savedVariantsList = await getProductVariants(product!.id);
+
+        onSaved({ ...product!, ...input }, false, savedVariantsList);
         onMovementAdded?.();
       }
     });
@@ -983,43 +1004,68 @@ export default function ProductSlideOver({
 
             {/* Stock and threshold — only editable if no variants */}
             {!hasVariants && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-ash">Stock Quantity</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStock(s => String(Math.max(0, parseInt(s, 10) - 1)))}
-                      className="w-8 h-8 rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 transition-colors"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-ash">Stock Quantity</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setStock(s => String(Math.max(0, parseInt(s, 10) - 1)))}
+                        className="w-8 h-8 rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 transition-colors cursor-pointer"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        value={stock}
+                        onChange={e => setStock(e.target.value)}
+                        className="w-20 text-center bg-fog border border-transparent rounded-inputs px-2 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setStock(s => String(parseInt(s, 10) + 1))}
+                        className="w-8 h-8 rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-ash">Low Stock Threshold</label>
                     <input
                       type="number"
                       min="0"
-                      value={stock}
-                      onChange={e => setStock(e.target.value)}
-                      className="w-16 text-center bg-fog border border-transparent rounded-inputs px-2 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none"
+                      value={lowStockThreshold}
+                      onChange={e => setLowStockThreshold(e.target.value)}
+                      className="w-full bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setStock(s => String(parseInt(s, 10) + 1))}
-                      className="w-8 h-8 rounded-inputs border border-dove/20 flex items-center justify-center text-graphite hover:text-ink hover:border-ink/30 transition-colors"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-ash">Low Stock Threshold</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={lowStockThreshold}
-                    onChange={e => setLowStockThreshold(e.target.value)}
-                    className="w-full bg-fog border border-transparent rounded-inputs px-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none"
-                  />
-                </div>
+
+                {/* Reason field if stock is modified on existing product */}
+                {!isNew && parseInt(stock, 10) !== (product?.stock_quantity ?? 0) && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1 animate-in fade-in">
+                    <label className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                      Stock Change Reason <span className="text-rust">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={stockChangeReason}
+                      onChange={e => {
+                        setStockChangeReason(e.target.value);
+                        if (errors.stockReason) setErrors(prev => ({ ...prev, stockReason: '' }));
+                      }}
+                      placeholder="e.g. Physical inventory count, Restock, Damaged units..."
+                      className="w-full bg-white dark:bg-[#16161a] border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-xs text-ink dark:text-white focus:outline-none placeholder:text-ash/60"
+                    />
+                    {errors.stockReason && (
+                      <p className="text-[11px] text-rust font-medium mt-1">{errors.stockReason}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1053,14 +1099,36 @@ export default function ProductSlideOver({
           <section className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium text-ash uppercase tracking-wider">Variants</h3>
-              <button
-                type="button"
-                onClick={() => setShowVariantBuilder(v => !v)}
-                className="text-xs text-graphite hover:text-ink flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-                {showVariantBuilder ? 'Hide' : 'Add Variants'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVariants(prev => [
+                      ...prev,
+                      {
+                        id: `new-${Date.now()}-${Math.random()}`,
+                        product_id: product?.id ?? '',
+                        name: '',
+                        sku: '',
+                        price_override: null,
+                        stock: 0,
+                        _isNew: true,
+                      }
+                    ]);
+                  }}
+                  className="text-xs text-graphite hover:text-ink flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-fog cursor-pointer font-medium"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Variant Row
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVariantBuilder(v => !v)}
+                  className="text-xs text-graphite hover:text-ink flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-fog cursor-pointer"
+                >
+                  {showVariantBuilder ? 'Hide Generator' : 'Option Generator'}
+                </button>
+              </div>
             </div>
 
             {showVariantBuilder && (

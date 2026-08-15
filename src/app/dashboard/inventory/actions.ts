@@ -250,6 +250,34 @@ export type VariantInput = {
   image_url?: string | null;
 };
 
+export async function getProductVariants(productId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('product_variants')
+    .select('id, product_id, name, sku, price_override, stock')
+    .eq('product_id', productId);
+  if (error) {
+    console.error('Error fetching product variants:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function getShopVariants(shopId?: string | null) {
+  const actualShopId = shopId || (await getShopId());
+  if (!actualShopId) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('product_variants')
+    .select('id, product_id, name, sku, price_override, stock')
+    .eq('shop_id', actualShopId);
+
+  if (error) {
+    console.error('Error fetching shop variants:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function addVariants(productId: string, variants: VariantInput[]) {
   const shopId = await getShopId();
   if (!shopId) return { error: 'Shop not found' };
@@ -267,7 +295,7 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
   const { data: inserted, error } = await supabaseAdmin
     .from('product_variants')
     .insert(rows)
-    .select('id, stock');
+    .select('id, product_id, name, sku, price_override, stock');
 
   if (error) {
     console.error('Error inserting product_variants:', error);
@@ -284,7 +312,7 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
       change_type: 'initial_stock',
       quantity_delta: v.stock,
       resulting_stock: v.stock,
-      note: 'Initial stock on variant creation',
+      note: `Initial stock for variant "${v.name}"`,
     }));
 
   if (movements.length) {
@@ -293,7 +321,7 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
   }
 
   revalidate();
-  return { success: true };
+  return { success: true, variants: inserted };
 }
 
 export async function updateVariant(variantId: string, data: Partial<VariantInput>) {

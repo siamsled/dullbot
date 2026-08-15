@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Package, Building2, Activity, BarChart2, AlertTriangle } from 'lucide-react';
@@ -20,7 +20,7 @@ const BarcodeScanner = dynamic(() => import('./components/BarcodeScanner'), { ss
 
 import {
   approveProduct, rejectProduct,
-  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory, getShopMovements,
+  bulkDeleteProducts, bulkToggleVisibility, bulkReassignCategory, getShopMovements, getShopVariants,
 } from './actions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -109,10 +109,15 @@ export default function InventoryClient({
   });
 
   const [products, setProducts] = useState<Product[]>(fetchedProducts);
+  const [variants, setVariants] = useState<Variant[]>(initialVariants);
 
   useEffect(() => {
     setProducts(fetchedProducts);
   }, [fetchedProducts]);
+
+  useEffect(() => {
+    setVariants(initialVariants);
+  }, [initialVariants]);
 
   // Movements state
   const [movements, setMovements] = useState<StockMovement[]>(initialMovements);
@@ -133,15 +138,18 @@ export default function InventoryClient({
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Build variant summaries map
-  const variantSummaries: Record<string, { count: number; totalStock: number }> = {};
-  for (const v of initialVariants) {
-    if (!variantSummaries[v.product_id]) {
-      variantSummaries[v.product_id] = { count: 0, totalStock: 0 };
+  // Build variant summaries map dynamically
+  const variantSummaries = useMemo(() => {
+    const map: Record<string, { count: number; totalStock: number }> = {};
+    for (const v of variants) {
+      if (!map[v.product_id]) {
+        map[v.product_id] = { count: 0, totalStock: 0 };
+      }
+      map[v.product_id].count += 1;
+      map[v.product_id].totalStock += (v.stock || 0);
     }
-    variantSummaries[v.product_id].count += 1;
-    variantSummaries[v.product_id].totalStock += v.stock;
-  }
+    return map;
+  }, [variants]);
 
   const openAddProduct = () => {
     setSlideOverProduct(undefined);
@@ -152,17 +160,33 @@ export default function InventoryClient({
 
   const openEditProduct = (product: Product) => {
     setSlideOverProduct(product);
-    setSlideOverVariants(initialVariants.filter(v => v.product_id === product.id));
+    setSlideOverVariants(variants.filter(v => v.product_id === product.id));
     setIsNewProduct(false);
     setSlideOverOpen(true);
   };
 
-  const handleProductSaved = (saved: Product, isNew: boolean) => {
+  const handleProductSaved = async (saved: Product, isNew: boolean, updatedVariants?: Variant[]) => {
     if (isNew) {
       setProducts(prev => [{ ...saved, updated_at: new Date().toISOString() }, ...prev]);
     } else {
-      setProducts(prev => prev.map(p => p.id === saved.id ? { ...p, ...saved } : p));
+      setProducts(prev => prev.map(p => p.id === saved.id ? { ...p, ...saved, updated_at: new Date().toISOString() } : p));
     }
+
+    if (updatedVariants && updatedVariants.length > 0) {
+      setVariants(prev => [
+        ...prev.filter(v => v.product_id !== saved.id),
+        ...updatedVariants
+      ]);
+    } else {
+      const freshVariants = await getShopVariants(shopId);
+      if (freshVariants && freshVariants.length > 0) {
+        setVariants(freshVariants as Variant[]);
+      }
+    }
+
+    const latestMovements = await getShopMovements(shopId);
+    setMovements(latestMovements as StockMovement[]);
+
     setSlideOverOpen(false);
   };
 
@@ -291,7 +315,7 @@ export default function InventoryClient({
         {tab === 'catalogue' && (
           <CatalogueTable
             products={products}
-            variants={initialVariants}
+            variants={variants}
             reorderCandidates={reorderCandidates}
             variantSummaries={variantSummaries}
             onAddProduct={openAddProduct}
@@ -307,7 +331,7 @@ export default function InventoryClient({
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             shopId={shopId}
-            websiteUrl={websiteUrl}
+            websiteUrl={websiteUrl || ''}
           />
         )}
 
