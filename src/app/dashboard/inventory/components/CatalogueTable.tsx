@@ -2,7 +2,7 @@
 
 import { getPrimaryImageUrl } from '@/lib/product-images';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, Fragment } from 'react';
 import {
   Search, ScanLine, Package, Globe, Loader2, AlertTriangle,
   Check, X, ChevronUp, ChevronDown, ChevronRight, Trash2, Eye, EyeOff,
@@ -656,7 +656,7 @@ export default function CatalogueTable({
                 const primaryImage = rawImage && !rawImage.startsWith('blob:') ? rawImage : null;
 
                 return (
-                  <tbody key={p.id} className="border-b border-dove/10">
+                  <Fragment key={p.id}>
                     <tr
                       onClick={() => onEditProduct(p)}
                       className={`hover:bg-fog/50 transition-colors cursor-pointer ${
@@ -883,7 +883,7 @@ export default function CatalogueTable({
                         </td>
                       </tr>
                     )}
-                  </tbody>
+                  </Fragment>
                 );
               })}
             </tbody>
