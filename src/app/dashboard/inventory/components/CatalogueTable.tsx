@@ -5,10 +5,10 @@ import { getPrimaryImageUrl } from '@/lib/product-images';
 import { useState, useMemo, useCallback } from 'react';
 import {
   Search, ScanLine, Package, Globe, Loader2, AlertTriangle,
-  Check, X, ChevronUp, ChevronDown, Trash2, Eye, EyeOff,
+  Check, X, ChevronUp, ChevronDown, ChevronRight, Trash2, Eye, EyeOff,
   Tag, Plus, Upload, RefreshCcw
 } from 'lucide-react';
-import type { Product } from './ProductSlideOver';
+import type { Product, Variant } from './ProductSlideOver';
 
 const PAGE_SIZE = 25;
 
@@ -20,6 +20,7 @@ interface ReorderCandidate { id: string }
 
 interface Props {
   products: Product[];
+  variants?: Variant[];
   reorderCandidates: ReorderCandidate[];
   variantSummaries: Record<string, { count: number; totalStock: number }>;
   onAddProduct: () => void;
@@ -66,6 +67,7 @@ function exportCatalogueCSV(products: Product[]) {
 
 export default function CatalogueTable({
   products,
+  variants = [],
   reorderCandidates,
   variantSummaries,
   onAddProduct,
@@ -89,9 +91,29 @@ export default function CatalogueTable({
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [bulkCategory, setBulkCategory] = useState('');
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const variantsByProduct = useMemo(() => {
+    const map = new Map<string, Variant[]>();
+    for (const v of variants || []) {
+      const list = map.get(v.product_id) || [];
+      list.push(v);
+      map.set(v.product_id, list);
+    }
+    return map;
+  }, [variants]);
 
   // Website scrape state (preserved from Phase 3)
   const [syncUrl, setSyncUrl] = useState('');
@@ -622,6 +644,10 @@ export default function CatalogueTable({
             <tbody className="divide-y divide-dove/10">
               {paged.map(p => {
                 const variantInfo = variantSummaries[p.id];
+                const productVariants = variantsByProduct.get(p.id) || [];
+                const hasVariants = productVariants.length > 0;
+                const isExpanded = expandedIds.has(p.id);
+
                 const isLowStock = !variantInfo && p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold ?? 5);
                 const isOutOfStock = !variantInfo && p.stock_quantity === 0;
                 const needsReorder = reorderIds.has(p.id);
@@ -630,126 +656,234 @@ export default function CatalogueTable({
                 const primaryImage = rawImage && !rawImage.startsWith('blob:') ? rawImage : null;
 
                 return (
-                  <tr
-                    key={p.id}
-                    onClick={() => onEditProduct(p)}
-                    className={`hover:bg-fog/50 transition-colors cursor-pointer ${
-                      isOutOfStock ? 'opacity-50' : ''
-                    } ${isSelected ? 'bg-sky-wash/30' : ''}`}
-                  >
-                    {/* Checkbox */}
-                    <td className="pl-5 pr-2 py-3" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => setSelected(prev => {
-                          const next = new Set(prev);
-                          isSelected ? next.delete(p.id) : next.add(p.id);
-                          return next;
-                        })}
-                        className="rounded border-dove/30 text-ink focus:ring-ink/30 cursor-pointer"
-                      />
-                    </td>
+                  <tbody key={p.id} className="border-b border-dove/10">
+                    <tr
+                      onClick={() => onEditProduct(p)}
+                      className={`hover:bg-fog/50 transition-colors cursor-pointer ${
+                        isOutOfStock ? 'opacity-50' : ''
+                      } ${isSelected ? 'bg-sky-wash/30' : ''} ${isExpanded ? 'bg-fog/30 dark:bg-white/[0.02]' : ''}`}
+                    >
+                      {/* Checkbox */}
+                      <td className="pl-5 pr-2 py-3" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => setSelected(prev => {
+                            const next = new Set(prev);
+                            isSelected ? next.delete(p.id) : next.add(p.id);
+                            return next;
+                          })}
+                          className="rounded border-dove/30 text-ink focus:ring-ink/30 cursor-pointer"
+                        />
+                      </td>
 
-                    {/* Thumbnail */}
-                    <td className="px-4 py-3">
-                      <div className="w-10 h-10 rounded-images bg-fog flex items-center justify-center overflow-hidden shrink-0">
-                        {primaryImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={primaryImage}
-                            alt={p.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <Package className="w-5 h-5 text-dove" />
-                        )}
-                      </div>
-                    </td>
+                      {/* Thumbnail + Dropdown Toggle */}
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {hasVariants ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(p.id)}
+                              className={`p-1.5 rounded-lg text-ash hover:text-ink dark:hover:text-white hover:bg-dove/20 dark:hover:bg-white/10 transition-all cursor-pointer ${
+                                isExpanded ? 'text-ink dark:text-white bg-dove/20 dark:bg-white/10' : ''
+                              }`}
+                              title={isExpanded ? 'Collapse variants' : `View ${productVariants.length} variants & stock units`}
+                            >
+                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ink dark:text-white' : ''}`} />
+                            </button>
+                          ) : (
+                            <div className="w-7 h-7" />
+                          )}
 
-                    {/* Product name + badges */}
-                    <td className="px-4 py-3 max-w-[220px]">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-ink truncate">{p.name}</p>
-                        {p.draft && (
-                          <span className="bg-fog text-graphite text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Draft</span>
-                        )}
-                        {needsReorder && (
-                          <span className="bg-apricot-wash text-rust text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Reorder</span>
-                        )}
-                        {!p.is_active && !p.draft && (
+                          <div
+                            onClick={() => onEditProduct(p)}
+                            className="w-10 h-10 rounded-images bg-fog dark:bg-white/5 flex items-center justify-center overflow-hidden shrink-0 border border-dove/10 cursor-pointer group relative"
+                          >
+                            {primaryImage ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={primaryImage}
+                                alt={p.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Package className="w-5 h-5 text-dove" />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Product name + badges */}
+                      <td className="px-4 py-3 max-w-[220px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-ink truncate">{p.name}</p>
+                          {p.draft && (
+                            <span className="bg-fog text-graphite text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Draft</span>
+                          )}
+                          {needsReorder && (
+                            <span className="bg-apricot-wash text-rust text-[10px] px-1.5 py-0.5 rounded-tags shrink-0">Reorder</span>
+                          )}
+                          {!p.is_active && !p.draft && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onBulkToggle([p.id], true);
+                              }}
+                              className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Product is Hidden. Click to set Live in store"
+                            >
+                              <EyeOff className="w-2.5 h-2.5" /> Hidden
+                            </button>
+                          )}
+                        </div>
+                        {p.sku && <p className="text-xs text-dove mt-0.5">SKU: {p.sku}</p>}
+                        {variantInfo && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onBulkToggle([p.id], true);
+                              toggleExpand(p.id);
                             }}
-                            className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Product is Hidden. Click to set Live in store"
+                            className="text-xs text-ash hover:text-ink dark:hover:text-white mt-0.5 flex items-center gap-1 cursor-pointer group"
+                            title="Click to view all variant stock"
                           >
-                            <EyeOff className="w-2.5 h-2.5" /> Hidden
+                            <span className="group-hover:underline">
+                              {variantInfo.count} variant{variantInfo.count !== 1 ? 's' : ''} · {variantInfo.totalStock} total in stock
+                            </span>
+                            <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                           </button>
                         )}
-                      </div>
-                      {p.sku && <p className="text-xs text-dove mt-0.5">SKU: {p.sku}</p>}
-                      {variantInfo && (
-                        <p className="text-xs text-ash mt-0.5">
-                          {variantInfo.count} variant{variantInfo.count !== 1 ? 's' : ''} · {variantInfo.totalStock} total in stock
-                        </p>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Price */}
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-medium text-ink">৳{p.price.toLocaleString('en-BD')}</span>
-                      {p.compare_at_price && (
-                        <p className="text-xs text-dove line-through">৳{p.compare_at_price.toLocaleString('en-BD')}</p>
-                      )}
-                    </td>
+                      {/* Price */}
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-medium text-ink">৳{p.price.toLocaleString('en-BD')}</span>
+                        {p.compare_at_price && (
+                          <p className="text-xs text-dove line-through">৳{p.compare_at_price.toLocaleString('en-BD')}</p>
+                        )}
+                      </td>
 
-                    {/* Stock */}
-                    <td className="px-4 py-3 text-right">
-                      {variantInfo ? (
-                        <span className="font-mono text-sm text-ink">{variantInfo.totalStock}</span>
-                      ) : (
-                        <div className="inline-flex flex-col items-end gap-1">
-                          <span className={`font-mono text-sm ${isOutOfStock ? 'text-rust font-semibold' : 'text-ink'}`}>
-                            {p.stock_quantity}
-                          </span>
-                          {isOutOfStock && (
-                            <span className="bg-red-50 text-red-600 text-[10px] px-1.5 py-0.5 rounded-tags font-medium">
-                              Out of stock
+                      {/* Stock */}
+                      <td className="px-4 py-3 text-right">
+                        {variantInfo ? (
+                          <span className="font-mono text-sm text-ink">{variantInfo.totalStock}</span>
+                        ) : (
+                          <div className="inline-flex flex-col items-end gap-1">
+                            <span className={`font-mono text-sm ${isOutOfStock ? 'text-rust font-semibold' : 'text-ink'}`}>
+                              {p.stock_quantity}
                             </span>
-                          )}
-                          {isLowStock && (
-                            <span className="bg-apricot-wash text-rust text-[10px] px-1.5 py-0.5 rounded-tags font-medium">
-                              Low stock
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                            {isOutOfStock && (
+                              <span className="bg-red-50 text-red-600 text-[10px] px-1.5 py-0.5 rounded-tags font-medium">
+                                Out of stock
+                              </span>
+                            )}
+                            {isLowStock && (
+                              <span className="bg-apricot-wash text-rust text-[10px] px-1.5 py-0.5 rounded-tags font-medium">
+                                Low stock
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Source */}
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        p.source === 'scraped' ? 'bg-sky-wash text-blue-700' : 'bg-fog text-graphite'
-                      }`}>
-                        {p.source}
-                      </span>
-                    </td>
+                      {/* Source */}
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          p.source === 'scraped' ? 'bg-sky-wash text-blue-700' : 'bg-fog text-graphite'
+                        }`}>
+                          {p.source}
+                        </span>
+                      </td>
 
-                    {/* Updated */}
-                    <td className="px-4 py-3 text-xs text-ash whitespace-nowrap">
-                      {p.updated_at
-                        ? new Date(p.updated_at).toLocaleDateString('en-BD', { day: 'numeric', month: 'short' })
-                        : '—'}
-                    </td>
-                  </tr>
+                      {/* Updated */}
+                      <td className="px-4 py-3 text-xs text-ash whitespace-nowrap">
+                        {p.updated_at
+                          ? new Date(p.updated_at).toLocaleDateString('en-BD', { day: 'numeric', month: 'short' })
+                          : '—'}
+                      </td>
+                    </tr>
+
+                    {/* Expandable Variants Breakdown Row */}
+                    {isExpanded && hasVariants && (
+                      <tr className="bg-fog/30 dark:bg-white/[0.02]">
+                        <td colSpan={7} className="py-2.5 px-4 sm:px-8 pl-12 sm:pl-16">
+                          <div className="rounded-2xl bg-pure-white dark:bg-[#121214] border border-dove/15 dark:border-white/10 shadow-subtle p-3.5 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                            <div className="flex items-center justify-between gap-2 border-b border-dove/10 dark:border-white/10 pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-graphite dark:text-ash">
+                                  Variants & In-Stock Units
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                                  {productVariants.length} Active Variant{productVariants.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <span className="text-xs text-ash">
+                                Total Available: <strong className="text-ink dark:text-white font-mono">{variantInfo?.totalStock ?? p.stock_quantity}</strong> units
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                              {productVariants.map(v => {
+                                const vStock = v.stock ?? 0;
+                                const isVOutOfStock = vStock === 0;
+                                const isVLowStock = vStock > 0 && vStock <= (p.low_stock_threshold ?? 5);
+
+                                return (
+                                  <div
+                                    key={v.id}
+                                    onClick={() => onEditProduct(p)}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                                      isVOutOfStock
+                                        ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/30 hover:border-rose-300'
+                                        : isVLowStock
+                                        ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/30 hover:border-amber-300'
+                                        : 'bg-fog/50 dark:bg-white/[0.03] border-dove/15 dark:border-white/10 hover:border-dove/30'
+                                    }`}
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-bold text-ink dark:text-white truncate">
+                                        {v.name}
+                                      </p>
+                                      {v.sku && (
+                                        <p className="text-[10px] font-mono text-ash truncate mt-0.5">
+                                          SKU: {v.sku}
+                                        </p>
+                                      )}
+                                      <p className="text-[11px] font-semibold text-graphite dark:text-ash mt-0.5">
+                                        ৳{(v.price_override != null ? v.price_override : p.price).toLocaleString('en-BD')}
+                                      </p>
+                                    </div>
+
+                                    <div className="text-right shrink-0">
+                                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg inline-block shadow-2xs ${
+                                        isVOutOfStock
+                                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50'
+                                          : isVLowStock
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/50'
+                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/50'
+                                      }`}>
+                                        {vStock} {vStock === 1 ? 'unit' : 'units'}
+                                      </span>
+                                      <p className={`text-[9px] font-bold uppercase tracking-wider mt-1 ${
+                                        isVOutOfStock ? 'text-rose-600 dark:text-rose-400' : isVLowStock ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                                      }`}>
+                                        {isVOutOfStock ? 'Out of Stock' : isVLowStock ? 'Low Stock' : 'In Stock'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
                 );
               })}
             </tbody>

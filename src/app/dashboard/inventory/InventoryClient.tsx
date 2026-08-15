@@ -291,6 +291,7 @@ export default function InventoryClient({
         {tab === 'catalogue' && (
           <CatalogueTable
             products={products}
+            variants={initialVariants}
             reorderCandidates={reorderCandidates}
             variantSummaries={variantSummaries}
             onAddProduct={openAddProduct}
