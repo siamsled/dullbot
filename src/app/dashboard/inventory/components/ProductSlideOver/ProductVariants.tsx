@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Plus, X, ScanLine, Image as ImageIcon, Trash2, Wand2, Sparkles, Check, Upload, ImagePlus } from 'lucide-react';
+import { Plus, X, ScanLine, Image as ImageIcon, Trash2, Wand2, Hash, Check, Upload, ImagePlus } from 'lucide-react';
 import { VariantWithState } from './hooks/useVariants';
 
 interface ProductVariantsProps {
@@ -117,27 +117,18 @@ export default function ProductVariants({
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Variant Options</h3>
             <p className="text-xs text-zinc-400 mt-0.5">Manage variant options, SKUs, pricing overrides, and link photos.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {activeVariants.length > 0 && autoGenerateSkus && (
               <button
                 type="button"
                 onClick={handleTriggerAutoSkus}
-                className="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/50 dark:border-indigo-800/40 flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-xl font-medium cursor-pointer shadow-xs active:scale-[0.98]"
+                className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/70 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-xl font-medium cursor-pointer shadow-xs active:scale-[0.98]"
                 title="Auto-generate SKUs based on parent SKU and variant attributes"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Auto-generate SKUs
+                <Hash className="w-3.5 h-3.5 text-zinc-400" />
+                Auto SKUs
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={addVariant}
-              className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/70 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center gap-1 transition-all px-3 py-1.5 rounded-xl font-medium cursor-pointer shadow-xs active:scale-[0.98]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Variant
-            </button>
 
             <button
               type="button"
@@ -148,8 +139,17 @@ export default function ProductVariants({
                   : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/70 border border-zinc-200/60 dark:border-zinc-700/60'
               }`}
             >
-              <Wand2 className="w-3.5 h-3.5" />
-              {showVariantBuilder ? 'Close Generator' : 'Generate Options'}
+              <Wand2 className="w-3.5 h-3.5 text-zinc-400" />
+              {showVariantBuilder ? 'Close' : 'Generate Options'}
+            </button>
+
+            <button
+              type="button"
+              onClick={addVariant}
+              className="text-xs text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200/80 dark:hover:bg-zinc-700 border border-zinc-300/80 dark:border-zinc-700 flex items-center gap-1 transition-all px-3 py-1.5 rounded-xl font-semibold cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Variant
             </button>
           </div>
         </div>
@@ -194,21 +194,7 @@ export default function ProductVariants({
                   <tr className="bg-zinc-50/80 dark:bg-zinc-900/60 border-b border-zinc-200/60 dark:border-zinc-800/60 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     <th className="px-4 py-3.5 w-16 text-center">Photos</th>
                     <th className="px-4 py-3.5 min-w-[200px]">Variant Name</th>
-                    <th className="px-4 py-3.5 min-w-[170px]">
-                      <div className="flex items-center justify-between gap-2">
-                        <span>SKU</span>
-                        {autoGenerateSkus && (
-                          <button
-                            type="button"
-                            onClick={handleTriggerAutoSkus}
-                            className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1 lowercase tracking-normal cursor-pointer"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            auto
-                          </button>
-                        )}
-                      </div>
-                    </th>
+                    <th className="px-4 py-3.5 min-w-[170px]">SKU</th>
                     <th className="px-4 py-3.5 min-w-[130px]">Price (৳)</th>
                     <th className="px-4 py-3.5 min-w-[110px]">Stock</th>
                     <th className="px-4 py-3.5 w-12 text-right"></th>
