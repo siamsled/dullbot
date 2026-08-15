@@ -183,15 +183,40 @@ export async function POST(request: Request) {
             const senderId = webhookEvent.sender?.id;
 
             if (webhookEvent.message && senderId) {
-              const messageText = webhookEvent.message.text || '';
+              const messageText = (webhookEvent.message.text || '').trim();
               const attachments = webhookEvent.message.attachments || [];
-              const imageAttachment = attachments.find((att: any) => att.type === 'image');
-              const imageUrl = imageAttachment?.payload?.url;
-              const audioAttachment = attachments.find((att: any) => att.type === 'audio');
-              const audioUrl = audioAttachment?.payload?.url;
+
+              const imageUrls: string[] = [];
+              const audioUrls: string[] = [];
+              const videoUrls: string[] = [];
+
+              for (const att of attachments) {
+                const url = att.payload?.url || att.url;
+                if (att.type === 'image' || att.type === 'sticker') {
+                  if (url) imageUrls.push(url);
+                } else if (att.type === 'audio') {
+                  if (url) audioUrls.push(url);
+                } else if (att.type === 'video') {
+                  if (url) videoUrls.push(url);
+                } else if (att.type === 'fallback' || att.type === 'share' || att.type === 'file') {
+                  if (url) {
+                    if (/\.(mp4|mov|avi|webm)(\?.*)?$/i.test(url)) {
+                      videoUrls.push(url);
+                    } else if (/\.(mp3|wav|m4a|ogg)(\?.*)?$/i.test(url)) {
+                      audioUrls.push(url);
+                    } else {
+                      imageUrls.push(url);
+                    }
+                  }
+                }
+              }
+
+              const primaryImageUrl = imageUrls[0];
+              const primaryAudioUrl = audioUrls[0];
+              const primaryVideoUrl = videoUrls[0];
               const replyToMid = webhookEvent.message.reply_to?.mid;
 
-              if (!messageText && !imageUrl && !audioUrl) continue;
+              if (!messageText && imageUrls.length === 0 && audioUrls.length === 0 && videoUrls.length === 0) continue;
 
               let { data: conversation } = await supabaseAdmin
                 .from('conversations')
@@ -234,10 +259,15 @@ export async function POST(request: Request) {
                 fetchAndSaveUserProfile(senderId, shop.meta_page_access_token, incomingChannel, conversation.id).catch(() => {});
               }
 
-              let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
+              const mediaParts = [
+                ...imageUrls.map(u => `IMAGE:${u}`),
+                ...videoUrls.map(u => `VIDEO:${u}`),
+                ...audioUrls.map(u => `AUDIO:${u}`),
+              ].join(' ||| ');
 
-              if (imageUrl && messageText) {
-                dbContent = `[IMAGE_WITH_CAPTION] ${messageText} ||| IMAGE:${imageUrl}`;
+              let dbContent = mediaParts || messageText;
+              if (mediaParts && messageText) {
+                dbContent = `${messageText} ||| ${mediaParts}`;
               }
 
               let repliedMsgContent: string | null = null;
@@ -278,7 +308,7 @@ export async function POST(request: Request) {
                 .select('id, created_at')
                 .single();
 
-              if (imageUrl && !messageText) {
+              if (imageUrls.length > 0 && !messageText) {
                 await new Promise(res => setTimeout(res, 8000));
                 const { data: newerMessages } = await supabaseAdmin
                   .from('messages')
@@ -471,17 +501,17 @@ export async function POST(request: Request) {
 
                   let prompt = systemPrompt;
 
-                  if (imageUrl) {
+                  if (primaryImageUrl) {
                     prompt += `\nNote: The customer has sent an image which is attached to this request. Analyze the image to answer their query if relevant.`;
                   }
-                  if (audioUrl) {
+                  if (primaryAudioUrl) {
                     prompt += `\nNote: The customer has sent a voice message which is attached to this request. Listen to the audio to understand and answer their query.`;
                   }
 
                   let imagePart: any = null;
-                  if (imageUrl) {
+                  if (primaryImageUrl) {
                     try {
-                      const imgRes = await fetch(imageUrl);
+                      const imgRes = await fetch(primaryImageUrl);
                       if (imgRes.ok) {
                         const buffer = await imgRes.arrayBuffer();
                         const compressedBuffer = await sharp(buffer)
@@ -504,9 +534,9 @@ export async function POST(request: Request) {
                   }
 
                   let audioPart: any = null;
-                  if (audioUrl && (shop.handle_audio !== false)) {
+                  if (primaryAudioUrl && (shop.handle_audio !== false)) {
                     try {
-                      const audioRes = await fetch(audioUrl);
+                      const audioRes = await fetch(primaryAudioUrl);
                       if (audioRes.ok) {
                         const buffer = await audioRes.arrayBuffer();
                         const base64 = Buffer.from(buffer).toString('base64');

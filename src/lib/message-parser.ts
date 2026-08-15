@@ -1,67 +1,80 @@
 export function parseMessageSegments(content: string): { type: 'text' | 'image' | 'audio' | 'video', content: string }[] {
   if (!content) return [];
-  
+
   let cleaned = content.trim();
-  
-  if (cleaned.startsWith('IMAGE:')) {
-    return [{ type: 'image', content: cleaned.substring(6).trim() }];
-  }
-  if (cleaned.startsWith('AUDIO:')) {
-    return [{ type: 'audio', content: cleaned.substring(6).trim() }];
-  }
-  if (cleaned.startsWith('VIDEO:')) {
-    return [{ type: 'video', content: cleaned.substring(6).trim() }];
-  }
-  
+
+  // Strip system/caption tags if present at root
+  cleaned = cleaned.replace(/^\[IMAGE_WITH_CAPTION\]\s*/i, '');
   cleaned = cleaned.replace(/^\[Product Image\]\s*/i, '');
   cleaned = cleaned.replace(/^\[Voice Message\]\s*/i, '');
 
   const segments: { type: 'text' | 'image' | 'audio' | 'video', content: string }[] = [];
-  
-  const markdownImageSplitRegex = /(!\\[.*?\\]\\(.*?\\))/g;
+
+  const markdownImageSplitRegex = /(!\[.*?\]\(.*?\))/g;
   const markdownImageExtractRegex = /!\[.*?\]\((.*?)\)/;
 
   const chunks = cleaned.split('|||').map(s => s.trim()).filter(Boolean);
-  
-  for (const chunk of chunks) {
-    const isRawImageUrl = /https?:\/\/[^\s]+?\.(png|jpg|jpeg|gif|webp)(\?[^\s]*)?$/i.test(chunk);
-    const isRawAudioUrl = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg|webm)(\?[^\s]*)?$/i.test(chunk);
-    const isRawVideoUrl = /https?:\/\/[^\s]+?\.(mp4|mov|avi|mkv)(\?[^\s]*)?$/i.test(chunk);
 
-    if (isRawVideoUrl) {
-      segments.push({ type: 'video', content: chunk });
-    } else if (isRawImageUrl) {
-      segments.push({ type: 'image', content: chunk });
-    } else if (isRawAudioUrl) {
-      segments.push({ type: 'audio', content: chunk });
+  for (const chunk of chunks) {
+    let piece = chunk.trim();
+
+    // 1. Explicit media prefixes
+    if (piece.startsWith('IMAGE:')) {
+      const url = piece.substring(6).trim();
+      if (url) segments.push({ type: 'image', content: url });
+      continue;
+    }
+    if (piece.startsWith('AUDIO:')) {
+      const url = piece.substring(6).trim();
+      if (url) segments.push({ type: 'audio', content: url });
+      continue;
+    }
+    if (piece.startsWith('VIDEO:')) {
+      const url = piece.substring(6).trim();
+      if (url) segments.push({ type: 'video', content: url });
+      continue;
+    }
+
+    // 2. Direct Media URLs (including FB CDN, IG CDN, Supabase, Cloudinary, S3)
+    const isVideoHost = /https?:\/\/[^\s]+?\.(mp4|mov|avi|mkv|webm)(\?[^\s]*)?$/i.test(piece);
+    const isAudioHost = /https?:\/\/[^\s]+?\.(mp3|wav|m4a|ogg)(\?[^\s]*)?$/i.test(piece);
+    const isImageHost = /https?:\/\/[^\s]+?(fbcdn\.net|fbsbx\.com|cdninstagram\.com|supabase\.co\/storage|cloudinary\.com|s3\.[^\/]+|[^\s]+?\.(png|jpg|jpeg|gif|webp|heic))(\?[^\s]*)?$/i.test(piece);
+
+    if (isVideoHost) {
+      segments.push({ type: 'video', content: piece });
+    } else if (isAudioHost) {
+      segments.push({ type: 'audio', content: piece });
+    } else if (isImageHost) {
+      segments.push({ type: 'image', content: piece });
     } else {
-      const parts = chunk.split(markdownImageSplitRegex);
+      // 3. Markdown images embedded in text
+      const parts = piece.split(markdownImageSplitRegex);
       for (const part of parts) {
         if (!part) continue;
-        
+
         const imgMatch = part.match(markdownImageExtractRegex);
         if (imgMatch) {
           const url = imgMatch[1];
-          if (/\.(mp4|mov|avi|mkv)$/i.test(url)) {
+          if (/\.(mp4|mov|avi|mkv|webm)(\?.*)?$/i.test(url)) {
             segments.push({ type: 'video', content: url });
           } else {
             segments.push({ type: 'image', content: url });
           }
         } else {
-          const trimmedText = part.trim();
-          if (trimmedText) {
-            const cleanPart = trimmedText
-              .replace(/^\[Product Image\]\s*/i, '')
-              .replace(/^\[Voice Message\]\s*/i, '')
-              .trim();
-            if (cleanPart) {
-              segments.push({ type: 'text', content: cleanPart });
-            }
+          const cleanText = part
+            .replace(/^\[IMAGE_WITH_CAPTION\]\s*/i, '')
+            .replace(/^\[Product Image\]\s*/i, '')
+            .replace(/^\[Voice Message\]\s*/i, '')
+            .trim();
+
+          if (cleanText) {
+            segments.push({ type: 'text', content: cleanText });
           }
         }
       }
     }
   }
+
   return segments;
 }
 

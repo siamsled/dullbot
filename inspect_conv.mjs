@@ -20,27 +20,24 @@ envFile.split('\n').forEach(line => {
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function run() {
-  const { data: etaMsgs, error } = await supabase
+  const { data: targetMsg } = await supabase
     .from('messages')
     .select('*')
-    .ilike('content', '%eta%');
+    .eq('id', '5920257b-4d70-4bce-8db4-0d9b25e02ec9')
+    .single();
 
-  console.log('Found eta messages:', etaMsgs?.length, 'Error:', error);
-  for (const m of etaMsgs || []) {
-    console.log('\n--- Message ID:', m.id, 'Sender:', m.sender, 'Created:', m.created_at, 'Conv ID:', m.conversation_id);
-    console.log('Full Raw Content:', m.content);
+  console.log('Target message:', targetMsg);
+  if (!targetMsg) return;
 
-    // Fetch surrounding messages in this conversation
-    const { data: surrounding } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', m.conversation_id)
-      .order('created_at', { ascending: true });
+  const { data: allMsgs } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', targetMsg.conversation_id)
+    .order('created_at', { ascending: true });
 
-    console.log('\n--- Full conversation history (' + surrounding?.length + ' messages) ---');
-    for (const s of surrounding || []) {
-      console.log(`[${s.sender}] (${s.created_at}): ${JSON.stringify(s.content)}`);
-    }
+  console.log(`\n=== Total ${allMsgs.length} messages in conversation ${targetMsg.conversation_id} ===`);
+  for (const m of allMsgs) {
+    console.log(`[${m.sender}] (${m.created_at}) id: ${m.id} -> ${JSON.stringify(m.content)}`);
   }
 }
 
