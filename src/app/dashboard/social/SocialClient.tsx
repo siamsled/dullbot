@@ -1334,16 +1334,8 @@ export default function SocialClient({
     <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-fog dark:bg-[#09090b]">
 
       {/* Top Header Bar */}
-      <header className="px-6 py-3.5 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-ink text-pure-white dark:bg-white/10 dark:text-white flex items-center justify-center shadow-xs">
-            <Bot className="w-4 h-4 text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-ink dark:text-white leading-none">Social Comment Automation</h1>
-            <p className="text-[11px] text-ash mt-0.5">Live AI comment replies, instant Messenger DMs, and intelligent spam auto-deletion</p>
-          </div>
-        </div>
+      <header className="px-6 py-3 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
+        <h1 className="text-sm font-bold text-ink dark:text-white">Social Comment Automation</h1>
 
         <div className="flex items-center gap-3">
           <button
