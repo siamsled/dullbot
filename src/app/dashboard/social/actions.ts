@@ -438,3 +438,152 @@ export async function fetchConnectedSocialPosts() {
     posts,
   };
 }
+
+export type CommentDetailItem = {
+  id: string;
+  comment_id: string;
+  sender_id?: string | null;
+  sender_name?: string | null;
+  comment_text: string;
+  reply_text?: string | null;
+  is_negative?: boolean;
+  is_deleted?: boolean;
+  private_reply_sent?: boolean;
+  replied_at?: string | null;
+  created_at: string;
+  source: 'database' | 'meta_api';
+};
+
+export async function fetchPostComments(postId: string, platform: 'facebook' | 'instagram'): Promise<{
+  success: boolean;
+  comments: CommentDetailItem[];
+  error?: string;
+}> {
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, comments: [], error: 'Not authenticated' };
+
+    // 1. Fetch from Supabase post_comments
+    const { data: dbComments } = await supabaseAdmin
+      .from('post_comments')
+      .select('*')
+      .eq('shop_id', shopId)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: false });
+
+    const commentsMap = new Map<string, CommentDetailItem>();
+
+    if (dbComments && Array.isArray(dbComments)) {
+      for (const c of dbComments) {
+        commentsMap.set(c.comment_id, {
+          id: c.id,
+          comment_id: c.comment_id,
+          sender_id: c.sender_id || (c as any).commenter_psid || null,
+          sender_name: c.sender_name || 'Customer',
+          comment_text: c.comment_text || '',
+          reply_text: c.reply_text || null,
+          is_negative: !!c.is_negative,
+          is_deleted: !!(c.is_deleted || (c as any).deleted_at),
+          private_reply_sent: !!(c as any).private_reply_sent,
+          replied_at: (c as any).replied_at || null,
+          created_at: c.created_at || new Date().toISOString(),
+          source: 'database',
+        });
+      }
+    }
+
+    // 2. Also try fetching live comments from Meta Graph API using shop or page token
+    const [{ data: shop }, { data: metaPages }] = await Promise.all([
+      supabaseAdmin
+        .from('shops')
+        .select('meta_page_access_token, instagram_access_token')
+        .eq('id', shopId)
+        .single(),
+      supabaseAdmin
+        .from('shop_meta_pages')
+        .select('meta_page_access_token, instagram_access_token')
+        .eq('shop_id', shopId)
+    ]);
+
+    const tokens: string[] = [];
+    if (shop?.meta_page_access_token) tokens.push(shop.meta_page_access_token);
+    if (shop?.instagram_access_token && !tokens.includes(shop.instagram_access_token)) tokens.push(shop.instagram_access_token);
+    if (metaPages && Array.isArray(metaPages)) {
+      for (const p of metaPages) {
+        if (p.meta_page_access_token && !tokens.includes(p.meta_page_access_token)) tokens.push(p.meta_page_access_token);
+        if (p.instagram_access_token && !tokens.includes(p.instagram_access_token)) tokens.push(p.instagram_access_token);
+      }
+    }
+
+    for (const token of tokens) {
+      try {
+        const url = platform === 'instagram'
+          ? `https://graph.facebook.com/v19.0/${postId}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=50&access_token=${token}`
+          : `https://graph.facebook.com/v19.0/${postId}/comments?fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=50&access_token=${token}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && Array.isArray(data.data)) {
+          for (const item of data.data) {
+            const commentId = item.id;
+            const message = item.message || item.text || '';
+            const senderName = item.from?.name || item.username || 'User';
+            const senderId = item.from?.id || null;
+            const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+
+            // Extract reply if any sub-comment exists from page
+            let replyText: string | null = null;
+            let repliedAt: string | null = null;
+            const subComments = item.comments?.data || item.replies?.data;
+            if (Array.isArray(subComments) && subComments.length > 0) {
+              replyText = subComments[0]?.message || subComments[0]?.text || null;
+              repliedAt = subComments[0]?.created_time || subComments[0]?.timestamp || null;
+            }
+
+            if (commentsMap.has(commentId)) {
+              const existing = commentsMap.get(commentId)!;
+              commentsMap.set(commentId, {
+                ...existing,
+                sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
+                reply_text: existing.reply_text || replyText,
+                replied_at: existing.replied_at || repliedAt,
+              });
+            } else {
+              commentsMap.set(commentId, {
+                id: commentId,
+                comment_id: commentId,
+                sender_id: senderId,
+                sender_name: senderName,
+                comment_text: message,
+                reply_text: replyText,
+                is_negative: false,
+                is_deleted: false,
+                private_reply_sent: false,
+                replied_at: repliedAt,
+                created_at: createdAt,
+                source: 'meta_api',
+              });
+            }
+          }
+          break; // successfully fetched
+        }
+      } catch (err) {
+        // continue to next token if any
+      }
+    }
+
+    const allComments = Array.from(commentsMap.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    return {
+      success: true,
+      comments: allComments,
+    };
+  } catch (err: any) {
+    console.error('[SOCIAL] Error in fetchPostComments:', err);
+    return { success: false, comments: [], error: err.message || 'Failed to fetch comments' };
+  }
+}
+
