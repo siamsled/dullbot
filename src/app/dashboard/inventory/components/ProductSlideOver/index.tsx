@@ -74,42 +74,81 @@ export default function ProductSlideOver({
       };
 
       if (isNew) {
-        const res = await addProduct(input);
+        const res = await addProduct({ ...input, skipProductStockMovement: true });
         if (res?.error) {
           formHook.setters.setErrors({ _form: res.error });
           return;
         }
 
+        let realVariantIds: Record<string, string> = {};
+
         if (activeVariantsList.length && res?.productId) {
           const variantInputs = activeVariantsList.map(v => ({
-            name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock || 0, image_url: v.image_url
+            name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock || 0
           }));
-          await addVariants(res.productId, variantInputs);
+          const varRes = await addVariants(res.productId, variantInputs);
+          if (varRes?.variants) {
+            activeVariantsList.forEach((v, idx) => {
+              realVariantIds[v.id] = varRes.variants![idx].id;
+            });
+          }
         }
 
         if (res?.productId) {
+          // Construct productImagesData now that we have real variant IDs
+          const allImagesData: { url: string; variant_id: string | null; position: number }[] = mediaPayload.images.map((url, idx) => ({ url, variant_id: null, position: idx }));
+          
+          activeVariantsList.forEach((v, idx) => {
+            if (v.image_url && !v.image_url.startsWith('blob:')) {
+              allImagesData.push({
+                url: v.image_url,
+                variant_id: realVariantIds[v.id] ?? null,
+                position: mediaPayload.images.length + idx
+              });
+            }
+          });
+
+          await updateProduct(res.productId, { product_images_data: allImagesData, skipProductStockMovement: true });
           await saveProductMedia(res.productId, mediaPayload.contextMedia);
         }
 
         const savedVariantsList = res?.productId ? await getProductVariants(res.productId) : [];
         onSaved({ id: res?.productId ?? '', ...input, currency: 'BDT', draft: false, is_active: input.is_active ?? true }, true, savedVariantsList);
       } else {
-        await updateProduct(product!.id, { ...input, skipProductStockMovement: true });
+        const realVariantIds: Record<string, string> = {};
 
         for (const v of variantsHook.state.variants) {
           if ((v._isNew || v.id.startsWith('new-')) && !v._deleted) {
-            await addVariants(product!.id, [{
-              name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock || 0, image_url: v.image_url
+            const varRes = await addVariants(product!.id, [{
+              name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock || 0
             }]);
+            if (varRes?.variants?.[0]) {
+              realVariantIds[v.id] = varRes.variants[0].id;
+            }
           } else if (!v._isNew && !v.id.startsWith('new-') && !v._deleted) {
+            realVariantIds[v.id] = v.id;
             await updateVariant(v.id, {
-              name: v.name, sku: v.sku, price_override: v.price_override, stock: v.stock || 0, image_url: v.image_url
+              name: v.name, sku: v.sku, price_override: v.price_override
             });
           } else if (v._deleted && !v._isNew && !v.id.startsWith('new-')) {
             await deleteVariant(v.id);
           }
         }
 
+        // Construct productImagesData
+        const allImagesData: { url: string; variant_id: string | null; position: number }[] = mediaPayload.images.map((url, idx) => ({ url, variant_id: null, position: idx }));
+        
+        activeVariantsList.forEach((v, idx) => {
+          if (v.image_url && !v.image_url.startsWith('blob:')) {
+            allImagesData.push({
+              url: v.image_url,
+              variant_id: realVariantIds[v.id] ?? v.id,
+              position: mediaPayload.images.length + idx
+            });
+          }
+        });
+
+        await updateProduct(product!.id, { ...input, product_images_data: allImagesData, skipProductStockMovement: true });
         await saveProductMedia(product!.id, mediaPayload.contextMedia);
 
         const savedVariantsList = await getProductVariants(product!.id);

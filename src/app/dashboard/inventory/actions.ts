@@ -257,7 +257,6 @@ export type VariantInput = {
   sku?: string | null;
   price_override?: number | null;
   stock?: number;
-  image_url?: string | null;
   stock_change_note?: string;
 };
 
@@ -300,7 +299,6 @@ export async function addVariants(productId: string, variants: VariantInput[]) {
     sku: v.sku?.trim() || null,
     price_override: v.price_override ?? null,
     stock: typeof v.stock === 'number' ? v.stock : 0,
-    image_url: v.image_url && !v.image_url.startsWith('blob:') ? v.image_url : null,
   }));
 
   const { data: inserted, error } = await supabaseAdmin
