@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { DullBotAvatar, DullBotEyeMark } from '@/components/ui/DullBotLogo';
 import {
   upsertPostAutomation,
   deletePostAutomation,
@@ -534,11 +535,7 @@ function AutomationTweaksPanel({
         }`}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                isEnabled ? 'bg-emerald-500 text-white shadow-xs' : 'bg-dove/30 dark:bg-white/10 text-graphite dark:text-ash'
-              }`}>
-                <Bot className="w-4 h-4" />
-              </div>
+              <DullBotAvatar size={32} />
               <div>
                 <h4 className="text-xs font-bold text-ink dark:text-white">
                   {isEnabled ? 'Automate this Post: Active' : 'Automate this Post: Paused'}
@@ -723,8 +720,8 @@ function AutomationTweaksPanel({
 
               {simulatedResult && (
                 <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-xs text-ink dark:text-white space-y-1 animate-in fade-in">
-                  <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                    <Bot className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    <DullBotEyeMark size={14} />
                     <span>Simulated Reply:</span>
                   </div>
                   <p className="leading-relaxed whitespace-pre-wrap">{simulatedResult}</p>
@@ -936,9 +933,7 @@ function CommentRowItem({
           {comment.reply_text && (
             <div className="mt-3 pl-3.5 border-l-2 border-emerald-500/40 space-y-1">
               <div className="flex items-start gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs">
-                  <Bot className="w-3.5 h-3.5" />
-                </div>
+                <DullBotAvatar size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-ink dark:text-[#f4f4f5] leading-relaxed">
                     <span className="font-bold mr-1.5 text-emerald-700 dark:text-emerald-400">
