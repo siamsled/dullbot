@@ -203,24 +203,24 @@ function AddPostModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-      <div className="bg-white rounded-2xl shadow-2xl border border-dove/20 w-full max-w-lg p-6 space-y-4 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+      <div className="bg-pure-white dark:bg-[#121214] rounded-2xl shadow-2xl border border-dove/20 dark:border-white/10 w-full max-w-lg p-6 space-y-4 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-base font-bold text-ink">Add Post Automation</h3>
             <p className="text-xs text-ash">Select a published post or paste a direct post link.</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-ash hover:text-ink rounded-lg hover:bg-fog transition-colors">
+          <button onClick={onClose} className="p-1.5 text-ash hover:text-ink rounded-lg hover:bg-fog dark:hover:bg-white/5 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-dove/15 shrink-0 gap-2">
+        <div className="flex border-b border-dove/15 dark:border-white/10 shrink-0 gap-2">
           <button
             onClick={() => setTab('connected')}
             className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors ${
-              tab === 'connected' ? 'border-ink text-ink' : 'border-transparent text-ash hover:text-ink'
+              tab === 'connected' ? 'border-ink dark:border-white text-ink' : 'border-transparent text-ash hover:text-ink'
             }`}
           >
             Published Social Posts ({connectedPosts.length})
@@ -228,7 +228,7 @@ function AddPostModal({
           <button
             onClick={() => setTab('url')}
             className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors ${
-              tab === 'url' ? 'border-ink text-ink' : 'border-transparent text-ash hover:text-ink'
+              tab === 'url' ? 'border-ink dark:border-white text-ink' : 'border-transparent text-ash hover:text-ink'
             }`}
           >
             Paste Direct URL
@@ -249,12 +249,12 @@ function AddPostModal({
               </div>
             ) : (
               connectedPosts.map((p) => (
-                <div key={p.post_id} className="flex items-center gap-3 p-3 bg-fog/60 hover:bg-fog rounded-xl border border-dove/15 hover:border-dove/30 transition-all">
+                <div key={p.post_id} className="flex items-center gap-3 p-3 bg-fog/60 dark:bg-white/[0.03] hover:bg-fog dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all">
                   {p.thumbnail_url ? (
-                    <img src={p.thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-lg shrink-0 border border-dove/15" />
+                    <img src={p.thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-lg shrink-0 border border-dove/15 dark:border-white/10" />
                   ) : (
-                    <div className="w-12 h-12 bg-white rounded-lg shrink-0 flex items-center justify-center border border-dove/15">
-                      <ImageIcon className="w-4 h-4 text-graphite" />
+                    <div className="w-12 h-12 bg-pure-white dark:bg-white/5 rounded-lg shrink-0 flex items-center justify-center border border-dove/15 dark:border-white/10">
+                      <ImageIcon className="w-4 h-4 text-graphite dark:text-ash" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -262,8 +262,8 @@ function AddPostModal({
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                         p.platform === 'instagram'
-                          ? 'bg-pink-50 text-pink-700 border-pink-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                       }`}>
                         {p.platform}
                       </span>
@@ -276,7 +276,7 @@ function AddPostModal({
                     type="button"
                     onClick={() => handleSelectPost(p)}
                     disabled={saving}
-                    className="px-3 py-1.5 bg-ink text-white rounded-lg text-xs font-bold hover:bg-black disabled:opacity-40 transition-colors shrink-0 flex items-center gap-1 shadow-xs"
+                    className="px-3 py-1.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all shrink-0 flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                     Automate
@@ -290,14 +290,16 @@ function AddPostModal({
         {tab === 'url' && (
           <div className="space-y-3 shrink-0 py-2">
             <div>
-              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Platform</label>
+              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block mb-1.5">Platform</label>
               <div className="flex gap-2">
                 {(['facebook', 'instagram'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setPlatform(p)}
-                    className={`flex-1 py-2 rounded-xl border text-xs font-bold capitalize transition-all ${
-                      platform === p ? 'bg-ink text-white border-ink' : 'bg-fog border-dove/20 text-graphite hover:border-dove/40'
+                    className={`flex-1 py-2 rounded-xl border text-xs font-bold capitalize transition-all cursor-pointer ${
+                      platform === p
+                        ? 'bg-ink text-pure-white dark:bg-white dark:text-black border-ink dark:border-white'
+                        : 'bg-fog dark:bg-white/5 border-dove/20 dark:border-white/10 text-graphite dark:text-ash hover:border-dove/40'
                     }`}
                   >
                     {p}
@@ -307,19 +309,19 @@ function AddPostModal({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">Post URL</label>
+              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block mb-1.5">Post URL</label>
               <div className="flex gap-2">
                 <input
                   type="url"
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   placeholder="https://www.facebook.com/photo?..."
-                  className="flex-1 px-3 py-2 bg-fog border border-dove/20 rounded-xl text-xs focus:outline-none focus:border-ink transition-all"
+                  className="flex-1 px-3 py-2 bg-fog dark:bg-[#18181c] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-all"
                 />
                 <button
                   onClick={handleFetch}
                   disabled={!url.trim() || fetching}
-                  className="px-3 py-2 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-3 py-2 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   {fetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   Fetch
@@ -330,27 +332,27 @@ function AddPostModal({
             {error && <p className="text-xs text-rust font-medium">{error}</p>}
 
             {preview && (
-              <div className="flex items-start gap-3 p-3 bg-fog rounded-xl border border-dove/15">
+              <div className="flex items-start gap-3 p-3 bg-fog dark:bg-white/[0.03] rounded-xl border border-dove/15 dark:border-white/10">
                 {preview.post_thumbnail_url ? (
-                  <img src={preview.post_thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+                  <img src={preview.post_thumbnail_url} alt="Post" className="w-12 h-12 object-cover rounded-lg shrink-0 border border-white/10" />
                 ) : (
-                  <div className="w-12 h-12 bg-white rounded-lg shrink-0" />
+                  <div className="w-12 h-12 bg-pure-white dark:bg-white/5 rounded-lg shrink-0 border border-dove/15 dark:border-white/10" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-ink line-clamp-3">{preview.post_preview_text || '(no caption)'}</p>
-                  <p className="text-[10px] text-graphite font-mono mt-0.5">{preview.post_id}</p>
+                  <p className="text-[10px] text-graphite dark:text-ash font-mono mt-0.5">{preview.post_id}</p>
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-dove/10">
-              <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-ash hover:text-ink transition-colors">
+            <div className="flex justify-end gap-2 pt-3 border-t border-dove/10 dark:border-white/10">
+              <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-ash hover:text-ink transition-colors cursor-pointer">
                 Cancel
               </button>
               <button
                 onClick={handleAddManual}
                 disabled={!preview || saving}
-                className="px-4 py-2 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Add Automation
@@ -477,11 +479,11 @@ function AutomationTweaksPanel({
   }, [products, productSearch]);
 
   return (
-    <div className="h-full flex flex-col bg-white border-l border-dove/15">
+    <div className="h-full flex flex-col bg-pure-white dark:bg-[#0e0e11] border-l border-dove/15 dark:border-white/10">
       {/* Header */}
-      <div className="p-4 border-b border-dove/10 flex items-center justify-between shrink-0 bg-fog/30">
+      <div className="p-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-fog/30 dark:bg-white/[0.02]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-ink text-pure-white dark:bg-white/10 dark:text-white flex items-center justify-center shadow-xs">
             <Sliders className="w-4 h-4" />
           </div>
           <div>
@@ -491,8 +493,8 @@ function AutomationTweaksPanel({
         </div>
 
         {saveToast && (
-          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 animate-in fade-in">
-            <Check className="w-3 h-3 text-emerald-600 stroke-[3]" /> Saved
+          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-in fade-in">
+            <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" /> Saved
           </span>
         )}
       </div>
@@ -502,12 +504,14 @@ function AutomationTweaksPanel({
 
         {/* Master Switch Card */}
         <div className={`p-4 rounded-2xl border transition-all ${
-          isEnabled ? 'bg-emerald-50/50 border-emerald-200/80 shadow-subtle' : 'bg-fog/60 border-dove/20'
+          isEnabled
+            ? 'bg-emerald-500/10 border-emerald-500/30 shadow-subtle'
+            : 'bg-fog/60 dark:bg-white/[0.03] border-dove/20 dark:border-white/10'
         }`}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                isEnabled ? 'bg-emerald-500 text-white shadow-xs' : 'bg-dove/30 text-graphite'
+                isEnabled ? 'bg-emerald-500 text-white shadow-xs' : 'bg-dove/30 dark:bg-white/10 text-graphite dark:text-ash'
               }`}>
                 <Bot className="w-4 h-4" />
               </div>
@@ -532,12 +536,12 @@ function AutomationTweaksPanel({
           <div className="space-y-4 animate-in fade-in duration-200">
             {/* Core Channel Toggles */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block">
+              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block">
                 Channel Behaviors
               </label>
 
               {/* Public Comment Replies */}
-              <div className="p-3 bg-fog/40 hover:bg-fog/70 rounded-xl border border-dove/15 transition-all flex items-center justify-between gap-3">
+              <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
                   <p className="text-xs font-bold text-ink">Public Comment Replies</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
@@ -552,7 +556,7 @@ function AutomationTweaksPanel({
               </div>
 
               {/* Private Messenger DM */}
-              <div className="p-3 bg-fog/40 hover:bg-fog/70 rounded-xl border border-dove/15 transition-all flex items-center justify-between gap-3">
+              <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
                   <p className="text-xs font-bold text-ink">Private Messenger DM</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
@@ -567,7 +571,7 @@ function AutomationTweaksPanel({
               </div>
 
               {/* Auto-Delete Negative / Spam */}
-              <div className="p-3 bg-fog/40 hover:bg-fog/70 rounded-xl border border-dove/15 transition-all flex items-center justify-between gap-3">
+              <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
                   <p className="text-xs font-bold text-ink">Auto-Delete Spam & Hate</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
@@ -584,7 +588,7 @@ function AutomationTweaksPanel({
 
             {/* Negative Comment Keywords */}
             {config.delete_negative && (
-              <div className="p-3.5 bg-red-50/50 rounded-xl border border-red-200/80 space-y-2.5">
+              <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 rounded-xl border border-rose-500/20 space-y-2.5">
                 <div className="flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5 text-rust" />
                   <label className="text-[10px] font-bold text-rust uppercase tracking-wider">
@@ -598,12 +602,12 @@ function AutomationTweaksPanel({
                     onChange={e => setNewDeleteExample(e.target.value)}
                     placeholder="e.g. fake, scam, fraud"
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDeleteExample())}
-                    className="flex-1 px-3 py-1.5 bg-white border border-red-200 rounded-lg text-xs text-ink focus:outline-none focus:border-rust"
+                    className="flex-1 px-3 py-1.5 bg-pure-white dark:bg-[#18181c] border border-rose-500/30 rounded-lg text-xs text-ink focus:outline-none focus:border-rust"
                   />
                   <button
                     type="button"
                     onClick={addDeleteExample}
-                    className="px-3 py-1.5 bg-rust text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
+                    className="px-3 py-1.5 bg-rust text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors cursor-pointer"
                   >
                     Add
                   </button>
@@ -612,9 +616,9 @@ function AutomationTweaksPanel({
                 {config.delete_examples?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {config.delete_examples.map((ex, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-rust border border-red-200 rounded-full text-[10px] font-medium shadow-xs">
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-pure-white dark:bg-[#18181c] text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full text-[10px] font-medium shadow-xs">
                         {ex}
-                        <button type="button" onClick={() => removeDeleteExample(i)} className="hover:text-red-900 font-bold ml-0.5">×</button>
+                        <button type="button" onClick={() => removeDeleteExample(i)} className="hover:text-red-900 dark:hover:text-red-300 font-bold ml-0.5 cursor-pointer">×</button>
                       </span>
                     ))}
                   </div>
@@ -624,7 +628,7 @@ function AutomationTweaksPanel({
 
             {/* Custom AI Instructions */}
             <div>
-              <label className="text-[10px] font-bold text-graphite uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block mb-1.5">
                 Post-Specific AI Instructions
               </label>
               <textarea
@@ -632,7 +636,7 @@ function AutomationTweaksPanel({
                 value={config.instructions || ''}
                 onChange={e => setConfig(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="e.g. Highlight the 20% Eid discount, mention free delivery inside Dhaka, or emphasize that sizes 38-44 are in stock..."
-                className="w-full px-3 py-2.5 bg-fog border border-dove/20 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink transition-colors resize-none leading-relaxed"
+                className="w-full px-3 py-2.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-colors resize-none leading-relaxed"
               />
             </div>
 
@@ -640,7 +644,7 @@ function AutomationTweaksPanel({
             {products.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-bold text-graphite uppercase tracking-wider">
+                  <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider">
                     Linked Products ({config.product_ids.length})
                   </label>
                   <span className="text-[10px] text-ash">AI uses for pricing/stock</span>
@@ -653,11 +657,11 @@ function AutomationTweaksPanel({
                     value={productSearch}
                     onChange={e => setProductSearch(e.target.value)}
                     placeholder="Filter products..."
-                    className="w-full pl-8 pr-2.5 py-1.5 bg-fog border border-dove/20 rounded-lg text-[11px] focus:outline-none focus:border-ink"
+                    className="w-full pl-8 pr-2.5 py-1.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-lg text-[11px] text-ink focus:outline-none focus:border-ink dark:focus:border-white/30"
                   />
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-fog/60 rounded-xl border border-dove/15">
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/15 dark:border-white/10">
                   {filteredProducts.map(p => {
                     const isSelected = config.product_ids.includes(p.id);
                     return (
@@ -665,15 +669,15 @@ function AutomationTweaksPanel({
                         type="button"
                         key={p.id}
                         onClick={() => toggleProduct(p.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-ink text-white border-ink shadow-xs'
-                            : 'bg-white text-graphite border-dove/20 hover:border-dove/40'
+                            ? 'bg-ink text-pure-white dark:bg-white dark:text-black border-ink dark:border-white shadow-xs'
+                            : 'bg-pure-white dark:bg-[#18181c] text-graphite dark:text-ash border-dove/20 dark:border-white/10 hover:border-dove/40'
                         }`}
                       >
                         <Package className="w-3 h-3" />
                         <span className="truncate max-w-[120px]">{p.name}</span>
-                        <span className={`text-[10px] ${isSelected ? 'text-amber-300' : 'text-ash'}`}>
+                        <span className={`text-[10px] ${isSelected ? 'text-amber-300 dark:text-amber-600' : 'text-ash'}`}>
                           ৳{p.price}
                         </span>
                       </button>
@@ -688,12 +692,12 @@ function AutomationTweaksPanel({
 
       {/* Footer Save Button */}
       {isEnabled && (
-        <div className="p-4 border-t border-dove/10 bg-white flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 border-t border-dove/10 dark:border-white/10 bg-pure-white dark:bg-[#0e0e11] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={() => onToggleMaster(false)}
             disabled={isPending}
-            className="text-[11px] font-semibold text-rust hover:text-red-700 flex items-center gap-1 transition-colors"
+            className="text-[11px] font-semibold text-rust hover:text-red-700 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" /> Disable
           </button>
@@ -702,7 +706,7 @@ function AutomationTweaksPanel({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="flex-1 max-w-[180px] py-2.5 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer"
+            className="flex-1 max-w-[180px] py-2.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[3]" />}
             <span>Save Settings</span>
@@ -761,15 +765,15 @@ function CommentRowItem({
 
   return (
     <div
-      className={`p-4 bg-white rounded-2xl border transition-all ${
+      className={`p-4 bg-pure-white dark:bg-[#121214] rounded-2xl border transition-all ${
         comment.is_deleted
-          ? 'border-red-200 bg-red-50/30 opacity-75'
-          : 'border-dove/15 hover:border-dove/30 shadow-subtle'
+          ? 'border-red-500/30 bg-red-500/5 opacity-75'
+          : 'border-dove/15 dark:border-white/10 hover:border-dove/30 dark:hover:border-white/20 shadow-subtle'
       }`}
     >
       {/* Customer Comment Bubble */}
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/40 to-dove/70 text-ink flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/40 to-dove/70 dark:from-white/10 dark:to-white/20 text-ink flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border border-dove/10 dark:border-white/10">
           {comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U'}
         </div>
 
@@ -778,17 +782,17 @@ function CommentRowItem({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-ink truncate">{comment.sender_name || 'Customer'}</span>
               {comment.is_deleted && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
                   Auto-Deleted
                 </span>
               )}
               {comment.private_reply_sent && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   DM Sent
                 </span>
               )}
               {comment.reply_text && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   Replied
                 </span>
               )}
@@ -798,18 +802,18 @@ function CommentRowItem({
             </span>
           </div>
 
-          <p className="text-xs text-graphite mt-1 bg-fog/50 p-2.5 rounded-xl border border-dove/10 leading-relaxed whitespace-pre-wrap">
+          <p className="text-xs text-graphite dark:text-[#e4e4e7] mt-1 bg-fog/50 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed whitespace-pre-wrap">
             {comment.comment_text}
           </p>
 
           {/* Existing Reply Bubble if any */}
           {comment.reply_text && (
-            <div className="mt-2.5 pl-3 border-l-2 border-emerald-400">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 mb-1">
-                <Bot className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="mt-2.5 pl-3 border-l-2 border-emerald-400 dark:border-emerald-500">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
+                <Bot className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>DullBot / Store Reply</span>
               </div>
-              <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 text-xs text-ink leading-relaxed">
+              <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-500/10 rounded-xl border border-emerald-200/80 dark:border-emerald-500/20 text-xs text-ink leading-relaxed">
                 {comment.reply_text}
               </div>
             </div>
@@ -823,8 +827,8 @@ function CommentRowItem({
                 onClick={() => setIsReplying(prev => !prev)}
                 className={`text-[11px] font-bold flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   isReplying
-                    ? 'bg-ink text-white shadow-xs'
-                    : 'text-graphite hover:text-ink bg-fog/80 hover:bg-fog border border-dove/15'
+                    ? 'bg-ink text-pure-white dark:bg-white dark:text-black shadow-xs'
+                    : 'text-graphite dark:text-ash hover:text-ink bg-fog/80 dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 border border-dove/15 dark:border-white/10'
                 }`}
               >
                 <CornerDownRight className="w-3 h-3" />
@@ -838,7 +842,7 @@ function CommentRowItem({
                     setIsReplying(true);
                     handleAiSuggest();
                   }}
-                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3" />
                   <span>AI Draft Reply</span>
@@ -849,18 +853,18 @@ function CommentRowItem({
 
           {/* Inline Reply Composer */}
           {isReplying && (
-            <div className="mt-3 p-3 bg-fog/60 rounded-xl border border-dove/20 space-y-2.5 animate-in fade-in duration-150">
+            <div className="mt-3 p-3 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/20 dark:border-white/10 space-y-2.5 animate-in fade-in duration-150">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-graphite">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-graphite dark:text-ash">
                   Replying as {platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}
                 </span>
 
-                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-dove/15 text-[10px] font-semibold">
+                <div className="flex items-center gap-1 bg-pure-white dark:bg-[#18181c] p-0.5 rounded-lg border border-dove/15 dark:border-white/10 text-[10px] font-semibold">
                   <button
                     type="button"
                     onClick={() => setReplyAsDm(false)}
                     className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      !replyAsDm ? 'bg-ink text-white shadow-xs' : 'text-ash hover:text-ink'
+                      !replyAsDm ? 'bg-ink text-pure-white dark:bg-white dark:text-black shadow-xs' : 'text-ash hover:text-ink'
                     }`}
                   >
                     Public Reply
@@ -869,7 +873,7 @@ function CommentRowItem({
                     type="button"
                     onClick={() => setReplyAsDm(true)}
                     className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      replyAsDm ? 'bg-ink text-white shadow-xs' : 'text-ash hover:text-ink'
+                      replyAsDm ? 'bg-ink text-pure-white dark:bg-white dark:text-black shadow-xs' : 'text-ash hover:text-ink'
                     }`}
                   >
                     Private DM
@@ -883,7 +887,7 @@ function CommentRowItem({
                   onChange={e => setReplyText(e.target.value)}
                   placeholder={replyAsDm ? `Send a private Messenger DM to ${comment.sender_name}...` : `Write a public comment reply...`}
                   rows={2}
-                  className="w-full px-3 py-2 bg-white border border-dove/20 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink resize-none leading-relaxed"
+                  className="w-full px-3 py-2 bg-pure-white dark:bg-[#18181c] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 resize-none leading-relaxed"
                 />
               </div>
 
@@ -896,7 +900,7 @@ function CommentRowItem({
                   type="button"
                   onClick={handleAiSuggest}
                   disabled={generatingAi}
-                  className="px-2.5 py-1.5 bg-white hover:bg-fog border border-dove/20 text-emerald-700 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 border border-dove/20 dark:border-white/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
                 >
                   {generatingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   <span>AI Suggest</span>
@@ -914,9 +918,9 @@ function CommentRowItem({
                     type="button"
                     onClick={handleSendReply}
                     disabled={sending || !replyText.trim()}
-                    className="px-3.5 py-1.5 bg-ink text-white rounded-lg text-[11px] font-bold hover:bg-black disabled:opacity-40 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                    className="px-3.5 py-1.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-lg text-[11px] font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
                   >
-                    {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                     <span>Send {replyAsDm ? 'DM' : 'Reply'}</span>
                   </button>
                 </div>
@@ -1000,13 +1004,13 @@ function PostAndLiveCommentsCenter({
   const moderatedCount = comments.filter(c => !!c.is_deleted || !!c.is_negative).length;
 
   return (
-    <div className="h-full flex flex-col bg-fog/20 overflow-y-auto">
+    <div className="h-full flex flex-col bg-fog/30 dark:bg-[#09090b] overflow-y-auto">
       <div className="max-w-3xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
         {/* ── Post Details Card ── */}
-        <div className="bg-white rounded-2xl border border-dove/15 shadow-subtle overflow-hidden">
+        <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle overflow-hidden">
           {/* Post Header */}
-          <div className="p-4 border-b border-dove/10 flex items-center justify-between gap-3">
+          <div className="p-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-xs ${
                 post.platform === 'instagram'
@@ -1017,21 +1021,21 @@ function PostAndLiveCommentsCenter({
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-ink truncate">{shopName}</h4>
+                  <h4 className="text-sm font-bold text-ink dark:text-white truncate">{shopName}</h4>
                   <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                     post.platform === 'instagram'
-                      ? 'bg-pink-50 text-pink-700 border-pink-200'
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                      ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
+                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                   }`}>
                     {post.platform}
                   </span>
                   {automation ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Automated ON
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium text-ash bg-fog border border-dove/20 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-medium text-ash bg-fog dark:bg-white/5 border border-dove/20 dark:border-white/10 px-2 py-0.5 rounded-full">
                       Automate OFF
                     </span>
                   )}
@@ -1054,7 +1058,7 @@ function PostAndLiveCommentsCenter({
                 href={post.permalink_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-xl border border-dove/20 hover:border-dove/40 bg-fog/50 hover:bg-fog text-xs font-semibold text-graphite hover:text-ink flex items-center gap-1.5 transition-all shadow-xs shrink-0"
+                className="px-3 py-1.5 rounded-xl border border-dove/20 dark:border-white/10 hover:border-dove/40 dark:hover:border-white/20 bg-fog/50 dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-xs font-semibold text-graphite dark:text-ash hover:text-ink dark:hover:text-white flex items-center gap-1.5 transition-all shadow-xs shrink-0"
               >
                 <span>View on {post.platform === 'instagram' ? 'Instagram' : 'Facebook'}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -1064,7 +1068,7 @@ function PostAndLiveCommentsCenter({
 
           {/* Post Caption Body */}
           <div className="p-4 sm:p-5">
-            <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap font-normal">
+            <p className="text-sm text-ink dark:text-white leading-relaxed whitespace-pre-wrap font-normal">
               {post.preview_text}
             </p>
           </div>
@@ -1072,7 +1076,7 @@ function PostAndLiveCommentsCenter({
           {/* Post Media / Image */}
           {post.thumbnail_url && (
             <div className="px-4 sm:px-5 pb-5">
-              <div className="max-h-[380px] w-full rounded-xl overflow-hidden bg-fog border border-dove/10 flex items-center justify-center">
+              <div className="max-h-[380px] w-full rounded-xl overflow-hidden bg-fog dark:bg-white/5 border border-dove/10 dark:border-white/10 flex items-center justify-center">
                 <img src={post.thumbnail_url} alt="Post visual" className="w-full h-full object-cover max-h-[380px]" />
               </div>
             </div>
@@ -1082,21 +1086,21 @@ function PostAndLiveCommentsCenter({
         {/* ── Live Comments & AI Replies Stream ── */}
         <div className="space-y-3">
           {/* Section Header & Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-dove/15 shadow-subtle">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-pure-white dark:bg-[#121214] p-3.5 rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-ink" />
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Live Comments Stream</h3>
-              <span className="px-2 py-0.5 rounded-full bg-fog text-ink text-[11px] font-bold border border-dove/15">
+              <MessageSquare className="w-4 h-4 text-ink dark:text-white" />
+              <h3 className="text-xs font-bold text-ink dark:text-white uppercase tracking-wider">Live Comments Stream</h3>
+              <span className="px-2 py-0.5 rounded-full bg-fog dark:bg-white/5 text-ink dark:text-white text-[11px] font-bold border border-dove/15 dark:border-white/10">
                 {comments.length}
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center gap-1 bg-fog p-1 rounded-xl border border-dove/10">
+              <div className="flex items-center gap-1 bg-fog dark:bg-white/5 p-1 rounded-xl border border-dove/10 dark:border-white/10">
                 <button
                   onClick={() => setFilterType('all')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+                    filterType === 'all' ? 'bg-pure-white dark:bg-white/15 text-ink dark:text-white shadow-xs border border-dove/10 dark:border-white/10' : 'text-ash hover:text-ink dark:hover:text-white'
                   }`}
                 >
                   All ({comments.length})
@@ -1104,7 +1108,7 @@ function PostAndLiveCommentsCenter({
                 <button
                   onClick={() => setFilterType('replied')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'replied' ? 'bg-white text-emerald-700 shadow-xs border border-emerald-200' : 'text-ash hover:text-emerald-700'
+                    filterType === 'replied' ? 'bg-pure-white dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30' : 'text-ash hover:text-emerald-500'
                   }`}
                 >
                   AI Replied ({repliedCount})
@@ -1112,7 +1116,7 @@ function PostAndLiveCommentsCenter({
                 <button
                   onClick={() => setFilterType('dmed')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'dmed' ? 'bg-white text-blue-700 shadow-xs border border-blue-200' : 'text-ash hover:text-blue-700'
+                    filterType === 'dmed' ? 'bg-pure-white dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 shadow-xs border border-blue-500/30' : 'text-ash hover:text-blue-500'
                   }`}
                 >
                   DMs Sent ({dmedCount})
@@ -1120,7 +1124,7 @@ function PostAndLiveCommentsCenter({
                 <button
                   onClick={() => setFilterType('moderated')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'moderated' ? 'bg-white text-rust shadow-xs border border-red-200' : 'text-ash hover:text-rust'
+                    filterType === 'moderated' ? 'bg-pure-white dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-xs border border-rose-500/30' : 'text-ash hover:text-rose-500'
                   }`}
                 >
                   Moderated ({moderatedCount})
@@ -1130,7 +1134,7 @@ function PostAndLiveCommentsCenter({
               <button
                 onClick={loadComments}
                 disabled={loadingComments}
-                className="p-1.5 bg-white border border-dove/20 text-ash hover:text-ink rounded-lg transition-all shadow-xs cursor-pointer"
+                className="p-1.5 bg-pure-white dark:bg-white/5 border border-dove/20 dark:border-white/10 text-ash hover:text-ink dark:hover:text-white rounded-lg transition-all shadow-xs cursor-pointer"
                 title="Refresh comments from Meta"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingComments ? 'animate-spin' : ''}`} />
@@ -1139,8 +1143,8 @@ function PostAndLiveCommentsCenter({
           </div>
 
           {/* Test / Simulate AI Comment Reply Bar */}
-          <div className="bg-white p-3 rounded-2xl border border-dove/15 shadow-subtle flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0 bg-fog/60 px-3 py-2 rounded-xl border border-dove/15">
+          <div className="bg-pure-white dark:bg-[#121214] p-3 rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0 bg-fog/60 dark:bg-[#18181c] px-3 py-2 rounded-xl border border-dove/15 dark:border-white/10">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <input
                 type="text"
@@ -1148,14 +1152,14 @@ function PostAndLiveCommentsCenter({
                 onChange={e => setTestCommentText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSimulateComment()}
                 placeholder='Test AI reply (e.g., "pp please", "delivery charge koto?", "is this in stock?")'
-                className="flex-1 bg-transparent text-xs text-ink placeholder:text-ash/60 focus:outline-none"
+                className="flex-1 bg-transparent text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none"
               />
             </div>
             <button
               type="button"
               onClick={handleSimulateComment}
               disabled={simulating || !testCommentText.trim()}
-              className="px-4 py-2.5 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
+              className="px-4 py-2.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
             >
               {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               <span>Test AI Reply</span>
@@ -1164,14 +1168,14 @@ function PostAndLiveCommentsCenter({
 
           {/* Comments List */}
           {loadingComments ? (
-            <div className="bg-white rounded-2xl border border-dove/15 p-8 text-center text-xs text-ash flex flex-col items-center justify-center gap-2 shadow-subtle">
-              <Loader2 className="w-5 h-5 animate-spin text-ink" />
-              <p className="font-semibold text-ink">Fetching latest comments & AI replies...</p>
+            <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 p-8 text-center text-xs text-ash flex flex-col items-center justify-center gap-2 shadow-subtle">
+              <Loader2 className="w-5 h-5 animate-spin text-ink dark:text-white" />
+              <p className="font-semibold text-ink dark:text-white">Fetching latest comments & AI replies...</p>
             </div>
           ) : filteredComments.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dove/15 p-8 text-center space-y-2 shadow-subtle">
+            <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 p-8 text-center space-y-2 shadow-subtle">
               <MessageCircle className="w-8 h-8 text-ash mx-auto opacity-30" />
-              <p className="text-xs font-bold text-ink">No comments in this filter</p>
+              <p className="text-xs font-bold text-ink dark:text-white">No comments in this filter</p>
               <p className="text-[11px] text-ash max-w-xs mx-auto">
                 When customers leave comments on your published post, DullBot will automatically reply and record the activity here.
               </p>
@@ -1250,28 +1254,31 @@ export default function SocialClient({
   const handleToggleAutomation = async (post: ConnectedPostItem, targetEnabled: boolean) => {
     setTogglingPostId(post.post_id);
     setErrorMessage(null);
+
     const res = await togglePostAutomationStatus(post.post_id, targetEnabled, {
       platform: post.platform,
       preview_text: post.preview_text,
       thumbnail_url: post.thumbnail_url || undefined,
     });
-    setTogglingPostId(null);
 
     if (res.success) {
-      if (res.enabled && res.data) {
-        setAutomations(prev => [res.data, ...prev.filter(x => x.post_id !== post.post_id)]);
+      if (targetEnabled && res.data) {
+        setAutomations(prev => {
+          const filtered = prev.filter(a => a.post_id !== post.post_id);
+          return [res.data!, ...filtered];
+        });
       } else {
-        setAutomations(prev => prev.filter(x => x.post_id !== post.post_id));
+        setAutomations(prev => prev.filter(a => a.post_id !== post.post_id));
       }
     } else {
-      setErrorMessage(res.error || 'Failed to toggle automation status.');
-      setTimeout(() => setErrorMessage(null), 5000);
+      setErrorMessage(res.error || 'Failed to toggle automation');
     }
+    setTogglingPostId(null);
   };
 
-  const handleAdded = (a: PostAutomation) => {
-    setAutomations(prev => [a, ...prev.filter(x => x.post_id !== a.post_id)]);
-    setSelectedPostId(a.post_id);
+  const handleAdded = (newAuto: PostAutomation) => {
+    setAutomations(prev => [newAuto, ...prev]);
+    setSelectedPostId(newAuto.post_id);
     setShowAddModal(false);
   };
 
@@ -1283,35 +1290,33 @@ export default function SocialClient({
     setAutomations(prev => prev.filter(a => a.post_id !== postId));
   };
 
-  // Filtered & Sorted Feed for Left Column
+  // Filtered post feed
   const filteredPosts = useMemo(() => {
     return connectedPosts
       .filter(p => {
-        // Search query filter
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchesCaption = (p.preview_text || '').toLowerCase().includes(q);
-          const matchesId = p.post_id.toLowerCase().includes(q);
-          if (!matchesCaption && !matchesId) return false;
-        }
-
-        // Platform filter
-        if (platformFilter === 'facebook' && p.platform !== 'facebook') return false;
-        if (platformFilter === 'instagram' && p.platform !== 'instagram') return false;
-
-        // Automation Status filter
-        const isAuto = automationMap.has(p.post_id);
-        if (statusFilter === 'automated' && !isAuto) return false;
-        if (statusFilter === 'off' && isAuto) return false;
-
+        if (platformFilter === 'facebook') return p.platform === 'facebook';
+        if (platformFilter === 'instagram') return p.platform === 'instagram';
         return true;
+      })
+      .filter(p => {
+        if (statusFilter === 'automated') return automationMap.has(p.post_id);
+        if (statusFilter === 'off') return !automationMap.has(p.post_id);
+        return true;
+      })
+      .filter(p => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          p.preview_text.toLowerCase().includes(q) ||
+          p.post_id.toLowerCase().includes(q)
+        );
       })
       .sort((a, b) => {
         const timeA = new Date(a.created_time).getTime();
         const timeB = new Date(b.created_time).getTime();
         return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
       });
-  }, [connectedPosts, searchQuery, platformFilter, statusFilter, sortOrder, automationMap]);
+  }, [connectedPosts, platformFilter, statusFilter, searchQuery, sortOrder, automationMap]);
 
   const selectedPost = useMemo(() => {
     return connectedPosts.find(p => p.post_id === selectedPostId) || filteredPosts[0] || null;
@@ -1326,16 +1331,16 @@ export default function SocialClient({
   const autoCount = automations.length;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-[#FAF9F5]">
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-fog dark:bg-[#09090b]">
 
       {/* Top Header Bar */}
-      <header className="px-6 py-3.5 bg-white border-b border-dove/15 flex items-center justify-between shrink-0 shadow-xs z-10">
+      <header className="px-6 py-3.5 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center shadow-xs">
-            <Bot className="w-4 h-4 text-amber-300" />
+          <div className="w-8 h-8 rounded-xl bg-ink text-pure-white dark:bg-white/10 dark:text-white flex items-center justify-center shadow-xs">
+            <Bot className="w-4 h-4 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-ink leading-none">Social Comment Automation</h1>
+            <h1 className="text-base font-bold text-ink dark:text-white leading-none">Social Comment Automation</h1>
             <p className="text-[11px] text-ash mt-0.5">Live AI comment replies, instant Messenger DMs, and intelligent spam auto-deletion</p>
           </div>
         </div>
@@ -1343,7 +1348,7 @@ export default function SocialClient({
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black transition-all shadow-subtle cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-subtle cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Paste Post URL</span>
@@ -1353,13 +1358,13 @@ export default function SocialClient({
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="px-6 py-2.5 bg-rose-50 border-b border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+        <div className="px-6 py-2.5 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-200 dark:border-rose-500/20 text-rose-800 dark:text-rose-400 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-rose-100 rounded-full">
-            <X className="w-3.5 h-3.5 text-rose-600" />
+          <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-full cursor-pointer">
+            <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
           </button>
         </div>
       )}
@@ -1370,10 +1375,10 @@ export default function SocialClient({
         {/* ══════════════════════════════════════════════════════════
             COLUMN 1 (LEFT): POSTS LIST WITH SEARCH & FILTERS
             ══════════════════════════════════════════════════════════ */}
-        <div className="w-full lg:w-[340px] xl:w-[360px] flex flex-col bg-white border-r border-dove/15 shrink-0 h-full">
+        <div className="w-full lg:w-[340px] xl:w-[360px] flex flex-col bg-pure-white dark:bg-[#0e0e11] border-r border-dove/15 dark:border-white/10 shrink-0 h-full">
 
           {/* Search & Sort Controls */}
-          <div className="p-3.5 border-b border-dove/10 space-y-2.5 shrink-0 bg-fog/20">
+          <div className="p-3.5 border-b border-dove/10 dark:border-white/10 space-y-2.5 shrink-0 bg-fog/20 dark:bg-white/[0.02]">
             {/* Search Input */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1382,12 +1387,12 @@ export default function SocialClient({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search posts by caption or ID…"
-                className="w-full pl-9 pr-3 py-2 bg-white border border-dove/20 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink shadow-xs transition-all"
+                className="w-full pl-9 pr-3 py-2 bg-pure-white dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 shadow-xs transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ash hover:text-ink p-0.5"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ash hover:text-ink dark:hover:text-white p-0.5 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1395,18 +1400,18 @@ export default function SocialClient({
             </div>
 
             {/* Platform Filter Pills */}
-            <div className="flex items-center gap-1 bg-fog p-1 rounded-xl border border-dove/15">
+            <div className="flex items-center gap-1 bg-fog dark:bg-white/5 p-1 rounded-xl border border-dove/15 dark:border-white/10">
               <button
                 onClick={() => setPlatformFilter('all')}
-                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold transition-all ${
-                  platformFilter === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
+                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  platformFilter === 'all' ? 'bg-pure-white dark:bg-white/15 text-ink dark:text-white shadow-xs border border-dove/10 dark:border-white/10' : 'text-ash hover:text-ink dark:hover:text-white'
                 }`}
               >
                 All ({connectedPosts.length})
               </button>
               <button
                 onClick={() => setPlatformFilter('facebook')}
-                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
+                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                   platformFilter === 'facebook' ? 'bg-[#0084FF] text-white shadow-xs' : 'text-ash hover:text-[#0084FF]'
                 }`}
               >
@@ -1415,7 +1420,7 @@ export default function SocialClient({
               </button>
               <button
                 onClick={() => setPlatformFilter('instagram')}
-                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
+                className={`flex-1 py-1 text-center rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                   platformFilter === 'instagram' ? 'bg-pink-600 text-white shadow-xs' : 'text-ash hover:text-pink-600'
                 }`}
               >
@@ -1429,7 +1434,7 @@ export default function SocialClient({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setStatusFilter(prev => prev === 'all' ? 'automated' : prev === 'automated' ? 'off' : 'all')}
-                  className="px-2 py-1 bg-white border border-dove/20 text-graphite rounded-lg text-[10px] font-bold hover:border-ink transition-all flex items-center gap-1 shadow-xs"
+                  className="px-2 py-1 bg-pure-white dark:bg-white/5 border border-dove/20 dark:border-white/10 text-graphite dark:text-ash rounded-lg text-[10px] font-bold hover:border-ink dark:hover:border-white/30 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
                 >
                   <Filter className="w-3 h-3 text-ash" />
                   <span>{statusFilter === 'all' ? 'Status: All' : statusFilter === 'automated' ? 'Active ON' : 'Paused OFF'}</span>
@@ -1439,16 +1444,16 @@ export default function SocialClient({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                  className="px-2 py-1 bg-white border border-dove/20 text-graphite rounded-lg text-[10px] font-bold hover:border-ink transition-all flex items-center gap-1 shadow-xs"
+                  className="px-2 py-1 bg-pure-white dark:bg-white/5 border border-dove/20 dark:border-white/10 text-graphite dark:text-ash rounded-lg text-[10px] font-bold hover:border-ink dark:hover:border-white/30 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
                 >
-                  {sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-rust" /> : <ArrowUp className="w-3 h-3 text-blue-600" />}
+                  {sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-rust" /> : <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />}
                   <span>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</span>
                 </button>
 
                 <button
                   onClick={loadConnectedPosts}
                   disabled={loadingPosts}
-                  className="p-1 bg-white border border-dove/20 text-ash hover:text-ink rounded-lg transition-all shadow-xs"
+                  className="p-1 bg-pure-white dark:bg-white/5 border border-dove/20 dark:border-white/10 text-ash hover:text-ink dark:hover:text-white rounded-lg transition-all shadow-xs cursor-pointer"
                   title="Refresh Posts"
                 >
                   <RefreshCw className={`w-3 h-3 ${loadingPosts ? 'animate-spin' : ''}`} />
@@ -1461,13 +1466,13 @@ export default function SocialClient({
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {loadingPosts ? (
               <div className="p-8 text-center space-y-2 text-xs text-ash">
-                <Loader2 className="w-5 h-5 animate-spin text-ink mx-auto" />
+                <Loader2 className="w-5 h-5 animate-spin text-ink dark:text-white mx-auto" />
                 <p>Syncing published posts…</p>
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="p-8 text-center space-y-2 text-xs text-ash">
                 <Megaphone className="w-6 h-6 text-ash mx-auto opacity-30" />
-                <p className="font-bold text-ink">No matching posts</p>
+                <p className="font-bold text-ink dark:text-white">No matching posts</p>
                 <p className="text-[11px] text-ash">Try changing your search term or platform filter.</p>
               </div>
             ) : (
@@ -1483,8 +1488,8 @@ export default function SocialClient({
                     onClick={() => setSelectedPostId(post.post_id)}
                     className={`w-full text-left p-3 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer ${
                       isSelected
-                        ? 'bg-ink text-white border-ink shadow-md scale-[1.01]'
-                        : 'bg-white hover:bg-fog/60 border-dove/15 hover:border-dove/30 text-ink shadow-xs'
+                        ? 'bg-zinc-900 text-white dark:bg-white/10 dark:text-white border-zinc-900 dark:border-white/20 shadow-md ring-1 ring-black/5 dark:ring-white/10 scale-[1.01]'
+                        : 'bg-pure-white dark:bg-[#121214] hover:bg-fog/60 dark:hover:bg-[#18181c] border-dove/15 dark:border-white/10 text-ink dark:text-white shadow-xs'
                     }`}
                   >
                     {/* Post Thumbnail */}
@@ -1496,7 +1501,7 @@ export default function SocialClient({
                       />
                     ) : (
                       <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center border ${
-                        isSelected ? 'bg-white/10 border-white/10' : 'bg-fog border-dove/15'
+                        isSelected ? 'bg-white/10 border-white/10' : 'bg-fog dark:bg-white/5 border-dove/15 dark:border-white/10'
                       }`}>
                         <ImageIcon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-ash'}`} />
                       </div>
@@ -1509,8 +1514,8 @@ export default function SocialClient({
                           isSelected
                             ? 'bg-white/20 text-white border-white/20'
                             : post.platform === 'instagram'
-                            ? 'bg-pink-50 text-pink-700 border-pink-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                            ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                         }`}>
                           {post.platform}
                         </span>
@@ -1527,7 +1532,7 @@ export default function SocialClient({
                         </div>
                       </div>
 
-                      <p className={`text-xs font-semibold line-clamp-2 leading-snug ${isSelected ? 'text-white' : 'text-ink'}`}>
+                      <p className={`text-xs font-semibold line-clamp-2 leading-snug ${isSelected ? 'text-white' : 'text-ink dark:text-[#e4e4e7]'}`}>
                         {post.preview_text || '(No caption text)'}
                       </p>
                     </div>
@@ -1551,7 +1556,7 @@ export default function SocialClient({
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center text-ash space-y-3">
               <Megaphone className="w-12 h-12 text-ash opacity-20" />
-              <h3 className="text-sm font-bold text-ink">Select a Post to View</h3>
+              <h3 className="text-sm font-bold text-ink dark:text-white">Select a Post to View</h3>
               <p className="text-xs max-w-sm">
                 Choose any post from the left feed to inspect post details, monitor live customer comments, and fine-tune AI replies.
               </p>
@@ -1590,4 +1595,3 @@ export default function SocialClient({
     </div>
   );
 }
-
