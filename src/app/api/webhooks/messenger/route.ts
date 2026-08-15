@@ -839,7 +839,7 @@ Respond ONLY with a JSON object: { "delete": true/false, "confidence": 0.0-1.0 }
 A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
 
       const genAIForDelete = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-      const deleteModel = genAIForDelete.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const deleteModel = genAIForDelete.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
       const deleteResult = await deleteModel.generateContent(deletePrompt);
       const deleteRaw = deleteResult.response.text().trim();
 
@@ -918,7 +918,7 @@ Rules:
 - Do not include any personal data in the public reply`;
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
       const result = await model.generateContent({
         systemInstruction: systemPrompt,
         contents: [{ role: 'user', parts: [{ text: `Comment from ${commenterName}: "${commentText}"` }] }],
