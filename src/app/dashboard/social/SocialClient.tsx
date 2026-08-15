@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Send, Trash2, Package, Plus, ExternalLink,
@@ -406,8 +406,20 @@ function AutomationTweaksPanel({
 
   const [newDeleteExample, setNewDeleteExample] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const [saveToast, setSaveToast] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsProductSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Test AI Simulator State
   const [testCommentText, setTestCommentText] = useState('');
@@ -502,6 +514,10 @@ function AutomationTweaksPanel({
     if (!productSearch.trim()) return products;
     return products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
   }, [products, productSearch]);
+
+  const selectedProducts = useMemo(() => {
+    return products.filter(p => config.product_ids.includes(p.id));
+  }, [products, config.product_ids]);
 
   return (
     <div className="h-full flex flex-col bg-pure-white dark:bg-[#0e0e11] border-l border-dove/15 dark:border-white/10">
@@ -622,51 +638,149 @@ function AutomationTweaksPanel({
                   <span className="text-[10px] text-ash">AI uses for pricing & stock</span>
                 </div>
 
-                <div className="relative mb-2">
-                  <Search className="w-3 h-3 text-ash absolute left-2.5 top-1/2 -translate-y-1/2" />
+                {/* Search Box with Popover Dropdown on tap/focus */}
+                <div ref={searchContainerRef} className="relative mb-2.5">
+                  <Search className="w-3.5 h-3.5 text-ash absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={productSearch}
-                    onChange={e => setProductSearch(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full pl-8 pr-2.5 py-1.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-lg text-[11px] text-ink dark:text-white focus:outline-none focus:border-ink dark:focus:border-white/30"
+                    onFocus={() => setIsProductSearchOpen(true)}
+                    onChange={e => {
+                      setProductSearch(e.target.value);
+                      setIsProductSearchOpen(true);
+                    }}
+                    placeholder="Search products to add context..."
+                    className="w-full pl-8.5 pr-8 py-2 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white focus:outline-none focus:border-ink dark:focus:border-white/30 focus:ring-1 focus:ring-ink/20 shadow-2xs transition-all"
                   />
+                  {productSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-dove/20 text-ash cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {/* Dropdown list appearing ONLY when tapping on search */}
+                  <AnimatePresence>
+                    {isProductSearchOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-[#18181c] border border-dove/20 dark:border-white/15 rounded-2xl shadow-xl overflow-hidden max-h-60 overflow-y-auto p-1.5 divide-y divide-dove/10 dark:divide-white/5"
+                      >
+                        {filteredProducts.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-ash">
+                            No products matching &quot;{productSearch}&quot;
+                          </div>
+                        ) : (
+                          filteredProducts.map(p => {
+                            const isSelected = config.product_ids.includes(p.id);
+                            return (
+                              <button
+                                type="button"
+                                key={p.id}
+                                onClick={() => {
+                                  toggleProduct(p.id);
+                                }}
+                                className={`w-full flex items-center justify-between gap-2.5 p-2 rounded-xl text-left transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-ink/5 dark:bg-white/10 text-ink dark:text-white font-bold'
+                                    : 'hover:bg-fog dark:hover:bg-white/5 text-graphite dark:text-ash font-medium'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                  {p.image_url ? (
+                                    <img
+                                      src={p.image_url}
+                                      alt={p.name}
+                                      className="w-7 h-7 rounded-lg object-cover shrink-0 border border-dove/15 dark:border-white/10"
+                                    />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-lg bg-fog dark:bg-white/10 flex items-center justify-center shrink-0">
+                                      <Package className="w-3.5 h-3.5 text-ash" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs truncate">{p.name}</p>
+                                    <p className="text-[10px] text-ash font-semibold mt-0.5">৳{Number(p.price).toLocaleString('en-BD')}</p>
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 flex items-center gap-1.5">
+                                  {isSelected ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                                      <Check className="w-3 h-3 stroke-[3]" /> Added
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fog dark:bg-white/10 text-ash text-[10px] font-semibold hover:text-ink">
+                                      <Plus className="w-3 h-3" /> Add
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/15 dark:border-white/10">
-                  {filteredProducts.map(p => {
-                    const isSelected = config.product_ids.includes(p.id);
-                    return (
+                {/* Below Search Box: List of already added context products */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-ash uppercase tracking-wider px-0.5">
+                    <span>Linked Products ({selectedProducts.length})</span>
+                    {selectedProducts.length > 0 && (
                       <button
                         type="button"
-                        key={p.id}
-                        onClick={() => toggleProduct(p.id)}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-ink text-pure-white dark:bg-white dark:text-black border-ink dark:border-white shadow-xs'
-                            : 'bg-pure-white dark:bg-[#18181c] text-graphite dark:text-ash border-dove/20 dark:border-white/10 hover:border-dove/40 dark:hover:border-white/30'
-                        }`}
+                        onClick={() => setConfig(prev => ({ ...prev, product_ids: [] }))}
+                        className="text-ash hover:text-rose-500 transition-colors normal-case font-normal text-[10px] cursor-pointer"
                       >
-                        {p.image_url ? (
-                          <img
-                            src={p.image_url}
-                            alt={p.name}
-                            className="w-5 h-5 rounded-md object-cover shrink-0 border border-dove/10 dark:border-white/10"
-                          />
-                        ) : (
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
-                            isSelected ? 'bg-white/20' : 'bg-fog dark:bg-white/10'
-                          }`}>
-                            <Package className={`w-3 h-3 ${isSelected ? 'text-white dark:text-black' : 'text-ash'}`} />
-                          </div>
-                        )}
-                        <span className="truncate max-w-[130px]">{p.name}</span>
-                        <span className={`text-[10px] font-bold ${isSelected ? 'text-amber-300 dark:text-amber-600' : 'text-ash'}`}>
-                          ৳{p.price}
-                        </span>
+                        Clear all
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {selectedProducts.length === 0 ? (
+                    <div className="p-3 text-center rounded-xl border border-dashed border-dove/20 dark:border-white/10 text-ash text-[11px]">
+                      No products linked yet. Tap the search box above to add product context.
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedProducts.map(p => (
+                        <div
+                          key={p.id}
+                          className="flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-xl bg-pure-white dark:bg-[#16161a] border border-dove/20 dark:border-white/10 shadow-2xs text-ink dark:text-white"
+                        >
+                          {p.image_url ? (
+                            <img
+                              src={p.image_url}
+                              alt={p.name}
+                              className="w-5 h-5 rounded-md object-cover shrink-0 border border-dove/10 dark:border-white/10"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 rounded-md bg-fog dark:bg-white/10 flex items-center justify-center shrink-0">
+                              <Package className="w-3 h-3 text-ash" />
+                            </div>
+                          )}
+                          <span className="text-xs font-semibold truncate max-w-[130px]">{p.name}</span>
+                          <span className="text-[10px] font-bold text-graphite dark:text-ash">৳{Number(p.price).toLocaleString('en-BD')}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleProduct(p.id)}
+                            className="p-0.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-ash hover:text-rose-500 transition-colors shrink-0 ml-0.5 cursor-pointer"
+                            title="Remove from context"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
