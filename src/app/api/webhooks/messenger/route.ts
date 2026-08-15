@@ -685,6 +685,32 @@ export async function POST(request: Request) {
           for (const change of entry.changes) {
             const isFacebookComment = change.field === 'feed' && change.value?.item === 'comment' && (change.value?.verb === 'add' || !change.value?.verb);
             const isInstagramComment = (change.field === 'comments' || change.field === 'live_comments') && (change.value?.verb === 'add' || !change.value?.verb);
+
+            // Debug: log ALL feed changes to DB so we can inspect what Meta sends
+            if (change.field === 'feed' || change.field === 'comments' || change.field === 'live_comments') {
+              console.log('[Webhook Feed Change]', JSON.stringify({ field: change.field, value: change.value }));
+              // Persist incoming comment payload immediately regardless of automation state
+              if ((isFacebookComment || isInstagramComment) && change.value?.comment_id) {
+                const v = change.value;
+                const commentId = v.comment_id || v.id;
+                const postId = v.post_id || v.parent_id || v.media?.id || '';
+                const commentText = v.message || v.text || '';
+                const senderName = v.from?.name || v.from?.username || 'Customer';
+                const senderId = v.from?.id || null;
+                if (commentId && commentText.trim()) {
+                  await supabaseAdmin.from('post_comments').upsert({
+                    shop_id: shop.id,
+                    post_id: postId,
+                    comment_id: commentId,
+                    sender_id: senderId,
+                    sender_name: senderName,
+                    comment_text: commentText,
+                    created_at: new Date((v.created_time || v.timestamp || 0) * 1000 || Date.now()).toISOString(),
+                  }, { onConflict: 'comment_id' });
+                }
+              }
+            }
+
             if (isFacebookComment || isInstagramComment) {
               await handleCommentEvent(shop, change.value, incomingChannel);
             }
@@ -735,8 +761,12 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
     const commenterName: string | null = value.from?.name || value.from?.username || value.sender_name || 'Customer';
     const commentCreatedAt = new Date((value.created_time || value.timestamp || 0) * 1000 || Date.now());
 
-    if (!rawPostId || !commentId || !commentText.trim()) {
+    if (!commentId || !commentText.trim()) {
       console.log('[handleCommentEvent] Skipping invalid payload:', { rawPostId, commentId, commentText });
+      return;
+    }
+    if (!rawPostId) {
+      console.log('[handleCommentEvent] No post_id in payload, comment already saved to DB:', commentId);
       return;
     }
 

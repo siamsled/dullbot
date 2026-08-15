@@ -15,9 +15,9 @@ export async function GET(request: Request) {
   const stateObj = { shopId: shopId || 'dull-store', source: source || 'settings' };
   const state = Buffer.from(JSON.stringify(stateObj)).toString('base64');
 
-  // auth_type=reauthenticate forces Facebook to show the full permissions dialog
-  // even if the user previously authorized the app — ensures new scopes are granted
-  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&auth_type=reauthenticate`;
+  // auth_type=rerequest prompts user to re-grant permissions.
+  // If dialog still skips, user must revoke app at facebook.com/settings/apps first.
+  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&auth_type=rerequest`;
 
   return NextResponse.redirect(fbAuthUrl);
 }
