@@ -864,18 +864,32 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
 
     if (existingComment?.is_deleted) return; // already deleted
 
-    // ── Delete negative comments (Phase 5) ─────────────────────────────────
-    if (automation.delete_negative && automation.delete_examples?.length > 0) {
-      const examples = (automation.delete_examples as string[]).join('\n- ');
-      const deletePrompt = `You are a content moderation classifier for a business page.
+    // ── Delete offensive / toxic comments (Smart Brand Protection) ────────
+    if (automation.delete_negative) {
+      const examples = (automation.delete_examples as string[])?.length
+        ? `\nCustom store owner trigger examples:\n- ${(automation.delete_examples as string[]).join('\n- ')}`
+        : '';
 
-Example comments that SHOULD be deleted (spam, abuse, harassment):
-- ${examples}
+      const deletePrompt = `You are an intelligent brand safety and content moderation AI for an e-commerce store's social media page (Facebook/Instagram).
+Evaluate whether the customer comment below is offensive, abusive, profanity-laden, scam/spam, malicious defamation, competitor poaching, or harmful to the perception of the business.
 
-New comment to evaluate: "${commentText}"
+Criteria to DELETE (delete = true):
+- Profanity, obscenity, abusive slurs, or harassment
+- Malicious/unsubstantiated claims of "scam", "fraud", "fake", or theft
+- Competitor advertising, unsolicited links, crypto/job spam
+- Toxic hostility or trolling damaging to brand perception
+
+Criteria to KEEP (delete = false):
+- Legitimate inquiries ("price koto?", "delivery time?", "size ache?", "is this available?")
+- Normal customer support inquiries or order tracking questions
+- Emojis, compliments, or constructive feedback
+
+${examples}
+
+Comment to evaluate: "${commentText}"
 
 Respond ONLY with a JSON object: { "delete": true/false, "confidence": 0.0-1.0 }
-A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
+Confidence >= 0.80 means delete. Default to false for genuine customer questions.`;
 
       const genAIForDelete = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
       const deleteModel = genAIForDelete.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
@@ -886,7 +900,7 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
         const jsonMatch = deleteRaw.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
-          if (parsed.delete === true && (parsed.confidence || 0) >= 0.85) {
+          if (parsed.delete === true && (parsed.confidence || 0) >= 0.80) {
             await deleteComment(commentId, pageAccessToken);
             await supabaseAdmin.from('post_comments').upsert({
               shop_id: shop.id,

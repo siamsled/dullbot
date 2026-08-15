@@ -523,7 +523,7 @@ function AutomationTweaksPanel({
       </div>
 
       {/* Settings Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
         {/* Master Switch Card */}
         <div className={`p-4 rounded-2xl border transition-all ${
@@ -540,10 +540,10 @@ function AutomationTweaksPanel({
               </div>
               <div>
                 <h4 className="text-xs font-bold text-ink dark:text-white">
-                  {isEnabled ? 'Automate Comments: ON' : 'Automate Comments: OFF'}
+                  {isEnabled ? 'Automate this Post: Active' : 'Automate this Post: Paused'}
                 </h4>
                 <p className="text-[10px] text-ash">
-                  {isEnabled ? 'AI actively answering comments' : 'Post automation paused'}
+                  {isEnabled ? 'AI actively handles comments & inquiries' : 'Automation is turned off'}
                 </p>
               </div>
             </div>
@@ -557,18 +557,18 @@ function AutomationTweaksPanel({
 
         {isEnabled && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Core Channel Toggles */}
+            {/* Core Action Toggles */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block">
-                Channel Behaviors
+                Actions
               </label>
 
-              {/* Public Comment Replies */}
+              {/* 1. Reply to Comments */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink dark:text-white">Public Comment Replies</p>
+                  <p className="text-xs font-bold text-ink dark:text-white">Reply to Comments</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
-                    AI replies directly under customer comments on Facebook/Instagram
+                    AI writes helpful public replies directly under comments
                   </p>
                 </div>
                 <IosGreenSwitch
@@ -578,12 +578,12 @@ function AutomationTweaksPanel({
                 />
               </div>
 
-              {/* Private Messenger DM */}
+              {/* 2. Answer in Private DMs */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink dark:text-white">Private Messenger DM</p>
+                  <p className="text-xs font-bold text-ink dark:text-white">Answer in Private DMs</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
-                    Send a private Messenger DM whenever someone leaves a comment
+                    Sends pricing, product details & checkout link straight to their inbox
                   </p>
                 </div>
                 <IosGreenSwitch
@@ -593,12 +593,17 @@ function AutomationTweaksPanel({
                 />
               </div>
 
-              {/* Auto-Delete Negative / Spam */}
+              {/* 3. Delete Offensive Comments (Smart AI Brand Protection) */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink dark:text-white">Auto-Delete Spam & Hate</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-ink dark:text-white">Delete Offensive Comments</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      Smart AI
+                    </span>
+                  </div>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
-                    Automatically remove abusive, competitor, or spam comments
+                    Automatically detects and removes toxic comments, scams, profanity, and brand-damaging attacks
                   </p>
                 </div>
                 <IosGreenSwitch
@@ -609,68 +614,14 @@ function AutomationTweaksPanel({
               </div>
             </div>
 
-            {/* Negative Comment Keywords */}
-            {config.delete_negative && (
-              <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 rounded-xl border border-rose-500/20 space-y-2.5">
-                <div className="flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rust" />
-                  <label className="text-[10px] font-bold text-rust uppercase tracking-wider">
-                    Auto-Delete Trigger Phrases
-                  </label>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newDeleteExample}
-                    onChange={e => setNewDeleteExample(e.target.value)}
-                    placeholder="e.g. fake, scam, fraud"
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDeleteExample())}
-                    className="flex-1 px-3 py-1.5 bg-pure-white dark:bg-[#18181c] border border-rose-500/30 rounded-lg text-xs text-ink dark:text-white focus:outline-none focus:border-rust"
-                  />
-                  <button
-                    type="button"
-                    onClick={addDeleteExample}
-                    className="px-3 py-1.5 bg-rust text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-
-                {config.delete_examples?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {config.delete_examples.map((ex, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-pure-white dark:bg-[#18181c] text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full text-[10px] font-medium shadow-xs">
-                        {ex}
-                        <button type="button" onClick={() => removeDeleteExample(i)} className="hover:text-red-900 dark:hover:text-red-300 font-bold ml-0.5 cursor-pointer">×</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Custom AI Instructions */}
-            <div>
-              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block mb-1.5">
-                Post-Specific AI Instructions
-              </label>
-              <textarea
-                rows={3}
-                value={config.instructions || ''}
-                onChange={e => setConfig(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="e.g. Highlight the 20% Eid discount, mention free delivery inside Dhaka, or emphasize that sizes 38-44 are in stock..."
-                className="w-full px-3 py-2.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-colors resize-none leading-relaxed"
-              />
-            </div>
-
-            {/* Attached Products */}
+            {/* Context Product(s) */}
             {products.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider">
-                    Linked Products ({config.product_ids.length})
+                    Context Product(s) ({config.product_ids.length})
                   </label>
-                  <span className="text-[10px] text-ash">AI uses for pricing/stock</span>
+                  <span className="text-[10px] text-ash">AI uses for pricing & stock</span>
                 </div>
 
                 <div className="relative mb-2">
@@ -679,7 +630,7 @@ function AutomationTweaksPanel({
                     type="text"
                     value={productSearch}
                     onChange={e => setProductSearch(e.target.value)}
-                    placeholder="Filter products..."
+                    placeholder="Search products..."
                     className="w-full pl-8 pr-2.5 py-1.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-lg text-[11px] text-ink dark:text-white focus:outline-none focus:border-ink dark:focus:border-white/30"
                   />
                 </div>
@@ -710,7 +661,21 @@ function AutomationTweaksPanel({
               </div>
             )}
 
-            {/* ── Test AI Reply Simulator Console (Moved to Right Sidebar) ── */}
+            {/* Extra Details & Offers */}
+            <div>
+              <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider block mb-1.5">
+                Extra Details & Offers
+              </label>
+              <textarea
+                rows={2}
+                value={config.instructions || ''}
+                onChange={e => setConfig(prev => ({ ...prev, instructions: e.target.value }))}
+                placeholder="e.g. Free delivery inside Dhaka, Eid 20% discount code EID20, sizes 38-44 in stock..."
+                className="w-full px-3 py-2 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-colors resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* ── Test AI Response Simulator Console ── */}
             <div className="p-3.5 bg-fog/70 dark:bg-white/[0.03] rounded-2xl border border-dove/20 dark:border-white/10 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -719,7 +684,7 @@ function AutomationTweaksPanel({
                     Test AI Response
                   </label>
                 </div>
-                <span className="text-[9px] text-ash">Simulate live reply</span>
+                <span className="text-[9px] text-ash">Simulate reply</span>
               </div>
 
               <div className="space-y-2">
@@ -739,7 +704,7 @@ function AutomationTweaksPanel({
                   className="w-full py-2 px-3 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  <span>Simulate AI Reply</span>
+                  <span>Test AI Reply</span>
                 </button>
               </div>
 
@@ -747,7 +712,7 @@ function AutomationTweaksPanel({
                 <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-xs text-ink dark:text-white space-y-1 animate-in fade-in">
                   <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                     <Bot className="w-3 h-3" />
-                    <span>Simulated DullBot Output:</span>
+                    <span>Simulated Reply:</span>
                   </div>
                   <p className="leading-relaxed whitespace-pre-wrap">{simulatedResult}</p>
                 </div>
@@ -783,6 +748,7 @@ function AutomationTweaksPanel({
     </div>
   );
 }
+
 
 // ─── Individual Comment Row Item (Instagram Design Language) ────────────────
 function CommentRowItem({
