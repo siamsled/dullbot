@@ -780,6 +780,41 @@ function AutomationTweaksPanel({
 }
 
 
+// ─── Comment Avatar with Real Profile Picture & Fallback ────────────────────
+function CommentAvatar({
+  senderId,
+  senderName,
+  platform,
+}: {
+  senderId?: string | null;
+  senderName?: string | null;
+  platform: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const initial = senderName && senderName.trim() ? senderName.trim()[0].toUpperCase() : 'U';
+
+  const avatarUrl = senderId && platform === 'facebook'
+    ? `https://graph.facebook.com/${senderId}/picture?type=square&height=100&width=100`
+    : null;
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={senderName || 'User'}
+        onError={() => setImgError(true)}
+        className="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs border border-dove/10 dark:border-white/10"
+      />
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/30 to-dove/60 dark:from-white/10 dark:to-white/20 text-ink dark:text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border border-dove/10 dark:border-white/10">
+      {initial}
+    </div>
+  );
+}
+
 // ─── Individual Comment Row Item (Instagram Design Language) ────────────────
 function CommentRowItem({
   comment,
@@ -826,15 +861,15 @@ function CommentRowItem({
     setSending(false);
   };
 
-  const initial = comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U';
-
   return (
     <div className={`p-4 transition-colors ${comment.is_deleted ? 'bg-rose-500/5 opacity-70' : 'hover:bg-fog/30 dark:hover:bg-white/[0.02]'}`}>
       <div className="flex items-start gap-3">
-        {/* Instagram Circular Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/30 to-dove/60 dark:from-white/10 dark:to-white/20 text-ink dark:text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border border-dove/10 dark:border-white/10">
-          {initial}
-        </div>
+        {/* Profile Avatar */}
+        <CommentAvatar
+          senderId={comment.sender_id}
+          senderName={comment.sender_name}
+          platform={platform}
+        />
 
         <div className="flex-1 min-w-0">
           {/* Instagram Inline Name + Text */}
