@@ -20,6 +20,8 @@ import {
   togglePostAutomationStatus,
   fetchPostComments,
   testPostCommentReply,
+  sendManualCommentReply,
+  generateAiCommentSuggestion,
   ConnectedPostItem,
   CommentDetailItem,
 } from './actions';
@@ -711,6 +713,222 @@ function AutomationTweaksPanel({
   );
 }
 
+// ─── Individual Comment Row Item with Manual Reply ─────────────────────────
+function CommentRowItem({
+  comment,
+  postId,
+  platform,
+  onReplySuccess,
+}: {
+  comment: CommentDetailItem;
+  postId: string;
+  platform: 'facebook' | 'instagram';
+  onReplySuccess: (commentId: string, replyText: string, asDm: boolean) => void;
+}) {
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [replyAsDm, setReplyAsDm] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAiSuggest = async () => {
+    setGeneratingAi(true);
+    setError(null);
+    const res = await generateAiCommentSuggestion(postId, comment.comment_text, comment.sender_name || 'Customer');
+    if (res.success && res.suggestion) {
+      setReplyText(res.suggestion);
+    } else if (res.error) {
+      setError(res.error);
+    }
+    setGeneratingAi(false);
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || sending) return;
+    setSending(true);
+    setError(null);
+    const res = await sendManualCommentReply(postId, comment.comment_id, replyText.trim(), platform, replyAsDm);
+    if (res.success) {
+      onReplySuccess(comment.comment_id, replyText.trim(), replyAsDm);
+      setIsReplying(false);
+      setReplyText('');
+    } else {
+      setError(res.error || 'Failed to send reply');
+    }
+    setSending(false);
+  };
+
+  return (
+    <div
+      className={`p-4 bg-white rounded-2xl border transition-all ${
+        comment.is_deleted
+          ? 'border-red-200 bg-red-50/30 opacity-75'
+          : 'border-dove/15 hover:border-dove/30 shadow-subtle'
+      }`}
+    >
+      {/* Customer Comment Bubble */}
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/40 to-dove/70 text-ink flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+          {comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U'}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-ink truncate">{comment.sender_name || 'Customer'}</span>
+              {comment.is_deleted && (
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                  Auto-Deleted
+                </span>
+              )}
+              {comment.private_reply_sent && (
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  DM Sent
+                </span>
+              )}
+              {comment.reply_text && (
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Replied
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-ash shrink-0">
+              {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+
+          <p className="text-xs text-graphite mt-1 bg-fog/50 p-2.5 rounded-xl border border-dove/10 leading-relaxed whitespace-pre-wrap">
+            {comment.comment_text}
+          </p>
+
+          {/* Existing Reply Bubble if any */}
+          {comment.reply_text && (
+            <div className="mt-2.5 pl-3 border-l-2 border-emerald-400">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 mb-1">
+                <Bot className="w-3.5 h-3.5 text-emerald-600" />
+                <span>DullBot / Store Reply</span>
+              </div>
+              <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 text-xs text-ink leading-relaxed">
+                {comment.reply_text}
+              </div>
+            </div>
+          )}
+
+          {/* Action Row */}
+          {!comment.is_deleted && (
+            <div className="mt-2.5 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsReplying(prev => !prev)}
+                className={`text-[11px] font-bold flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  isReplying
+                    ? 'bg-ink text-white shadow-xs'
+                    : 'text-graphite hover:text-ink bg-fog/80 hover:bg-fog border border-dove/15'
+                }`}
+              >
+                <CornerDownRight className="w-3 h-3" />
+                <span>{isReplying ? 'Cancel' : comment.reply_text ? 'Reply Again' : 'Manual Reply'}</span>
+              </button>
+
+              {!isReplying && !comment.reply_text && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReplying(true);
+                    handleAiSuggest();
+                  }}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>AI Draft Reply</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Inline Reply Composer */}
+          {isReplying && (
+            <div className="mt-3 p-3 bg-fog/60 rounded-xl border border-dove/20 space-y-2.5 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-graphite">
+                  Replying as {platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}
+                </span>
+
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-dove/15 text-[10px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setReplyAsDm(false)}
+                    className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      !replyAsDm ? 'bg-ink text-white shadow-xs' : 'text-ash hover:text-ink'
+                    }`}
+                  >
+                    Public Reply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReplyAsDm(true)}
+                    className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      replyAsDm ? 'bg-ink text-white shadow-xs' : 'text-ash hover:text-ink'
+                    }`}
+                  >
+                    Private DM
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <textarea
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  placeholder={replyAsDm ? `Send a private Messenger DM to ${comment.sender_name}...` : `Write a public comment reply...`}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-white border border-dove/20 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink resize-none leading-relaxed"
+                />
+              </div>
+
+              {error && (
+                <p className="text-[11px] font-medium text-rust">{error}</p>
+              )}
+
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleAiSuggest}
+                  disabled={generatingAi}
+                  className="px-2.5 py-1.5 bg-white hover:bg-fog border border-dove/20 text-emerald-700 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                >
+                  {generatingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  <span>AI Suggest</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsReplying(false)}
+                    className="px-3 py-1.5 text-[11px] font-semibold text-ash hover:text-ink transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendReply}
+                    disabled={sending || !replyText.trim()}
+                    className="px-3.5 py-1.5 bg-ink text-white rounded-lg text-[11px] font-bold hover:bg-black disabled:opacity-40 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    <span>Send {replyAsDm ? 'DM' : 'Reply'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Center Column: Post Preview & Live Comments Stream ──────────────────────
 function PostAndLiveCommentsCenter({
   post,
@@ -737,6 +955,22 @@ function PostAndLiveCommentsCenter({
       setTestCommentText('');
     }
     setSimulating(false);
+  };
+
+  const handleReplySuccess = (commentId: string, replyText: string, asDm: boolean) => {
+    setComments(prev =>
+      prev.map(c => {
+        if (c.comment_id === commentId || c.id === commentId) {
+          return {
+            ...c,
+            reply_text: asDm ? c.reply_text : replyText,
+            private_reply_sent: asDm ? true : c.private_reply_sent,
+            replied_at: new Date().toISOString(),
+          };
+        }
+        return c;
+      })
+    );
   };
 
   const loadComments = async () => {
@@ -861,7 +1095,7 @@ function PostAndLiveCommentsCenter({
               <div className="flex items-center gap-1 bg-fog p-1 rounded-xl border border-dove/10">
                 <button
                   onClick={() => setFilterType('all')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     filterType === 'all' ? 'bg-white text-ink shadow-xs border border-dove/10' : 'text-ash hover:text-ink'
                   }`}
                 >
@@ -869,7 +1103,7 @@ function PostAndLiveCommentsCenter({
                 </button>
                 <button
                   onClick={() => setFilterType('replied')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     filterType === 'replied' ? 'bg-white text-emerald-700 shadow-xs border border-emerald-200' : 'text-ash hover:text-emerald-700'
                   }`}
                 >
@@ -877,7 +1111,7 @@ function PostAndLiveCommentsCenter({
                 </button>
                 <button
                   onClick={() => setFilterType('dmed')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     filterType === 'dmed' ? 'bg-white text-blue-700 shadow-xs border border-blue-200' : 'text-ash hover:text-blue-700'
                   }`}
                 >
@@ -885,7 +1119,7 @@ function PostAndLiveCommentsCenter({
                 </button>
                 <button
                   onClick={() => setFilterType('moderated')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     filterType === 'moderated' ? 'bg-white text-rust shadow-xs border border-red-200' : 'text-ash hover:text-rust'
                   }`}
                 >
@@ -945,59 +1179,13 @@ function PostAndLiveCommentsCenter({
           ) : (
             <div className="space-y-3">
               {filteredComments.map(comment => (
-                <div
+                <CommentRowItem
                   key={comment.id || comment.comment_id}
-                  className={`p-4 bg-white rounded-2xl border transition-all ${
-                    comment.is_deleted
-                      ? 'border-red-200 bg-red-50/30 opacity-75'
-                      : 'border-dove/15 hover:border-dove/30 shadow-subtle'
-                  }`}
-                >
-                  {/* Customer Comment Bubble */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/40 to-dove/70 text-ink flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                      {comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U'}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-ink truncate">{comment.sender_name || 'Customer'}</span>
-                          {comment.is_deleted && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
-                              Auto-Deleted
-                            </span>
-                          )}
-                          {comment.private_reply_sent && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                              DM Sent
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-ash">
-                          {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-graphite mt-1 bg-fog/50 p-2.5 rounded-xl border border-dove/10 leading-relaxed whitespace-pre-wrap">
-                        {comment.comment_text}
-                      </p>
-
-                      {/* AI Public Reply Bubble */}
-                      {comment.reply_text && (
-                        <div className="mt-2.5 pl-3 border-l-2 border-emerald-400">
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 mb-1">
-                            <Bot className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>DullBot AI • Public Reply</span>
-                          </div>
-                          <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 text-xs text-ink leading-relaxed">
-                            {comment.reply_text}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  comment={comment}
+                  postId={post.post_id}
+                  platform={post.platform}
+                  onReplySuccess={handleReplySuccess}
+                />
               ))}
             </div>
           )}
