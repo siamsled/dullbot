@@ -54,7 +54,7 @@ function SectionLabel({ children, subtitle }: { children: React.ReactNode; subti
 
 function SettingsCard({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <div id={id} className={`bg-white rounded-2xl shadow-subtle border border-dove/15 hover:border-dove/30 transition-all p-6 flex flex-col ${className}`}>
+    <div id={id} className={`bg-pure-white dark:bg-[#121214] rounded-3xl shadow-subtle border border-dove/15 dark:border-white/10 hover:border-dove/30 dark:hover:border-white/20 transition-all duration-200 p-6 sm:p-7 flex flex-col ${className}`}>
       {children}
     </div>
   );
@@ -632,69 +632,95 @@ export default function SettingsClient({ shop }: Props) {
             SECTION 2 — CHANNELS & INTEGRATIONS (REDESIGNED)
             ══════════════════════════════════════════════════ */}
         {isTabVisible('channels') && (
-          <section id="section-channels" className="space-y-3">
+          <section id="section-channels" className="space-y-4">
             <SectionLabel subtitle="Connect your official social media pages and website chat widgets for automated sales.">
               Connected Communication Channels
             </SectionLabel>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
               {/* 1. FACEBOOK PAGES */}
-              <div className="bg-white rounded-2xl p-5 border border-dove/15 shadow-subtle flex flex-col justify-between hover:border-dove/30 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center shadow-xs">
-                      <MessageSquare className="w-5 h-5 fill-current" />
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-blue-500/30 dark:hover:border-blue-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+                {/* Subtle Ambient Brand Glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+
+                <div className="relative z-10">
+                  {/* Card Header: Icon & Status */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0084FF] to-[#0066CC] text-white flex items-center justify-center shadow-md shadow-blue-500/20 ring-4 ring-blue-500/10">
+                      <MessageSquare className="w-6 h-6 fill-current" />
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
                       connectedPages.length > 0 || !!shop?.meta_page_name
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-fog text-ash border border-dove/20'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs'
+                        : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${connectedPages.length > 0 || !!shop?.meta_page_name ? 'bg-emerald-500 animate-pulse' : 'bg-ash'}`} />
-                      {connectedPages.length > 0 ? `${connectedPages.length} Connected` : !!shop?.meta_page_name ? 'Connected' : 'Offline'}
+                      <span className={`w-2 h-2 rounded-full ${
+                        connectedPages.length > 0 || !!shop?.meta_page_name ? 'bg-emerald-500 animate-pulse' : 'bg-ash'
+                      }`} />
+                      {connectedPages.length > 0
+                        ? `${connectedPages.length} Connected`
+                        : !!shop?.meta_page_name
+                        ? 'Connected'
+                        : 'Offline'}
                     </span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-ink">Facebook Pages</h4>
-                  <p className="text-[11px] text-ash mt-0.5 leading-relaxed">Messenger automated sales & post comments.</p>
+                  {/* Title & Description */}
+                  <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Facebook Pages</h4>
+                  <p className="text-xs text-ash mt-1 leading-relaxed">
+                    Messenger automated sales & post comments.
+                  </p>
 
-                  <div className="mt-3.5 space-y-1.5">
+                  {/* Connected Pages Body */}
+                  <div className="mt-4 space-y-2">
                     {connectedPages.length > 0 ? (
                       connectedPages.slice(0, 2).map(p => (
-                        <div key={p.meta_page_id} className="flex items-center justify-between text-[11px] bg-fog px-2.5 py-1.5 rounded-lg border border-dove/15">
-                          <span className="font-semibold text-ink truncate max-w-[120px]">{p.meta_page_name}</span>
+                        <div
+                          key={p.meta_page_id}
+                          className="flex items-center justify-between text-xs bg-fog/80 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/15 dark:border-white/10 hover:border-dove/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-1">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                            <span className="font-semibold text-ink dark:text-white truncate text-xs">
+                              {p.meta_page_name}
+                            </span>
+                          </div>
                           {p.instagram_business_id && (
-                            <span className="text-[9px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-full shrink-0">
                               + IG
                             </span>
                           )}
                         </div>
                       ))
                     ) : shop?.meta_page_name ? (
-                      <div className="text-[11px] bg-fog px-2.5 py-1.5 rounded-lg border border-dove/15 font-semibold text-ink truncate">
-                        {shop.meta_page_name}
+                      <div className="flex items-center gap-2 text-xs bg-fog/80 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/15 dark:border-white/10 font-semibold text-ink dark:text-white truncate">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span className="truncate">{shop.meta_page_name}</span>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-ash/80 bg-fog p-2.5 rounded-lg border border-dove/10 leading-snug">
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
                         No Facebook Page linked. Connect to auto-reply to customer DMs.
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-dove/10 flex items-center justify-between gap-2">
+                {/* Card Footer Actions */}
+                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center justify-between gap-2.5">
                   <Link
                     href={`/api/auth/facebook/login?shopId=${shop.id}`}
-                    className="flex-1 text-center py-2 px-3 rounded-xl bg-ink hover:bg-black text-white text-xs font-semibold transition-all shadow-xs"
+                    className="flex-1 text-center py-2.5 px-3.5 rounded-xl bg-ink text-pure-white dark:bg-white dark:text-black hover:opacity-90 text-xs font-bold transition-all shadow-subtle flex items-center justify-center gap-1.5"
                   >
-                    {connectedPages.length > 0 || shop?.meta_page_name ? 'Manage Pages' : 'Connect Facebook'}
+                    <span>{connectedPages.length > 0 || shop?.meta_page_name ? 'Manage Pages' : 'Connect Facebook'}</span>
+                    <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
                   </Link>
                   {(connectedPages.length > 0 || shop?.meta_page_name) && (
                     <button
                       onClick={handleDisconnect}
                       disabled={isPending}
-                      className="px-2.5 py-2 text-[11px] font-semibold text-rust hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                      className="px-3 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                       title="Disconnect Facebook"
                     >
                       Disconnect
@@ -704,101 +730,134 @@ export default function SettingsClient({ shop }: Props) {
               </div>
 
               {/* 2. WHATSAPP BUSINESS API */}
-              <div className="bg-white rounded-2xl p-5 border border-dove/15 shadow-subtle flex flex-col justify-between hover:border-dove/30 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center shadow-xs">
-                      <Smartphone className="w-5 h-5" />
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+                {/* Subtle Ambient Brand Glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+
+                <div className="relative z-10">
+                  {/* Card Header: Icon & Status */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 ring-4 ring-emerald-500/10">
+                      <Smartphone className="w-6 h-6" />
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
                       !!waPhoneId || !!shop?.whatsapp_business_account_id
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-fog text-ash border border-dove/20'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs'
+                        : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${!!waPhoneId || !!shop?.whatsapp_business_account_id ? 'bg-emerald-500 animate-pulse' : 'bg-ash'}`} />
+                      <span className={`w-2 h-2 rounded-full ${
+                        !!waPhoneId || !!shop?.whatsapp_business_account_id ? 'bg-emerald-500 animate-pulse' : 'bg-ash'
+                      }`} />
                       {!!waPhoneId || !!shop?.whatsapp_business_account_id ? 'API Active' : 'Not Configured'}
                     </span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-ink">WhatsApp Business</h4>
-                  <p className="text-[11px] text-ash mt-0.5 leading-relaxed">Official Cloud API for 24/7 WhatsApp chat.</p>
+                  {/* Title & Description */}
+                  <h4 className="text-base font-bold text-ink dark:text-white leading-snug">WhatsApp Business</h4>
+                  <p className="text-xs text-ash mt-1 leading-relaxed">
+                    Official Cloud API for 24/7 WhatsApp chat.
+                  </p>
 
-                  <div className="mt-3.5">
+                  {/* WhatsApp Content Box */}
+                  <div className="mt-4">
                     {waPhoneId || shop?.whatsapp_phone_number_id ? (
-                      <div className="space-y-1 bg-fog p-2.5 rounded-lg border border-dove/15 text-[11px]">
-                        <p className="text-ash font-medium">Phone ID: <span className="font-mono text-ink font-semibold">{waPhoneId || shop?.whatsapp_phone_number_id}</span></p>
-                        <p className="text-emerald-700 font-semibold text-[10px] flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Webhook connected
-                        </p>
+                      <div className="space-y-1.5 bg-fog/80 dark:bg-white/[0.04] p-3 rounded-xl border border-dove/15 dark:border-white/10 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-ash font-medium">Phone ID</span>
+                          <span className="font-mono text-ink dark:text-white font-semibold text-xs truncate max-w-[140px]">
+                            {waPhoneId || shop?.whatsapp_phone_number_id}
+                          </span>
+                        </div>
+                        <div className="pt-1 border-t border-dove/10 dark:border-white/10 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <span>Cloud Webhook Connected</span>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-ash/80 bg-fog p-2.5 rounded-lg border border-dove/10 leading-snug">
-                        Add your Meta Cloud Phone ID & Access Token to activate.
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                        Add your Meta Cloud Phone ID & Access Token to activate WhatsApp sales.
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-dove/10">
+                {/* Card Footer Actions */}
+                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setShowWaModal(true)}
-                    className="w-full text-center py-2 px-3 rounded-xl bg-white hover:bg-fog text-ink border border-dove/30 hover:border-ink text-xs font-semibold transition-all cursor-pointer shadow-xs"
+                    className="w-full text-center py-2.5 px-3.5 rounded-xl bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-ink dark:text-white border border-dove/25 dark:border-white/15 hover:border-ink dark:hover:border-white/40 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
                   >
-                    {waPhoneId || shop?.whatsapp_phone_number_id ? 'Configure API' : 'Setup WhatsApp'}
+                    <span>{waPhoneId || shop?.whatsapp_phone_number_id ? 'Configure API' : 'Setup WhatsApp'}</span>
+                    <Sliders className="w-3.5 h-3.5 text-ash" />
                   </button>
                 </div>
               </div>
 
               {/* 3. INSTAGRAM */}
-              <div className="bg-white rounded-2xl p-5 border border-dove/15 shadow-subtle flex flex-col justify-between hover:border-dove/30 transition-all">
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-pink-500/30 dark:hover:border-pink-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+                {/* Subtle Ambient Brand Glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+
                 {(() => {
                   const igPage = connectedPages.find(p => !!p.instagram_business_id);
                   const isIgConnected = !!igPage || !!shop?.instagram_business_id;
 
                   return (
                     <>
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
-                            <AtSign className="w-5 h-5" />
+                      <div className="relative z-10">
+                        {/* Card Header: Icon & Status */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FFB700] via-[#FF1361] to-[#8800FF] text-white flex items-center justify-center shadow-md shadow-pink-500/25 ring-4 ring-pink-500/10">
+                            <AtSign className="w-6 h-6" />
                           </div>
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
                             isIgConnected
-                              ? 'bg-pink-50 text-pink-700 border border-pink-200'
-                              : 'bg-fog text-ash border border-dove/20'
+                              ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 shadow-xs'
+                              : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
                           }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isIgConnected ? 'bg-pink-500 animate-pulse' : 'bg-ash'}`} />
+                            <span className={`w-2 h-2 rounded-full ${
+                              isIgConnected ? 'bg-pink-500 animate-pulse' : 'bg-ash'
+                            }`} />
                             {isIgConnected ? 'Linked' : 'Not Linked'}
                           </span>
                         </div>
 
-                        <h4 className="text-sm font-bold text-ink">Instagram DMs</h4>
-                        <p className="text-[11px] text-ash mt-0.5 leading-relaxed">Direct messages, stories, and post comments.</p>
+                        {/* Title & Description */}
+                        <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Instagram DMs</h4>
+                        <p className="text-xs text-ash mt-1 leading-relaxed">
+                          Direct messages, stories, and post comments.
+                        </p>
 
-                        <div className="mt-3.5">
+                        {/* Instagram Content Box */}
+                        <div className="mt-4">
                           {isIgConnected ? (
-                            <div className="space-y-1 bg-pink-50/50 p-2.5 rounded-lg border border-pink-200 text-[11px]">
-                              <p className="text-pink-900 font-semibold truncate">
-                                @{igPage?.meta_page_name || shop?.meta_page_name || 'Instagram Account'}
+                            <div className="space-y-1 bg-pink-500/5 dark:bg-pink-500/10 p-3 rounded-xl border border-pink-500/20 text-xs">
+                              <p className="text-pink-700 dark:text-pink-300 font-bold truncate flex items-center gap-1">
+                                <span>@{igPage?.meta_page_name || shop?.meta_page_name || 'Instagram Account'}</span>
                               </p>
-                              <p className="text-pink-700 text-[10px]">Auto-reply active on DMs & posts</p>
+                              <p className="text-pink-600/80 dark:text-pink-400/80 text-[11px] font-medium flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" /> Auto-reply active on DMs & posts
+                              </p>
                             </div>
                           ) : (
-                            <p className="text-[11px] text-ash/80 bg-fog p-2.5 rounded-lg border border-dove/10 leading-snug">
+                            <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
                               Connect via Facebook Page OAuth with Instagram Professional enabled.
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="pt-4 mt-3 border-t border-dove/10">
+                      {/* Card Footer Actions */}
+                      <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10">
                         <Link
                           href={`/api/auth/facebook/login?shopId=${shop.id}`}
-                          className={`block w-full text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all shadow-xs ${
+                          className={`block w-full text-center py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
                             isIgConnected
-                              ? 'bg-white hover:bg-fog text-ink border border-dove/30 hover:border-ink'
-                              : 'bg-gradient-to-r from-pink-600 to-rose-600 text-white hover:opacity-95'
+                              ? 'bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-ink dark:text-white border border-dove/25 dark:border-white/15 hover:border-ink dark:hover:border-white/40'
+                              : 'bg-gradient-to-r from-pink-600 to-rose-600 text-white hover:opacity-95 shadow-md shadow-pink-500/20'
                           }`}
                         >
                           {isIgConnected ? 'Manage Account' : 'Link Instagram'}
@@ -810,13 +869,17 @@ export default function SettingsClient({ shop }: Props) {
               </div>
 
               {/* 4. WEBSITE WIDGET */}
-              <div className="bg-white rounded-2xl p-5 border border-dove/15 shadow-subtle flex flex-col justify-between hover:border-dove/30 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shadow-xs">
-                      <Globe className="w-5 h-5" />
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+                {/* Subtle Ambient Brand Glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+
+                <div className="relative z-10">
+                  {/* Card Header: Icon & Toggle Switch */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6366F1] to-[#4F46E5] text-white flex items-center justify-center shadow-md shadow-indigo-500/20 ring-4 ring-indigo-500/10">
+                      <Globe className="w-6 h-6" />
                     </div>
-                    
+
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -824,39 +887,57 @@ export default function SettingsClient({ shop }: Props) {
                         checked={widgetEnabled}
                         onChange={e => handleWidgetToggle(e.target.checked)}
                       />
-                      <div className="w-9 h-5 bg-dove/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ink" />
+                      <div className="w-10 h-6 bg-dove/30 dark:bg-white/15 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-emerald-500" />
                     </label>
                   </div>
 
-                  <h4 className="text-sm font-bold text-ink">Website Chat Widget</h4>
-                  <p className="text-[11px] text-ash mt-0.5 leading-relaxed">Embed live AI sales bubble on any website.</p>
+                  {/* Title & Description */}
+                  <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Website Chat Widget</h4>
+                  <p className="text-xs text-ash mt-1 leading-relaxed">
+                    Embed live AI sales bubble on any website.
+                  </p>
 
-                  <div className="mt-3.5">
+                  {/* Widget Code Box */}
+                  <div className="mt-4">
                     {widgetEnabled ? (
-                      <div className="relative">
-                        <pre className="text-[9px] font-mono text-graphite bg-fog rounded-lg px-2.5 py-2 overflow-hidden whitespace-pre-wrap break-all leading-tight border border-dove/15">
-                          {`<script src=".../widget.js"></script>`}
-                        </pre>
+                      <div className="space-y-2">
+                        <div className="bg-fog/90 dark:bg-[#18181c] rounded-xl px-3 py-2 border border-dove/15 dark:border-white/10 font-mono text-[10px] text-graphite dark:text-ash break-all leading-relaxed select-all">
+                          {`<script src="https://dullbot.com/widget.js" data-shop="${shop.id}"></script>`}
+                        </div>
                         <button
                           type="button"
                           onClick={handleCopyWidget}
-                          className="mt-1.5 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg bg-white border border-dove/30 text-[10px] font-semibold text-ink hover:border-ink transition-colors cursor-pointer"
+                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-pure-white dark:bg-white/5 border border-dove/25 dark:border-white/15 text-xs font-bold text-ink dark:text-white hover:border-ink dark:hover:border-white/40 transition-all cursor-pointer shadow-xs"
                         >
-                          {widgetCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-ash" />}
-                          <span>{widgetCopied ? 'Copied to Clipboard!' : 'Copy Script Tag'}</span>
+                          {widgetCopied ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
+                              <span className="text-emerald-600 dark:text-emerald-400">Copied to Clipboard!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-ash" />
+                              <span>Copy Script Tag</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-ash/80 bg-fog p-2.5 rounded-lg border border-dove/10 leading-snug">
-                        Toggle switch above to enable website visitor chat on your storefront.
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                        Toggle switch above to enable live website visitor AI sales on your storefront.
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-dove/10 text-center">
-                  <span className="text-[10px] text-ash font-medium">
-                    Status: <strong className={widgetEnabled ? 'text-emerald-700' : 'text-ash'}>{widgetEnabled ? 'Active' : 'Disabled'}</strong>
+                {/* Card Footer Status */}
+                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center justify-between text-xs">
+                  <span className="text-ash font-medium">Widget Status</span>
+                  <span className={`inline-flex items-center gap-1.5 font-bold ${
+                    widgetEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-ash'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${widgetEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-ash/50'}`} />
+                    {widgetEnabled ? 'Live on Store' : 'Disabled'}
                   </span>
                 </div>
               </div>
