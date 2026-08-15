@@ -374,6 +374,7 @@ function AutomationTweaksPanel({
   onToggleMaster,
   onSaved,
   onDeleted,
+  onTestCommentAdded,
 }: {
   post: ConnectedPostItem;
   automation: PostAutomation | null;
@@ -382,6 +383,7 @@ function AutomationTweaksPanel({
   onToggleMaster: (enabled: boolean) => void;
   onSaved: (updated: PostAutomation) => void;
   onDeleted: () => void;
+  onTestCommentAdded?: (comment: CommentDetailItem) => void;
 }) {
   const isEnabled = !!automation;
 
@@ -404,6 +406,27 @@ function AutomationTweaksPanel({
   const [productSearch, setProductSearch] = useState('');
   const [isPending, startTransition] = useTransition();
   const [saveToast, setSaveToast] = useState(false);
+
+  // Test AI Simulator State
+  const [testCommentText, setTestCommentText] = useState('');
+  const [simulating, setSimulating] = useState(false);
+  const [simulatedResult, setSimulatedResult] = useState<string | null>(null);
+
+  const handleSimulate = async () => {
+    if (!testCommentText.trim() || simulating) return;
+    setSimulating(true);
+    setSimulatedResult(null);
+    const res = await testPostCommentReply(post.post_id, testCommentText.trim(), 'Test Customer');
+    if (res.success && res.comment) {
+      setSimulatedResult(res.replyText || res.comment.reply_text || 'Reply generated');
+      if (onTestCommentAdded) {
+        onTestCommentAdded(res.comment);
+      }
+    } else if (res.error) {
+      setSimulatedResult(`Error: ${res.error}`);
+    }
+    setSimulating(false);
+  };
 
   // Sync state when automation changes
   useEffect(() => {
@@ -487,7 +510,7 @@ function AutomationTweaksPanel({
             <Sliders className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-ink leading-none">Automation Settings</h3>
+            <h3 className="text-sm font-bold text-ink dark:text-white leading-none">Automation Settings</h3>
             <p className="text-[11px] text-ash mt-0.5">Rules & AI behaviors for this post</p>
           </div>
         </div>
@@ -516,7 +539,7 @@ function AutomationTweaksPanel({
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-ink">
+                <h4 className="text-xs font-bold text-ink dark:text-white">
                   {isEnabled ? 'Automate Comments: ON' : 'Automate Comments: OFF'}
                 </h4>
                 <p className="text-[10px] text-ash">
@@ -543,7 +566,7 @@ function AutomationTweaksPanel({
               {/* Public Comment Replies */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink">Public Comment Replies</p>
+                  <p className="text-xs font-bold text-ink dark:text-white">Public Comment Replies</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
                     AI replies directly under customer comments on Facebook/Instagram
                   </p>
@@ -558,7 +581,7 @@ function AutomationTweaksPanel({
               {/* Private Messenger DM */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink">Private Messenger DM</p>
+                  <p className="text-xs font-bold text-ink dark:text-white">Private Messenger DM</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
                     Send a private Messenger DM whenever someone leaves a comment
                   </p>
@@ -573,7 +596,7 @@ function AutomationTweaksPanel({
               {/* Auto-Delete Negative / Spam */}
               <div className="p-3 bg-fog/40 hover:bg-fog/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] rounded-xl border border-dove/15 dark:border-white/10 transition-all flex items-center justify-between gap-3">
                 <div className="min-w-0 pr-2">
-                  <p className="text-xs font-bold text-ink">Auto-Delete Spam & Hate</p>
+                  <p className="text-xs font-bold text-ink dark:text-white">Auto-Delete Spam & Hate</p>
                   <p className="text-[10px] text-ash leading-tight mt-0.5">
                     Automatically remove abusive, competitor, or spam comments
                   </p>
@@ -602,7 +625,7 @@ function AutomationTweaksPanel({
                     onChange={e => setNewDeleteExample(e.target.value)}
                     placeholder="e.g. fake, scam, fraud"
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDeleteExample())}
-                    className="flex-1 px-3 py-1.5 bg-pure-white dark:bg-[#18181c] border border-rose-500/30 rounded-lg text-xs text-ink focus:outline-none focus:border-rust"
+                    className="flex-1 px-3 py-1.5 bg-pure-white dark:bg-[#18181c] border border-rose-500/30 rounded-lg text-xs text-ink dark:text-white focus:outline-none focus:border-rust"
                   />
                   <button
                     type="button"
@@ -636,7 +659,7 @@ function AutomationTweaksPanel({
                 value={config.instructions || ''}
                 onChange={e => setConfig(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="e.g. Highlight the 20% Eid discount, mention free delivery inside Dhaka, or emphasize that sizes 38-44 are in stock..."
-                className="w-full px-3 py-2.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-colors resize-none leading-relaxed"
+                className="w-full px-3 py-2.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 transition-colors resize-none leading-relaxed"
               />
             </div>
 
@@ -657,7 +680,7 @@ function AutomationTweaksPanel({
                     value={productSearch}
                     onChange={e => setProductSearch(e.target.value)}
                     placeholder="Filter products..."
-                    className="w-full pl-8 pr-2.5 py-1.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-lg text-[11px] text-ink focus:outline-none focus:border-ink dark:focus:border-white/30"
+                    className="w-full pl-8 pr-2.5 py-1.5 bg-fog dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-lg text-[11px] text-ink dark:text-white focus:outline-none focus:border-ink dark:focus:border-white/30"
                   />
                 </div>
 
@@ -686,6 +709,50 @@ function AutomationTweaksPanel({
                 </div>
               </div>
             )}
+
+            {/* ── Test AI Reply Simulator Console (Moved to Right Sidebar) ── */}
+            <div className="p-3.5 bg-fog/70 dark:bg-white/[0.03] rounded-2xl border border-dove/20 dark:border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <label className="text-[10px] font-bold text-graphite dark:text-ash uppercase tracking-wider">
+                    Test AI Response
+                  </label>
+                </div>
+                <span className="text-[9px] text-ash">Simulate live reply</span>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={testCommentText}
+                  onChange={e => setTestCommentText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSimulate())}
+                  placeholder='e.g. "pp please", "delivery charge koto?"'
+                  className="w-full px-3 py-2 bg-pure-white dark:bg-[#16161a] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleSimulate}
+                  disabled={simulating || !testCommentText.trim()}
+                  className="w-full py-2 px-3 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span>Simulate AI Reply</span>
+                </button>
+              </div>
+
+              {simulatedResult && (
+                <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-xs text-ink dark:text-white space-y-1 animate-in fade-in">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    <Bot className="w-3 h-3" />
+                    <span>Simulated DullBot Output:</span>
+                  </div>
+                  <p className="leading-relaxed whitespace-pre-wrap">{simulatedResult}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -717,7 +784,7 @@ function AutomationTweaksPanel({
   );
 }
 
-// ─── Individual Comment Row Item with Manual Reply ─────────────────────────
+// ─── Individual Comment Row Item (Instagram Design Language) ────────────────
 function CommentRowItem({
   comment,
   postId,
@@ -763,100 +830,104 @@ function CommentRowItem({
     setSending(false);
   };
 
+  const initial = comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U';
+
   return (
-    <div
-      className={`p-4 bg-pure-white dark:bg-[#121214] rounded-2xl border transition-all ${
-        comment.is_deleted
-          ? 'border-red-500/30 bg-red-500/5 opacity-75'
-          : 'border-dove/15 dark:border-white/10 hover:border-dove/30 dark:hover:border-white/20 shadow-subtle'
-      }`}
-    >
-      {/* Customer Comment Bubble */}
+    <div className={`p-4 transition-colors ${comment.is_deleted ? 'bg-rose-500/5 opacity-70' : 'hover:bg-fog/30 dark:hover:bg-white/[0.02]'}`}>
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/40 to-dove/70 dark:from-white/10 dark:to-white/20 text-ink flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border border-dove/10 dark:border-white/10">
-          {comment.sender_name ? comment.sender_name[0].toUpperCase() : 'U'}
+        {/* Instagram Circular Avatar */}
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-dove/30 to-dove/60 dark:from-white/10 dark:to-white/20 text-ink dark:text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border border-dove/10 dark:border-white/10">
+          {initial}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-ink truncate">{comment.sender_name || 'Customer'}</span>
-              {comment.is_deleted && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                  Auto-Deleted
-                </span>
-              )}
-              {comment.private_reply_sent && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                  DM Sent
-                </span>
-              )}
-              {comment.reply_text && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  Replied
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-ash shrink-0">
-              {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {/* Instagram Inline Name + Text */}
+          <div className="text-xs text-ink dark:text-[#f4f4f5] leading-relaxed">
+            <span className="font-bold mr-1.5 text-ink dark:text-white hover:underline cursor-pointer">
+              {comment.sender_name || 'Customer'}
+            </span>
+            <span className="font-normal text-graphite dark:text-[#d4d4d8] whitespace-pre-wrap">
+              {comment.comment_text}
             </span>
           </div>
 
-          <p className="text-xs text-graphite dark:text-[#e4e4e7] mt-1 bg-fog/50 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed whitespace-pre-wrap">
-            {comment.comment_text}
-          </p>
+          {/* Micro Meta Row */}
+          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-ash flex-wrap">
+            <span>
+              {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
 
-          {/* Existing Reply Bubble if any */}
-          {comment.reply_text && (
-            <div className="mt-2.5 pl-3 border-l-2 border-emerald-400 dark:border-emerald-500">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
-                <Bot className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>DullBot / Store Reply</span>
-              </div>
-              <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-500/10 rounded-xl border border-emerald-200/80 dark:border-emerald-500/20 text-xs text-ink leading-relaxed">
-                {comment.reply_text}
-              </div>
-            </div>
-          )}
+            {comment.is_deleted && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                Auto-Deleted
+              </span>
+            )}
+            {comment.private_reply_sent && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                DM Sent
+              </span>
+            )}
+            {comment.reply_text && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Replied
+              </span>
+            )}
 
-          {/* Action Row */}
-          {!comment.is_deleted && (
-            <div className="mt-2.5 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setIsReplying(prev => !prev)}
-                className={`text-[11px] font-bold flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  isReplying
-                    ? 'bg-ink text-pure-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-graphite dark:text-ash hover:text-ink bg-fog/80 dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 border border-dove/15 dark:border-white/10'
-                }`}
-              >
-                <CornerDownRight className="w-3 h-3" />
-                <span>{isReplying ? 'Cancel' : comment.reply_text ? 'Reply Again' : 'Manual Reply'}</span>
-              </button>
-
-              {!isReplying && !comment.reply_text && (
+            {!comment.is_deleted && (
+              <>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsReplying(true);
-                    handleAiSuggest();
-                  }}
-                  className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+                  onClick={() => setIsReplying(prev => !prev)}
+                  className="font-bold text-ash hover:text-ink dark:hover:text-white transition-colors cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3" />
-                  <span>AI Draft Reply</span>
+                  {isReplying ? 'Cancel' : 'Reply'}
                 </button>
-              )}
+
+                {!comment.reply_text && !isReplying && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsReplying(true);
+                      handleAiSuggest();
+                    }}
+                    className="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>AI Suggest</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Threaded Bot Reply (Indented Instagram Child Reply) */}
+          {comment.reply_text && (
+            <div className="mt-3 pl-3.5 border-l-2 border-emerald-500/40 space-y-1">
+              <div className="flex items-start gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs">
+                  <Bot className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-ink dark:text-[#f4f4f5] leading-relaxed">
+                    <span className="font-bold mr-1.5 text-emerald-700 dark:text-emerald-400">
+                      DullBot
+                    </span>
+                    <span className="text-graphite dark:text-[#d4d4d8] whitespace-pre-wrap">
+                      {comment.reply_text}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-ash mt-0.5">Automated comment reply</p>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Inline Reply Composer */}
           {isReplying && (
-            <div className="mt-3 p-3 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/20 dark:border-white/10 space-y-2.5 animate-in fade-in duration-150">
+            <div className="mt-3 p-3 bg-fog/70 dark:bg-white/[0.03] rounded-2xl border border-dove/20 dark:border-white/10 space-y-2.5 animate-in fade-in duration-150">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-graphite dark:text-ash">
-                  Replying as {platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}
+                <span className="text-[10px] font-bold text-ash uppercase tracking-wider">
+                  Replying as {platform === 'instagram' ? 'Instagram' : 'Facebook Page'}
                 </span>
 
                 <div className="flex items-center gap-1 bg-pure-white dark:bg-[#18181c] p-0.5 rounded-lg border border-dove/15 dark:border-white/10 text-[10px] font-semibold">
@@ -885,15 +956,13 @@ function CommentRowItem({
                 <textarea
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
-                  placeholder={replyAsDm ? `Send a private Messenger DM to ${comment.sender_name}...` : `Write a public comment reply...`}
+                  placeholder={replyAsDm ? `Send private DM to ${comment.sender_name}...` : `Reply to @${comment.sender_name || 'customer'}...`}
                   rows={2}
-                  className="w-full px-3 py-2 bg-pure-white dark:bg-[#18181c] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 resize-none leading-relaxed"
+                  className="w-full px-3 py-2 bg-pure-white dark:bg-[#18181c] border border-dove/20 dark:border-white/10 rounded-xl text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none focus:border-ink dark:focus:border-white/30 resize-none leading-relaxed"
                 />
               </div>
 
-              {error && (
-                <p className="text-[11px] font-medium text-rust">{error}</p>
-              )}
+              {error && <p className="text-[11px] font-medium text-rust">{error}</p>}
 
               <div className="flex items-center justify-between gap-2">
                 <button
@@ -921,7 +990,7 @@ function CommentRowItem({
                     className="px-3.5 py-1.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-lg text-[11px] font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                    <span>Send {replyAsDm ? 'DM' : 'Reply'}</span>
+                    <span>Post {replyAsDm ? 'DM' : 'Reply'}</span>
                   </button>
                 </div>
               </div>
@@ -933,33 +1002,21 @@ function CommentRowItem({
   );
 }
 
-// ─── Center Column: Post Preview & Live Comments Stream ──────────────────────
+// ─── Center Column: Post Preview & Live Comments (Instagram Style Canvas) ────
 function PostAndLiveCommentsCenter({
   post,
   automation,
   shopName,
+  newSimulatedComment,
 }: {
   post: ConnectedPostItem;
   automation: PostAutomation | null;
   shopName: string;
+  newSimulatedComment?: CommentDetailItem | null;
 }) {
   const [comments, setComments] = useState<CommentDetailItem[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'replied' | 'dmed' | 'moderated'>('all');
-
-  const [testCommentText, setTestCommentText] = useState('');
-  const [simulating, setSimulating] = useState(false);
-
-  const handleSimulateComment = async () => {
-    if (!testCommentText.trim() || simulating) return;
-    setSimulating(true);
-    const res = await testPostCommentReply(post.post_id, testCommentText.trim(), 'Test Customer');
-    if (res.success && res.comment) {
-      setComments(prev => [res.comment!, ...prev]);
-      setTestCommentText('');
-    }
-    setSimulating(false);
-  };
 
   const handleReplySuccess = (commentId: string, replyText: string, asDm: boolean) => {
     setComments(prev =>
@@ -990,6 +1047,12 @@ function PostAndLiveCommentsCenter({
     loadComments();
   }, [post.post_id]);
 
+  useEffect(() => {
+    if (newSimulatedComment) {
+      setComments(prev => [newSimulatedComment, ...prev.filter(c => c.id !== newSimulatedComment.id)]);
+    }
+  }, [newSimulatedComment]);
+
   const filteredComments = useMemo(() => {
     return comments.filter(c => {
       if (filterType === 'replied') return !!c.reply_text;
@@ -1004,21 +1067,32 @@ function PostAndLiveCommentsCenter({
   const moderatedCount = comments.filter(c => !!c.is_deleted || !!c.is_negative).length;
 
   return (
-    <div className="h-full flex flex-col bg-fog/30 dark:bg-[#09090b] overflow-y-auto">
-      <div className="max-w-3xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <div className="h-full flex flex-col bg-fog/40 dark:bg-[#09090b] overflow-y-auto p-4 sm:p-6">
+      <div className="max-w-2xl w-full mx-auto space-y-4">
 
-        {/* ── Post Details Card ── */}
-        <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle overflow-hidden">
-          {/* Post Header */}
+        {/* ── Cohesive Instagram Post & Discussion Card ── */}
+        <div className="bg-pure-white dark:bg-[#121214] rounded-3xl border border-dove/15 dark:border-white/10 shadow-subtle overflow-hidden">
+
+          {/* Instagram Post Header */}
           <div className="p-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-xs ${
+              {/* Story Ring Avatar */}
+              <div className={`w-10 h-10 rounded-full p-[2px] shrink-0 shadow-xs ${
                 post.platform === 'instagram'
-                  ? 'bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600'
-                  : 'bg-[#0084FF]'
+                  ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
+                  : 'bg-gradient-to-tr from-blue-500 to-blue-600'
               }`}>
-                <ChannelIcon channel={post.platform} className="w-5 h-5" />
+                <div className="w-full h-full rounded-full bg-pure-white dark:bg-[#121214] flex items-center justify-center overflow-hidden">
+                  <div className={`w-full h-full flex items-center justify-center text-white ${
+                    post.platform === 'instagram'
+                      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
+                      : 'bg-[#0084FF]'
+                  }`}>
+                    <ChannelIcon channel={post.platform} className="w-4 h-4" />
+                  </div>
+                </div>
               </div>
+
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-ink dark:text-white truncate">{shopName}</h4>
@@ -1030,13 +1104,13 @@ function PostAndLiveCommentsCenter({
                     {post.platform}
                   </span>
                   {automation ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Automated ON
                     </span>
                   ) : (
                     <span className="text-[10px] font-medium text-ash bg-fog dark:bg-white/5 border border-dove/20 dark:border-white/10 px-2 py-0.5 rounded-full">
-                      Automate OFF
+                      Paused
                     </span>
                   )}
                 </div>
@@ -1066,41 +1140,37 @@ function PostAndLiveCommentsCenter({
             )}
           </div>
 
-          {/* Post Caption Body */}
-          <div className="p-4 sm:p-5">
-            <p className="text-sm text-ink dark:text-white leading-relaxed whitespace-pre-wrap font-normal">
-              {post.preview_text}
+          {/* Post Media Container (if available) */}
+          {post.thumbnail_url && (
+            <div className="bg-black/5 dark:bg-black/40 border-b border-dove/10 dark:border-white/10 max-h-[380px] w-full flex items-center justify-center overflow-hidden">
+              <img src={post.thumbnail_url} alt="Post visual" className="w-full h-full object-cover max-h-[380px]" />
+            </div>
+          )}
+
+          {/* Post Caption (Instagram Style) */}
+          <div className="p-4 border-b border-dove/10 dark:border-white/10">
+            <p className="text-xs text-ink dark:text-[#f4f4f5] leading-relaxed whitespace-pre-wrap">
+              <span className="font-bold mr-1.5 text-ink dark:text-white">{shopName}</span>
+              {post.preview_text || '(No caption text)'}
             </p>
           </div>
 
-          {/* Post Media / Image */}
-          {post.thumbnail_url && (
-            <div className="px-4 sm:px-5 pb-5">
-              <div className="max-h-[380px] w-full rounded-xl overflow-hidden bg-fog dark:bg-white/5 border border-dove/10 dark:border-white/10 flex items-center justify-center">
-                <img src={post.thumbnail_url} alt="Post visual" className="w-full h-full object-cover max-h-[380px]" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Live Comments & AI Replies Stream ── */}
-        <div className="space-y-3">
-          {/* Section Header & Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-pure-white dark:bg-[#121214] p-3.5 rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle">
+          {/* ── Seamless Instagram Comments Header & Tab Bar ── */}
+          <div className="p-3.5 bg-fog/30 dark:bg-white/[0.02] border-b border-dove/10 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-ink dark:text-white" />
-              <h3 className="text-xs font-bold text-ink dark:text-white uppercase tracking-wider">Live Comments Stream</h3>
-              <span className="px-2 py-0.5 rounded-full bg-fog dark:bg-white/5 text-ink dark:text-white text-[11px] font-bold border border-dove/15 dark:border-white/10">
+              <h3 className="text-xs font-bold text-ink dark:text-white uppercase tracking-wider">Comments Stream</h3>
+              <span className="px-2 py-0.5 rounded-full bg-pure-white dark:bg-white/10 text-ink dark:text-white text-[11px] font-bold border border-dove/15 dark:border-white/10 shadow-xs">
                 {comments.length}
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center gap-1 bg-fog dark:bg-white/5 p-1 rounded-xl border border-dove/10 dark:border-white/10">
+              <div className="flex items-center gap-1 bg-pure-white dark:bg-[#18181c] p-0.5 rounded-xl border border-dove/15 dark:border-white/10 shadow-xs">
                 <button
                   onClick={() => setFilterType('all')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'all' ? 'bg-pure-white dark:bg-white/15 text-ink dark:text-white shadow-xs border border-dove/10 dark:border-white/10' : 'text-ash hover:text-ink dark:hover:text-white'
+                    filterType === 'all' ? 'bg-ink text-pure-white dark:bg-white dark:text-black shadow-xs' : 'text-ash hover:text-ink dark:hover:text-white'
                   }`}
                 >
                   All ({comments.length})
@@ -1108,80 +1178,56 @@ function PostAndLiveCommentsCenter({
                 <button
                   onClick={() => setFilterType('replied')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'replied' ? 'bg-pure-white dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30' : 'text-ash hover:text-emerald-500'
+                    filterType === 'replied' ? 'bg-emerald-500 text-white shadow-xs' : 'text-ash hover:text-emerald-600'
                   }`}
                 >
-                  AI Replied ({repliedCount})
+                  Replied ({repliedCount})
                 </button>
                 <button
                   onClick={() => setFilterType('dmed')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'dmed' ? 'bg-pure-white dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 shadow-xs border border-blue-500/30' : 'text-ash hover:text-blue-500'
+                    filterType === 'dmed' ? 'bg-blue-500 text-white shadow-xs' : 'text-ash hover:text-blue-600'
                   }`}
                 >
-                  DMs Sent ({dmedCount})
+                  DMs ({dmedCount})
                 </button>
                 <button
                   onClick={() => setFilterType('moderated')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    filterType === 'moderated' ? 'bg-pure-white dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-xs border border-rose-500/30' : 'text-ash hover:text-rose-500'
+                    filterType === 'moderated' ? 'bg-rose-500 text-white shadow-xs' : 'text-ash hover:text-rose-600'
                   }`}
                 >
-                  Moderated ({moderatedCount})
+                  Spam ({moderatedCount})
                 </button>
               </div>
 
               <button
                 onClick={loadComments}
                 disabled={loadingComments}
-                className="p-1.5 bg-pure-white dark:bg-white/5 border border-dove/20 dark:border-white/10 text-ash hover:text-ink dark:hover:text-white rounded-lg transition-all shadow-xs cursor-pointer"
-                title="Refresh comments from Meta"
+                className="p-1.5 bg-pure-white dark:bg-[#18181c] border border-dove/20 dark:border-white/10 text-ash hover:text-ink dark:hover:text-white rounded-xl transition-all shadow-xs cursor-pointer"
+                title="Refresh comments"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingComments ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Test / Simulate AI Comment Reply Bar */}
-          <div className="bg-pure-white dark:bg-[#121214] p-3 rounded-2xl border border-dove/15 dark:border-white/10 shadow-subtle flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0 bg-fog/60 dark:bg-[#18181c] px-3 py-2 rounded-xl border border-dove/15 dark:border-white/10">
-              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-              <input
-                type="text"
-                value={testCommentText}
-                onChange={e => setTestCommentText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSimulateComment()}
-                placeholder='Test AI reply (e.g., "pp please", "delivery charge koto?", "is this in stock?")'
-                className="flex-1 bg-transparent text-xs text-ink dark:text-white placeholder:text-ash/60 focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleSimulateComment}
-              disabled={simulating || !testCommentText.trim()}
-              className="px-4 py-2.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
-            >
-              {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              <span>Test AI Reply</span>
-            </button>
-          </div>
-
-          {/* Comments List */}
+          {/* Comments Feed */}
           {loadingComments ? (
-            <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 p-8 text-center text-xs text-ash flex flex-col items-center justify-center gap-2 shadow-subtle">
+            <div className="p-8 text-center text-xs text-ash flex flex-col items-center justify-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin text-ink dark:text-white" />
-              <p className="font-semibold text-ink dark:text-white">Fetching latest comments & AI replies...</p>
+              <p className="font-semibold text-ink dark:text-white">Fetching live comments...</p>
             </div>
           ) : filteredComments.length === 0 ? (
-            <div className="bg-pure-white dark:bg-[#121214] rounded-2xl border border-dove/15 dark:border-white/10 p-8 text-center space-y-2 shadow-subtle">
+            <div className="p-8 text-center space-y-2">
               <MessageCircle className="w-8 h-8 text-ash mx-auto opacity-30" />
               <p className="text-xs font-bold text-ink dark:text-white">No comments in this filter</p>
               <p className="text-[11px] text-ash max-w-xs mx-auto">
-                When customers leave comments on your published post, DullBot will automatically reply and record the activity here.
+                When customers comment on this post, DullBot will answer automatically and stream conversations here.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-dove/10 dark:divide-white/5">
               {filteredComments.map(comment => (
                 <CommentRowItem
                   key={comment.id || comment.comment_id}
@@ -1225,6 +1271,7 @@ export default function SocialClient({
   const [shopName, setShopName] = useState<string>('My Store');
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [togglingPostId, setTogglingPostId] = useState<string | null>(null);
+  const [simulatedComment, setSimulatedComment] = useState<CommentDetailItem | null>(null);
 
   const loadConnectedPosts = async () => {
     setLoadingPosts(true);
@@ -1544,6 +1591,7 @@ export default function SocialClient({
               post={selectedPost}
               automation={selectedAutomation}
               shopName={shopName}
+              newSimulatedComment={simulatedComment}
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center text-ash space-y-3">
@@ -1569,6 +1617,7 @@ export default function SocialClient({
               onToggleMaster={(val) => handleToggleAutomation(selectedPost, val)}
               onSaved={(updated) => handleSaved(selectedPost.post_id, updated)}
               onDeleted={() => handleDeleted(selectedPost.post_id)}
+              onTestCommentAdded={setSimulatedComment}
             />
           </div>
         )}
