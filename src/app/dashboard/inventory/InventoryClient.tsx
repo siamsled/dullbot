@@ -8,7 +8,8 @@ import { InventoryTableSkeleton } from '@/components/ui/SkeletonLoaders';
 
 import dynamic from 'next/dynamic';
 import CatalogueTable from './components/CatalogueTable';
-import ProductSlideOver, { type Product, type Variant } from './components/ProductSlideOver';
+import ProductSlideOver from './components/ProductSlideOver';
+import { type Product, type Variant } from './components/ProductSlideOver/productForm.types';
 import SuppliersTab, { type Supplier } from './components/SuppliersTab';
 import ActivityLog from './components/ActivityLog';
 import ReportsTab from './components/ReportsTab';

@@ -8,7 +8,7 @@ import {
   Check, X, ChevronUp, ChevronDown, ChevronRight, Trash2, Eye, EyeOff,
   Tag, Plus, Upload, RefreshCcw
 } from 'lucide-react';
-import type { Product, Variant } from './ProductSlideOver';
+import type { Product, Variant } from './ProductSlideOver/productForm.types';
 
 const PAGE_SIZE = 25;
 
