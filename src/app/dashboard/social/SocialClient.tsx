@@ -635,7 +635,7 @@ function AutomationTweaksPanel({
                   />
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/15 dark:border-white/10">
+                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2 bg-fog/60 dark:bg-white/[0.03] rounded-xl border border-dove/15 dark:border-white/10">
                   {filteredProducts.map(p => {
                     const isSelected = config.product_ids.includes(p.id);
                     return (
@@ -643,15 +643,27 @@ function AutomationTweaksPanel({
                         type="button"
                         key={p.id}
                         onClick={() => toggleProduct(p.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-ink text-pure-white dark:bg-white dark:text-black border-ink dark:border-white shadow-xs'
-                            : 'bg-pure-white dark:bg-[#18181c] text-graphite dark:text-ash border-dove/20 dark:border-white/10 hover:border-dove/40'
+                            : 'bg-pure-white dark:bg-[#18181c] text-graphite dark:text-ash border-dove/20 dark:border-white/10 hover:border-dove/40 dark:hover:border-white/30'
                         }`}
                       >
-                        <Package className="w-3 h-3" />
-                        <span className="truncate max-w-[120px]">{p.name}</span>
-                        <span className={`text-[10px] ${isSelected ? 'text-amber-300 dark:text-amber-600' : 'text-ash'}`}>
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            className="w-5 h-5 rounded-md object-cover shrink-0 border border-dove/10 dark:border-white/10"
+                          />
+                        ) : (
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
+                            isSelected ? 'bg-white/20' : 'bg-fog dark:bg-white/10'
+                          }`}>
+                            <Package className={`w-3 h-3 ${isSelected ? 'text-white dark:text-black' : 'text-ash'}`} />
+                          </div>
+                        )}
+                        <span className="truncate max-w-[130px]">{p.name}</span>
+                        <span className={`text-[10px] font-bold ${isSelected ? 'text-amber-300 dark:text-amber-600' : 'text-ash'}`}>
                           ৳{p.price}
                         </span>
                       </button>
