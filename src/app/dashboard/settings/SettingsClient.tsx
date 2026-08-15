@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -210,6 +210,55 @@ export default function SettingsClient({ shop }: Props) {
     }
   }, [shop.id]);
 
+  const getCurrentSnapshot = useCallback(() => JSON.stringify({
+    confirmationTier,
+    depositRuleType,
+    deliveryInsideDhaka: Number(deliveryInsideDhaka) || 0,
+    deliveryOutsideDhaka: Number(deliveryOutsideDhaka) || 0,
+    fixedDepositAmount: Number(fixedDepositAmount) || 0,
+    depositPercentage: Number(depositPercentage) || 0,
+    highValueThreshold: Number(highValueThreshold) || 0,
+    highValueDepositAmount: Number(highValueDepositAmount) || 0,
+    depositReason: (depositReason || '').trim(),
+    acceptScreenshot: !!acceptScreenshot,
+    acceptLast3Digits: !!acceptLast3Digits,
+    acceptTrxId: !!acceptTrxId,
+    bkashNumber: (bkashNumber || '').trim(),
+    agentEnabled: !!agentEnabled,
+    paymentVerificationMethod,
+    bkashAppKey: (bkashAppKey || '').trim(),
+    bkashAppSecret: (bkashAppSecret || '').trim(),
+    bkashUsername: (bkashUsername || '').trim(),
+    bkashPassword: (bkashPassword || '').trim(),
+    bkashSandbox: !!bkashSandbox,
+    nagadMerchantId: (nagadMerchantId || '').trim(),
+    nagadPrivateKey: (nagadPrivateKey || '').trim(),
+    nagadPublicKey: (nagadPublicKey || '').trim(),
+    courierProvider,
+    courierClientId: (courierClientId || '').trim(),
+    courierClientSecret: (courierClientSecret || '').trim(),
+    courierUsername: (courierUsername || '').trim(),
+    courierPassword: (courierPassword || '').trim(),
+    courierStoreId: (courierStoreId || '').trim(),
+    courierApiKey: (courierApiKey || '').trim(),
+  }), [
+    confirmationTier, depositRuleType, deliveryInsideDhaka, deliveryOutsideDhaka,
+    fixedDepositAmount, depositPercentage, highValueThreshold, highValueDepositAmount,
+    depositReason, acceptScreenshot, acceptLast3Digits, acceptTrxId, bkashNumber,
+    agentEnabled, paymentVerificationMethod, bkashAppKey, bkashAppSecret, bkashUsername,
+    bkashPassword, bkashSandbox, nagadMerchantId, nagadPrivateKey, nagadPublicKey,
+    courierProvider, courierClientId, courierClientSecret, courierUsername, courierPassword,
+    courierStoreId, courierApiKey
+  ]);
+
+  const [savedSnapshot, setSavedSnapshot] = useState<string>('');
+
+  useEffect(() => {
+    setSavedSnapshot(getCurrentSnapshot());
+  }, []);
+
+  const isDirty = savedSnapshot !== '' && savedSnapshot !== getCurrentSnapshot();
+
   /* Keyboard shortcut ⌘S / Ctrl+S to save */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -220,15 +269,7 @@ export default function SettingsClient({ shop }: Props) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    confirmationTier, depositRuleType, deliveryInsideDhaka, deliveryOutsideDhaka,
-    fixedDepositAmount, depositPercentage, highValueThreshold, highValueDepositAmount,
-    depositReason, acceptScreenshot, acceptLast3Digits, acceptTrxId, bkashNumber,
-    agentEnabled, paymentVerificationMethod, bkashAppKey, bkashAppSecret, bkashUsername,
-    bkashPassword, bkashSandbox, nagadMerchantId, nagadPrivateKey, nagadPublicKey,
-    courierProvider, courierClientId, courierClientSecret, courierUsername, courierPassword,
-    courierStoreId, courierApiKey
-  ]);
+  }, [getCurrentSnapshot]);
 
   const handleDisconnect = () => {
     if (!confirm('Are you sure you want to disconnect Facebook and Instagram?')) return;
@@ -366,6 +407,7 @@ export default function SettingsClient({ shop }: Props) {
         courierConfig: { client_id: courierClientId, client_secret: courierClientSecret, username: courierUsername, password: courierPassword, store_id: courierStoreId, api_key: courierApiKey },
       });
       if (res.success) {
+        setSavedSnapshot(getCurrentSnapshot());
         setSaveToast(true);
         setTimeout(() => setSaveToast(false), 2500);
       } else {
@@ -401,12 +443,24 @@ export default function SettingsClient({ shop }: Props) {
           <div className="flex items-center gap-2.5">
             <button
               onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink text-white text-xs font-semibold hover:bg-black transition-all hover:scale-[1.02] active:scale-[0.98] shadow-subtle disabled:opacity-50 cursor-pointer"
+              disabled={isSaving || (!isDirty && !saveToast)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-subtle ${
+                saveToast
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                  : isDirty
+                  ? 'bg-ink text-white hover:bg-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
+                  : 'bg-fog text-ash border border-dove/20 opacity-60 cursor-default'
+              }`}
             >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              <span>{isSaving ? 'Saving Changes…' : 'Save Changes'}</span>
-              <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] bg-white/20 rounded font-mono text-white/90">⌘S</kbd>
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : saveToast ? (
+                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+              ) : (
+                <Check className={`w-3.5 h-3.5 ${isDirty ? 'text-emerald-400 stroke-[3]' : 'text-ash'}`} />
+              )}
+              <span>{isSaving ? 'Saving Changes…' : saveToast ? 'Saved!' : isDirty ? 'Save Changes' : 'All Saved'}</span>
+              <kbd className={`hidden sm:inline-block px-1.5 py-0.5 text-[9px] rounded font-mono ${isDirty ? 'bg-white/20 text-white/90' : 'bg-black/5 text-ash'}`}>⌘S</kbd>
             </button>
           </div>
         </div>
@@ -1908,6 +1962,50 @@ export default function SettingsClient({ shop }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── Sticky Hovering Save Island on Bottom-Right ── */}
+        <div className="fixed bottom-8 right-8 z-40">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving || (!isDirty && !saveToast)}
+            className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-bold transition-all duration-200 shadow-2xl backdrop-blur-md ${
+              saveToast
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 scale-[1.03]'
+                : isDirty
+                ? 'bg-ink hover:bg-black text-white dark:bg-white dark:text-black shadow-2xl ring-4 ring-ink/10 dark:ring-white/15 hover:scale-105 active:scale-95 cursor-pointer'
+                : 'bg-white/90 dark:bg-[#18181c]/90 text-ash border border-dove/20 dark:border-white/10 opacity-70 cursor-default shadow-subtle'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                <span>Saving Changes…</span>
+              </>
+            ) : saveToast ? (
+              <>
+                <Check className="w-4 h-4 text-white stroke-[3] animate-in zoom-in-50" />
+                <span>Saved Changes!</span>
+              </>
+            ) : isDirty ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                <span>Save Changes</span>
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] bg-white/20 dark:bg-black/10 rounded font-mono text-white dark:text-black">
+                  ⌘S
+                </kbd>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5 text-ash" />
+                <span>All Saved</span>
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] bg-black/5 dark:bg-white/10 rounded font-mono text-ash">
+                  ⌘S
+                </kbd>
+              </>
+            )}
+          </button>
+        </div>
 
       </div>
     </div>
