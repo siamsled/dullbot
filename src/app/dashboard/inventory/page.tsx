@@ -42,7 +42,8 @@ export default async function InventoryPage() {
       id, change_type, quantity_delta, resulting_stock,
       note, created_at, variant_id, supplier_id, cost_per_unit, product_id,
       suppliers(name),
-      products(name)
+      products(name),
+      product_variants(name, sku)
     `)
     .eq('shop_id', shop.id)
     .order('created_at', { ascending: false })

@@ -98,14 +98,19 @@ export default function ProductSlideOver({
           // Construct productImagesData now that we have real variant IDs
           const allImagesData: { url: string; variant_id: string | null; position: number }[] = mediaPayload.images.map((url, idx) => ({ url, variant_id: null, position: idx }));
           
-          activeVariantsList.forEach((v, idx) => {
-            if (v.image_url && !v.image_url.startsWith('blob:')) {
-              allImagesData.push({
-                url: v.image_url,
-                variant_id: realVariantIds[v.id] ?? null,
-                position: mediaPayload.images.length + idx
-              });
-            }
+          let imgPos = mediaPayload.images.length;
+          activeVariantsList.forEach(v => {
+            const vUrls = v.image_urls && v.image_urls.length > 0 ? v.image_urls : (v.image_url ? [v.image_url] : []);
+            const targetId = realVariantIds[v.id] ?? null;
+            vUrls.forEach(url => {
+              if (url && !url.startsWith('blob:')) {
+                allImagesData.push({
+                  url,
+                  variant_id: targetId,
+                  position: imgPos++
+                });
+              }
+            });
           });
 
           await updateProduct(res.productId, { product_images_data: allImagesData, skipProductStockMovement: true });
@@ -138,14 +143,19 @@ export default function ProductSlideOver({
         // Construct productImagesData
         const allImagesData: { url: string; variant_id: string | null; position: number }[] = mediaPayload.images.map((url, idx) => ({ url, variant_id: null, position: idx }));
         
-        activeVariantsList.forEach((v, idx) => {
-          if (v.image_url && !v.image_url.startsWith('blob:')) {
-            allImagesData.push({
-              url: v.image_url,
-              variant_id: realVariantIds[v.id] ?? v.id,
-              position: mediaPayload.images.length + idx
-            });
-          }
+        let imgPos = mediaPayload.images.length;
+        activeVariantsList.forEach(v => {
+          const vUrls = v.image_urls && v.image_urls.length > 0 ? v.image_urls : (v.image_url ? [v.image_url] : []);
+          const targetId = realVariantIds[v.id] ?? v.id;
+          vUrls.forEach(url => {
+            if (url && !url.startsWith('blob:')) {
+              allImagesData.push({
+                url,
+                variant_id: targetId,
+                position: imgPos++
+              });
+            }
+          });
         });
 
         await updateProduct(product!.id, { ...input, product_images_data: allImagesData, skipProductStockMovement: true });
@@ -260,8 +270,11 @@ export default function ProductSlideOver({
                 {...variantsHook.setters}
                 generateVariants={variantsHook.generateVariants}
                 addVariant={variantsHook.addVariant}
+                autoGenerateSkus={variantsHook.autoGenerateSkus}
                 images={mediaHook.state.images}
                 shopId={shopId}
+                parentSku={formHook.state.sku}
+                parentName={formHook.state.name}
                 setPreviewMedia={setPreviewMedia}
                 setScanningTarget={() => {}}
                 setActiveTab={setActiveTab}

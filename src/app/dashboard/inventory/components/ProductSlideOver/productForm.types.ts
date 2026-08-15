@@ -27,7 +27,9 @@ export type Variant = {
   price_override?: number | null;
   stock: number;
   image_url?: string | null;
+  image_urls?: string[];
   displayUrl?: string | null;
+  displayUrls?: string[];
 };
 
 export type StockMovement = {
@@ -37,7 +39,11 @@ export type StockMovement = {
   resulting_stock: number;
   note?: string | null;
   created_at: string;
+  variant_id?: string | null;
+  supplier_id?: string | null;
   suppliers?: { name?: string } | null;
+  product_variants?: { name?: string; sku?: string | null } | null;
+  products?: { name?: string } | null;
   cost_per_unit?: number | null;
 };
 

@@ -15,6 +15,7 @@ type Movement = {
   variant_id?: string | null;
   suppliers?: { name?: string } | null;
   products?: { name?: string } | null;
+  product_variants?: { name?: string; sku?: string | null } | null;
   product_id?: string;
 };
 
@@ -172,11 +173,20 @@ export default function ActivityLog({ movements: allMovements }: Props) {
                           {cfg.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-zinc-900 dark:text-zinc-100 font-semibold max-w-[200px] truncate">
-                        {m.products?.name ?? (m.product_id ? 'Product' : 'Storewide')}
-                        {m.variant_id && (
-                          <span className="text-zinc-400 dark:text-zinc-500 text-xs ml-1 font-normal">(variant)</span>
-                        )}
+                      <td className="px-5 py-3.5 text-zinc-900 dark:text-zinc-100 font-semibold max-w-[220px]">
+                        <div className="truncate text-sm">{m.products?.name ?? (m.product_id ? 'Product' : 'Storewide')}</div>
+                        {m.product_variants?.name ? (
+                          <div className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium flex items-center gap-1 mt-0.5">
+                            <span className="bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-800/40 px-1.5 py-0.2 rounded">
+                              {m.product_variants.name}
+                            </span>
+                            {m.product_variants.sku && (
+                              <span className="font-mono text-[10px] text-zinc-400">({m.product_variants.sku})</span>
+                            )}
+                          </div>
+                        ) : m.variant_id ? (
+                          <span className="text-zinc-400 dark:text-zinc-500 text-xs font-normal">(variant)</span>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3.5 text-right font-mono font-bold text-sm">
                         {m.quantity_delta === 0 ? (

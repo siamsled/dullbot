@@ -383,20 +383,33 @@ export async function manualStockAdjust(
   if (!note.trim()) return { error: 'A reason note is required for manual adjustments' };
 
   let resultingStock: number;
+  let variantName: string | undefined;
 
   if (variantId) {
     const { data: variant } = await supabaseAdmin
       .from('product_variants')
-      .select('stock')
+      .select('stock, name')
       .eq('id', variantId)
       .single();
 
+    variantName = variant?.name;
     const newStock = Math.max(0, (variant?.stock ?? 0) + delta);
     await supabaseAdmin
       .from('product_variants')
       .update({ stock: newStock })
       .eq('id', variantId);
     resultingStock = newStock;
+
+    // Recalculate parent product's aggregate stock_quantity
+    const { data: allVars } = await supabaseAdmin
+      .from('product_variants')
+      .select('stock')
+      .eq('product_id', productId);
+    const totalVariantStock = (allVars ?? []).reduce((acc, v) => acc + (v.stock || 0), 0);
+    await supabaseAdmin
+      .from('products')
+      .update({ stock_quantity: totalVariantStock, updated_at: new Date().toISOString() })
+      .eq('id', productId);
   } else {
     const { data: product } = await supabaseAdmin
       .from('products')
@@ -412,6 +425,8 @@ export async function manualStockAdjust(
     resultingStock = newStock;
   }
 
+  const movementNote = variantName ? `[${variantName}] ${note.trim()}` : note.trim();
+
   await supabaseAdmin.from('stock_movements').insert({
     product_id: productId,
     variant_id: variantId ?? null,
@@ -419,7 +434,7 @@ export async function manualStockAdjust(
     change_type: 'manual_adjust',
     quantity_delta: delta,
     resulting_stock: resultingStock,
-    note,
+    note: movementNote,
   });
 
   revalidate();
@@ -439,20 +454,33 @@ export async function restockProduct(
   if (quantity <= 0) return { error: 'Quantity must be greater than 0' };
 
   let resultingStock: number;
+  let variantName: string | undefined;
 
   if (variantId) {
     const { data: variant } = await supabaseAdmin
       .from('product_variants')
-      .select('stock')
+      .select('stock, name')
       .eq('id', variantId)
       .single();
 
+    variantName = variant?.name;
     const newStock = (variant?.stock ?? 0) + quantity;
     await supabaseAdmin
       .from('product_variants')
       .update({ stock: newStock })
       .eq('id', variantId);
     resultingStock = newStock;
+
+    // Recalculate parent product's aggregate stock_quantity
+    const { data: allVars } = await supabaseAdmin
+      .from('product_variants')
+      .select('stock')
+      .eq('product_id', productId);
+    const totalVariantStock = (allVars ?? []).reduce((acc, v) => acc + (v.stock || 0), 0);
+    await supabaseAdmin
+      .from('products')
+      .update({ stock_quantity: totalVariantStock, updated_at: new Date().toISOString() })
+      .eq('id', productId);
   } else {
     const { data: product } = await supabaseAdmin
       .from('products')
@@ -468,6 +496,9 @@ export async function restockProduct(
     resultingStock = newStock;
   }
 
+  const defaultNote = note.trim() || 'Restock';
+  const movementNote = variantName ? `[${variantName}] ${defaultNote}` : defaultNote;
+
   await supabaseAdmin.from('stock_movements').insert({
     product_id: productId,
     variant_id: variantId ?? null,
@@ -477,7 +508,7 @@ export async function restockProduct(
     resulting_stock: resultingStock,
     supplier_id: supplierId ?? null,
     cost_per_unit: costPerUnit ?? null,
-    note: note || 'Restock',
+    note: movementNote,
   });
 
   revalidate();
@@ -487,7 +518,7 @@ export async function restockProduct(
 export async function getStockMovements(productId: string) {
   const { data } = await supabaseAdmin
     .from('stock_movements')
-    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, suppliers(name)')
+    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, suppliers(name), product_variants(name, sku)')
     .eq('product_id', productId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -718,7 +749,7 @@ export async function getShopMovements(shopId?: string | null) {
 
   const { data } = await supabaseAdmin
     .from('stock_movements')
-    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, products(name, product_images(url)), suppliers(name)')
+    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, products(name, product_images(url)), product_variants(name, sku), suppliers(name)')
     .eq('shop_id', actualShopId)
     .order('created_at', { ascending: false })
     .limit(100);

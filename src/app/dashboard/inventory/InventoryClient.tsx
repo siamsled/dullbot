@@ -40,6 +40,7 @@ type StockMovement = {
   cost_per_unit?: number | null;
   suppliers?: { name?: string } | null;
   products?: { name?: string } | null;
+  product_variants?: { name?: string; sku?: string | null } | null;
   product_id?: string;
 };
 
