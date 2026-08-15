@@ -516,12 +516,15 @@ export async function restockProduct(
 }
 
 export async function getStockMovements(productId: string) {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('stock_movements')
-    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, suppliers(name), product_variants(name, sku)')
+    .select('id, change_type, quantity_delta, resulting_stock, supplier_id, cost_per_unit, note, created_at, variant_id, suppliers:suppliers!stock_movements_supplier_id_fkey(name), product_variants:product_variants!stock_movements_variant_id_fkey(name, sku)')
     .eq('product_id', productId)
     .order('created_at', { ascending: false })
     .limit(50);
+  if (error) {
+    console.error('Error fetching stock movements:', error);
+  }
   return data ?? [];
 }
 

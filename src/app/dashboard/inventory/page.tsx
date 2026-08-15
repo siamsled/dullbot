@@ -36,18 +36,22 @@ export default async function InventoryPage() {
     .order('name');
 
   // ── Stock Movements (last 500 for activity log) ───────────────────────────
-  const { data: movements } = await supabaseAdmin
+  const { data: movements, error: movementsErr } = await supabaseAdmin
     .from('stock_movements')
     .select(`
       id, change_type, quantity_delta, resulting_stock,
       note, created_at, variant_id, supplier_id, cost_per_unit, product_id,
-      suppliers(name),
+      suppliers:suppliers!stock_movements_supplier_id_fkey(name),
       products(name),
-      product_variants(name, sku)
+      product_variants:product_variants!stock_movements_variant_id_fkey(name, sku)
     `)
     .eq('shop_id', shop.id)
     .order('created_at', { ascending: false })
     .limit(500);
+
+  if (movementsErr) {
+    console.error('Error fetching inventory movements:', movementsErr);
+  }
 
   // ── Reorder candidates (30-day velocity, 'order' movements only) ──────────
   const { data: shopSettings } = await supabaseAdmin
