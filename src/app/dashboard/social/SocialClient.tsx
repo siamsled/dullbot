@@ -750,10 +750,28 @@ function AutomationTweaksPanel({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="flex-1 max-w-[180px] py-2.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer"
+            className={`flex-1 max-w-[180px] py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 shadow-subtle cursor-pointer ${
+              saveToast
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:text-white shadow-md shadow-emerald-500/25 scale-[1.02]'
+                : 'bg-ink text-pure-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-40'
+            }`}
           >
-            {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[3]" />}
-            <span>Save Settings</span>
+            {isPending ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : saveToast ? (
+              <>
+                <Check className="w-3.5 h-3.5 stroke-[3] text-white animate-in zoom-in-50 duration-150" />
+                <span className="animate-in fade-in">Saved Changes!</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Save Settings</span>
+              </>
+            )}
           </button>
         </div>
       )}
