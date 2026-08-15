@@ -228,6 +228,7 @@ export default function ProductSlideOver({
   const [adjustDelta, setAdjustDelta] = useState('');
   const [adjustNote, setAdjustNote] = useState('');
   const [adjustError, setAdjustError] = useState('');
+  const [adjustVariantId, setAdjustVariantId] = useState('');
 
   // Restock
   const [showRestockForm, setShowRestockForm] = useState(false);
@@ -235,6 +236,7 @@ export default function ProductSlideOver({
   const [restockSupplierId, setRestockSupplierId] = useState('');
   const [restockCost, setRestockCost] = useState('');
   const [restockNote, setRestockNote] = useState('');
+  const [restockVariantId, setRestockVariantId] = useState('');
 
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -401,13 +403,8 @@ export default function ProductSlideOver({
     const p = parseFloat(price);
     if (!price || isNaN(p) || p <= 0) e.price = 'A valid price is required';
     
-    const activeVariantsList = variants.filter(v => !v._deleted);
-    if (!isNew && activeVariantsList.length === 0) {
-      const newStockVal = parseInt(stock, 10) || 0;
-      const oldStockVal = product?.stock_quantity ?? 0;
-      if (newStockVal !== oldStockVal && !stockChangeReason.trim()) {
-        e.stockReason = 'A reason is required when manually changing stock quantity';
-      }
+    if (hasExistingStockChanged && !stockChangeReason.trim()) {
+      e.stockReason = 'A reason is required when manually changing stock quantities';
     }
 
     setErrors(e);
@@ -502,6 +499,7 @@ export default function ProductSlideOver({
               price_override: v.price_override,
               stock: v.stock || 0,
               image_url: v.image_url && !v.image_url.startsWith('blob:') ? v.image_url : null,
+              stock_change_note: stockChangeReason.trim() || undefined,
             });
           } else if (v._deleted && !v._isNew && !v.id.startsWith('new-')) {
             await deleteVariant(v.id);
@@ -524,9 +522,10 @@ export default function ProductSlideOver({
     const delta = parseInt(adjustDelta, 10);
     if (isNaN(delta) || delta === 0) { setAdjustError('Enter a non-zero quantity'); return; }
     if (!adjustNote.trim()) { setAdjustError('A reason note is required'); return; }
+    if (hasVariants && !adjustVariantId) { setAdjustError('Select a variant'); return; }
     setAdjustError('');
     startTransition(async () => {
-      const res = await manualStockAdjust(product!.id, delta, adjustNote);
+      const res = await manualStockAdjust(product!.id, delta, adjustNote, adjustVariantId || undefined);
       if (res?.error) { setAdjustError(res.error); return; }
       setAdjustDelta('');
       setAdjustNote('');
@@ -544,12 +543,13 @@ export default function ProductSlideOver({
   const handleRestock = () => {
     const qty = parseInt(restockQty, 10);
     if (isNaN(qty) || qty <= 0) return;
+    if (hasVariants && !restockVariantId) return;
     startTransition(async () => {
       const res = await restockProduct(
         product!.id,
         qty,
         restockNote || 'Restock',
-        null,
+        restockVariantId || null,
         restockSupplierId || null,
         restockCost ? parseFloat(restockCost) : null
       );
@@ -574,6 +574,17 @@ export default function ProductSlideOver({
   const totalVariantStock = variants.filter(v => !v._deleted).reduce((s, v) => s + (v.stock || 0), 0);
   const activeVariants = variants.filter(v => !v._deleted);
   const hasVariants = activeVariants.length > 0;
+
+  const hasExistingStockChanged = !isNew && (() => {
+    if (!hasVariants) {
+      return parseInt(stock, 10) !== (product?.stock_quantity ?? 0);
+    }
+    return activeVariants.some(v => {
+      if (v._isNew || v.id.startsWith('new-')) return false;
+      const orig = initialVariants.find(iv => iv.id === v.id);
+      return orig && v.stock !== orig.stock;
+    });
+  })();
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -1051,28 +1062,6 @@ export default function ProductSlideOver({
                   </div>
                 </div>
 
-                {/* Reason field if stock is modified on existing product */}
-                {!isNew && parseInt(stock, 10) !== (product?.stock_quantity ?? 0) && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-1 animate-in fade-in">
-                    <label className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                      Stock Change Reason <span className="text-rust">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={stockChangeReason}
-                      onChange={e => {
-                        setStockChangeReason(e.target.value);
-                        if (errors.stockReason) setErrors(prev => ({ ...prev, stockReason: '' }));
-                      }}
-                      placeholder="e.g. Physical inventory count, Restock, Damaged units..."
-                      className="w-full bg-white dark:bg-[#16161a] border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-xs text-ink dark:text-white focus:outline-none placeholder:text-ash/60"
-                    />
-                    {errors.stockReason && (
-                      <p className="text-[11px] text-rust font-medium mt-1">{errors.stockReason}</p>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
@@ -1324,6 +1313,18 @@ export default function ProductSlideOver({
               {/* Manual adjust */}
               <div className="bg-fog rounded-xl p-4 space-y-3">
                 <p className="text-xs font-medium text-ink">Manual Adjustment</p>
+                {hasVariants && (
+                  <select
+                    value={adjustVariantId}
+                    onChange={e => setAdjustVariantId(e.target.value)}
+                    className="w-full bg-white border border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none"
+                  >
+                    <option value="">Select variant</option>
+                    {activeVariants.map(v => (
+                      <option key={v.id} value={v.id}>{v.name} {v.sku ? `(${v.sku})` : ''} - Stock: {v.stock}</option>
+                    ))}
+                  </select>
+                )}
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -1341,7 +1342,7 @@ export default function ProductSlideOver({
                   <button
                     type="button"
                     onClick={handleAdjust}
-                    disabled={isPending}
+                    disabled={isPending || (hasVariants && !adjustVariantId)}
                     className="px-4 py-2 rounded-inputs bg-ink text-white text-xs font-medium hover:bg-black transition-colors disabled:opacity-50"
                   >
                     {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
@@ -1365,6 +1366,18 @@ export default function ProductSlideOver({
 
                 {showRestockForm && (
                   <div className="space-y-2">
+                    {hasVariants && (
+                      <select
+                        value={restockVariantId}
+                        onChange={e => setRestockVariantId(e.target.value)}
+                        className="w-full bg-white border border-transparent rounded-inputs px-3 py-2 text-sm text-ink focus:border-ink/20 focus:outline-none"
+                      >
+                        <option value="">Select variant</option>
+                        {activeVariants.map(v => (
+                          <option key={v.id} value={v.id}>{v.name} {v.sku ? `(${v.sku})` : ''} - Stock: {v.stock}</option>
+                        ))}
+                      </select>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="number"
@@ -1403,7 +1416,7 @@ export default function ProductSlideOver({
                     <button
                       type="button"
                       onClick={handleRestock}
-                      disabled={!restockQty || isPending}
+                      disabled={!restockQty || isPending || (hasVariants && !restockVariantId)}
                       className="w-full flex items-center justify-center gap-2 py-2 rounded-inputs bg-ink text-white text-xs font-medium hover:bg-black transition-colors disabled:opacity-50"
                     >
                       {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
@@ -1463,29 +1476,52 @@ export default function ProductSlideOver({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-dove/10 px-6 py-4 flex items-center justify-between">
-          {errors._form && (
-            <p className="text-xs text-rust flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />{errors._form}
-            </p>
+        <div className="sticky bottom-0 bg-white border-t border-dove/10 flex flex-col">
+          {hasExistingStockChanged && (
+            <div className="px-6 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800 flex flex-col gap-1 animate-in slide-in-from-bottom-2">
+              <label className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                Stock Change Reason <span className="text-rust">*</span>
+              </label>
+              <input
+                type="text"
+                value={stockChangeReason}
+                onChange={e => {
+                  setStockChangeReason(e.target.value);
+                  if (errors.stockReason) setErrors(prev => ({ ...prev, stockReason: '' }));
+                }}
+                placeholder="e.g. Physical inventory count, Restock, Damaged units..."
+                className="w-full bg-white dark:bg-[#16161a] border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-xs text-ink dark:text-white focus:outline-none placeholder:text-ash/60"
+              />
+              {errors.stockReason && (
+                <p className="text-[11px] text-rust font-medium mt-1">{errors.stockReason}</p>
+              )}
+            </div>
           )}
-          <div className="flex gap-3 ml-auto">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-ash hover:text-ink transition-colors"
-            >
-              Cancel
-            </button>
-            <UiverseGlowButton
-              variant="dark"
-              size="md"
-              onClick={handleSave}
-              isLoading={isPending}
-              icon={!isPending ? <Check className="w-4 h-4" /> : undefined}
-            >
-              {isNew ? 'Add Product' : 'Save Changes'}
-            </UiverseGlowButton>
+          <div className="px-6 py-4 flex items-center justify-between">
+            {errors._form && (
+              <p className="text-xs text-rust flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />{errors._form}
+              </p>
+            )}
+            <div className="flex gap-3 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-ash hover:text-ink transition-colors"
+              >
+                Cancel
+              </button>
+              <UiverseGlowButton
+                variant="dark"
+                size="md"
+                onClick={handleSave}
+                isLoading={isPending}
+                icon={!isPending ? <Check className="w-4 h-4" /> : undefined}
+              >
+                {isNew ? 'Add Product' : 'Save Changes'}
+              </UiverseGlowButton>
+            </div>
           </div>
         </div>
       </div>

@@ -256,8 +256,9 @@ export type VariantInput = {
   name: string;
   sku?: string | null;
   price_override?: number | null;
-  stock: number;
+  stock?: number;
   image_url?: string | null;
+  stock_change_note?: string;
 };
 
 export async function getProductVariants(productId: string) {
@@ -357,7 +358,9 @@ export async function updateVariant(variantId: string, data: Partial<VariantInpu
       change_type: delta > 0 ? 'restock' : 'manual_adjust',
       quantity_delta: delta,
       resulting_stock: data.stock,
-      note: `Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`,
+      note: data.stock_change_note 
+        ? `${data.stock_change_note} — Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`
+        : `Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`,
     });
   }
 
