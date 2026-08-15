@@ -1375,11 +1375,11 @@ export default function InboxClient({
 
                             {quotedText && (() => {
                               const quotedSegments = parseMessageSegments(quotedText);
-                              const quotedImageSegment = quotedSegments.find(s => s.type === 'image');
+                              const quotedImageSegments = quotedSegments.filter(s => s.type === 'image');
                               const firstTextSegment = quotedSegments.find(s => s.type === 'text');
 
                               return (
-                                <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1 opacity-70`}>
+                                <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} mb-1.5`}>
                                   <div
                                     onClick={() => {
                                       const clean = (s: string) => {
@@ -1413,23 +1413,41 @@ export default function InboxClient({
                                         }
                                       }
                                     }}
-                                    className={`px-3 py-1.5 text-[13px] rounded-xl flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${isCustomer
-                                      ? 'bg-[#E4E6EB]/60 text-[#65676B] border-l-2 border-[#BEC3C9]'
-                                      : 'bg-[#0084FF]/20 text-[#0084FF] border-r-2 border-[#0084FF]/50'
+                                    className={`px-3 py-1.5 text-[13px] rounded-2xl flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-all shadow-xs border ${isCustomer
+                                      ? 'bg-fog/90 dark:bg-white/10 text-ink dark:text-white border-dove/20 dark:border-white/10'
+                                      : 'bg-[#0084FF]/15 text-[#0084FF] dark:text-[#52a5ff] border-[#0084FF]/30'
                                       }`}
                                   >
-                                    <Reply className="w-3 h-3 shrink-0" />
-                                    {quotedImageSegment && (
-                                      <div className="h-6 w-6 rounded bg-black/10 overflow-hidden shrink-0 flex items-center justify-center">
-                                        <img src={quotedImageSegment.content} alt="Quoted image" className="h-full w-full object-cover" />
+                                    <Reply className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                                    {quotedImageSegments.length > 0 && (
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {quotedImageSegments.slice(0, 3).map((imgSeg, idx) => (
+                                          <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setPreviewMedia({ url: imgSeg.content, type: 'image' });
+                                            }}
+                                            className="h-10 w-10 rounded-xl border border-dove/20 dark:border-white/15 overflow-hidden shrink-0 flex items-center justify-center hover:scale-105 transition-transform group relative cursor-pointer shadow-xs bg-white dark:bg-black"
+                                            title="Click to view photo"
+                                          >
+                                            <img src={imgSeg.content} alt="Quoted photo" className="h-full w-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
+                                              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 drop-shadow" />
+                                            </div>
+                                          </button>
+                                        ))}
                                       </div>
                                     )}
                                     {firstTextSegment ? (
-                                      <span className="truncate max-w-[150px] italic">
+                                      <span className="truncate max-w-[160px] text-xs font-medium opacity-90">
                                         {firstTextSegment.content}
                                       </span>
-                                    ) : quotedImageSegment ? (
-                                      <span className="italic">Photo</span>
+                                    ) : quotedImageSegments.length > 0 ? (
+                                      <span className="text-xs font-semibold opacity-90">
+                                        {quotedImageSegments.length > 1 ? `${quotedImageSegments.length} Photos` : 'Photo'}
+                                      </span>
                                     ) : null}
                                   </div>
                                 </div>
