@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import sharp from 'sharp';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 const BUCKET = 'product-images';
 const ALLOWED_IMAGES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
-const ALLOWED_VIDEOS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg', 'video/x-matroska', 'video/avi', 'video/mpeg'];
+const ALLOWED_VIDEOS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg', 'video/x-matroska', 'video/avi', 'video/mpeg', 'video/mov'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,11 +18,11 @@ export async function POST(req: NextRequest) {
 
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
 
-    const isImage = ALLOWED_IMAGES.includes(file.type);
-    const isVideo = ALLOWED_VIDEOS.includes(file.type);
+    const isImage = file.type.startsWith('image/') || ALLOWED_IMAGES.includes(file.type);
+    const isVideo = file.type.startsWith('video/') || ALLOWED_VIDEOS.includes(file.type);
 
     if (!isImage && !isVideo) {
-      return NextResponse.json({ error: `Invalid file type: ${file.type}. Only images and videos are accepted.` }, { status: 400 });
+      return NextResponse.json({ error: `Invalid file type: ${file.type || 'unknown'}. Only images and videos are accepted.` }, { status: 400 });
     }
 
     const maxSize = isVideo ? 25 * 1024 * 1024 : 10 * 1024 * 1024;

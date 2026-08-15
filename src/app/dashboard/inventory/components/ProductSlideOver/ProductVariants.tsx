@@ -502,12 +502,21 @@ export default function ProductVariants({
 
                   try {
                     const res = await fetch('/api/inventory/upload-image', { method: 'POST', body: formData });
-                    const data = await res.json();
+                    let data: { url?: string; error?: string } = {};
+                    try {
+                      data = await res.json();
+                    } catch {
+                      if (res.status === 413) {
+                        throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max is 10MB.`);
+                      }
+                      throw new Error(`Upload failed with status ${res.status}`);
+                    }
+
                     if (data.url) {
                       setVariants(prev =>
                         prev.map(x => {
                           if (x.id !== targetId) return x;
-                          const currentUrls = (x.image_urls ?? []).map(u => (u === blobUrl ? data.url : u));
+                          const currentUrls = (x.image_urls ?? []).map(u => (u === blobUrl ? data.url! : u));
                           return {
                             ...x,
                             image_url: currentUrls[0] ?? null,
@@ -520,6 +529,20 @@ export default function ProductVariants({
                     }
                   } catch (err) {
                     console.error('Variant image upload failed:', err);
+                    // Remove optimistic blob if failed
+                    setVariants(prev =>
+                      prev.map(x => {
+                        if (x.id !== targetId) return x;
+                        const currentUrls = (x.image_urls ?? []).filter(u => u !== blobUrl);
+                        return {
+                          ...x,
+                          image_url: currentUrls[0] ?? null,
+                          image_urls: currentUrls,
+                          displayUrl: currentUrls[0] ?? null,
+                          displayUrls: currentUrls,
+                        };
+                      })
+                    );
                   } finally {
                     setIsUploadingPhoto(false);
                   }

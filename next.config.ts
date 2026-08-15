@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@zxing/browser', '@zxing/library'],
   experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
     optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'three'],
     // Keep already-visited dynamic (force-dynamic) pages in the client-side
     // router cache for 5 minutes. Default is 0s for dynamic routes, which

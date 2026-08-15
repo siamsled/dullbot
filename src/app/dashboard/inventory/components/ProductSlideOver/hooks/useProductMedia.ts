@@ -88,50 +88,64 @@ export function useProductMedia(product?: Product, shopId?: string) {
       setImages(prev => [...prev, ...localItems.map(item => ({ url: item.displayUrl, displayUrl: item.displayUrl }))]);
     }
 
-    try {
-      const uploadPromises = validFiles.map(async (file) => {
+    const errors: string[] = [];
+
+    await Promise.all(
+      localItems.map(async item => {
+        const file = item.file;
         const fd = new FormData();
         fd.append('file', file);
         fd.append('shopId', shopId);
-        const res = await fetch('/api/inventory/upload-image', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-        return data.url as string;
-      });
 
-      const remoteUrls = await Promise.all(uploadPromises);
+        try {
+          const res = await fetch('/api/inventory/upload-image', { method: 'POST', body: fd });
+          let data: { url?: string; error?: string } = {};
 
-      if (isContext) {
-        setContextMedia(prev => {
-          const next = [...prev];
-          localItems.forEach((localItem, i) => {
-            const index = next.findIndex(x => x.displayUrl === localItem.displayUrl);
-            if (index !== -1 && remoteUrls[i]) {
-              next[index] = { ...next[index], url: remoteUrls[i] };
+          try {
+            data = await res.json();
+          } catch {
+            if (res.status === 413) {
+              throw new Error(`"${file.name}" exceeds max upload size (${(file.size / 1024 / 1024).toFixed(1)}MB). Max size is ${item.isVideo ? '25MB' : '10MB'}.`);
             }
-          });
-          return next;
-        });
-      } else {
-        setImages(prev => {
-          const next = [...prev];
-          localItems.forEach((localItem, i) => {
-            const index = next.findIndex(x => x.displayUrl === localItem.displayUrl);
-            if (index !== -1 && remoteUrls[i]) {
-              next[index] = { ...next[index], url: remoteUrls[i] };
-            }
-          });
-          return next;
-        });
-      }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Upload failed';
-      if (isContext) setMediaErrors(prev => [...prev, errMsg]);
-      else setImageErrors(prev => [...prev, errMsg]);
-    } finally {
-      if (isContext) setUploadingMedia(false);
-      else setUploadingImages(false);
+            throw new Error(`Upload of "${file.name}" failed with server status ${res.status}.`);
+          }
+
+          if (!res.ok || !data.url) {
+            throw new Error(data.error ?? `Upload of "${file.name}" failed (${res.status})`);
+          }
+
+          const remoteUrl = data.url;
+
+          if (isContext) {
+            setContextMedia(prev =>
+              prev.map(x => (x.displayUrl === item.displayUrl ? { ...x, url: remoteUrl } : x))
+            );
+          } else {
+            setImages(prev =>
+              prev.map(x => (x.displayUrl === item.displayUrl ? { ...x, url: remoteUrl } : x))
+            );
+          }
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : `Upload of "${file.name}" failed`;
+          errors.push(errMsg);
+
+          // Remove failed item from optimistic list so broken blob isn't left behind
+          if (isContext) {
+            setContextMedia(prev => prev.filter(x => x.displayUrl !== item.displayUrl));
+          } else {
+            setImages(prev => prev.filter(x => x.displayUrl !== item.displayUrl));
+          }
+        }
+      })
+    );
+
+    if (errors.length > 0) {
+      if (isContext) setMediaErrors(prev => [...prev, ...errors]);
+      else setImageErrors(prev => [...prev, ...errors]);
     }
+
+    if (isContext) setUploadingMedia(false);
+    else setUploadingImages(false);
   };
 
   const hasUnsavedChanges = (() => {
