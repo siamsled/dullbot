@@ -1105,8 +1105,8 @@ function PostAndLiveCommentsCenter({
         <div className="bg-pure-white dark:bg-[#121214] rounded-3xl border border-dove/15 dark:border-white/10 shadow-subtle overflow-hidden">
 
           {/* Instagram Post Header */}
-          <div className="p-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="px-5 py-4 border-b border-dove/10 dark:border-white/10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
               {/* Story Ring Avatar */}
               <div className={`w-10 h-10 rounded-full p-[2px] shrink-0 shadow-xs ${
                 post.platform === 'instagram'
@@ -1124,36 +1124,50 @@ function PostAndLiveCommentsCenter({
                 </div>
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-ink dark:text-white truncate">{shopName}</h4>
-                  <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+              {/* Title & Metadata */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-bold text-ink dark:text-white truncate">
+                    {shopName}
+                  </span>
+                  <span className="text-dove/80 dark:text-white/20 text-xs select-none">·</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${
                     post.platform === 'instagram'
                       ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
                       : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                   }`}>
                     {post.platform}
                   </span>
+                  <span className="text-dove/80 dark:text-white/20 text-xs select-none">·</span>
                   {automation ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Automated ON
+                      Automated
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium text-ash bg-fog dark:bg-white/5 border border-dove/20 dark:border-white/10 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ash shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-ash/50" />
                       Paused
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-ash mt-0.5 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(post.created_time).toLocaleDateString([], {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <p className="text-[11px] text-ash mt-0.5 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-ash/80" />
+                  <span>
+                    {new Date(post.created_time).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    {new Date(post.created_time).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </span>
                 </p>
               </div>
             </div>
@@ -1163,7 +1177,7 @@ function PostAndLiveCommentsCenter({
                 href={post.permalink_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-xl border border-dove/20 dark:border-white/10 hover:border-dove/40 dark:hover:border-white/20 bg-fog/50 dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-xs font-semibold text-graphite dark:text-ash hover:text-ink dark:hover:text-white flex items-center gap-1.5 transition-all shadow-xs shrink-0"
+                className="px-3.5 py-1.5 rounded-xl border border-dove/20 dark:border-white/10 hover:border-dove/40 dark:hover:border-white/20 bg-fog/50 dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-xs font-semibold text-graphite dark:text-ash hover:text-ink dark:hover:text-white flex items-center gap-1.5 transition-all shadow-xs shrink-0"
               >
                 <span>View on {post.platform === 'instagram' ? 'Instagram' : 'Facebook'}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
