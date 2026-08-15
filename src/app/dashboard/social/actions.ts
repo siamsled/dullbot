@@ -729,3 +729,50 @@ Rules:
   }
 }
 
+export async function resubscribePageFeedWebhooks(): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, error: 'Not authenticated' };
+
+    const [{ data: shop }, { data: metaPages }] = await Promise.all([
+      supabaseAdmin
+        .from('shops')
+        .select('meta_page_id, meta_page_access_token')
+        .eq('id', shopId)
+        .single(),
+      supabaseAdmin
+        .from('shop_meta_pages')
+        .select('meta_page_id, meta_page_access_token')
+        .eq('shop_id', shopId)
+    ]);
+
+    const { subscribePageToWebhooks } = await import('@/lib/meta-api');
+    let count = 0;
+
+    if (shop?.meta_page_id && shop.meta_page_access_token) {
+      await subscribePageToWebhooks(shop.meta_page_id, shop.meta_page_access_token);
+      count++;
+    }
+
+    if (metaPages && Array.isArray(metaPages)) {
+      for (const p of metaPages) {
+        if (p.meta_page_id && p.meta_page_access_token && p.meta_page_id !== shop?.meta_page_id) {
+          await subscribePageToWebhooks(p.meta_page_id, p.meta_page_access_token);
+          count++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully re-subscribed ${count} page(s) to Meta Feed and Comments webhooks!`,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to re-subscribe webhooks' };
+  }
+}
+
