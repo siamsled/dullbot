@@ -11,6 +11,7 @@ import {
   Eye, Heart, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import {
   upsertPostAutomation,
   deletePostAutomation,
@@ -1065,18 +1066,80 @@ function PostAndLiveCommentsCenter({
     );
   };
 
-  const loadComments = async () => {
-    setLoadingComments(true);
+  const loadComments = async (silent = false) => {
+    if (!silent) setLoadingComments(true);
     const res = await fetchPostComments(post.post_id, post.platform);
-    if (res.success) {
-      setComments(res.comments || []);
+    if (res.success && res.comments) {
+      setComments(res.comments);
     }
-    setLoadingComments(false);
+    if (!silent) setLoadingComments(false);
   };
 
   useEffect(() => {
     loadComments();
-  }, [post.post_id]);
+
+    // 1. Supabase Realtime subscription on post_comments
+    const cleanPostId = post.post_id.includes('_') ? post.post_id.split('_').pop() : post.post_id;
+    const channelName = `comments-stream-${cleanPostId || 'active'}-${Date.now()}`;
+    const channel = supabaseBrowser
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_comments',
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row) return;
+
+          const rowPostClean = row.post_id?.includes('_') ? row.post_id.split('_').pop() : row.post_id;
+          if (
+            row.post_id === post.post_id ||
+            rowPostClean === cleanPostId ||
+            post.post_id.endsWith(`_${rowPostClean}`) ||
+            row.post_id?.endsWith(`_${cleanPostId}`)
+          ) {
+            const incomingItem: CommentDetailItem = {
+              id: row.id || row.comment_id,
+              comment_id: row.comment_id,
+              sender_id: row.sender_id || null,
+              sender_name: row.sender_name || 'Customer',
+              comment_text: row.comment_text || '',
+              reply_text: row.reply_text || null,
+              is_negative: !!row.is_negative,
+              is_deleted: !!row.is_deleted,
+              private_reply_sent: !!row.private_reply_sent,
+              replied_at: row.replied_at || null,
+              created_at: row.created_at || new Date().toISOString(),
+              source: 'database',
+            };
+
+            setComments(prev => {
+              const existingIdx = prev.findIndex(c => c.comment_id === incomingItem.comment_id || c.id === incomingItem.id);
+              if (existingIdx >= 0) {
+                const next = [...prev];
+                next[existingIdx] = { ...next[existingIdx], ...incomingItem };
+                return next;
+              }
+              return [incomingItem, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // 2. Real-time background sync every 3.5 seconds
+    const interval = setInterval(() => {
+      loadComments(true);
+    }, 3500);
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [post.post_id, post.platform]);
 
   useEffect(() => {
     if (newSimulatedComment) {
@@ -1247,7 +1310,7 @@ function PostAndLiveCommentsCenter({
               </div>
 
               <button
-                onClick={loadComments}
+                onClick={() => loadComments(false)}
                 disabled={loadingComments}
                 className="p-1.5 bg-pure-white dark:bg-[#18181c] border border-dove/20 dark:border-white/10 text-ash hover:text-ink dark:hover:text-white rounded-xl transition-all shadow-xs cursor-pointer"
                 title="Refresh comments"
