@@ -242,8 +242,8 @@ export default function ProductSlideOver({
           activityCount={inventoryHook.state.movements.length}
         />
 
-        <div className="flex-1 overflow-y-auto bg-white">
-          <div className="pb-12">
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-950">
+          <div className="pb-20">
             {activeTab === 'Overview' && (
               <ProductOverview 
                 {...formHook.state}
