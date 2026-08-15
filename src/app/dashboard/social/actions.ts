@@ -555,8 +555,8 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
       for (const idToTry of postIdsToTry) {
         try {
           const url = platform === 'instagram'
-            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=50&access_token=${token}`
-            : `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=50&access_token=${token}`;
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=100&access_token=${token}`
+            : `https://graph.facebook.com/v19.0/${idToTry}/comments?filter=stream&fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=100&access_token=${token}`;
 
           const res = await fetch(url);
           const data = await res.json();
