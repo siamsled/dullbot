@@ -553,62 +553,68 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
     for (const token of prioritizedTokens) {
       let fetchedAny = false;
       for (const idToTry of postIdsToTry) {
-        try {
-          const url = platform === 'instagram'
-            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=100&access_token=${token}`
-            : `https://graph.facebook.com/v19.0/${idToTry}/comments?filter=stream&fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=100&access_token=${token}`;
+        const endpointsToTry = [
+          platform === 'instagram'
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp&limit=100&access_token=${token}`
+            : `https://graph.facebook.com/v19.0/${idToTry}/comments?filter=stream&fields=id,message,from,created_time&limit=100&access_token=${token}`,
+          platform === 'facebook'
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,from,created_time&limit=100&access_token=${token}`
+            : null,
+          platform === 'facebook'
+            ? `https://graph.facebook.com/v19.0/${idToTry}?fields=comments{id,message,from,created_time}&access_token=${token}`
+            : null,
+        ].filter(Boolean) as string[];
 
-          const res = await fetch(url);
-          const data = await res.json();
+        for (const url of endpointsToTry) {
+          try {
+            const res = await fetch(url);
+            const data = await res.json();
 
-          if (data && Array.isArray(data.data)) {
-            fetchedAny = true;
-            for (const item of data.data) {
-              const commentId = item.id;
-              const message = item.message || item.text || '';
-              const senderName = item.from?.name || item.username || 'User';
-              const senderId = item.from?.id || null;
-              const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+            const items: any[] = Array.isArray(data.data)
+              ? data.data
+              : Array.isArray(data.comments?.data)
+              ? data.comments.data
+              : [];
 
-              // Extract reply if any sub-comment exists from page
-              let replyText: string | null = null;
-              let repliedAt: string | null = null;
-              const subComments = item.comments?.data || item.replies?.data;
-              if (Array.isArray(subComments) && subComments.length > 0) {
-                replyText = subComments[0]?.message || subComments[0]?.text || null;
-                repliedAt = subComments[0]?.created_time || subComments[0]?.timestamp || null;
+            if (items.length > 0) {
+              fetchedAny = true;
+              for (const item of items) {
+                const commentId = item.id;
+                const message = item.message || item.text || '';
+                const senderName = item.from?.name || item.username || 'Customer';
+                const senderId = item.from?.id || null;
+                const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+
+                if (commentsMap.has(commentId)) {
+                  const existing = commentsMap.get(commentId)!;
+                  commentsMap.set(commentId, {
+                    ...existing,
+                    sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
+                  });
+                } else {
+                  commentsMap.set(commentId, {
+                    id: commentId,
+                    comment_id: commentId,
+                    sender_id: senderId,
+                    sender_name: senderName,
+                    comment_text: message,
+                    reply_text: null,
+                    is_negative: false,
+                    is_deleted: false,
+                    private_reply_sent: false,
+                    replied_at: null,
+                    created_at: createdAt,
+                    source: 'meta_api',
+                  });
+                }
               }
-
-              if (commentsMap.has(commentId)) {
-                const existing = commentsMap.get(commentId)!;
-                commentsMap.set(commentId, {
-                  ...existing,
-                  sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
-                  reply_text: existing.reply_text || replyText,
-                  replied_at: existing.replied_at || repliedAt,
-                });
-              } else {
-                commentsMap.set(commentId, {
-                  id: commentId,
-                  comment_id: commentId,
-                  sender_id: senderId,
-                  sender_name: senderName,
-                  comment_text: message,
-                  reply_text: replyText,
-                  is_negative: false,
-                  is_deleted: false,
-                  private_reply_sent: false,
-                  replied_at: repliedAt,
-                  created_at: createdAt,
-                  source: 'meta_api',
-                });
-              }
+              break;
             }
-            break;
+          } catch (err) {
+            // continue to next endpoint
           }
-        } catch (err) {
-          // continue
         }
+        if (fetchedAny) break;
       }
       if (fetchedAny) break;
     }
