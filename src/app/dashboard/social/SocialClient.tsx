@@ -1347,18 +1347,8 @@ export default function SocialClient({
     <div className="flex flex-col h-full w-full overflow-hidden bg-fog dark:bg-[#09090b]">
 
       {/* Top Header Bar */}
-      <header className="px-6 py-3 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
+      <header className="px-6 py-3.5 bg-pure-white dark:bg-[#0e0e11] border-b border-dove/15 dark:border-white/10 flex items-center justify-between shrink-0 shadow-xs z-10">
         <h1 className="text-sm font-bold text-ink dark:text-white">Social Comment Automation</h1>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-ink text-pure-white dark:bg-white dark:text-black rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-subtle cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Paste Post URL</span>
-          </button>
-        </div>
       </header>
 
       {/* Error Banner */}
