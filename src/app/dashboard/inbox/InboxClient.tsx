@@ -45,22 +45,43 @@ function formatMessageDate(dateString: string) {
   }
 }
 
+function isValidName(val?: string | null): boolean {
+  if (!val) return false;
+  const s = val.trim().toLowerCase();
+  if (
+    !s ||
+    s === 'facebook user' ||
+    s === 'facebook customer' ||
+    s === 'instagram user' ||
+    s === 'instagram customer' ||
+    s === 'not provided' ||
+    s === 'unknown' ||
+    s === 'n/a' ||
+    s === 'none' ||
+    s === 'null' ||
+    s === 'undefined'
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function getDisplayName(conv: any, profile?: any): string {
   if (!conv) return 'Customer';
 
-  if (profile?.customer_name && profile.customer_name !== 'Facebook User') {
+  if (isValidName(profile?.customer_name)) {
     return profile.customer_name;
   }
-  if (conv.meta_name && conv.meta_name !== 'Facebook User') {
+  if (isValidName(conv.meta_name)) {
     return conv.meta_name;
   }
-  if (conv.customer_name && conv.customer_name !== 'Facebook User') {
+  if (isValidName(conv.customer_name)) {
     return conv.customer_name;
   }
 
   // Check linked orders for customer name
   if (conv.orders && Array.isArray(conv.orders) && conv.orders.length > 0) {
-    const orderWithName = conv.orders.find((o: any) => o.customer_name && o.customer_name !== 'Facebook User');
+    const orderWithName = conv.orders.find((o: any) => isValidName(o.customer_name));
     if (orderWithName?.customer_name) return orderWithName.customer_name;
   }
 
@@ -68,27 +89,27 @@ function getDisplayName(conv: any, profile?: any): string {
   if (conv.handoff_summary?.key_facts || conv.handoff_summary?.facts) {
     const factsText = conv.handoff_summary.key_facts || conv.handoff_summary.facts || '';
     const match = factsText.match(/Name:\s*([^\n,]+)/i);
-    if (match && match[1]?.trim() && match[1].trim() !== 'Facebook User') {
+    if (match && isValidName(match[1])) {
       return match[1].trim();
     }
   }
 
   const phone = conv.customer_phone || '';
+  const channel = getConvChannel(conv);
 
   if (/^\d{14,}$/.test(phone)) {
-    return 'Facebook Customer';
+    return channel === 'instagram' ? 'Instagram Customer' : 'Facebook Customer';
   }
 
   if (/^\+?\d{8,13}$/.test(phone)) {
     return phone;
   }
 
-  return profile?.customer_name || conv.meta_name || conv.customer_name || phone || 'Customer';
+  return (isValidName(phone) ? phone : (channel === 'instagram' ? 'Instagram Customer' : 'Facebook Customer'));
 }
 
 function getAvatarInitials(name: string): string {
-  if (!name || name === 'Facebook User' || name === 'Facebook Customer') return 'FB';
-  if (name === 'Customer') return 'CU';
+  if (!name || !isValidName(name)) return 'CU';
   if (name.startsWith('+') || /^\d+$/.test(name)) return 'PH';
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
@@ -555,7 +576,7 @@ export default function InboxClient({
     conversations.forEach(async (conv) => {
       const ch = getConvChannel(conv);
       const isMeta = ch === 'messenger' || ch === 'instagram';
-      const needsProfile = isMeta && (!conv.meta_profile_pic || !conv.meta_name || conv.meta_name === 'Facebook User');
+      const needsProfile = isMeta && (!conv.meta_profile_pic || !isValidName(conv.meta_name));
 
       if (needsProfile && conv.customer_phone && !profiles[conv.customer_phone]) {
         const profile = await resolveFacebookProfile(conv.customer_phone, shop.id);
@@ -564,6 +585,18 @@ export default function InboxClient({
             ...prev,
             [conv.customer_phone]: profile
           }));
+          if (isValidName(profile.customer_name) || profile.profile_pic_url) {
+            setConversations(prev => prev.map(c => {
+              if (c.id === conv.id) {
+                return {
+                  ...c,
+                  meta_name: isValidName(profile.customer_name) ? profile.customer_name : c.meta_name,
+                  meta_profile_pic: profile.profile_pic_url || c.meta_profile_pic,
+                };
+              }
+              return c;
+            }));
+          }
         }
       }
     });

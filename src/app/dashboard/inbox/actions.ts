@@ -188,30 +188,66 @@ export async function toggleTakeover(conversationId: string, isTakeover: boolean
 
 const facebookProfileCache = new Map<string, { customer_name: string; profile_pic_url?: string }>();
 
+function isValidCustomerName(name?: string | null): boolean {
+  if (!name) return false;
+  const s = name.trim().toLowerCase();
+  return (
+    s.length > 0 &&
+    s !== 'facebook user' &&
+    s !== 'facebook customer' &&
+    s !== 'instagram user' &&
+    s !== 'not provided' &&
+    s !== 'unknown' &&
+    s !== 'n/a' &&
+    s !== 'none' &&
+    s !== 'null' &&
+    s !== 'undefined'
+  );
+}
+
 async function getFacebookProfile(psid: string, accessToken: string) {
   if (facebookProfileCache.has(psid)) {
     return facebookProfileCache.get(psid)!;
   }
 
+  // 1. Try Facebook User Graph query
   try {
-    const res = await fetch(`https://graph.facebook.com/v19.0/${psid}?fields=first_name,last_name,profile_pic&access_token=${accessToken}`);
+    const res = await fetch(`https://graph.facebook.com/v19.0/${psid}?fields=first_name,last_name,name,profile_pic&access_token=${accessToken}`);
     if (res.ok) {
       const data = await res.json();
-      const first = data.first_name || '';
-      const last = data.last_name || '';
-      const fullName = `${first} ${last}`.trim();
-      const profile = {
-        customer_name: fullName || 'Facebook User',
-        profile_pic_url: data.profile_pic || undefined,
-      };
-      facebookProfileCache.set(psid, profile);
-      return profile;
+      const fullName = data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim();
+      if (isValidCustomerName(fullName) || data.profile_pic) {
+        const profile = {
+          customer_name: isValidCustomerName(fullName) ? fullName : 'Customer',
+          profile_pic_url: data.profile_pic || undefined,
+        };
+        facebookProfileCache.set(psid, profile);
+        return profile;
+      }
     }
   } catch (err) {
     console.error("Error fetching FB profile:", err);
   }
 
-  return { customer_name: 'Facebook User' };
+  // 2. Try Instagram User Graph query
+  try {
+    const igRes = await fetch(`https://graph.facebook.com/v19.0/${psid}?fields=name,profile_pic&access_token=${accessToken}`);
+    if (igRes.ok) {
+      const igData = await igRes.json();
+      if (isValidCustomerName(igData.name) || igData.profile_pic) {
+        const profile = {
+          customer_name: isValidCustomerName(igData.name) ? igData.name : 'Customer',
+          profile_pic_url: igData.profile_pic || undefined,
+        };
+        facebookProfileCache.set(psid, profile);
+        return profile;
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching IG profile:", err);
+  }
+
+  return { customer_name: 'Customer' };
 }
 
 export async function getConversations(shopId: string) {
@@ -276,43 +312,50 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
     .eq('customer_phone', psid)
     .maybeSingle();
 
-  const isCacheValid = conversation && (conversation.meta_profile_pic || (conversation.meta_name && conversation.meta_name !== 'Facebook User')) && conversation.meta_checked_at && (
+  const hasValidName = isValidCustomerName(conversation?.meta_name);
+  const isCacheValid = conversation && (conversation.meta_profile_pic || hasValidName) && conversation.meta_checked_at && (
     new Date().getTime() - new Date(conversation.meta_checked_at).getTime() < 24 * 60 * 60 * 1000 // 24 hours
   );
 
   if (isCacheValid) {
     return {
-      customer_name: conversation.meta_name || 'Facebook User',
+      customer_name: hasValidName ? conversation.meta_name : 'Customer',
       profile_pic_url: conversation.meta_profile_pic || undefined
     };
   }
 
-  // Get token from shops table or shop_meta_pages table
+  // Collect all potential access tokens for this shop
+  const { data: pages } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_access_token, instagram_access_token')
+    .eq('shop_id', shopId);
+
   const { data: shop } = await supabaseAdmin
     .from('shops')
-    .select('meta_page_access_token')
+    .select('meta_page_access_token, instagram_access_token')
     .eq('id', shopId)
     .maybeSingle();
 
-  let tokenToUse = shop?.meta_page_access_token;
-  if (!tokenToUse) {
-    const { data: pageRow } = await supabaseAdmin
-      .from('shop_meta_pages')
-      .select('meta_page_access_token')
-      .eq('shop_id', shopId)
-      .limit(1)
-      .maybeSingle();
-    tokenToUse = pageRow?.meta_page_access_token;
+  const tokenList: string[] = [];
+  if (shop?.meta_page_access_token) tokenList.push(shop.meta_page_access_token);
+  if (shop?.instagram_access_token) tokenList.push(shop.instagram_access_token);
+  if (pages) {
+    for (const p of pages) {
+      if (p.meta_page_access_token) tokenList.push(p.meta_page_access_token);
+      if (p.instagram_access_token) tokenList.push(p.instagram_access_token);
+    }
   }
 
-  if (tokenToUse) {
+  const uniqueTokens = Array.from(new Set(tokenList));
+
+  for (const tokenToUse of uniqueTokens) {
     const profile = await getFacebookProfile(psid, tokenToUse);
 
-    if (profile.profile_pic_url || (profile.customer_name && profile.customer_name !== 'Facebook User')) {
+    if (profile.profile_pic_url || isValidCustomerName(profile.customer_name)) {
       const updatePayload: any = {
         meta_checked_at: new Date().toISOString()
       };
-      if (profile.customer_name && profile.customer_name !== 'Facebook User') {
+      if (isValidCustomerName(profile.customer_name)) {
         updatePayload.meta_name = profile.customer_name;
       }
       if (profile.profile_pic_url) {
@@ -324,13 +367,13 @@ export async function resolveFacebookProfile(psid: string, shopId: string) {
         .update(updatePayload)
         .eq('shop_id', shopId)
         .eq('customer_phone', psid);
-    }
 
-    return profile;
+      return profile;
+    }
   }
 
   return {
-    customer_name: conversation?.meta_name || 'Facebook User',
+    customer_name: hasValidName ? conversation?.meta_name : 'Customer',
     profile_pic_url: conversation?.meta_profile_pic || undefined
   };
 }

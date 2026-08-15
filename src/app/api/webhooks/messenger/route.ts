@@ -47,6 +47,40 @@ const VERIFY_TOKEN = process.env.META_GLOBAL_VERIFY_TOKEN;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const webhookProfileCache = new Map<string, { first_name: string; last_name: string; gender?: string }>();
 
+async function fetchAndSaveUserProfile(
+  senderId: string,
+  accessToken: string,
+  incomingChannel: string,
+  conversationId: string
+) {
+  try {
+    const fields = incomingChannel === 'instagram' ? 'name,profile_pic' : 'first_name,last_name,name,profile_pic';
+    const res = await fetch(`https://graph.facebook.com/v19.0/${senderId}?fields=${fields}&access_token=${accessToken}`);
+    if (res.ok) {
+      const data = await res.json();
+      const name = data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || null;
+      const isValid = name && !['facebook user', 'facebook customer', 'instagram user', 'not provided', 'unknown'].includes(name.toLowerCase());
+      const updatePayload: any = {
+        meta_checked_at: new Date().toISOString()
+      };
+      if (isValid) {
+        updatePayload.meta_name = name;
+      }
+      if (data.profile_pic) {
+        updatePayload.meta_profile_pic = data.profile_pic;
+      }
+      if (isValid || data.profile_pic) {
+        await supabaseAdmin
+          .from('conversations')
+          .update(updatePayload)
+          .eq('id', conversationId);
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching user profile in webhook:', err);
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
@@ -194,6 +228,11 @@ export async function POST(request: Request) {
               }
 
               if (!conversation) continue;
+
+              // Proactively fetch and cache customer Meta/IG profile name & pfp if missing
+              if (!conversation.meta_name || !conversation.meta_profile_pic || !conversation.meta_checked_at) {
+                fetchAndSaveUserProfile(senderId, shop.meta_page_access_token, incomingChannel, conversation.id).catch(() => {});
+              }
 
               let dbContent = imageUrl ? `IMAGE:${imageUrl}` : (audioUrl ? `AUDIO:${audioUrl}` : messageText);
 
