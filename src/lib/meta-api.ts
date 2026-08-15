@@ -42,7 +42,7 @@ export async function subscribePageToWebhooks(pageId: string, pageAccessToken: s
             object: 'instagram',
             callback_url: callbackUrl,
             verify_token: verifyToken,
-            fields: 'messages,messaging_postbacks,message_reactions',
+            fields: 'messages,messaging_postbacks,message_reactions,comments,live_comments',
             access_token: appToken,
           }),
         }

@@ -19,6 +19,7 @@ import {
   fetchConnectedSocialPosts,
   togglePostAutomationStatus,
   fetchPostComments,
+  testPostCommentReply,
   ConnectedPostItem,
   CommentDetailItem,
 } from './actions';
@@ -724,6 +725,20 @@ function PostAndLiveCommentsCenter({
   const [loadingComments, setLoadingComments] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'replied' | 'dmed' | 'moderated'>('all');
 
+  const [testCommentText, setTestCommentText] = useState('');
+  const [simulating, setSimulating] = useState(false);
+
+  const handleSimulateComment = async () => {
+    if (!testCommentText.trim() || simulating) return;
+    setSimulating(true);
+    const res = await testPostCommentReply(post.post_id, testCommentText.trim(), 'Test Customer');
+    if (res.success && res.comment) {
+      setComments(prev => [res.comment!, ...prev]);
+      setTestCommentText('');
+    }
+    setSimulating(false);
+  };
+
   const loadComments = async () => {
     setLoadingComments(true);
     const res = await fetchPostComments(post.post_id, post.platform);
@@ -881,12 +896,36 @@ function PostAndLiveCommentsCenter({
               <button
                 onClick={loadComments}
                 disabled={loadingComments}
-                className="p-1.5 bg-white border border-dove/20 text-ash hover:text-ink rounded-lg transition-all shadow-xs"
+                className="p-1.5 bg-white border border-dove/20 text-ash hover:text-ink rounded-lg transition-all shadow-xs cursor-pointer"
                 title="Refresh comments from Meta"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingComments ? 'animate-spin' : ''}`} />
               </button>
             </div>
+          </div>
+
+          {/* Test / Simulate AI Comment Reply Bar */}
+          <div className="bg-white p-3 rounded-2xl border border-dove/15 shadow-subtle flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0 bg-fog/60 px-3 py-2 rounded-xl border border-dove/15">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <input
+                type="text"
+                value={testCommentText}
+                onChange={e => setTestCommentText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSimulateComment()}
+                placeholder='Test AI reply (e.g., "pp please", "delivery charge koto?", "is this in stock?")'
+                className="flex-1 bg-transparent text-xs text-ink placeholder:text-ash/60 focus:outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSimulateComment}
+              disabled={simulating || !testCommentText.trim()}
+              className="px-4 py-2.5 bg-ink text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
+            >
+              {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              <span>Test AI Reply</span>
+            </button>
           </div>
 
           {/* Comments List */}

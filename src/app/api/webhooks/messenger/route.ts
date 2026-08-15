@@ -683,8 +683,10 @@ export async function POST(request: Request) {
         // ── Feed / Comment events ──────────────────────────────────────────
         if (entry.changes) {
           for (const change of entry.changes) {
-            if (change.field === 'feed' && change.value?.item === 'comment' && change.value?.verb === 'add') {
-              await handleCommentEvent(shop, change.value);
+            const isFacebookComment = change.field === 'feed' && change.value?.item === 'comment' && (change.value?.verb === 'add' || !change.value?.verb);
+            const isInstagramComment = (change.field === 'comments' || change.field === 'live_comments') && (change.value?.verb === 'add' || !change.value?.verb);
+            if (isFacebookComment || isInstagramComment) {
+              await handleCommentEvent(shop, change.value, incomingChannel);
             }
           }
         }
@@ -724,28 +726,65 @@ function normalizeCommentText(text: string): string {
 }
 
 // ── Comment automation handler (Phase 3-5) ────────────────────────────────
-async function handleCommentEvent(shop: any, value: any) {
+async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 'instagram' = 'messenger') {
   try {
-    const postId: string = value.post_id || value.parent_id;
-    const commentId: string = value.comment_id;
-    const commentText: string = value.message || '';
-    const commenterPsid: string | null = value.sender?.id || null;
-    const commentCreatedAt = new Date((value.created_time || 0) * 1000);
+    const rawPostId = value.post_id || value.parent_id || value.media?.id || value.post?.id || value.target_id;
+    const commentId: string = value.comment_id || value.id;
+    const commentText: string = value.message || value.text || '';
+    const commenterPsid: string | null = value.from?.id || value.sender?.id || null;
+    const commenterName: string | null = value.from?.name || value.from?.username || value.sender_name || 'Customer';
+    const commentCreatedAt = new Date((value.created_time || value.timestamp || 0) * 1000 || Date.now());
 
-    if (!postId || !commentId || !commentText.trim()) return;
+    if (!rawPostId || !commentId || !commentText.trim()) {
+      console.log('[handleCommentEvent] Skipping invalid payload:', { rawPostId, commentId, commentText });
+      return;
+    }
 
-    // Look up automation config for this post
-    const { data: automation } = await supabaseAdmin
+    // Ignore bot's own comments from the page or IG account
+    if (
+      (shop.meta_page_id && commenterPsid === shop.meta_page_id) ||
+      (shop.instagram_business_id && commenterPsid === shop.instagram_business_id)
+    ) {
+      console.log('[handleCommentEvent] Ignoring comment from page owner/bot itself.');
+      return;
+    }
+
+    // Flexible Post ID matching (handles prefixed or non-prefixed IDs)
+    const possiblePostIds = [
+      String(rawPostId),
+      value.post_id ? String(value.post_id) : null,
+      value.parent_id ? String(value.parent_id) : null,
+      value.media?.id ? String(value.media.id) : null,
+    ].filter(Boolean) as string[];
+
+    const { data: automations } = await supabaseAdmin
       .from('post_automations')
-      .select('*, products:product_ids')
-      .eq('shop_id', shop.id)
-      .eq('post_id', postId)
-      .single();
+      .select('*')
+      .eq('shop_id', shop.id);
 
-    if (!automation) return; // No automation configured for this post
+    const automation = (automations || []).find((a: any) => {
+      const aClean = a.post_id.includes('_') ? a.post_id.split('_').pop() : a.post_id;
+      return possiblePostIds.some((pid: string) => {
+        const pClean = pid.includes('_') ? pid.split('_').pop() : pid;
+        return (
+          a.post_id === pid ||
+          aClean === pClean ||
+          a.post_id.endsWith(`_${pClean}`) ||
+          pid.endsWith(`_${aClean}`)
+        );
+      });
+    });
+
+    if (!automation) {
+      console.log(`[handleCommentEvent] No active automation for post IDs:`, possiblePostIds);
+      return;
+    }
 
     const pageAccessToken: string = shop.meta_page_access_token;
-    if (!pageAccessToken) return;
+    if (!pageAccessToken) {
+      console.warn('[handleCommentEvent] No page access token available for shop:', shop.id);
+      return;
+    }
 
     // ── Idempotency: skip if we already processed this comment ────────────
     const { data: existingComment } = await supabaseAdmin
@@ -782,11 +821,13 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
             await deleteComment(commentId, pageAccessToken);
             await supabaseAdmin.from('post_comments').upsert({
               shop_id: shop.id,
-              post_id: postId,
+              post_id: automation.post_id,
               comment_id: commentId,
               commenter_psid: commenterPsid,
+              sender_name: commenterName,
               comment_text: commentText,
               comment_text_normalized: normalizeCommentText(commentText),
+              is_deleted: true,
               deleted_at: new Date().toISOString(),
             }, { onConflict: 'comment_id' });
             return; // deleted — no need to reply
@@ -805,7 +846,7 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
     const { data: duplicate } = await supabaseAdmin
       .from('post_comments')
       .select('reply_text')
-      .eq('post_id', postId)
+      .eq('post_id', automation.post_id)
       .eq('comment_text_normalized', normalized)
       .gte('created_at', dedupeWindow)
       .not('reply_text', 'is', null)
@@ -818,7 +859,6 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
       replyText = duplicate.reply_text;
     } else {
       // ── Build AI reply prompt ─────────────────────────────────────────────
-      // Fetch attached products if any
       let productContext = '';
       if (automation.product_ids?.length > 0) {
         const { data: products } = await supabaseAdmin
@@ -827,7 +867,7 @@ A confidence above 0.85 means delete. Default to not deleting if uncertain.`;
           .in('id', automation.product_ids)
           .eq('is_active', true);
         if (products?.length) {
-          productContext = `\n\nAttached products for this post:\n${products.map(p => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}`).join('\n')}`;
+          productContext = `\n\nAttached products for this post:\n${products.map((p: any) => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}`).join('\n')}`;
         }
       }
 
@@ -840,20 +880,20 @@ Public comment replies must NEVER contain order details, payment status, transac
 ${guardrail}
 
 Owner instructions for this post:
-${automation.instructions || 'Be helpful, friendly, and concise. Respond in the language of the comment.'}
+${automation.instructions || 'Be helpful, friendly, and concise. Respond in the language of the comment (Bangla, English, or Banglish).'}
 ${productContext}
 
 Rules:
-- Keep public replies SHORT (1-3 sentences max)
-- Be warm and on-brand
-- If the comment is a price inquiry ("pp", "price", "koto", "daam koto" etc.), give the price if you know it from the attached products, or ask them to DM
+- Keep public replies SHORT (1-2 sentences max)
+- Be warm, courteous, and on-brand
+- If the comment is a price inquiry ("pp", "price", "koto", "daam koto", "দাম কত" etc.), give the price if known from attached products, or invite them to inbox
 - Do not include any personal data in the public reply`;
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent({
         systemInstruction: systemPrompt,
-        contents: [{ role: 'user', parts: [{ text: `Comment: "${commentText}"` }] }],
+        contents: [{ role: 'user', parts: [{ text: `Comment from ${commenterName}: "${commentText}"` }] }],
       });
       replyText = result.response.text().trim();
       await billGeminiCall(
@@ -869,9 +909,10 @@ Rules:
     // ── Store comment record ─────────────────────────────────────────────────
     await supabaseAdmin.from('post_comments').upsert({
       shop_id: shop.id,
-      post_id: postId,
+      post_id: automation.post_id,
       comment_id: commentId,
       commenter_psid: commenterPsid,
+      sender_name: commenterName,
       comment_text: commentText,
       comment_text_normalized: normalized,
       reply_text: replyText,
@@ -880,7 +921,8 @@ Rules:
 
     // ── Post public comment reply (Phase 3) ──────────────────────────────────
     if (automation.reply_as_comment) {
-      await replyToComment(commentId, replyText, pageAccessToken);
+      const pubRes = await replyToComment(commentId, replyText, pageAccessToken);
+      console.log(`[handleCommentEvent] Public reply response for comment ${commentId}:`, pubRes);
     }
 
     // ── Send private Messenger reply (Phase 4) ────────────────────────────
@@ -890,12 +932,12 @@ Rules:
       const withinWindow = commentCreatedAt > sevenDaysAgo;
 
       if (!alreadySent && withinWindow) {
-        // For private reply, we can be more specific (product prices, DM-appropriate detail)
         const privateReplyText = replyText.includes('check your inbox')
-          ? `Hi! Thanks for your comment. ${replyText.replace('Please check your inbox for details 🙏', '')} We sent you more details here in your inbox!`
+          ? `Hi ${commenterName}! Thanks for your comment. ${replyText.replace('Please check your inbox for details 🙏', '')} We sent you more details here!`
           : replyText;
 
         const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
+        console.log(`[handleCommentEvent] Private reply response for comment ${commentId}:`, prResult);
         if (prResult.success) {
           await supabaseAdmin
             .from('post_comments')

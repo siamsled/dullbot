@@ -1,6 +1,7 @@
 'use server';
 
 import { supabaseAdmin, getCurrentShop } from '@/lib/supabase-admin';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 async function getShopId(): Promise<string | null> {
   const shop = await getCurrentShop();
@@ -463,13 +464,20 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
     const shopId = await getShopId();
     if (!shopId) return { success: false, comments: [], error: 'Not authenticated' };
 
-    // 1. Fetch from Supabase post_comments
-    const { data: dbComments } = await supabaseAdmin
+    const cleanPostId = postId.includes('_') ? postId.split('_').pop()! : postId;
+    const pagePrefix = postId.includes('_') ? postId.split('_')[0] : null;
+
+    // 1. Fetch from Supabase post_comments (flexible post_id match)
+    const { data: dbComments, error: dbErr } = await supabaseAdmin
       .from('post_comments')
       .select('*')
       .eq('shop_id', shopId)
-      .eq('post_id', postId)
+      .or(`post_id.eq.${postId},post_id.eq.${cleanPostId},post_id.ilike.%${cleanPostId}%`)
       .order('created_at', { ascending: false });
+
+    if (dbErr) {
+      console.warn('[fetchPostComments] DB query notice:', dbErr.message);
+    }
 
     const commentsMap = new Map<string, CommentDetailItem>();
 
@@ -492,85 +500,117 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
       }
     }
 
-    // 2. Also try fetching live comments from Meta Graph API using shop or page token
+    // 2. Fetch live comments from Meta Graph API using shop or page tokens
     const [{ data: shop }, { data: metaPages }] = await Promise.all([
       supabaseAdmin
         .from('shops')
-        .select('meta_page_access_token, instagram_access_token')
+        .select('meta_page_id, meta_page_access_token, instagram_business_id, instagram_access_token')
         .eq('id', shopId)
         .single(),
       supabaseAdmin
         .from('shop_meta_pages')
-        .select('meta_page_access_token, instagram_access_token')
+        .select('meta_page_id, meta_page_access_token, instagram_business_id, instagram_access_token')
         .eq('shop_id', shopId)
     ]);
 
-    const tokens: string[] = [];
-    if (shop?.meta_page_access_token) tokens.push(shop.meta_page_access_token);
-    if (shop?.instagram_access_token && !tokens.includes(shop.instagram_access_token)) tokens.push(shop.instagram_access_token);
-    if (metaPages && Array.isArray(metaPages)) {
-      for (const p of metaPages) {
-        if (p.meta_page_access_token && !tokens.includes(p.meta_page_access_token)) tokens.push(p.meta_page_access_token);
-        if (p.instagram_access_token && !tokens.includes(p.instagram_access_token)) tokens.push(p.instagram_access_token);
+    const prioritizedTokens: string[] = [];
+
+    // Prioritize token matching pagePrefix if available
+    if (pagePrefix) {
+      if (shop?.meta_page_id === pagePrefix && shop.meta_page_access_token) {
+        prioritizedTokens.push(shop.meta_page_access_token);
+      }
+      if (metaPages && Array.isArray(metaPages)) {
+        for (const p of metaPages) {
+          if (p.meta_page_id === pagePrefix && p.meta_page_access_token && !prioritizedTokens.includes(p.meta_page_access_token)) {
+            prioritizedTokens.push(p.meta_page_access_token);
+          }
+        }
       }
     }
 
-    for (const token of tokens) {
-      try {
-        const url = platform === 'instagram'
-          ? `https://graph.facebook.com/v19.0/${postId}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=50&access_token=${token}`
-          : `https://graph.facebook.com/v19.0/${postId}/comments?fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=50&access_token=${token}`;
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data && Array.isArray(data.data)) {
-          for (const item of data.data) {
-            const commentId = item.id;
-            const message = item.message || item.text || '';
-            const senderName = item.from?.name || item.username || 'User';
-            const senderId = item.from?.id || null;
-            const createdAt = item.created_time || item.timestamp || new Date().toISOString();
-
-            // Extract reply if any sub-comment exists from page
-            let replyText: string | null = null;
-            let repliedAt: string | null = null;
-            const subComments = item.comments?.data || item.replies?.data;
-            if (Array.isArray(subComments) && subComments.length > 0) {
-              replyText = subComments[0]?.message || subComments[0]?.text || null;
-              repliedAt = subComments[0]?.created_time || subComments[0]?.timestamp || null;
-            }
-
-            if (commentsMap.has(commentId)) {
-              const existing = commentsMap.get(commentId)!;
-              commentsMap.set(commentId, {
-                ...existing,
-                sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
-                reply_text: existing.reply_text || replyText,
-                replied_at: existing.replied_at || repliedAt,
-              });
-            } else {
-              commentsMap.set(commentId, {
-                id: commentId,
-                comment_id: commentId,
-                sender_id: senderId,
-                sender_name: senderName,
-                comment_text: message,
-                reply_text: replyText,
-                is_negative: false,
-                is_deleted: false,
-                private_reply_sent: false,
-                replied_at: repliedAt,
-                created_at: createdAt,
-                source: 'meta_api',
-              });
-            }
-          }
-          break; // successfully fetched
+    // Add remaining tokens
+    if (shop?.meta_page_access_token && !prioritizedTokens.includes(shop.meta_page_access_token)) {
+      prioritizedTokens.push(shop.meta_page_access_token);
+    }
+    if (shop?.instagram_access_token && !prioritizedTokens.includes(shop.instagram_access_token)) {
+      prioritizedTokens.push(shop.instagram_access_token);
+    }
+    if (metaPages && Array.isArray(metaPages)) {
+      for (const p of metaPages) {
+        if (p.meta_page_access_token && !prioritizedTokens.includes(p.meta_page_access_token)) {
+          prioritizedTokens.push(p.meta_page_access_token);
         }
-      } catch (err) {
-        // continue to next token if any
+        if (p.instagram_access_token && !prioritizedTokens.includes(p.instagram_access_token)) {
+          prioritizedTokens.push(p.instagram_access_token);
+        }
       }
+    }
+
+    const postIdsToTry = [postId];
+    if (cleanPostId !== postId) postIdsToTry.push(cleanPostId);
+
+    for (const token of prioritizedTokens) {
+      let fetchedAny = false;
+      for (const idToTry of postIdsToTry) {
+        try {
+          const url = platform === 'instagram'
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp,replies{id,text,username,timestamp}&limit=50&access_token=${token}`
+            : `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=50&access_token=${token}`;
+
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (data && Array.isArray(data.data)) {
+            fetchedAny = true;
+            for (const item of data.data) {
+              const commentId = item.id;
+              const message = item.message || item.text || '';
+              const senderName = item.from?.name || item.username || 'User';
+              const senderId = item.from?.id || null;
+              const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+
+              // Extract reply if any sub-comment exists from page
+              let replyText: string | null = null;
+              let repliedAt: string | null = null;
+              const subComments = item.comments?.data || item.replies?.data;
+              if (Array.isArray(subComments) && subComments.length > 0) {
+                replyText = subComments[0]?.message || subComments[0]?.text || null;
+                repliedAt = subComments[0]?.created_time || subComments[0]?.timestamp || null;
+              }
+
+              if (commentsMap.has(commentId)) {
+                const existing = commentsMap.get(commentId)!;
+                commentsMap.set(commentId, {
+                  ...existing,
+                  sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
+                  reply_text: existing.reply_text || replyText,
+                  replied_at: existing.replied_at || repliedAt,
+                });
+              } else {
+                commentsMap.set(commentId, {
+                  id: commentId,
+                  comment_id: commentId,
+                  sender_id: senderId,
+                  sender_name: senderName,
+                  comment_text: message,
+                  reply_text: replyText,
+                  is_negative: false,
+                  is_deleted: false,
+                  private_reply_sent: false,
+                  replied_at: repliedAt,
+                  created_at: createdAt,
+                  source: 'meta_api',
+                });
+              }
+            }
+            break;
+          }
+        } catch (err) {
+          // continue
+        }
+      }
+      if (fetchedAny) break;
     }
 
     const allComments = Array.from(commentsMap.values()).sort(
@@ -584,6 +624,108 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
   } catch (err: any) {
     console.error('[SOCIAL] Error in fetchPostComments:', err);
     return { success: false, comments: [], error: err.message || 'Failed to fetch comments' };
+  }
+}
+
+export async function testPostCommentReply(
+  postId: string,
+  commentText: string,
+  commenterName: string = 'Test Customer'
+): Promise<{
+  success: boolean;
+  replyText?: string;
+  comment?: CommentDetailItem;
+  error?: string;
+}> {
+  try {
+    const shopId = await getShopId();
+    if (!shopId) return { success: false, error: 'Not authenticated' };
+
+    const { data: automations } = await supabaseAdmin
+      .from('post_automations')
+      .select('*')
+      .eq('shop_id', shopId);
+
+    const cleanPostId = postId.includes('_') ? postId.split('_').pop()! : postId;
+    const automation = (automations || []).find((a: any) => {
+      const aClean = a.post_id.includes('_') ? a.post_id.split('_').pop() : a.post_id;
+      return a.post_id === postId || aClean === cleanPostId || a.post_id.endsWith(`_${cleanPostId}`) || postId.endsWith(`_${aClean}`);
+    });
+
+    let productContext = '';
+    if (automation?.product_ids?.length) {
+      const { data: products } = await supabaseAdmin
+        .from('products')
+        .select('name, price, currency')
+        .in('id', automation.product_ids)
+        .eq('is_active', true);
+      if (products?.length) {
+        productContext = `\n\nAttached products for this post:\n${products.map((p: any) => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}`).join('\n')}`;
+      }
+    }
+
+    const guardrail = `CRITICAL RULE (non-negotiable, overrides all other instructions):
+Public comment replies must NEVER contain order details, payment status, transaction references, or any customer-specific personal information. If a reply would require any of that, end with "Please check your inbox for details 🙏" instead.`;
+
+    const systemPrompt = `You are a helpful customer service assistant replying to a public comment on a Facebook/Instagram post.
+
+${guardrail}
+
+Owner instructions for this post:
+${automation?.instructions || 'Be helpful, friendly, and concise. Respond in the language of the comment (Bangla, English, or Banglish).'}
+${productContext}
+
+Rules:
+- Keep public replies SHORT (1-2 sentences max)
+- Be warm, courteous, and on-brand
+- If the comment is a price inquiry ("pp", "price", "koto", "daam koto", "দাম কত" etc.), give the price if known from attached products, or invite them to inbox
+- Do not include any personal data in the public reply`;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent({
+      systemInstruction: systemPrompt,
+      contents: [{ role: 'user', parts: [{ text: `Comment from ${commenterName}: "${commentText}"` }] }],
+    });
+    const replyText = result.response.text().trim();
+
+    const mockCommentId = `test_${Date.now()}`;
+    const commentRecord: CommentDetailItem = {
+      id: mockCommentId,
+      comment_id: mockCommentId,
+      sender_id: 'test_user',
+      sender_name: commenterName,
+      comment_text: commentText,
+      reply_text: replyText,
+      is_negative: false,
+      is_deleted: false,
+      private_reply_sent: automation?.send_as_messenger ?? true,
+      replied_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      source: 'database',
+    };
+
+    // Store in DB
+    await supabaseAdmin.from('post_comments').insert({
+      shop_id: shopId,
+      post_id: automation?.post_id || postId,
+      comment_id: mockCommentId,
+      commenter_psid: 'test_user',
+      sender_name: commenterName,
+      comment_text: commentText,
+      reply_text: replyText,
+      replied_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      replyText,
+      comment: commentRecord,
+    };
+  } catch (err: any) {
+    console.error('[testPostCommentReply] Error:', err);
+    return { success: false, error: err.message || 'Failed to simulate comment' };
   }
 }
 
