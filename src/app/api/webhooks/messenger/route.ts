@@ -996,58 +996,79 @@ Confidence >= 0.80 means delete. Default to false for genuine customer questions
       .not('reply_text', 'is', null)
       .maybeSingle();
 
-    let replyText: string;
+    let commentReplyText = '';
+    let inboxMessageText = '';
 
     if (duplicate?.reply_text) {
-      // Serve cached reply — no model call
-      replyText = duplicate.reply_text;
+      commentReplyText = duplicate.reply_text;
+      inboxMessageText = `Hi ${commenterName}! Thanks for your comment. We're here to help if you have any questions! 🙏`;
     } else {
-      // ── Build AI reply prompt ─────────────────────────────────────────────
+      // ── Build Two-Tier AI reply prompt ─────────────────────────────────────
       let productContext = '';
       if (automation.product_ids?.length > 0) {
         const { data: products } = await supabaseAdmin
           .from('products')
-          .select('name, price, currency')
+          .select('name, price, currency, description')
           .in('id', automation.product_ids)
           .eq('is_active', true);
         if (products?.length) {
-          productContext = `\n\nAttached products for this post:\n${products.map((p: any) => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}`).join('\n')}`;
+          productContext = `\nAttached products for this post:\n${products.map((p: any) => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}${p.description ? ` (${p.description})` : ''}`).join('\n')}`;
         }
       }
 
-      // SYSTEM GUARDRAIL — non-overridable
-      const guardrail = `CRITICAL RULE (non-negotiable, overrides all other instructions):
-Public comment replies must NEVER contain order details, payment status, transaction references, or any customer-specific personal information. If a reply would require any of that, end with "Please check your inbox for details 🙏" instead.`;
+      const systemPrompt = `You are an automated conversational commerce and customer support AI assistant for an e-commerce brand handling Facebook & Instagram comments and DMs.
 
-      const systemPrompt = `You are a helpful customer service assistant replying to a public comment on a Facebook/Instagram post.
+Analyze the user's comment and generate TWO distinct responses in valid JSON format:
 
-${guardrail}
+1. "comment_reply": The PUBLIC comment reply displayed under their comment on the post.
+   - If they are asking ANY question, inquiring about price ("pp", "price", "koto", "daam"), size, color, availability, shipping, delivery, or product details: Write a warm, natural, concise public reply telling them to check their inbox / DMs (e.g., "Hi ${commenterName}! We've sent you the full details in your inbox, please check your DMs! 📩" or in natural Bangla/Banglish matching their tone).
+   - If they are leaving general social appreciation, compliments, or casual remarks (e.g., "nice", "loved this", "hahaha", "looks cool", "greetings"): reply warmly and conversationally directly in the comment.
+   - Keep public replies SHORT (1-2 sentences max). Do NOT include personal or private order info in public comments.
+
+2. "inbox_message": The PRIVATE inbox message sent directly to their Messenger/Instagram DMs.
+   - Fully and comprehensively answer the question they asked in the comment with pricing, product specs, stock status, delivery details, and a helpful call to action for placing an order.
+   - If they left a casual compliment or greeting, provide a friendly greeting and let them know you are available whenever they want to place an order.
+
+3. "is_inquiry": boolean indicating whether they asked a question or expressed purchasing intent.
+
+Language Rule: Always respond in the EXACT same language/dialect as the customer's comment (English, Bengali script, or Banglish).
 
 Owner instructions for this post:
-${automation.instructions || 'Be helpful, friendly, and concise. Respond in the language of the comment (Bangla, English, or Banglish).'}
+${automation.instructions || 'Be helpful, friendly, and concise.'}
 ${productContext}
 
-Rules:
-- Keep public replies SHORT (1-2 sentences max)
-- Be warm, courteous, and on-brand
-- If the comment is a price inquiry ("pp", "price", "koto", "daam koto", "দাম কত" etc.), give the price if known from attached products, or invite them to inbox
-- Do not include any personal data in the public reply`;
+Return strictly valid JSON with keys: "comment_reply", "inbox_message", "is_inquiry".`;
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-      const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
-      const result = await model.generateContent({
-        systemInstruction: systemPrompt,
-        contents: [{ role: 'user', parts: [{ text: `Comment from ${commenterName}: "${commentText}"` }] }],
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-3.1-flash-lite',
+        generationConfig: { responseMimeType: 'application/json' }
       });
-      replyText = result.response.text().trim();
-      await billGeminiCall(
-        shop.id,
-        null,
-        result.response.usageMetadata?.promptTokenCount || 0,
-        result.response.usageMetadata?.candidatesTokenCount || 0,
-        false,
-        false
-      );
+
+      try {
+        const result = await model.generateContent({
+          systemInstruction: systemPrompt,
+          contents: [{ role: 'user', parts: [{ text: `Comment from ${commenterName}: "${commentText}"` }] }],
+        });
+
+        const rawJson = result.response.text().trim();
+        const parsed = JSON.parse(rawJson);
+        commentReplyText = parsed.comment_reply || rawJson;
+        inboxMessageText = parsed.inbox_message || commentReplyText;
+
+        await billGeminiCall(
+          shop.id,
+          null,
+          result.response.usageMetadata?.promptTokenCount || 0,
+          result.response.usageMetadata?.candidatesTokenCount || 0,
+          false,
+          false
+        );
+      } catch (genErr) {
+        console.error('[handleCommentEvent] AI generation fallback:', genErr);
+        commentReplyText = `Hello ${commenterName}! Thanks for your comment. Please check your inbox for details! 🙏`;
+        inboxMessageText = `Hi ${commenterName}! Thanks for reaching out about our post. How can we help you today?`;
+      }
     }
 
     // ── Store comment record in DB ───────────────────────────────────────────
@@ -1058,28 +1079,24 @@ Rules:
       sender_id: commenterPsid,
       sender_name: commenterName,
       comment_text: commentText,
-      reply_text: replyText,
+      reply_text: commentReplyText,
       is_deleted: false,
       is_negative: false,
     }, { onConflict: 'comment_id' });
 
     // ── Post public comment reply (Phase 3) ──────────────────────────────────
-    if (automation.reply_as_comment) {
-      const pubRes = await replyToComment(commentId, replyText, pageAccessToken);
+    if (automation.reply_as_comment && commentReplyText) {
+      const pubRes = await replyToComment(commentId, commentReplyText, pageAccessToken);
       console.log(`[handleCommentEvent] Public reply response for comment ${commentId}:`, pubRes);
     }
 
     // ── Send private Messenger reply (Phase 4) ────────────────────────────
-    if (automation.send_as_messenger && commenterPsid) {
+    if (automation.send_as_messenger && commenterPsid && inboxMessageText) {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       const withinWindow = commentCreatedAt > sevenDaysAgo;
 
       if (withinWindow) {
-        const privateReplyText = replyText.includes('check your inbox')
-          ? `Hi ${commenterName}! Thanks for your comment. ${replyText.replace('Please check your inbox for details 🙏', '')} We sent you more details here!`
-          : replyText;
-
-        const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
+        const prResult = await sendPrivateReply(commentId, inboxMessageText, pageAccessToken);
         console.log(`[handleCommentEvent] Private reply response for comment ${commentId}:`, prResult);
       }
     }
