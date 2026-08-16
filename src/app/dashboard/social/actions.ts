@@ -845,10 +845,10 @@ export async function sendManualCommentReply(
 
     let token: string | null = null;
     if (platform === 'instagram') {
-      token = shop?.instagram_access_token || shop?.meta_page_access_token || null;
-      if (!token && metaPages && Array.isArray(metaPages)) {
-        token = metaPages.find(p => p.instagram_access_token)?.instagram_access_token || metaPages[0]?.meta_page_access_token || null;
-      }
+      const igPage = (metaPages && Array.isArray(metaPages))
+        ? metaPages.find(p => p.instagram_access_token || p.instagram_business_id)
+        : null;
+      token = igPage?.instagram_access_token || shop?.instagram_access_token || igPage?.meta_page_access_token || shop?.meta_page_access_token || null;
     } else {
       if (pagePrefix && shop?.meta_page_id === pagePrefix) {
         token = shop.meta_page_access_token;
@@ -883,6 +883,13 @@ export async function sendManualCommentReply(
         reply_text: replyText,
       }, { onConflict: 'comment_id' });
 
+      let userFriendlyError = replyResult.error || 'Failed to post reply on Meta';
+      if (userFriendlyError.includes('10900') || userFriendlyError.toLowerCase().includes('already replied')) {
+        userFriendlyError = 'A private DM has already been sent to this comment (Meta limit: 1 DM per comment). You can chat directly in Live Chat!';
+      } else if (userFriendlyError.includes('200') || userFriendlyError.toLowerCase().includes('permission')) {
+        userFriendlyError = 'Meta requires Page comment permissions or App Review to reply publicly. Reply saved to dashboard.';
+      }
+
       if (
         commentId.startsWith('test_') ||
         commentId.includes('TEST_') ||
@@ -891,7 +898,7 @@ export async function sendManualCommentReply(
       ) {
         return { success: true, replyId: `reply_${Date.now()}` };
       }
-      return { success: false, error: replyResult.error || 'Failed to post reply on Meta' };
+      return { success: false, error: userFriendlyError };
     }
 
     await supabaseAdmin.from('post_comments').upsert({
