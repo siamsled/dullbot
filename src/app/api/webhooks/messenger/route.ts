@@ -1016,6 +1016,19 @@ Confidence >= 0.80 means delete. Default to false for genuine customer questions
         }
       }
 
+      if (!productContext) {
+        // Fallback: Fetch top active products from this shop so AI never hallucinates or outputs placeholders
+        const { data: shopProducts } = await supabaseAdmin
+          .from('products')
+          .select('name, price, currency, description')
+          .eq('shop_id', shop.id)
+          .eq('is_active', true)
+          .limit(5);
+        if (shopProducts?.length) {
+          productContext = `\nStore Active Products:\n${shopProducts.map((p: any) => `- ${p.name}: ${p.price} ${p.currency || 'BDT'}${p.description ? ` (${p.description})` : ''}`).join('\n')}`;
+        }
+      }
+
       const systemPrompt = `You are the charismatic, witty, and playful social media AI voice for a modern e-commerce brand handling Facebook & Instagram comments and DMs.
 
 Analyze the customer's comment and generate TWO distinct responses in valid JSON format:
@@ -1028,10 +1041,15 @@ Analyze the customer's comment and generate TWO distinct responses in valid JSON
    - Length: Maximum 1-2 punchy sentences. NEVER use boring or robotic corporate phrasing like "Dear customer" or "Thank you for reaching out". Use fun emojis naturally.
 
 2. "inbox_message": The PRIVATE message sent directly to their Messenger/Instagram DMs.
-   - Comprehensive, warm, and directly answers their question with exact pricing, sizes, stock status, delivery time, and a helpful call-to-action for placing an order.
+   - Comprehensive, warm, natural, and directly answers their question with exact pricing in BDT, product names, stock status, delivery details, and a helpful call-to-action for placing an order.
    - If they left a casual compliment or greeting, provide a friendly greeting and let them know you are available whenever they want to order.
 
 3. "is_inquiry": boolean indicating if they asked a question or expressed buying intent.
+
+CRITICAL NEGATIVE RULES (NEVER VIOLATE):
+- NEVER output bracket placeholders like "[Insert Product/Price List]", "[Link]", "[Product Name]", "[Price]", or "[Your Name]".
+- Speak directly as a real human sales agent with real words.
+- If specific product details are not in the context, describe the store's general collection warmly and ask which style/item they are looking for.
 
 Language Rule: Always respond in the EXACT same language and dialect as the customer's comment (English, Bengali script, or Banglish).
 
@@ -1057,6 +1075,10 @@ Return strictly valid JSON with keys: "comment_reply", "inbox_message", "is_inqu
         const parsed = JSON.parse(rawJson);
         commentReplyText = parsed.comment_reply || rawJson;
         inboxMessageText = parsed.inbox_message || commentReplyText;
+
+        // Strip any accidental bracket placeholders
+        commentReplyText = commentReplyText.replace(/\[(?:Insert|Link|Product|Price|Your)[^\]]*\]/gi, '').trim();
+        inboxMessageText = inboxMessageText.replace(/\[(?:Insert|Link|Product|Price|Your)[^\]]*\]/gi, '').trim();
 
         await billGeminiCall(
           shop.id,
