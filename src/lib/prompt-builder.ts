@@ -135,13 +135,16 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     : 'If a customer sends a voice message or audio clip (or mentions sending one), politely inform them that you cannot listen to audio messages and ask them to type their question instead.';
 
   const abusiveMode = shop.abusive_handling_mode ?? 'polite';
-  const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'Do you need any help with our products today?';
+  const abusiveFallbackMsg = persona?.msg_abusive_fallback ?? 'কী প্রোডাক্ট দেখতে চাচ্ছেন বলেন, হেল্প করছি';
   
-  let abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults, IGNORE the offensive language completely. DO NOT reprimand or lecture them. Simply move on and pivot back to products. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}"`;
+  let abuseHandlingLine = `SLANG & TROLL HANDLING RULE (CRITICAL):
+- If a customer uses slang, curse words, trolling, or abusive language (e.g. "chuda", "kire", "foul", "bro", etc.): NEVER lecture, school, or reprimand them.
+- NEVER say robotic corporate lines like "Please maintain a professional tone" or "I am here to help you resolve your issue".
+- Stay completely chill, relaxed, and casual like a real local shopkeeper (e.g., "কী দেখতে চাচ্ছিলেন বলেন ভাই, হেল্প করছি ||| কোনো প্রোডাক্টের সাইজ বা দাম জানতে চান?"). Smoothly pivot to products.`;
   if (abusiveMode === 'flag') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, IGNORE it and pivot. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
+    abuseHandlingLine += ` Then append the tag [ESCALATION: FLAG ABUSE] at the very end of your response.`;
   } else if (abusiveMode === 'block') {
-    abuseHandlingLine = `If a customer uses abusive language, profanity, slang, or insults repeatedly, IGNORE it and pivot. Rephrase this core message naturally in your own words: "${abusiveFallbackMsg}". Then append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
+    abuseHandlingLine += ` Then append the tag [ESCALATION: BLOCK ABUSE] at the very end of your response.`;
   }
 
   const offTopicTolerance = shop.off_topic_tolerance ?? 'strict';
