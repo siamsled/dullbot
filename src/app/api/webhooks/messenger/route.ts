@@ -760,15 +760,29 @@ export async function POST(request: Request) {
               // Persist incoming comment payload immediately regardless of automation state
               const v = change.value;
               const commentId = v?.comment_id || v?.id;
-              const postId = v?.post_id || v?.parent_id || v?.media?.id || v?.post?.id || '';
+              const rawPostId = v?.post_id || v?.parent_id || v?.media?.id || v?.post?.id || '';
               const commentText = v?.message || v?.text || '';
               const senderName = v?.from?.name || v?.from?.username || v?.username || v?.sender_name || 'Customer';
               const senderId = v?.from?.id || v?.sender?.id || null;
 
               if ((isFacebookComment || isInstagramComment) && commentId && commentText.trim()) {
+                // Find matching standardized post_id from post_automations if exists
+                const { data: automations } = await supabaseAdmin
+                  .from('post_automations')
+                  .select('post_id')
+                  .eq('shop_id', shop.id);
+
+                const cleanRaw = rawPostId.includes('_') ? rawPostId.split('_').pop() : rawPostId;
+                const matchedAuto = (automations || []).find((a: any) => {
+                  const aClean = a.post_id.includes('_') ? a.post_id.split('_').pop() : a.post_id;
+                  return a.post_id === rawPostId || aClean === cleanRaw || a.post_id.endsWith(`_${cleanRaw}`) || rawPostId.endsWith(`_${aClean}`);
+                });
+
+                const normalizedPostId = matchedAuto ? matchedAuto.post_id : rawPostId;
+
                 await supabaseAdmin.from('post_comments').upsert({
                   shop_id: shop.id,
-                  post_id: postId,
+                  post_id: normalizedPostId,
                   comment_id: commentId,
                   sender_id: senderId,
                   sender_name: senderName,

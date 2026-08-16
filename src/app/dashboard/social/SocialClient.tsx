@@ -1213,12 +1213,27 @@ function PostAndLiveCommentsCenter({
     if (!silent) setLoadingComments(true);
     const res = await fetchPostComments(post.post_id, post.platform);
     if (res.success && res.comments) {
-      setComments(res.comments);
+      setComments(prev => {
+        if (res.comments.length === 0 && prev.length > 0) {
+          return prev;
+        }
+        const map = new Map<string, CommentDetailItem>();
+        for (const c of res.comments) map.set(c.comment_id, c);
+        for (const p of prev) {
+          if (!map.has(p.comment_id)) {
+            map.set(p.comment_id, p);
+          }
+        }
+        return Array.from(map.values()).sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      });
     }
     if (!silent) setLoadingComments(false);
   };
 
   useEffect(() => {
+    setComments([]);
     loadComments();
 
     // 1. Supabase Realtime subscription on post_comments
