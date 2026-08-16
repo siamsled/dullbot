@@ -54,6 +54,8 @@ export interface ShopStats {
   pendingOrders: number;
   paymentMismatches: number;
   lowStockProducts: number;
+  lowStockVariants?: number;
+  lowStockStandalone?: number;
   // Enhanced metrics
   aovTotal: number;
   aovDelta: number;
@@ -182,16 +184,18 @@ export async function getShopStats(
     { data: convs7 },
     { data: convs14 },
     { data: pendingOrders },
-    { data: lowStock },
+    { data: allShopProducts },
+    { data: allShopVariants },
     { data: shopData },
     { data: allPending },
   ] = await Promise.all([
-    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id, payment_method, verification_method, customer_phone').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
+    supabaseAdmin.from('orders').select('created_at, total_amount, status, conversation_id, id, payment_method, verification_method, customer_phone, channel, internal_note').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
     supabaseAdmin.from('orders').select('created_at, total_amount, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
     supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', startStr).lte('created_at', endStr).order('created_at'),
     supabaseAdmin.from('conversations').select('id, created_at, status').eq('shop_id', shopId).gte('created_at', prevStartStr).lt('created_at', startStr).order('created_at'),
     supabaseAdmin.from('orders').select('id, created_at').eq('shop_id', shopId).in('status', ['pending_verification','confirmed']),
-    supabaseAdmin.from('products').select('id').eq('shop_id', shopId).lt('stock_quantity', 5),
+    supabaseAdmin.from('products').select('id, stock_quantity, low_stock_threshold, draft').eq('shop_id', shopId),
+    supabaseAdmin.from('product_variants').select('id, product_id, stock').eq('shop_id', shopId),
     supabaseAdmin.from('shops').select('credit_balance').eq('id', shopId).single(),
     supabaseAdmin.from('orders').select('id, created_at').eq('shop_id', shopId).eq('status', 'pending_verification'),
   ]);
@@ -292,6 +296,38 @@ export async function getShopStats(
     }
   }
 
+  // Calculate low stock items across standalone products and variants
+  const variantsByProd = new Map<string, any[]>();
+  (allShopVariants || []).forEach((v: any) => {
+    if (!variantsByProd.has(v.product_id)) variantsByProd.set(v.product_id, []);
+    variantsByProd.get(v.product_id)!.push(v);
+  });
+
+  let lowStockStandalone = 0;
+  let lowStockVariants = 0;
+
+  for (const p of allShopProducts || []) {
+    if (p.draft) continue;
+    const pVariants = variantsByProd.get(p.id) || [];
+    const threshold = p.low_stock_threshold ?? 5;
+
+    if (pVariants.length > 0) {
+      for (const v of pVariants) {
+        const vStock = Number(v.stock ?? 0);
+        if (vStock <= threshold) {
+          lowStockVariants++;
+        }
+      }
+    } else {
+      const pStock = Number(p.stock_quantity ?? 0);
+      if (pStock <= threshold) {
+        lowStockStandalone++;
+      }
+    }
+  }
+
+  const lowStockProducts = lowStockStandalone + lowStockVariants;
+
   return {
     revenueSeries, revenueTotal, revenueDelta,
     ordersSeries, ordersTotal, ordersDelta,
@@ -305,7 +341,9 @@ export async function getShopStats(
     humanEscalated: humanEsc,
     pendingOrders: (pendingOrders ?? []).length,
     paymentMismatches,
-    lowStockProducts: (lowStock ?? []).length,
+    lowStockProducts,
+    lowStockVariants,
+    lowStockStandalone,
     aovTotal,
     aovDelta,
     inquiryConvRate,

@@ -355,9 +355,15 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                 }`}
               >
                 <div>
-                  <span className="text-xs font-bold text-ink block mb-1">Low Stock Products</span>
-                  <p className="text-2xl font-serif font-bold text-ink leading-none">{currentStats.lowStockProducts ?? 0}</p>
-                  <span className="text-[10px] text-ash mt-1 block">&lt; 5 units left in catalog</span>
+                  <span className="text-xs font-bold text-ink block mb-1">Low Stock Items</span>
+                  <p className="text-2xl font-serif font-bold text-ink leading-none font-mono">{currentStats.lowStockProducts ?? 0}</p>
+                  <span className="text-[10px] text-ash mt-1 block">
+                    {(currentStats.lowStockVariants ?? 0) > 0 && (currentStats.lowStockStandalone ?? 0) > 0
+                      ? `${currentStats.lowStockStandalone} product${(currentStats.lowStockStandalone ?? 0) > 1 ? 's' : ''}, ${currentStats.lowStockVariants} variant${(currentStats.lowStockVariants ?? 0) > 1 ? 's' : ''} low`
+                      : (currentStats.lowStockVariants ?? 0) > 0
+                      ? `${currentStats.lowStockVariants} variant${(currentStats.lowStockVariants ?? 0) > 1 ? 's' : ''} < threshold`
+                      : '< 5 units left in catalog'}
+                  </span>
                 </div>
                 <div className="w-10 h-10 rounded-2xl bg-fog group-hover:bg-amber-100 text-ink group-hover:text-amber-800 flex items-center justify-center transition-colors border border-dove/10">
                   <Package className="w-5 h-5" />
