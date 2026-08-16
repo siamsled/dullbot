@@ -209,8 +209,10 @@ export async function getShopStats(
   // Average Order Value (AOV)
   const confirmed7 = (orders7 ?? []).filter((o: any) => ['confirmed', 'fulfilled'].includes(o.status));
   const confirmed14 = (orders14 ?? []).filter((o: any) => ['confirmed', 'fulfilled'].includes(o.status));
-  const aovTotal = confirmed7.length > 0 ? Math.round(revenueTotal / confirmed7.length) : 0;
-  const aovPrev = confirmed14.length > 0 ? Math.round(revenuePrev / confirmed14.length) : 0;
+  const confirmedRevenue7 = confirmed7.reduce((s: number, o: any) => s + Number(o.total_amount ?? 0), 0);
+  const confirmedRevenue14 = confirmed14.reduce((s: number, o: any) => s + Number(o.total_amount ?? 0), 0);
+  const aovTotal = confirmed7.length > 0 ? Math.round(confirmedRevenue7 / confirmed7.length) : 0;
+  const aovPrev = confirmed14.length > 0 ? Math.round(confirmedRevenue14 / confirmed14.length) : 0;
   const aovDelta = aovPrev > 0 ? Math.round(((aovTotal - aovPrev) / aovPrev) * 100) : 0;
 
   const convSeries = buildCustomSeries(convs7 ?? [], startStr, endStr, rangeType, () => 1);
@@ -249,11 +251,14 @@ export async function getShopStats(
     paymentMismatches = count ?? 0;
   }
 
-  // Today's POS Till & Sales Split
-  const todayStartStr = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  // Today's POS Till & Sales Split (calculated from midnight Dhaka time UTC+6)
+  const dhakaNow = toDhakaDate(now.toISOString());
+  const dhakaMidnightUtc = new Date(Date.UTC(dhakaNow.getUTCFullYear(), dhakaNow.getUTCMonth(), dhakaNow.getUTCDate()) - DHAKA_OFFSET * 60 * 1000);
+  const todayStartStr = dhakaMidnightUtc.toISOString();
+
   const todayOrders = (orders7 ?? []).filter((o: any) => o.created_at >= todayStartStr);
-  const todayPosOrders = todayOrders.filter((o: any) => (o.internal_note && o.internal_note.includes('[POS SALE]')) || o.payment_method === 'cash');
-  const todayChatOrders = todayOrders.filter((o: any) => !((o.internal_note && o.internal_note.includes('[POS SALE]')) || o.payment_method === 'cash'));
+  const todayPosOrders = todayOrders.filter((o: any) => (o.internal_note && o.internal_note.includes('[POS SALE]')) || o.channel === 'pos' || o.verification_method === 'pos');
+  const todayChatOrders = todayOrders.filter((o: any) => !((o.internal_note && o.internal_note.includes('[POS SALE]')) || o.channel === 'pos' || o.verification_method === 'pos'));
 
   const todayCashInTill = todayPosOrders
     .filter((o: any) => o.payment_method === 'cash')
@@ -586,21 +591,43 @@ export async function getChannelPerformance(shopId: string, days: number) {
 }
 
 export async function getTopProducts(shopId: string, days: number) {
-  const { data: orders } = await supabaseAdmin
-    .from('orders')
-    .select('product_id, total_amount, products(name)')
-    .eq('shop_id', shopId)
-    .gte('created_at', nDaysAgo(days))
-    .in('status', ['confirmed', 'fulfilled']);
+  const since = nDaysAgo(days);
+  const { data: soldItems } = await supabaseAdmin
+    .from('order_line_items')
+    .select('product_id, product_name, quantity, unit_price, orders!inner(shop_id, created_at, status)')
+    .eq('orders.shop_id', shopId)
+    .gte('orders.created_at', since)
+    .in('orders.status', ['confirmed', 'fulfilled']);
 
-  const map: Record<string, { name: string; revenue: number }> = {};
-  for (const o of orders ?? []) {
-    const pid = o.product_id;
-    if (!pid) continue;
-    const name = (o as any).products?.name ?? 'Unknown';
-    if (!map[pid]) map[pid] = { name, revenue: 0 };
-    map[pid].revenue += Number(o.total_amount ?? 0);
+  const map: Record<string, { name: string; revenue: number; unitsSold: number }> = {};
+  if (soldItems && soldItems.length > 0) {
+    for (const item of soldItems) {
+      const pid = item.product_id || item.product_name || 'unknown';
+      const name = item.product_name || 'Product';
+      const rev = Number(item.quantity ?? 1) * Number(item.unit_price ?? 0);
+      if (!map[pid]) map[pid] = { name, revenue: 0, unitsSold: 0 };
+      map[pid].revenue += rev;
+      map[pid].unitsSold += Number(item.quantity ?? 1);
+    }
+  } else {
+    // Fallback to orders.product_id if line items are not populated
+    const { data: orders } = await supabaseAdmin
+      .from('orders')
+      .select('product_id, total_amount, products(name)')
+      .eq('shop_id', shopId)
+      .gte('created_at', since)
+      .in('status', ['confirmed', 'fulfilled']);
+
+    for (const o of orders ?? []) {
+      const pid = o.product_id;
+      if (!pid) continue;
+      const name = (o as any).products?.name ?? 'Unknown';
+      if (!map[pid]) map[pid] = { name, revenue: 0, unitsSold: 0 };
+      map[pid].revenue += Number(o.total_amount ?? 0);
+      map[pid].unitsSold += 1;
+    }
   }
+
   return Object.values(map)
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
@@ -641,9 +668,10 @@ export async function getProfitMargins(shopId: string, days: number) {
   const since = nDaysAgo(days);
   const { data: lineItems } = await supabaseAdmin
     .from('order_line_items')
-    .select('quantity, unit_price, product_id, products(cost_price)')
+    .select('quantity, unit_price, product_id, orders!inner(shop_id, created_at, status), products(cost_price)')
     .eq('orders.shop_id', shopId)
-    .gte('created_at', since);
+    .gte('orders.created_at', since)
+    .in('orders.status', ['confirmed', 'fulfilled']);
 
   let totalRevenue = 0;
   let totalCost = 0;
@@ -655,6 +683,22 @@ export async function getProfitMargins(shopId: string, days: number) {
 
     totalRevenue += qty * unitPrice;
     totalCost += qty * costPrice;
+  }
+
+  // Fallback to orders if line items are not available
+  if ((lineItems ?? []).length === 0) {
+    const { data: orders } = await supabaseAdmin
+      .from('orders')
+      .select('total_amount')
+      .eq('shop_id', shopId)
+      .gte('created_at', since)
+      .in('status', ['confirmed', 'fulfilled']);
+
+    for (const o of orders ?? []) {
+      const rev = Number(o.total_amount ?? 0);
+      totalRevenue += rev;
+      totalCost += rev * 0.6;
+    }
   }
 
   const grossProfit = Math.round(totalRevenue - totalCost);
@@ -713,7 +757,7 @@ export async function getInventoryRunway(shopId: string, days: number) {
     { data: lineItems }
   ] = await Promise.all([
     supabaseAdmin.from('products').select('id, name, stock_quantity, price, category').eq('shop_id', shopId).eq('is_active', true),
-    supabaseAdmin.from('order_line_items').select('product_id, quantity').gte('created_at', since)
+    supabaseAdmin.from('order_line_items').select('product_id, quantity, orders!inner(shop_id, created_at)').eq('orders.shop_id', shopId).gte('orders.created_at', since)
   ]);
 
   const salesVelocity: Record<string, number> = {};
@@ -823,7 +867,7 @@ export async function getCancellationBreakdown(shopId: string, days: number) {
     .select('review_reason, statusHistory:order_status_history(note)')
     .eq('shop_id', shopId)
     .gte('created_at', since)
-    .eq('status', 'cancelled');
+    .eq('status', 'rejected');
 
   const reasonCounts: Record<string, number> = {
     'Customer changed mind': 0,
@@ -835,7 +879,11 @@ export async function getCancellationBreakdown(shopId: string, days: number) {
 
   for (const c of cancelled ?? []) {
     const reason = c.review_reason || (c.statusHistory?.[0]?.note ? 'Merchant cancelled' : 'Customer changed mind');
-    reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
+    if (reasonCounts[reason] !== undefined) {
+      reasonCounts[reason]++;
+    } else {
+      reasonCounts['Customer changed mind'] = (reasonCounts['Customer changed mind'] ?? 0) + 1;
+    }
   }
 
   return Object.entries(reasonCounts).map(([reason, count]) => ({ reason, count }));

@@ -119,7 +119,8 @@ export async function replyToComment(
   pageAccessToken: string
 ): Promise<{ success: boolean; commentId?: string; error?: string }> {
   try {
-    const response = await fetch(
+    // 1. Try Facebook /comments endpoint first
+    let response = await fetch(
       `https://graph.facebook.com/v19.0/${commentId}/comments?access_token=${pageAccessToken}`,
       {
         method: 'POST',
@@ -127,7 +128,22 @@ export async function replyToComment(
         body: JSON.stringify({ message: text }),
       }
     );
-    const data = await response.json();
+    let data = await response.json();
+
+    // 2. If Facebook /comments endpoint failed (e.g. Instagram comment returns code 100 / subcode 33 / GraphMethodException),
+    //    try Instagram /replies endpoint:
+    if (!response.ok && (data.error?.code === 100 || data.error?.error_subcode === 33 || data.error?.message?.includes('support this operation') || data.error?.type === 'GraphMethodException')) {
+      response = await fetch(
+        `https://graph.facebook.com/v19.0/${commentId}/replies?access_token=${pageAccessToken}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        }
+      );
+      data = await response.json();
+    }
+
     if (!response.ok) {
       return { success: false, error: data.error?.message || 'Comment reply failed' };
     }

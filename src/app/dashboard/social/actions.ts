@@ -555,14 +555,15 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
       for (const idToTry of postIdsToTry) {
         const endpointsToTry = [
           platform === 'instagram'
-            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp&limit=100&access_token=${token}`
-            : `https://graph.facebook.com/v19.0/${idToTry}/comments?filter=stream&fields=id,message,from,created_time&limit=100&access_token=${token}`,
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,text,username,timestamp,from,replies{id,text,username,timestamp,from}&limit=100&access_token=${token}`
+            : `https://graph.facebook.com/v19.0/${idToTry}/comments?filter=stream&fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=100&access_token=${token}`,
           platform === 'facebook'
-            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,from,created_time&limit=100&access_token=${token}`
+            ? `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,from,created_time,comments{id,message,from,created_time}&limit=100&access_token=${token}`
             : null,
           platform === 'facebook'
             ? `https://graph.facebook.com/v19.0/${idToTry}?fields=comments{id,message,from,created_time}&access_token=${token}`
             : null,
+          `https://graph.facebook.com/v19.0/${idToTry}/comments?fields=id,message,text,from,username,timestamp,created_time&limit=100&access_token=${token}`,
         ].filter(Boolean) as string[];
 
         for (const url of endpointsToTry) {
@@ -583,9 +584,15 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
               for (const item of items) {
                 const commentId = item.id;
                 const message = item.message || item.text || '';
-                const senderName = item.from?.name || item.username || 'Customer';
+                const senderName = item.from?.name || item.from?.username || item.username || 'Customer';
                 const senderId = item.from?.id || null;
                 const createdAt = item.created_time || item.timestamp || new Date().toISOString();
+
+                // Extract nested thread reply if exists (bot reply or store owner reply)
+                const nestedReplies = item.replies?.data || item.comments?.data || [];
+                const latestReply = nestedReplies.length > 0 ? nestedReplies[nestedReplies.length - 1] : null;
+                const replyText = latestReply ? (latestReply.message || latestReply.text || null) : null;
+                const repliedAt = latestReply ? (latestReply.created_time || latestReply.timestamp || null) : null;
 
                 rowsToCache.push({
                   shop_id: shopId,
@@ -594,7 +601,9 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                   sender_id: senderId,
                   sender_name: senderName,
                   comment_text: message,
+                  reply_text: replyText,
                   created_at: createdAt,
+                  ...(repliedAt ? { replied_at: repliedAt } : {}),
                 });
 
                 if (commentsMap.has(commentId)) {
@@ -602,6 +611,8 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                   commentsMap.set(commentId, {
                     ...existing,
                     sender_name: existing.sender_name !== 'Customer' ? existing.sender_name : senderName,
+                    reply_text: existing.reply_text || replyText,
+                    replied_at: existing.replied_at || repliedAt,
                   });
                 } else {
                   commentsMap.set(commentId, {
@@ -610,11 +621,11 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                     sender_id: senderId,
                     sender_name: senderName,
                     comment_text: message,
-                    reply_text: null,
+                    reply_text: replyText,
                     is_negative: false,
                     is_deleted: false,
                     private_reply_sent: false,
-                    replied_at: null,
+                    replied_at: repliedAt,
                     created_at: createdAt,
                     source: 'meta_api',
                   });
@@ -625,7 +636,7 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
               if (rowsToCache.length > 0) {
                 supabaseAdmin
                   .from('post_comments')
-                  .upsert(rowsToCache, { onConflict: 'comment_id', ignoreDuplicates: true })
+                  .upsert(rowsToCache, { onConflict: 'comment_id', ignoreDuplicates: false })
                   .then(({ error: cacheErr }) => {
                     if (cacheErr) console.warn('[fetchPostComments] Cache notice:', cacheErr.message);
                   });

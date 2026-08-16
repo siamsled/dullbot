@@ -752,31 +752,29 @@ export async function POST(request: Request) {
         // ── Feed / Comment events ──────────────────────────────────────────
         if (entry.changes) {
           for (const change of entry.changes) {
-            const isFacebookComment = change.field === 'feed' && change.value?.item === 'comment' && (change.value?.verb === 'add' || !change.value?.verb);
+            const isFacebookComment = change.field === 'feed' && (change.value?.item === 'comment' || change.value?.comment_id) && (change.value?.verb === 'add' || !change.value?.verb);
             const isInstagramComment = (change.field === 'comments' || change.field === 'live_comments') && (change.value?.verb === 'add' || !change.value?.verb);
 
-            // Debug: log ALL feed changes to DB so we can inspect what Meta sends
             if (change.field === 'feed' || change.field === 'comments' || change.field === 'live_comments') {
               console.log('[Webhook Feed Change]', JSON.stringify({ field: change.field, value: change.value }));
               // Persist incoming comment payload immediately regardless of automation state
-              if ((isFacebookComment || isInstagramComment) && change.value?.comment_id) {
-                const v = change.value;
-                const commentId = v.comment_id || v.id;
-                const postId = v.post_id || v.parent_id || v.media?.id || '';
-                const commentText = v.message || v.text || '';
-                const senderName = v.from?.name || v.from?.username || 'Customer';
-                const senderId = v.from?.id || null;
-                if (commentId && commentText.trim()) {
-                  await supabaseAdmin.from('post_comments').upsert({
-                    shop_id: shop.id,
-                    post_id: postId,
-                    comment_id: commentId,
-                    sender_id: senderId,
-                    sender_name: senderName,
-                    comment_text: commentText,
-                    created_at: new Date((v.created_time || v.timestamp || 0) * 1000 || Date.now()).toISOString(),
-                  }, { onConflict: 'comment_id' });
-                }
+              const v = change.value;
+              const commentId = v?.comment_id || v?.id;
+              const postId = v?.post_id || v?.parent_id || v?.media?.id || v?.post?.id || '';
+              const commentText = v?.message || v?.text || '';
+              const senderName = v?.from?.name || v?.from?.username || v?.username || v?.sender_name || 'Customer';
+              const senderId = v?.from?.id || v?.sender?.id || null;
+
+              if ((isFacebookComment || isInstagramComment) && commentId && commentText.trim()) {
+                await supabaseAdmin.from('post_comments').upsert({
+                  shop_id: shop.id,
+                  post_id: postId,
+                  comment_id: commentId,
+                  sender_id: senderId,
+                  sender_name: senderName,
+                  comment_text: commentText,
+                  created_at: new Date((v.created_time || v.timestamp || 0) * 1000 || Date.now()).toISOString(),
+                }, { onConflict: 'comment_id' });
               }
             }
 
@@ -879,7 +877,9 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
       return;
     }
 
-    const pageAccessToken: string = shop.meta_page_access_token;
+    const pageAccessToken: string = (channel === 'instagram' && shop.instagram_access_token)
+      ? shop.instagram_access_token
+      : (shop.meta_page_access_token || shop.instagram_access_token);
     if (!pageAccessToken) {
       console.warn('[handleCommentEvent] No page access token available for shop:', shop.id);
       return;
@@ -1034,6 +1034,12 @@ Rules:
     if (automation.reply_as_comment) {
       const pubRes = await replyToComment(commentId, replyText, pageAccessToken);
       console.log(`[handleCommentEvent] Public reply response for comment ${commentId}:`, pubRes);
+      if (pubRes.success) {
+        await supabaseAdmin
+          .from('post_comments')
+          .update({ replied_at: new Date().toISOString() })
+          .eq('comment_id', commentId);
+      }
     }
 
     // ── Send private Messenger reply (Phase 4) ────────────────────────────
@@ -1048,6 +1054,12 @@ Rules:
 
         const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
         console.log(`[handleCommentEvent] Private reply response for comment ${commentId}:`, prResult);
+        if (prResult.success) {
+          await supabaseAdmin
+            .from('post_comments')
+            .update({ private_reply_sent: true })
+            .eq('comment_id', commentId);
+        }
       }
     }
   } catch (err) {

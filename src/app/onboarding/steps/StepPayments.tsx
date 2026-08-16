@@ -155,6 +155,18 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
     setLoading(false);
   };
 
+  const handleSkip = async () => {
+    setLoading(true);
+    try {
+      await savePaymentChoice(shop.id, 'skip');
+      onNext();
+    } catch (_) {
+      onNext();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-white text-xs focus:border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ease-out placeholder:text-white/30';
 
   return (
@@ -380,9 +392,21 @@ export default function StepPayments({ shop, onNext, onBack }: Props) {
       {/* Pinned nav */}
       <div className="flex items-center justify-between pt-3 pb-2 shrink-0 border-t border-white/8 mt-auto z-20">
         <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white active:scale-[0.98] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg px-1"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button onClick={handleContinue} disabled={!choice || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-        </button>
+        <div className="flex items-center gap-2">
+          {!choice && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={loading}
+              className="px-4 py-2 text-xs font-semibold text-white/50 hover:text-white transition-all active:scale-[0.98] rounded-full hover:bg-white/5 cursor-pointer"
+            >
+              Skip for now
+            </button>
+          )}
+          <button onClick={handleContinue} disabled={!choice || loading} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+          </button>
+        </div>
       </div>
     </motion.div>
   );
