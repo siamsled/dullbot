@@ -146,12 +146,12 @@ export default function AnalyticsClient({
       }
       return res;
     },
-    initialData: dataCache[activeRange],
+    placeholderData: (previousData) => previousData || dataCache[activeRange],
     staleTime: 1000 * 60 * 15,
     refetchOnWindowFocus: false,
   });
 
-  const currentData = data || dataCache[activeRange] || initialDataObj;
+  const currentData = data || dataCache[activeRange] || (activeRange === initialRange ? initialDataObj : dataCache[initialRange] || initialDataObj);
 
   const handleRangeChange = (newRange: number) => {
     setActiveRange(newRange);
@@ -183,14 +183,14 @@ export default function AnalyticsClient({
   } = (currentData as any) || {};
 
   // ── Derived Summary Metrics for Revenue Trend Context ──
-  const totalPeriodRevenue = (revenueTrend || []).reduce((acc: number, r: any) => acc + (Number(r.revenue) || 0), 0);
-  const effectiveDays = activeRange === 0 ? Math.max(revenueTrend.length, 1) : activeRange;
+  const totalPeriodRevenue = (revenueTrend || []).reduce((acc: number, r: any) => acc + (Number(r?.revenue) || 0), 0);
+  const effectiveDays = activeRange === 0 ? Math.max((revenueTrend || []).length * 30, 30) : activeRange;
   const avgDailyRevenue = Math.round(totalPeriodRevenue / Math.max(effectiveDays, 1));
-  const peakDayObj = (revenueTrend || []).reduce((max: any, curr: any) => (Number(curr.revenue) > (Number(max?.revenue) || 0) ? curr : max), null);
+  const peakDayObj = (revenueTrend || []).reduce((max: any, curr: any) => (Number(curr?.revenue || 0) > Number(max?.revenue || 0) ? curr : max), null);
 
   // ── Heatmap Stats ──
-  const totalHeatmapOrders = (peakTimes || []).flatMap((row: any) => row).reduce((a: number, b: number) => a + b, 0);
-  const maxPeak = Math.max(...(peakTimes || []).flatMap((row: any) => row), 1);
+  const totalHeatmapOrders = (peakTimes || []).flatMap((row: any) => row || []).reduce((a: number, b: number) => (Number(a) || 0) + (Number(b) || 0), 0);
+  const maxPeak = Math.max(...(peakTimes || []).flatMap((row: any) => row || []), 1);
 
   // ── Margin Status Helpers ──
   const marginPct = Number(profitMargins?.marginPercent ?? 0);

@@ -40,7 +40,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
     weekly: stats,
   });
 
-  const { data: currentStats = statsCache[rangeType] || stats } = useQuery({
+  const { data: fetchedStats, isFetching } = useQuery({
     queryKey: ['overview-stats', shop.id, rangeType, customStart, customEnd],
     queryFn: async () => {
       if (rangeType === 'custom' && (!customStart || !customEnd)) return stats;
@@ -51,12 +51,14 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
       }
       return stats;
     },
-    initialData: statsCache[rangeType] || (rangeType === 'weekly' ? stats : undefined),
+    placeholderData: (previousData) => previousData || statsCache[rangeType],
     staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+
+  const currentStats: ShopStats = fetchedStats || statsCache[rangeType] || (rangeType === 'weekly' ? stats : fetchedStats || statsCache.weekly || stats);
 
   useEffect(() => {
     setIsBannerDismissed(localStorage.getItem(BANNER_DISMISSED_KEY) === '1');
@@ -156,13 +158,15 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
 
   // Micro-Sparkline Component
   const Sparkline = ({ data, color = '#38BDF8' }: { data: number[]; color?: string }) => {
-    const chartData = (data || []).map((v, i) => ({ day: i, val: v }));
+    const safeData = Array.isArray(data) && data.length > 0 ? data : [0, 0, 0, 0];
+    const chartData = safeData.map((v, i) => ({ day: i, val: Number(v) || 0 }));
+    const colorKey = color.replace(/[^a-zA-Z0-9]/g, '');
     return (
       <div className="h-10 w-full mt-3 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
             <defs>
-              <linearGradient id={`spark-${color}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={`spark-${colorKey}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={color} stopOpacity={0.25} />
                 <stop offset="100%" stopColor={color} stopOpacity={0.0} />
               </linearGradient>
@@ -172,7 +176,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
               dataKey="val"
               stroke={color}
               strokeWidth={2}
-              fill={`url(#spark-${color})`}
+              fill={`url(#spark-${colorKey})`}
               dot={false}
               isAnimationActive={false}
             />
@@ -391,12 +395,12 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
         >
           {[
-            { label: 'Revenue', value: `৳${currentStats.revenueTotal.toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.revenueDelta, sub: 'vs prev', icon: Package, color: '#38BDF8' },
-            { label: 'Orders', value: currentStats.ordersTotal, series: currentStats.ordersSeries, delta: currentStats.ordersDelta, sub: 'vs prev', icon: ShoppingBag, color: '#3B82F6' },
-            { label: 'Avg Order Value', value: `৳${(currentStats.aovTotal ?? 0).toLocaleString()}`, series: currentStats.revenueSeries, delta: currentStats.aovDelta, sub: 'vs prev', icon: TrendingUp, color: '#10B981' },
-            { label: 'Conversion %', value: `${currentStats.inquiryConvRate ?? 0}%`, series: currentStats.convSeries, delta: null, sub: 'inquiry → order', icon: Users, color: '#A855F7' },
-            { label: 'AI Autopilot Rate', value: `${currentStats.autopilotRate}%`, series: currentStats.autopilotSeries, delta: null, sub: 'resolved by bot', icon: Activity, color: '#06B6D4' },
-            { label: 'Customer Pulse', value: `${currentStats.todayNewCustomers ?? 0}n / ${currentStats.todayReturningCustomers ?? 0}r`, series: currentStats.ordersSeries, delta: null, sub: "today's split", icon: Users, color: '#F59E0B' },
+            { label: 'Revenue', value: `৳${(currentStats?.revenueTotal ?? 0).toLocaleString()}`, series: currentStats?.revenueSeries || [], delta: currentStats?.revenueDelta, sub: 'vs prev', icon: Package, color: '#38BDF8' },
+            { label: 'Orders', value: (currentStats?.ordersTotal ?? 0).toLocaleString(), series: currentStats?.ordersSeries || [], delta: currentStats?.ordersDelta, sub: 'vs prev', icon: ShoppingBag, color: '#3B82F6' },
+            { label: 'Avg Order Value', value: `৳${(currentStats?.aovTotal ?? 0).toLocaleString()}`, series: currentStats?.revenueSeries || [], delta: currentStats?.aovDelta, sub: 'vs prev', icon: TrendingUp, color: '#10B981' },
+            { label: 'Conversion %', value: `${currentStats?.inquiryConvRate ?? 0}%`, series: currentStats?.convSeries || [], delta: null, sub: 'inquiry → order', icon: Users, color: '#A855F7' },
+            { label: 'AI Autopilot Rate', value: `${currentStats?.autopilotRate ?? 0}%`, series: currentStats?.autopilotSeries || [], delta: null, sub: 'resolved by bot', icon: Activity, color: '#06B6D4' },
+            { label: 'Customer Pulse', value: `${currentStats?.todayNewCustomers ?? 0}n / ${currentStats?.todayReturningCustomers ?? 0}r`, series: currentStats?.ordersSeries || [], delta: null, sub: "today's split", icon: Users, color: '#F59E0B' },
           ].map((tile, idx) => (
             <div
               key={idx}

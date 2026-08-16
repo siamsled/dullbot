@@ -36,13 +36,13 @@ export function extractDistrict(address: string): string | null {
 export interface ShopStats {
   revenueSeries: number[];
   revenueTotal: number;
-  revenueDelta: number;
+  revenueDelta: number | null;
   ordersSeries: number[];
   ordersTotal: number;
-  ordersDelta: number;
+  ordersDelta: number | null;
   convSeries: number[];
   convsTotal: number;
-  convDelta: number;
+  convDelta: number | null;
   autopilotRate: number;
   autopilotSeries: number[];
   funnelConversations: number;
@@ -58,7 +58,7 @@ export interface ShopStats {
   lowStockStandalone?: number;
   // Enhanced metrics
   aovTotal: number;
-  aovDelta: number;
+  aovDelta: number | null;
   inquiryConvRate: number;
   todayCashInTill: number;
   todayPosRevenue: number;
@@ -203,12 +203,16 @@ export async function getShopStats(
   const revenueSeries = buildCustomSeries(orders7 ?? [], startStr, endStr, rangeType, (o: any) => Number(o.total_amount ?? 0));
   const revenueTotal = revenueSeries.reduce((a, b) => a + b, 0);
   const revenuePrev = (orders14 ?? []).reduce((s: number, o: any) => s + Number(o.total_amount ?? 0), 0);
-  const revenueDelta = revenuePrev > 0 ? Math.round(((revenueTotal - revenuePrev) / revenuePrev) * 100) : 0;
+  const revenueDelta = revenuePrev > 0 
+    ? Math.round(((revenueTotal - revenuePrev) / revenuePrev) * 100) 
+    : revenueTotal > 0 ? 100 : null;
 
   const ordersSeries = buildCustomSeries(orders7 ?? [], startStr, endStr, rangeType, () => 1);
   const ordersTotal = (orders7 ?? []).length;
   const ordersPrev = (orders14 ?? []).length;
-  const ordersDelta = ordersPrev > 0 ? Math.round(((ordersTotal - ordersPrev) / ordersPrev) * 100) : 0;
+  const ordersDelta = ordersPrev > 0 
+    ? Math.round(((ordersTotal - ordersPrev) / ordersPrev) * 100) 
+    : ordersTotal > 0 ? 100 : null;
 
   // Average Order Value (AOV)
   const confirmed7 = (orders7 ?? []).filter((o: any) => ['confirmed', 'fulfilled'].includes(o.status));
@@ -217,12 +221,16 @@ export async function getShopStats(
   const confirmedRevenue14 = confirmed14.reduce((s: number, o: any) => s + Number(o.total_amount ?? 0), 0);
   const aovTotal = confirmed7.length > 0 ? Math.round(confirmedRevenue7 / confirmed7.length) : 0;
   const aovPrev = confirmed14.length > 0 ? Math.round(confirmedRevenue14 / confirmed14.length) : 0;
-  const aovDelta = aovPrev > 0 ? Math.round(((aovTotal - aovPrev) / aovPrev) * 100) : 0;
+  const aovDelta = aovPrev > 0 
+    ? Math.round(((aovTotal - aovPrev) / aovPrev) * 100) 
+    : aovTotal > 0 ? 100 : null;
 
   const convSeries = buildCustomSeries(convs7 ?? [], startStr, endStr, rangeType, () => 1);
   const convsTotal = (convs7 ?? []).length;
   const convsPrev = (convs14 ?? []).length;
-  const convDelta = convsPrev > 0 ? Math.round(((convsTotal - convsPrev) / convsPrev) * 100) : 0;
+  const convDelta = convsPrev > 0 
+    ? Math.round(((convsTotal - convsPrev) / convsPrev) * 100) 
+    : convsTotal > 0 ? 100 : null;
 
   // Overall Inquiry -> Order Conversion %
   const inquiryConvRate = convsTotal > 0 ? Math.round((confirmed7.length / convsTotal) * 100) : 0;
