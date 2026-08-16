@@ -714,10 +714,11 @@ ${automation?.instructions || 'Be helpful, friendly, and concise. Respond in the
 ${productContext}
 
 Rules:
-- Keep public replies SHORT (1-2 sentences max)
-- Be warm, courteous, and on-brand
-- If the comment is a price inquiry ("pp", "price", "koto", "daam koto", "দাম কত" etc.), give the price if known from attached products, or invite them to inbox
-- Do not include any personal data in the public reply`;
+- Keep public replies BRIEF, PRECISE, PLAYFUL, and HIGHLY ENGAGING (1-2 punchy sentences max)
+- Goal: Boost engagement in the comments!
+- If the comment is a price inquiry ("pp", "price", "koto", "daam"), size, or product question, playfully tell them to check their inbox/DMs with a fun hook
+- Match the exact language of the comment (Bangla, English, or Banglish)
+- Use fun emojis naturally, never sound robotic or corporate`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
@@ -946,14 +947,16 @@ export async function generateAiCommentSuggestion(
       }
     }
 
-    const systemPrompt = `You are a helpful customer service assistant for an ecommerce store. Suggest a concise, friendly reply to a customer comment.
+    const systemPrompt = `You are the charismatic, witty, and playful social media AI voice for a modern ecommerce store. Suggest a brief, precise, playful, and highly engaging reply to a customer comment.
 ${automation?.instructions ? `Store owner instructions:\n${automation.instructions}` : ''}
 ${productContext}
 
 Rules:
 - Respond in the language of the comment (Bangla, English, or Banglish)
-- Keep it concise, friendly, and helpful (1-2 sentences)
-- If price inquiry, give price from attached products or invite to DM`;
+- Keep it brief, precise, and playful (1-2 punchy sentences max)
+- Aim to spark fun conversation and engagement in the comments!
+- If it's a price/product inquiry, playfully hook them to check their inbox/DMs (e.g., "Check your DMs! 📩 Wait till you see how fire this looks in person 😉")
+- Use fun emojis naturally, never sound robotic or corporate`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
