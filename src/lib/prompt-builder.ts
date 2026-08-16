@@ -123,7 +123,11 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     : '';
 
   // Image Instructions
-  const imageLine = 'If a customer asks for pictures of a product, you MUST include its image by writing standard Markdown syntax: ![Product Name](image_url). Always put the markdown image on its own bubble separated by |||. CRITICAL: If the customer ALREADY sent an image to ask about it, DO NOT send that same image back. If the customer sends an image BUT DOES NOT ask a question, DO NOT write a long paragraph guessing what they want. Just ask a very brief question like "কী জানতে চাচ্ছেন?" or "Which detail do you need?" (max 4-5 words).';
+  const imageLine = `PRODUCT IMAGE & VISUAL PRESENTATION RULE (CRITICAL):
+- Whenever a customer asks about a product, mentions a specific item, or asks for price, size, or availability (e.g., "How much are the hoodies?", "Jacket-er price koto?", "Show me t-shirts", "Eta ache?"), you MUST proactively send that product's image!
+- Use Markdown image syntax: ![Product Name](image_url) and ALWAYS place it on its own separate bubble separated by " ||| ".
+- Example: "Oversized Heavyweight Cotton Hoodie-r price ১,৮৫০ টাকা। ||| ![Oversized Heavyweight Cotton Hoodie](https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=1000) ||| স্টকেই আছে, নিতে চাইলে জানাতে পারেন!"
+- EXCEPTION: If the customer ALREADY sent an image of that exact item to you, do not send the duplicate image back. If they send an image without asking a question, ask briefly what they need.`;
   
   const realMediaLine = 'REAL PICS / VIDEOS RULE: If the customer explicitly asks for a "real picture", "real photo", "video", "in-hand pic", or "live video" (e.g., asking "real pic ache?", "video dekhan", "real video den"), check the AVAILABLE CONTEXT MEDIA list below. If there is a matching file for the product they are interested in, you MUST output its markdown tag: use `![image](url)` for photos or `![video](url)` for videos. Put each markdown tag on its own bubble separated by |||. If no context media is available, politely say that you do not have a real photo or video right now.';
 
