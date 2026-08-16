@@ -111,13 +111,15 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
 
           <div className="grid grid-cols-1 gap-3.5 w-full">
             {[
-              { id: 'retail', title: 'E-commerce / Retail', desc: 'Manage inventory, variants, shipping, and automated product checkout suggestions.' },
-              { id: 'service', title: 'Service-Based', desc: 'Appointments, clinic time slots, or tutoring package schedules.' },
-              { id: 'wholesale', title: 'Wholesale / B2B', desc: 'Bulk order sheets, price tiers, and custom quotes.' }
+              { id: 'retail', title: 'E-commerce / Retail', desc: 'Manage inventory, variants, shipping, and automated product checkout suggestions.', available: true },
+              { id: 'service', title: 'Service-Based', desc: 'Appointments, clinic time slots, or tutoring package schedules.', available: false },
+              { id: 'wholesale', title: 'Wholesale / B2B', desc: 'Bulk order sheets, price tiers, and custom quotes.', available: false }
             ].map((type) => (
               <button
                 key={type.id}
+                disabled={!type.available}
                 onClick={async () => {
+                  if (!type.available) return;
                   const res = await saveBusinessType(shop.id, type.id);
                   if (res.success) {
                     setShop((prev: any) => ({
@@ -129,11 +131,19 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
                     alert(res.error);
                   }
                 }}
-                className="flex flex-col items-start p-5 rounded-2xl border border-dove/20 hover:border-ink hover:bg-fog transition-all text-left group active:scale-[0.99]"
+                className={`flex flex-col items-start p-5 rounded-2xl border transition-all text-left group ${
+                  !type.available
+                    ? 'border-dove/10 bg-fog/50 opacity-50 cursor-not-allowed select-none'
+                    : 'border-dove/20 hover:border-ink hover:bg-fog active:scale-[0.99]'
+                }`}
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="font-bold text-ink group-hover:text-rust transition-colors text-sm">{type.title}</span>
-                  <span className="text-[10px] text-ash group-hover:text-ink font-bold uppercase tracking-wider">Select &rarr;</span>
+                  <span className={`font-bold transition-colors text-sm ${!type.available ? 'text-ash' : 'text-ink group-hover:text-rust'}`}>{type.title}</span>
+                  {!type.available ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-dove/20 text-ash font-bold uppercase tracking-wider">Coming Soon</span>
+                  ) : (
+                    <span className="text-[10px] text-ash group-hover:text-ink font-bold uppercase tracking-wider">Select &rarr;</span>
+                  )}
                 </div>
                 <p className="text-xs text-ash leading-relaxed">{type.desc}</p>
               </button>

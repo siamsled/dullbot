@@ -6,15 +6,17 @@ import { Store, Utensils, Scissors, ArrowRight, Check, Loader2 } from 'lucide-re
 import { saveBusinessType } from '../../dashboard/actions';
 
 const BUSINESS_TYPES = [
-  { id: 'retail', title: 'Retail & E-commerce', desc: 'Boutiques, clothing, gadget & D2C shops', icon: Store },
-  { id: 'restaurant', title: 'Restaurant & Food', desc: 'Cafés, cloud kitchens, food delivery', icon: Utensils },
-  { id: 'service', title: 'Service Business', desc: 'Salons, parlors, clinics, tutoring & bookings', icon: Scissors },
+  { id: 'retail', title: 'Retail & E-commerce', desc: 'Boutiques, clothing, gadget & D2C shops', icon: Store, available: true },
+  { id: 'restaurant', title: 'Restaurant & Food', desc: 'Cafés, cloud kitchens, food delivery', icon: Utensils, available: false },
+  { id: 'service', title: 'Service Business', desc: 'Salons, parlors, clinics, tutoring & bookings', icon: Scissors, available: false },
 ];
 
 interface Props { shop: any; onNext: (businessType: string) => void; onBack: () => void; }
 
 export default function StepBusinessType({ shop, onNext }: Props) {
-  const [selected, setSelected] = useState<string>(shop.business_type || '');
+  const [selected, setSelected] = useState<string>(
+    shop.business_type && shop.business_type === 'retail' ? 'retail' : 'retail'
+  );
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
@@ -38,29 +40,50 @@ export default function StepBusinessType({ shop, onNext }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {BUSINESS_TYPES.map((type) => {
               const Icon = type.icon;
-              const isSelected = selected === type.id;
+              const isSelected = selected === type.id && type.available;
+              const isAvailable = type.available;
+
               return (
                 <button
                   key={type.id}
-                  onClick={() => setSelected(type.id)}
-                  disabled={loading}
-                  className={`relative p-6 rounded-2xl border text-left flex flex-col gap-4 transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
-                    isSelected
-                      ? 'border-white/30 bg-white/12 shadow-md shadow-black/40'
-                      : 'border-white/10 bg-white/4 hover:border-white/20 hover:bg-white/8'
+                  onClick={() => {
+                    if (isAvailable) setSelected(type.id);
+                  }}
+                  disabled={!isAvailable || loading}
+                  className={`relative p-6 rounded-2xl border text-left flex flex-col gap-4 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                    !isAvailable
+                      ? 'border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed select-none'
+                      : isSelected
+                      ? 'border-white/30 bg-white/12 shadow-md shadow-black/40 active:scale-[0.98]'
+                      : 'border-white/10 bg-white/4 hover:border-white/20 hover:bg-white/8 active:scale-[0.98]'
                   }`}
                 >
+                  {/* Selected Checkmark */}
                   {isSelected && (
                     <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm">
                       <Check className="w-3.5 h-3.5 text-black stroke-[2.5]" />
                     </div>
                   )}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-200 ${isSelected ? 'bg-white text-black' : 'bg-white/8 text-white/70'}`}>
+
+                  {/* Coming Soon Pill */}
+                  {!isAvailable && (
+                    <div className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-[10px] font-semibold text-white/70 tracking-wide uppercase">
+                      Coming Soon
+                    </div>
+                  )}
+
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+                    !isAvailable
+                      ? 'bg-white/5 text-white/30'
+                      : isSelected
+                      ? 'bg-white text-black'
+                      : 'bg-white/8 text-white/70'
+                  }`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white text-sm mb-1">{type.title}</h3>
-                    <p className="text-xs text-white/50 leading-relaxed">{type.desc}</p>
+                    <h3 className={`font-semibold text-sm mb-1 ${!isAvailable ? 'text-white/60' : 'text-white'}`}>{type.title}</h3>
+                    <p className={`text-xs leading-relaxed ${!isAvailable ? 'text-white/30' : 'text-white/50'}`}>{type.desc}</p>
                   </div>
                 </button>
               );
