@@ -837,12 +837,21 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
       return;
     }
 
-    // Ignore bot's own comments from the page or IG account
-    if (
-      (shop.meta_page_id && commenterPsid === shop.meta_page_id) ||
-      (shop.instagram_business_id && commenterPsid === shop.instagram_business_id)
-    ) {
-      console.log('[handleCommentEvent] Ignoring comment from page owner/bot itself.');
+    // Query all connected page IDs and IG account IDs for this shop to ensure we never reply to the bot itself
+    const { data: allPages } = await supabaseAdmin
+      .from('shop_meta_pages')
+      .select('meta_page_id, instagram_business_id, meta_page_access_token, instagram_access_token')
+      .eq('shop_id', shop.id);
+
+    const ownerIds = new Set<string>([
+      shop.meta_page_id,
+      shop.instagram_business_id,
+      ...(allPages || []).map((p: any) => p.meta_page_id),
+      ...(allPages || []).map((p: any) => p.instagram_business_id),
+    ].filter(Boolean));
+
+    if (commenterPsid && ownerIds.has(commenterPsid)) {
+      console.log('[handleCommentEvent] Ignoring comment from page owner/bot itself:', commenterPsid);
       return;
     }
 
@@ -877,9 +886,19 @@ async function handleCommentEvent(shop: any, value: any, channel: 'messenger' | 
       return;
     }
 
-    const pageAccessToken: string = (channel === 'instagram' && shop.instagram_access_token)
+    // Resolve specific page token matching the post's page prefix if on Facebook
+    let pageAccessToken: string = (channel === 'instagram' && shop.instagram_access_token)
       ? shop.instagram_access_token
       : (shop.meta_page_access_token || shop.instagram_access_token);
+
+    const postPrefix = automation.post_id.includes('_') ? automation.post_id.split('_')[0] : null;
+    if (channel === 'messenger' && postPrefix && allPages?.length) {
+      const matchedPage = allPages.find((p: any) => p.meta_page_id === postPrefix);
+      if (matchedPage?.meta_page_access_token) {
+        pageAccessToken = matchedPage.meta_page_access_token;
+      }
+    }
+
     if (!pageAccessToken) {
       console.warn('[handleCommentEvent] No page access token available for shop:', shop.id);
       return;
@@ -1034,12 +1053,6 @@ Rules:
     if (automation.reply_as_comment) {
       const pubRes = await replyToComment(commentId, replyText, pageAccessToken);
       console.log(`[handleCommentEvent] Public reply response for comment ${commentId}:`, pubRes);
-      if (pubRes.success) {
-        await supabaseAdmin
-          .from('post_comments')
-          .update({ replied_at: new Date().toISOString() })
-          .eq('comment_id', commentId);
-      }
     }
 
     // ── Send private Messenger reply (Phase 4) ────────────────────────────
@@ -1054,12 +1067,6 @@ Rules:
 
         const prResult = await sendPrivateReply(commentId, privateReplyText, pageAccessToken);
         console.log(`[handleCommentEvent] Private reply response for comment ${commentId}:`, prResult);
-        if (prResult.success) {
-          await supabaseAdmin
-            .from('post_comments')
-            .update({ private_reply_sent: true })
-            .eq('comment_id', commentId);
-        }
       }
     }
   } catch (err) {

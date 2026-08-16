@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/facebook/callback`;
 
   // Valid Meta OAuth Scopes for Facebook Messenger, Facebook Page Comments, Instagram DMs & comments, and WhatsApp
-  const scopes = 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,pages_read_user_content,pages_manage_posts,instagram_basic,instagram_manage_messages,instagram_manage_comments,business_management,whatsapp_business_messaging,whatsapp_business_management';
+  const scopes = 'pages_show_list,pages_messaging,pages_manage_metadata,pages_manage_engagement,pages_read_engagement,pages_read_user_content,pages_manage_posts,instagram_basic,instagram_manage_messages,instagram_manage_comments,business_management,whatsapp_business_messaging,whatsapp_business_management';
 
   const stateObj = { shopId: shopId || 'dull-store', source: source || 'settings' };
   const state = Buffer.from(JSON.stringify(stateObj)).toString('base64');

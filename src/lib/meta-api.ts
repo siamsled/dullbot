@@ -111,7 +111,8 @@ export async function sendMetaMessage(
 
 /**
  * Post a public comment reply on a Facebook/Instagram post comment.
- * Requires pages_manage_engagement scope on the page access token.
+ * Requires pages_manage_engagement scope on the page access token for Facebook,
+ * or instagram_manage_comments for Instagram.
  */
 export async function replyToComment(
   commentId: string,
@@ -119,9 +120,9 @@ export async function replyToComment(
   pageAccessToken: string
 ): Promise<{ success: boolean; commentId?: string; error?: string }> {
   try {
-    // 1. Try Facebook /comments endpoint first
+    // 1. Try Instagram /replies endpoint first if numeric comment ID or if IG format
     let response = await fetch(
-      `https://graph.facebook.com/v19.0/${commentId}/comments?access_token=${pageAccessToken}`,
+      `https://graph.facebook.com/v19.0/${commentId}/replies?access_token=${pageAccessToken}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -130,19 +131,37 @@ export async function replyToComment(
     );
     let data = await response.json();
 
-    // 2. If Facebook /comments endpoint failed (e.g. Instagram comment returns code 100 / subcode 33 / GraphMethodException),
-    //    try Instagram /replies endpoint:
-    if (!response.ok && (data.error?.code === 100 || data.error?.error_subcode === 33 || data.error?.message?.includes('support this operation') || data.error?.type === 'GraphMethodException')) {
-      response = await fetch(
-        `https://graph.facebook.com/v19.0/${commentId}/replies?access_token=${pageAccessToken}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
-        }
-      );
-      data = await response.json();
+    if (response.ok && data.id) {
+      return { success: true, commentId: data.id };
     }
+
+    // 2. Try Facebook /comments endpoint with URLSearchParams
+    response = await fetch(
+      `https://graph.facebook.com/v19.0/${commentId}/comments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          message: text,
+          access_token: pageAccessToken,
+        }),
+      }
+    );
+    data = await response.json();
+
+    if (response.ok && data.id) {
+      return { success: true, commentId: data.id };
+    }
+
+    // 3. Fallback: Facebook /comments endpoint with JSON
+    response = await fetch(
+      `https://graph.facebook.com/v19.0/${commentId}/comments?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      }
+    );
+    data = await response.json();
 
     if (!response.ok) {
       return { success: false, error: data.error?.message || 'Comment reply failed' };

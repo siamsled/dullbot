@@ -603,7 +603,6 @@ export async function fetchPostComments(postId: string, platform: 'facebook' | '
                   comment_text: message,
                   reply_text: replyText,
                   created_at: createdAt,
-                  ...(repliedAt ? { replied_at: repliedAt } : {}),
                 });
 
                 if (commentsMap.has(commentId)) {
@@ -881,7 +880,6 @@ export async function sendManualCommentReply(
         post_id: postId,
         comment_id: commentId,
         reply_text: replyText,
-        replied_at: new Date().toISOString(),
       }, { onConflict: 'comment_id' });
 
       if (
@@ -900,7 +898,6 @@ export async function sendManualCommentReply(
       post_id: postId,
       comment_id: commentId,
       reply_text: replyText,
-      replied_at: new Date().toISOString(),
     }, { onConflict: 'comment_id' });
 
     return {
