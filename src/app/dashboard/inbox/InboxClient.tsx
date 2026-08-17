@@ -989,23 +989,26 @@ export default function InboxClient({
                       : 'text-ash hover:text-ink'
                   }`}
                 >
-                  <span>All Pages ({connectedPages.length})</span>
+                  <span>All Pages ({conversations.filter(c => !c.is_test).length})</span>
                 </button>
-                {connectedPages.map(page => (
-                  <button
-                    key={page.meta_page_id}
-                    type="button"
-                    onClick={() => setPageFilter(page.meta_page_id)}
-                    className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
-                      pageFilter === page.meta_page_id
-                        ? 'bg-[#0084FF] text-white shadow-xs'
-                        : 'text-ash hover:text-ink'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span>{page.meta_page_name}</span>
-                  </button>
-                ))}
+                {connectedPages.map(page => {
+                  const pageConvCount = conversations.filter(c => !c.is_test && (c.meta_page_id === page.meta_page_id || c.handoff_summary?.meta_page_id === page.meta_page_id)).length;
+                  return (
+                    <button
+                      key={page.meta_page_id}
+                      type="button"
+                      onClick={() => setPageFilter(page.meta_page_id)}
+                      className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
+                        pageFilter === page.meta_page_id
+                          ? 'bg-[#0084FF] text-white shadow-xs'
+                          : 'text-ash hover:text-ink'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${pageFilter === page.meta_page_id ? 'bg-white' : 'bg-blue-400'}`} />
+                      <span>{page.meta_page_name} ({pageConvCount})</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -1061,7 +1064,8 @@ export default function InboxClient({
 
                 // 2.5 Multi-Page Filter
                 if (pageFilter !== 'all') {
-                  if (conv.meta_page_id && conv.meta_page_id !== pageFilter) return false;
+                  const convPageId = conv.meta_page_id || conv.handoff_summary?.meta_page_id;
+                  if (convPageId !== pageFilter) return false;
                 }
 
                 // 3. Tab filter
@@ -1164,7 +1168,7 @@ export default function InboxClient({
                         )}
                         {chType === 'messenger' && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#0084FF]/10 text-[#0084FF] border border-[#0084FF]/20">
-                            <ChannelIcon channel="messenger" className="w-2.5 h-2.5" /> Messenger
+                            <ChannelIcon channel="messenger" className="w-2.5 h-2.5" /> {conv.meta_page_name || conv.handoff_summary?.meta_page_name || 'Messenger'}
                           </span>
                         )}
 
@@ -1253,7 +1257,15 @@ export default function InboxClient({
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-ash capitalize leading-none mt-0.5">via {activeConv?.channel}</p>
+                        <p className="text-[10px] text-ash leading-none mt-0.5">
+                          via {activeConv?.channel === 'messenger'
+                            ? `Facebook (${activeConv.meta_page_name || activeConv.handoff_summary?.meta_page_name || 'Messenger'})`
+                            : activeConv?.channel === 'instagram'
+                            ? 'Instagram Direct'
+                            : activeConv?.channel === 'whatsapp'
+                            ? 'WhatsApp'
+                            : activeConv?.channel || 'Messenger'}
+                        </p>
                       </div>
                     </>
                   );

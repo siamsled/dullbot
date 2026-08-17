@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         // ORDER by instagram_business_id nulls-last so the row WITH IG wins when the same page exists in multiple shops
         const { data: pageRows } = await supabaseAdmin
           .from('shop_meta_pages')
-          .select('shop_id, meta_page_access_token, instagram_business_id, instagram_access_token')
+          .select('shop_id, meta_page_id, meta_page_name, meta_page_access_token, instagram_business_id, instagram_access_token')
           .or(`meta_page_id.eq.${pageId},instagram_business_id.eq.${pageId}`)
           .order('instagram_business_id', { ascending: false, nullsFirst: false });
         // For Instagram channel, prefer the row with instagram_business_id set; else pick first
@@ -225,6 +225,8 @@ export async function POST(request: Request) {
                 .eq('customer_phone', senderId)
                 .single();
 
+              const targetPageName = pageRow?.meta_page_name || shop.meta_page_name || 'Facebook Page';
+
               if (!conversation) {
                 const { data: newConv } = await supabaseAdmin
                   .from('conversations')
@@ -232,7 +234,8 @@ export async function POST(request: Request) {
                     shop_id: shop.id,
                     customer_phone: senderId,
                     channel: incomingChannel,
-                    status: 'bot_active'
+                    status: 'bot_active',
+                    handoff_summary: { meta_page_id: pageId, meta_page_name: targetPageName }
                   })
                   .select()
                   .single();
@@ -241,6 +244,14 @@ export async function POST(request: Request) {
                 const updateData: any = {};
                 if (conversation.channel !== incomingChannel) updateData.channel = incomingChannel;
                 if (conversation.status === 'closed') updateData.status = 'bot_active';
+                const existingHandoff = (conversation.handoff_summary && typeof conversation.handoff_summary === 'object') ? conversation.handoff_summary : {};
+                if (!existingHandoff.meta_page_id) {
+                  updateData.handoff_summary = {
+                    ...existingHandoff,
+                    meta_page_id: pageId,
+                    meta_page_name: targetPageName
+                  };
+                }
                 if (Object.keys(updateData).length > 0) {
                   const { data: updatedConv } = await supabaseAdmin
                     .from('conversations')

@@ -300,7 +300,11 @@ export async function getConversations(shopId: string) {
     }
   }
 
-  return conversations;
+  return conversations.map(c => ({
+    ...c,
+    meta_page_id: c.meta_page_id || c.handoff_summary?.meta_page_id || null,
+    meta_page_name: c.meta_page_name || c.handoff_summary?.meta_page_name || null,
+  }));
 }
 
 export async function resolveFacebookProfile(psid: string, shopId: string) {
