@@ -737,12 +737,12 @@ export default function SettingsClient({ shop }: Props) {
               Connected Communication Channels
             </SectionLabel>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
               {/* 1. FACEBOOK PAGES */}
-              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-blue-500/30 dark:hover:border-blue-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 sm:p-7 border border-dove/15 dark:border-white/10 hover:border-blue-500/30 dark:hover:border-blue-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden min-h-[340px]">
                 {/* Subtle Ambient Brand Glow */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-40" />
 
                 <div className="relative z-10">
                   {/* Card Header: Icon & Status */}
@@ -751,7 +751,7 @@ export default function SettingsClient({ shop }: Props) {
                       <MessageSquare className="w-6 h-6 fill-current" />
                     </div>
 
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-tight backdrop-blur-xs transition-all ${
                       connectedPages.length > 0 || !!shop?.meta_page_name
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs'
                         : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
@@ -760,7 +760,7 @@ export default function SettingsClient({ shop }: Props) {
                         connectedPages.length > 0 || !!shop?.meta_page_name ? 'bg-emerald-500 animate-pulse' : 'bg-ash'
                       }`} />
                       {connectedPages.length > 0
-                        ? `${connectedPages.length} Connected`
+                        ? `${connectedPages.length} Page${connectedPages.length === 1 ? '' : 's'} Active`
                         : !!shop?.meta_page_name
                         ? 'Connected'
                         : 'Offline'}
@@ -770,84 +770,84 @@ export default function SettingsClient({ shop }: Props) {
                   {/* Title & Description */}
                   <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Facebook Pages</h4>
                   <p className="text-xs text-ash mt-1 leading-relaxed">
-                    Messenger automated sales & post comments.
+                    Messenger automated customer sales, DMs, and post comments.
                   </p>
 
                   {/* Connected Pages Body */}
-                  <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <div className="mt-5 space-y-2.5 max-h-56 overflow-y-auto pr-1">
                     {connectedPages.length > 0 ? (
                       connectedPages.map(p => (
                         <div
                           key={p.meta_page_id}
-                          className="flex items-center justify-between text-xs bg-fog/80 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/15 dark:border-white/10 hover:border-dove/30 transition-all group/item"
+                          className="flex items-center justify-between text-xs bg-fog/70 dark:bg-white/[0.04] p-3 rounded-2xl border border-dove/15 dark:border-white/10 hover:border-blue-500/20 transition-all group/item"
                         >
-                          <div className="flex items-center gap-2 min-w-0 pr-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                            <span className="font-semibold text-ink dark:text-white truncate text-xs">
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 shadow-xs shadow-blue-500/50" />
+                            <span className="font-semibold text-ink dark:text-white text-xs truncate">
                               {p.meta_page_name}
                             </span>
                             {p.is_primary && (
-                              <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.2 rounded-full shrink-0">
+                              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full shrink-0">
                                 Primary
                               </span>
                             )}
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
                             {p.instagram_business_id && (
                               <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-full shrink-0">
-                                + IG
+                                + IG Attached
                               </span>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => handleDisconnectPage(p.meta_page_id, p.meta_page_name)}
-                              disabled={isPending}
-                              className="p-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title={`Unlink ${p.meta_page_name}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectPage(p.meta_page_id, p.meta_page_name)}
+                            disabled={isPending}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                            title={`Unlink ${p.meta_page_name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Unlink</span>
+                          </button>
                         </div>
                       ))
                     ) : shop?.meta_page_name ? (
-                      <div className="flex items-center justify-between text-xs bg-fog/80 dark:bg-white/[0.04] p-2.5 rounded-xl border border-dove/15 dark:border-white/10 font-semibold text-ink dark:text-white truncate">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <div className="flex items-center justify-between text-xs bg-fog/70 dark:bg-white/[0.04] p-3 rounded-2xl border border-dove/15 dark:border-white/10 font-semibold text-ink dark:text-white">
+                        <div className="flex items-center gap-2.5 truncate">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 shadow-xs shadow-blue-500/50" />
                           <span className="truncate">{shop.meta_page_name}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleDisconnectPage(shop.meta_page_id || '', shop.meta_page_name || '')}
                           disabled={isPending}
-                          className="p-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
                           title="Unlink Facebook Page"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Unlink</span>
                         </button>
                       </div>
                     ) : (
-                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
-                        No Facebook Page linked. Connect to auto-reply to customer DMs.
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                        No Facebook Page linked. Connect a page to activate 24/7 automated sales and comment automation.
                       </p>
                     )}
                   </div>
                 </div>
 
                 {/* Card Footer Actions */}
-                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center justify-between gap-2.5">
+                <div className="relative z-10 pt-5 mt-5 border-t border-dove/10 dark:border-white/10 flex items-center gap-3">
                   <Link
                     href={`/api/auth/facebook/login?shopId=${shop.id}`}
-                    className="flex-1 text-center py-2.5 px-3.5 rounded-xl bg-ink text-pure-white dark:bg-white dark:text-black hover:opacity-90 text-xs font-bold transition-all shadow-subtle flex items-center justify-center gap-1.5"
+                    className="flex-1 text-center py-2.5 px-4 rounded-xl bg-ink text-pure-white dark:bg-white dark:text-black hover:opacity-90 text-xs font-bold transition-all shadow-subtle flex items-center justify-center gap-2"
                   >
-                    <span>{connectedPages.length > 0 || shop?.meta_page_name ? '+ Manage / Add Pages' : 'Connect Facebook'}</span>
+                    <span>{connectedPages.length > 0 || shop?.meta_page_name ? '+ Add / Manage Pages' : 'Connect Facebook'}</span>
                     <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
                   </Link>
                   {connectedPages.length > 1 && (
                     <button
                       onClick={handleDisconnect}
                       disabled={isPending}
-                      className="px-2.5 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+                      className="px-3.5 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer shrink-0"
                       title="Disconnect All Facebook Pages"
                     >
                       Disconnect All
@@ -856,98 +856,10 @@ export default function SettingsClient({ shop }: Props) {
                 </div>
               </div>
 
-              {/* 2. WHATSAPP BUSINESS API */}
-              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+              {/* 2. INSTAGRAM */}
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 sm:p-7 border border-dove/15 dark:border-white/10 hover:border-pink-500/30 dark:hover:border-pink-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden min-h-[340px]">
                 {/* Subtle Ambient Brand Glow */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
-
-                <div className="relative z-10">
-                  {/* Card Header: Icon & Status */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 ring-4 ring-emerald-500/10">
-                      <Smartphone className="w-6 h-6" />
-                    </div>
-
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
-                      !!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs'
-                        : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
-                    }`}>
-                      <span className={`w-2 h-2 rounded-full ${
-                        !!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id ? 'bg-emerald-500 animate-pulse' : 'bg-ash'
-                      }`} />
-                      {!!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id ? 'API Active' : 'Not Configured'}
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <h4 className="text-base font-bold text-ink dark:text-white leading-snug">WhatsApp Business</h4>
-                  <p className="text-xs text-ash mt-1 leading-relaxed">
-                    Official Cloud API for 24/7 WhatsApp chat.
-                  </p>
-
-                  {/* WhatsApp Content Box */}
-                  <div className="mt-4">
-                    {waPhoneId || shop?.whatsapp_phone_number_id ? (
-                      <div className="space-y-2 bg-fog/80 dark:bg-white/[0.04] p-3 rounded-xl border border-dove/15 dark:border-white/10 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-ash font-medium">Phone ID</span>
-                          <span className="font-mono text-ink dark:text-white font-semibold text-xs truncate max-w-[140px]">
-                            {waPhoneId || shop?.whatsapp_phone_number_id}
-                          </span>
-                        </div>
-                        <div className="pt-1.5 border-t border-dove/10 dark:border-white/10 flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                            <span>Cloud Webhook Live</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={handleDisconnectWhatsApp}
-                            disabled={isPending}
-                            className="p-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Unlink WhatsApp"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
-                        Add your Meta Cloud Phone ID & Access Token to activate WhatsApp sales.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card Footer Actions */}
-                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowWaModal(true)}
-                    className="flex-1 text-center py-2.5 px-3.5 rounded-xl bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-ink dark:text-white border border-dove/25 dark:border-white/15 hover:border-ink dark:hover:border-white/40 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-                  >
-                    <span>{waPhoneId || shop?.whatsapp_phone_number_id ? 'Configure API' : 'Setup WhatsApp'}</span>
-                    <Sliders className="w-3.5 h-3.5 text-ash" />
-                  </button>
-                  {(waPhoneId || shop?.whatsapp_phone_number_id) && (
-                    <button
-                      type="button"
-                      onClick={handleDisconnectWhatsApp}
-                      disabled={isPending}
-                      className="px-3 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
-                      title="Unlink WhatsApp"
-                    >
-                      Unlink
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* 3. INSTAGRAM */}
-              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-pink-500/30 dark:hover:border-pink-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
-                {/* Subtle Ambient Brand Glow */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-pink-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-40" />
 
                 {(() => {
                   const igPages = connectedPages.filter(p => !!p.instagram_business_id);
@@ -962,7 +874,7 @@ export default function SettingsClient({ shop }: Props) {
                             <AtSign className="w-6 h-6" />
                           </div>
 
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xs transition-all ${
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-tight backdrop-blur-xs transition-all ${
                             isIgConnected
                               ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 shadow-xs'
                               : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
@@ -970,8 +882,8 @@ export default function SettingsClient({ shop }: Props) {
                             <span className={`w-2 h-2 rounded-full ${
                               isIgConnected ? 'bg-pink-500 animate-pulse' : 'bg-ash'
                             }`} />
-                            {igPages.length > 1
-                              ? `${igPages.length} Linked`
+                            {igPages.length > 0
+                              ? `${igPages.length} Account${igPages.length === 1 ? '' : 's'} Linked`
                               : isIgConnected
                               ? 'Linked'
                               : 'Not Linked'}
@@ -979,29 +891,29 @@ export default function SettingsClient({ shop }: Props) {
                         </div>
 
                         {/* Title & Description */}
-                        <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Instagram DMs</h4>
+                        <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Instagram Direct & Comments</h4>
                         <p className="text-xs text-ash mt-1 leading-relaxed">
-                          Direct messages, stories, and post comments.
+                          AI automated sales on direct messages, stories, and post comments.
                         </p>
 
                         {/* Instagram Content Box */}
-                        <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <div className="mt-5 space-y-2.5 max-h-56 overflow-y-auto pr-1">
                           {igPages.length > 0 ? (
                             igPages.map(p => (
                               <div
                                 key={p.meta_page_id}
-                                className="flex items-center justify-between text-xs bg-pink-500/5 dark:bg-pink-500/10 p-2.5 rounded-xl border border-pink-500/20 hover:border-pink-500/40 transition-all group/item"
+                                className="flex items-center justify-between text-xs bg-pink-500/5 dark:bg-pink-500/10 p-3 rounded-2xl border border-pink-500/20 hover:border-pink-500/35 transition-all group/item"
                               >
-                                <div className="flex items-center gap-2 min-w-0 pr-1">
-                                  <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-[#FFB700] via-[#FF1361] to-[#8800FF] text-white flex items-center justify-center shrink-0">
-                                    <AtSign className="w-3 h-3" />
+                                <div className="flex items-center gap-3 min-w-0 pr-2">
+                                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#FFB700] via-[#FF1361] to-[#8800FF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <AtSign className="w-3.5 h-3.5" />
                                   </div>
                                   <div className="flex flex-col min-w-0">
-                                    <span className="font-bold text-pink-700 dark:text-pink-300 truncate text-xs">
+                                    <span className="font-bold text-pink-700 dark:text-pink-300 text-xs truncate">
                                       @{p.meta_page_name}
                                     </span>
                                     <span className="text-[10px] text-ash/80 truncate">
-                                      Via {p.meta_page_name}
+                                      Linked via Page: {p.meta_page_name}
                                     </span>
                                   </div>
                                 </div>
@@ -1009,17 +921,18 @@ export default function SettingsClient({ shop }: Props) {
                                   type="button"
                                   onClick={() => handleDisconnectInstagram(p.meta_page_id, p.meta_page_name)}
                                   disabled={isPending}
-                                  className="p-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                  className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
                                   title={`Unlink Instagram from ${p.meta_page_name}`}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Unlink IG</span>
                                 </button>
                               </div>
                             ))
                           ) : shop?.instagram_business_id ? (
-                            <div className="flex items-center justify-between text-xs bg-pink-500/5 dark:bg-pink-500/10 p-2.5 rounded-xl border border-pink-500/20">
-                              <div className="flex items-center gap-2 truncate">
-                                <AtSign className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                            <div className="flex items-center justify-between text-xs bg-pink-500/5 dark:bg-pink-500/10 p-3 rounded-2xl border border-pink-500/20">
+                              <div className="flex items-center gap-2.5 truncate">
+                                <AtSign className="w-4 h-4 text-pink-500 shrink-0" />
                                 <span className="font-bold text-pink-700 dark:text-pink-300 truncate">
                                   @{shop.meta_page_name || 'Instagram Account'}
                                 </span>
@@ -1028,38 +941,40 @@ export default function SettingsClient({ shop }: Props) {
                                 type="button"
                                 onClick={() => handleDisconnectInstagram()}
                                 disabled={isPending}
-                                className="p-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
                                 title="Unlink Instagram"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Unlink IG</span>
                               </button>
                             </div>
                           ) : (
-                            <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
-                              Connect via Facebook Page OAuth with Instagram Professional enabled.
+                            <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                              Connect via Facebook Page OAuth with Instagram Professional enabled to auto-reply to Instagram DMs.
                             </p>
                           )}
                         </div>
                       </div>
 
                       {/* Card Footer Actions */}
-                      <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center gap-2">
+                      <div className="relative z-10 pt-5 mt-5 border-t border-dove/10 dark:border-white/10 flex items-center gap-3">
                         <Link
                           href={`/api/auth/facebook/login?shopId=${shop.id}`}
-                          className={`flex-1 text-center py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                          className={`flex-1 text-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 ${
                             isIgConnected
                               ? 'bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-ink dark:text-white border border-dove/25 dark:border-white/15 hover:border-ink dark:hover:border-white/40'
                               : 'bg-gradient-to-r from-pink-600 to-rose-600 text-white hover:opacity-95 shadow-md shadow-pink-500/20'
                           }`}
                         >
-                          {isIgConnected ? '+ Link Another Account' : 'Link Instagram'}
+                          <span>{isIgConnected ? '+ Link / Manage Accounts' : 'Link Instagram'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
                         </Link>
                         {isIgConnected && (
                           <button
                             type="button"
                             onClick={() => handleDisconnectInstagram()}
                             disabled={isPending}
-                            className="px-3 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+                            className="px-3.5 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer shrink-0"
                             title="Unlink All Instagram Accounts"
                           >
                             Unlink All
@@ -1071,10 +986,99 @@ export default function SettingsClient({ shop }: Props) {
                 })()}
               </div>
 
-              {/* 4. WEBSITE WIDGET */}
-              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 border border-dove/15 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden">
+              {/* 3. WHATSAPP BUSINESS API */}
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 sm:p-7 border border-dove/15 dark:border-white/10 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden min-h-[340px]">
                 {/* Subtle Ambient Brand Glow */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-40" />
+
+                <div className="relative z-10">
+                  {/* Card Header: Icon & Status */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 ring-4 ring-emerald-500/10">
+                      <Smartphone className="w-6 h-6" />
+                    </div>
+
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-tight backdrop-blur-xs transition-all ${
+                      !!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs'
+                        : 'bg-fog dark:bg-white/5 text-ash border border-dove/20 dark:border-white/10'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${
+                        !!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id ? 'bg-emerald-500 animate-pulse' : 'bg-ash'
+                      }`} />
+                      {!!waPhoneId || !!shop?.whatsapp_phone_number_id || !!shop?.whatsapp_business_account_id ? 'API Active' : 'Not Configured'}
+                    </span>
+                  </div>
+
+                  {/* Title & Description */}
+                  <h4 className="text-base font-bold text-ink dark:text-white leading-snug">WhatsApp Business</h4>
+                  <p className="text-xs text-ash mt-1 leading-relaxed">
+                    Official Cloud API for 24/7 automated WhatsApp sales and support.
+                  </p>
+
+                  {/* WhatsApp Content Box */}
+                  <div className="mt-5">
+                    {waPhoneId || shop?.whatsapp_phone_number_id ? (
+                      <div className="space-y-2.5 bg-fog/70 dark:bg-white/[0.04] p-3.5 rounded-2xl border border-dove/15 dark:border-white/10 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-ash font-medium">Phone Number ID</span>
+                          <span className="font-mono text-ink dark:text-white font-semibold text-xs truncate max-w-[180px]">
+                            {waPhoneId || shop?.whatsapp_phone_number_id}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t border-dove/10 dark:border-white/10 flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <Check className="w-4 h-4 stroke-[3]" />
+                            <span>Cloud Webhook Live & Listening</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleDisconnectWhatsApp}
+                            disabled={isPending}
+                            className="px-2 py-1 rounded-lg text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center gap-1 text-[11px]"
+                            title="Unlink WhatsApp"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Unlink</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                        Add your Meta Cloud Phone ID & Access Token to activate automated sales on WhatsApp.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer Actions */}
+                <div className="relative z-10 pt-5 mt-5 border-t border-dove/10 dark:border-white/10 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowWaModal(true)}
+                    className="flex-1 text-center py-2.5 px-4 rounded-xl bg-pure-white dark:bg-white/5 hover:bg-fog dark:hover:bg-white/10 text-ink dark:text-white border border-dove/25 dark:border-white/15 hover:border-ink dark:hover:border-white/40 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2"
+                  >
+                    <span>{waPhoneId || shop?.whatsapp_phone_number_id ? 'Configure API Keys' : 'Setup WhatsApp API'}</span>
+                    <Sliders className="w-3.5 h-3.5 text-ash" />
+                  </button>
+                  {(waPhoneId || shop?.whatsapp_phone_number_id) && (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectWhatsApp}
+                      disabled={isPending}
+                      className="px-3.5 py-2.5 text-xs font-semibold text-rust hover:text-red-700 hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                      title="Unlink WhatsApp"
+                    >
+                      Unlink
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. WEBSITE WIDGET */}
+              <div className="group relative bg-pure-white dark:bg-[#121214] rounded-3xl p-6 sm:p-7 border border-dove/15 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 shadow-subtle hover:shadow-card transition-all duration-300 flex flex-col justify-between overflow-hidden min-h-[340px]">
+                {/* Subtle Ambient Brand Glow */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-40" />
 
                 <div className="relative z-10">
                   {/* Card Header: Icon & Toggle Switch */}
@@ -1083,65 +1087,64 @@ export default function SettingsClient({ shop }: Props) {
                       <Globe className="w-6 h-6" />
                     </div>
 
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={widgetEnabled}
-                        onChange={e => handleWidgetToggle(e.target.checked)}
-                      />
-                      <div className="w-10 h-6 bg-dove/30 dark:bg-white/15 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-emerald-500" />
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold ${widgetEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-ash'}`}>
+                        {widgetEnabled ? 'Live on Store' : 'Disabled'}
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={widgetEnabled}
+                          onChange={e => handleWidgetToggle(e.target.checked)}
+                        />
+                        <div className="w-10 h-6 bg-dove/30 dark:bg-white/15 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-emerald-500" />
+                      </label>
+                    </div>
                   </div>
 
                   {/* Title & Description */}
                   <h4 className="text-base font-bold text-ink dark:text-white leading-snug">Website Chat Widget</h4>
                   <p className="text-xs text-ash mt-1 leading-relaxed">
-                    Embed live AI sales bubble on any website.
+                    Embed live AI sales bubble directly on your e-commerce storefront.
                   </p>
 
                   {/* Widget Code Box */}
-                  <div className="mt-4">
+                  <div className="mt-5">
                     {widgetEnabled ? (
-                      <div className="space-y-2">
-                        <div className="bg-fog/90 dark:bg-[#18181c] rounded-xl px-3 py-2 border border-dove/15 dark:border-white/10 font-mono text-[10px] text-graphite dark:text-ash break-all leading-relaxed select-all">
+                      <div className="space-y-2.5">
+                        <div className="bg-fog/90 dark:bg-[#18181c] rounded-2xl px-3.5 py-2.5 border border-dove/15 dark:border-white/10 font-mono text-[11px] text-graphite dark:text-ash break-all leading-relaxed select-all">
                           {`<script src="https://dullbot.com/widget.js" data-shop="${shop.id}"></script>`}
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleCopyWidget}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-pure-white dark:bg-white/5 border border-dove/25 dark:border-white/15 text-xs font-bold text-ink dark:text-white hover:border-ink dark:hover:border-white/40 transition-all cursor-pointer shadow-xs"
-                        >
-                          {widgetCopied ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                              <span className="text-emerald-600 dark:text-emerald-400">Copied to Clipboard!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5 text-ash" />
-                              <span>Copy Script Tag</span>
-                            </>
-                          )}
-                        </button>
                       </div>
                     ) : (
-                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3 rounded-xl border border-dove/10 dark:border-white/5 leading-relaxed">
-                        Toggle switch above to enable live website visitor AI sales on your storefront.
+                      <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-dove/10 dark:border-white/5 leading-relaxed">
+                        Toggle switch above to generate your store embed script and activate live website sales.
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Card Footer Status */}
-                <div className="relative z-10 pt-5 mt-4 border-t border-dove/10 dark:border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-ash font-medium">Widget Status</span>
-                  <span className={`inline-flex items-center gap-1.5 font-bold ${
-                    widgetEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-ash'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${widgetEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-ash/50'}`} />
-                    {widgetEnabled ? 'Live on Store' : 'Disabled'}
-                  </span>
+                {/* Card Footer Actions */}
+                <div className="relative z-10 pt-5 mt-5 border-t border-dove/10 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={handleCopyWidget}
+                    disabled={!widgetEnabled}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-pure-white dark:bg-white/5 border border-dove/25 dark:border-white/15 text-xs font-bold text-ink dark:text-white hover:border-ink dark:hover:border-white/40 transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {widgetCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Copied to Clipboard!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-ash" />
+                        <span>Copy Script Tag</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
