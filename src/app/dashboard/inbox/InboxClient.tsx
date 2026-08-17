@@ -938,7 +938,7 @@ export default function InboxClient({
             <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
               <button
                 type="button"
-                onClick={() => setChannelFilter('all')}
+                onClick={() => { setChannelFilter('all'); setPageFilter('all'); }}
                 className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
                   channelFilter === 'all' ? 'bg-white text-ink shadow-sm border border-dove/20' : 'text-ash hover:text-ink hover:bg-dove/5'
                 }`}
@@ -957,7 +957,7 @@ export default function InboxClient({
               </button>
               <button
                 type="button"
-                onClick={() => setChannelFilter('instagram')}
+                onClick={() => { setChannelFilter('instagram'); setPageFilter('all'); }}
                 className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
                   channelFilter === 'instagram' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-sm border border-pink-500/20' : 'text-ash hover:text-pink-600 hover:bg-dove/5'
                 }`}
@@ -967,7 +967,7 @@ export default function InboxClient({
               </button>
               <button
                 type="button"
-                onClick={() => setChannelFilter('whatsapp')}
+                onClick={() => { setChannelFilter('whatsapp'); setPageFilter('all'); }}
                 className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 ${
                   channelFilter === 'whatsapp' ? 'bg-[#25D366] text-white shadow-sm border border-[#25D366]/20' : 'text-ash hover:text-[#25D366] hover:bg-dove/5'
                 }`}
@@ -977,9 +977,9 @@ export default function InboxClient({
               </button>
             </div>
 
-            {/* Multi-Page Selector Tabs (when multiple Facebook Pages are connected) */}
-            {connectedPages && connectedPages.length > 1 && (
-              <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 overflow-x-auto no-scrollbar">
+            {/* Multi-Page Selector Tabs (only appears when toggled into FB and multiple pages exist) */}
+            {channelFilter === 'messenger' && connectedPages && connectedPages.length > 1 && (
+              <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 overflow-x-auto no-scrollbar animate-in fade-in duration-200">
                 <button
                   type="button"
                   onClick={() => setPageFilter('all')}
@@ -989,10 +989,10 @@ export default function InboxClient({
                       : 'text-ash hover:text-ink'
                   }`}
                 >
-                  <span>All Pages ({conversations.filter(c => !c.is_test).length})</span>
+                  <span>All Pages ({conversations.filter(c => !c.is_test && getConvChannel(c) === 'messenger').length})</span>
                 </button>
                 {connectedPages.map(page => {
-                  const pageConvCount = conversations.filter(c => !c.is_test && (c.meta_page_id === page.meta_page_id || c.handoff_summary?.meta_page_id === page.meta_page_id)).length;
+                  const pageConvCount = conversations.filter(c => !c.is_test && getConvChannel(c) === 'messenger' && (c.meta_page_id === page.meta_page_id || c.handoff_summary?.meta_page_id === page.meta_page_id)).length;
                   return (
                     <button
                       key={page.meta_page_id}
