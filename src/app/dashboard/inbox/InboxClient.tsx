@@ -620,7 +620,7 @@ export default function InboxClient({
 
     const activeConv = conversations.find(c => c.id === activeId);
     if (activeConv) {
-      getCustomerOrderHistory(shop.id, activeConv.customer_phone).then(setOrderHistory);
+      getCustomerOrderHistory(shop.id, activeConv.customer_phone, activeConv.id).then(setOrderHistory);
     }
     getQuickReplies(shop.id).then(setQuickReplies);
 
@@ -1032,7 +1032,7 @@ export default function InboxClient({
                         return conv.ticket_reason === 'complaint' || conv.ticket_reason === 'unsure' || conv.status === 'human_takeover';
                       }
                       if (tab.id === 'confirmed') {
-                        return conv.orders?.some((o: any) => o.status === 'confirmed') || false;
+                        return conv.orders?.some((o: any) => o.status !== 'cancelled' && o.status !== 'rejected') || false;
                       }
                       return true;
                     });
@@ -1074,8 +1074,8 @@ export default function InboxClient({
                   if (!isTicket) return false;
                 }
                 if (filter === 'confirmed') {
-                  const hasConfirmedOrder = conv.orders?.some((o: any) => o.status === 'confirmed');
-                  if (!hasConfirmedOrder) return false;
+                  const hasActiveOrder = conv.orders?.some((o: any) => o.status !== 'cancelled' && o.status !== 'rejected');
+                  if (!hasActiveOrder) return false;
                 }
 
                 // 4. Search query
@@ -1191,8 +1191,8 @@ export default function InboxClient({
                             <ShieldAlert className="w-2.5 h-2.5" /> Unsure
                           </span>
                         )}
-                        {conv.orders?.some((o: any) => o.status === 'confirmed') && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-150 text-green-700 border border-green-200">
+                        {conv.orders?.some((o: any) => o.status !== 'cancelled' && o.status !== 'rejected') && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <ShieldCheck className="w-2.5 h-2.5" /> Order
                           </span>
                         )}
@@ -1835,13 +1835,22 @@ export default function InboxClient({
                   </div>
                 </div>
                 {orderHistory.orders.length > 0 && (
-                  <div className="flex items-center justify-between p-2 bg-fog rounded-lg text-xs">
-                    <span className="font-medium text-graphite">#{orderHistory.orders[0].id.substring(0, 8)}</span>
-                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                      orderHistory.orders[0].status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {orderHistory.orders[0].status}
-                    </span>
+                  <div className="space-y-1.5">
+                    {orderHistory.orders.slice(0, 3).map((ord: any) => (
+                      <div key={ord.id} className="flex items-center justify-between p-2 bg-fog rounded-lg text-xs">
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="font-semibold text-ink truncate">#{ord.id.substring(0, 8)}</span>
+                          <span className="text-[10px] text-ash">৳{(ord.total_amount || 0).toLocaleString()}</span>
+                        </div>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase shrink-0 ${
+                          ord.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                          ord.status === 'pending_verification' ? 'bg-amber-100 text-amber-800' :
+                          'bg-sky-100 text-blue-700'
+                        }`}>
+                          {(ord.status || 'pending').replace('_', ' ')}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

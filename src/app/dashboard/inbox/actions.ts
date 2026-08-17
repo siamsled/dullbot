@@ -552,25 +552,35 @@ export async function resolveConversation(conversationId: string) {
   return !error;
 }
 
-export async function getCustomerOrderHistory(shopId: string, customerPhone: string) {
-  const { data, error } = await supabaseAdmin
+export async function getCustomerOrderHistory(shopId: string, customerPhone: string, conversationId?: string) {
+  let query = supabaseAdmin
     .from('orders')
     .select(`
       id, status, total_amount, created_at,
-      customer_name, customer_phone, customer_address,
-      order_items (
-        id, product_name, quantity, unit_price,
-        products ( image_url )
+      customer_name, customer_phone, customer_address, conversation_id,
+      order_line_items (
+        id, product_name, quantity, unit_price
       )
     `)
-    .eq('shop_id', shopId)
-    .eq('customer_phone', customerPhone)
-    .order('created_at', { ascending: false });
+    .eq('shop_id', shopId);
 
-  if (error) return { orders: [], totalSpend: 0 };
+  if (conversationId && customerPhone) {
+    query = query.or(`conversation_id.eq.${conversationId},customer_phone.eq.${customerPhone}`);
+  } else if (conversationId) {
+    query = query.eq('conversation_id', conversationId);
+  } else {
+    query = query.eq('customer_phone', customerPhone);
+  }
 
-  const totalSpend = data.reduce((acc, order) => acc + (order.total_amount || 0), 0);
-  return { orders: data, totalSpend };
+  const { data, error } = await query.order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching order history:', error);
+    return { orders: [], totalSpend: 0 };
+  }
+
+  const totalSpend = (data || []).reduce((acc: number, order: any) => acc + (order.total_amount || 0), 0);
+  return { orders: data || [], totalSpend };
 }
 
 export async function getQuickReplies(shopId: string) {
