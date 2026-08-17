@@ -1216,7 +1216,7 @@ export default function InboxClient({
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-wash text-blue-600 border border-blue-150">
-                            <DullBotEyeMark size={10} /> Bot
+                            <Bot className="w-2.5 h-2.5 shrink-0" /> Bot
                           </span>
                         )}
                         {conv.ticket_reason === 'complaint' && (
@@ -1453,7 +1453,7 @@ export default function InboxClient({
                         <div className={`flex flex-col max-w-[75%] ${isCustomer ? 'items-start' : 'items-end'}`}>
                           <div className="flex items-center gap-1.5 mb-1 mx-1">
                             {!isCustomer && isHumanAgent && <UserCog className="w-3 h-3 text-ash" />}
-                            {!isCustomer && !isHumanAgent && <DullBotEyeMark size={12} className="shrink-0" />}
+                            {!isCustomer && !isHumanAgent && <Bot className="w-3 h-3 text-blue-600 shrink-0" />}
                             <span className="text-[10px] font-medium text-ash uppercase tracking-wider">
                               {isCustomer ? activeDisplayName : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
                             </span>

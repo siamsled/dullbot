@@ -399,48 +399,15 @@ export function DullBotEyeMark({
       className={`relative inline-flex items-center justify-center shrink-0 select-none ${className}`}
       style={{ width: size, height: size }}
     >
-      <style>{`
-        @keyframes db-mini-eyewrap {
-          0%, 20%     { transform: scale(1, 1); }
-          22.5%       { transform: scale(1, 0.05); }
-          25%         { transform: scale(1, 1); }
-          58%         { transform: scale(1, 1); }
-          60%         { transform: scale(1, 0.05); }
-          61.5%       { transform: scale(1, 0.8); }
-          63%         { transform: scale(1, 0.05); }
-          65.5%, 100% { transform: scale(1, 1); }
-        }
-        @keyframes db-mini-pupil {
-          0%, 20%     { transform: translate(0px, 0px) scale(1); }
-          28%, 48%    { transform: translate(-1.2px, 0.4px) scale(1); }
-          54%, 74%    { transform: translate(1.2px, -0.3px) scale(1.05); }
-          82%, 100%   { transform: translate(0px, 0px) scale(1); }
-        }
-        @keyframes db-mini-brow {
-          0%, 18%     { transform: translateY(0) rotate(-6deg); }
-          22%         { transform: translateY(0.8px) rotate(-4deg); }
-          26%, 56%    { transform: translateY(0) rotate(-6deg); }
-          60%         { transform: translateY(1px) rotate(-3deg); }
-          64%         { transform: translateY(-0.5px) rotate(-7deg); }
-          72%, 100%   { transform: translateY(0) rotate(-6deg); }
-        }
-      `}</style>
       <div className="relative w-full h-full flex items-center justify-center">
         <span
-          className="absolute top-[8%] left-1/2 w-[55%] -ml-[27.5%] h-[12%] rounded-full bg-ink dark:bg-white"
-          style={{ animation: 'db-mini-brow 4.5s ease-in-out infinite' }}
+          className="absolute top-[8%] left-1/2 w-[55%] -ml-[27.5%] h-[12%] rounded-full bg-ink dark:bg-white -rotate-[6deg]"
         />
-        <div
-          className="w-[85%] h-[85%] relative"
-          style={{ animation: 'db-mini-eyewrap 4.5s ease-in-out infinite', transformOrigin: 'center' }}
-        >
+        <div className="w-[85%] h-[85%] relative">
           <div className="w-full h-full rounded-full border-[1.8px] border-ink dark:border-white bg-white flex items-center justify-center overflow-hidden shadow-xs">
             <div
               className="w-[46%] h-[46%] rounded-full relative"
-              style={{
-                backgroundColor: pupilColor,
-                animation: 'db-mini-pupil 4.5s ease-in-out infinite',
-              }}
+              style={{ backgroundColor: pupilColor }}
             >
               <span className="absolute top-[14%] left-[16%] w-[32%] h-[32%] rounded-full bg-white opacity-90" />
             </div>
