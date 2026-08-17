@@ -27,6 +27,13 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     .select('id', { count: 'exact', head: true })
     .eq('shop_id', shop.id);
 
+  // Get all connected Meta Pages (for multi-page filtering)
+  const { data: connectedPages } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('meta_page_id, meta_page_name, instagram_business_id, is_primary')
+    .eq('shop_id', shop.id)
+    .order('is_primary', { ascending: false });
+
   // Get initial conversations (with names resolved)
   const conversations = await getConversations(shop.id);
 
@@ -44,6 +51,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       initialMessages={initialMessages}
       productCount={productCount || 0}
       initialPhone={params.phone ?? null}
+      connectedPages={connectedPages || []}
     />
   );
 }

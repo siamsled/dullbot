@@ -417,16 +417,19 @@ export default function InboxClient({
   initialConversations,
   initialMessages = [],
   productCount,
-  initialPhone
+  initialPhone,
+  connectedPages = []
 }: {
   shop: any;
   initialConversations: any[];
   initialMessages?: any[];
   productCount: number;
   initialPhone?: string | null;
+  connectedPages?: any[];
 }) {
   const queryClient = useQueryClient();
   const [shop, setShop] = useState(initialShop);
+  const [pageFilter, setPageFilter] = useState<string>('all');
 
   const { data: fetchedConversations = initialConversations } = useQuery({
     queryKey: ['conversations', shop.id],
@@ -974,6 +977,38 @@ export default function InboxClient({
               </button>
             </div>
 
+            {/* Multi-Page Selector Tabs (when multiple Facebook Pages are connected) */}
+            {connectedPages && connectedPages.length > 1 && (
+              <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 overflow-x-auto no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setPageFilter('all')}
+                  className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
+                    pageFilter === 'all'
+                      ? 'bg-white text-ink shadow-xs border border-dove/20'
+                      : 'text-ash hover:text-ink'
+                  }`}
+                >
+                  <span>All Pages ({connectedPages.length})</span>
+                </button>
+                {connectedPages.map(page => (
+                  <button
+                    key={page.meta_page_id}
+                    type="button"
+                    onClick={() => setPageFilter(page.meta_page_id)}
+                    className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-1.5 ${
+                      pageFilter === page.meta_page_id
+                        ? 'bg-[#0084FF] text-white shadow-xs'
+                        : 'text-ash hover:text-ink'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    <span>{page.meta_page_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Category / Status Filters */}
             <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
               {[
@@ -1022,6 +1057,11 @@ export default function InboxClient({
                 if (channelFilter !== 'all') {
                   const ch = getConvChannel(conv);
                   if (ch !== channelFilter) return false;
+                }
+
+                // 2.5 Multi-Page Filter
+                if (pageFilter !== 'all') {
+                  if (conv.meta_page_id && conv.meta_page_id !== pageFilter) return false;
                 }
 
                 // 3. Tab filter
