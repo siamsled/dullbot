@@ -25,25 +25,63 @@ function formatWaitingTime(dateString: string) {
   return `${Math.floor(diffHours / 24)}d`;
 }
 
-function formatMessageDate(dateString: string) {
+function isSameDay(d1: Date, d2: Date) {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
+function isYesterday(d: Date, now: Date) {
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return (
+    d.getFullYear() === yesterday.getFullYear() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getDate() === yesterday.getDate()
+  );
+}
+
+function formatMessageTime(dateString?: string | null): string {
+  if (!dateString) return '';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
 
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
-  const diffTime = today.getTime() - msgDate.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' });
-  } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  if (isSameDay(date, now)) {
+    return timeStr;
   }
+  if (isYesterday(date, now)) {
+    return `Yesterday, ${timeStr}`;
+  }
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+  }
+  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}, ${timeStr}`;
+}
+
+function formatConversationDate(dateString?: string | null): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  const now = new Date();
+
+  if (isSameDay(date, now)) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  if (isYesterday(date, now)) {
+    return 'Yesterday';
+  }
+
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
 function isValidName(val?: string | null): boolean {
@@ -1146,7 +1184,7 @@ export default function InboxClient({
                             {displayName}
                           </p>
                         </div>
-                        <p className="text-[10px] text-ash shrink-0">{formatMessageDate(conv.last_message_at)}</p>
+                        <p className="text-[10px] text-ash shrink-0">{formatConversationDate(conv.last_message_at)}</p>
                       </div>
 
                       {/* Snippet Preview */}
@@ -1420,7 +1458,7 @@ export default function InboxClient({
                               {isCustomer ? activeDisplayName : isHumanAgent ? 'You (Human)' : 'DullBot AI'}
                             </span>
                             <span className="text-[10px] text-ash">
-                              {formatMessageDate(msg.created_at)}
+                              {formatMessageTime(msg.created_at)}
                             </span>
                           </div>
                           <div className="flex flex-col gap-1 w-full mt-1">
