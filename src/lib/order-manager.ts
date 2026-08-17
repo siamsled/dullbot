@@ -97,6 +97,13 @@ export async function handleOrderCreationIntercept(
       return { cleanedText, orderId: null };
     }
 
+    if (payload.customer_name && payload.customer_name.trim().toLowerCase() !== 'customer') {
+      await supabaseAdmin
+        .from('conversations')
+        .update({ meta_name: payload.customer_name.trim() })
+        .eq('id', conversationId);
+    }
+
     // Insert System Marker for AI Tool Call
     await supabaseAdmin.from('messages').insert({
       conversation_id: conversationId,

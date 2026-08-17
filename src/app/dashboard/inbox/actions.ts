@@ -253,7 +253,7 @@ async function getFacebookProfile(psid: string, accessToken: string) {
 export async function getConversations(shopId: string) {
   const { data: conversations, error } = await supabaseAdmin
     .from('conversations')
-    .select('*, orders(status)')
+    .select('*, orders(id, status, customer_name, customer_phone, customer_address, total_amount)')
     .eq('shop_id', shopId)
     .order('last_message_at', { ascending: false });
 

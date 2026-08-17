@@ -108,20 +108,20 @@ function isValidName(val?: string | null): boolean {
 function getDisplayName(conv: any, profile?: any): string {
   if (!conv) return 'Customer';
 
-  if (isValidName(profile?.customer_name)) {
-    return profile.customer_name;
-  }
-  if (isValidName(conv.meta_name)) {
-    return conv.meta_name;
-  }
-  if (isValidName(conv.customer_name)) {
-    return conv.customer_name;
-  }
-
-  // Check linked orders for customer name
+  // 1. Check linked orders for customer name
   if (conv.orders && Array.isArray(conv.orders) && conv.orders.length > 0) {
     const orderWithName = conv.orders.find((o: any) => isValidName(o.customer_name));
     if (orderWithName?.customer_name) return orderWithName.customer_name;
+  }
+
+  if (isValidName(conv.meta_name)) {
+    return conv.meta_name;
+  }
+  if (isValidName(profile?.customer_name)) {
+    return profile.customer_name;
+  }
+  if (isValidName(conv.customer_name)) {
+    return conv.customer_name;
   }
 
   // Check AI Handoff summary for key facts name
@@ -1731,6 +1731,68 @@ export default function InboxClient({
               {/* Scrollable content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <h3 className="text-xs font-bold text-ink uppercase tracking-widest">Customer Context</h3>
+
+              {/* Customer Profile & Contact Details */}
+              {(() => {
+                const latestOrder = orderHistory.orders[0];
+                const activeProfile = profiles[activeConv.customer_phone];
+                const resolvedCustomerName = latestOrder?.customer_name || getDisplayName(activeConv, activeProfile);
+                const activeProfilePicUrl = getProfilePicUrl(activeConv, activeProfile);
+                const resolvedPhone = latestOrder?.customer_phone || (activeConv.channel === 'whatsapp' ? activeConv.customer_phone : null);
+                const resolvedAddress = latestOrder?.customer_address || null;
+
+                return (
+                  <div className="p-3 bg-fog rounded-xl border border-dove/10 space-y-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-full bg-dove/20 flex items-center justify-center text-ink font-bold text-sm overflow-hidden shrink-0">
+                        {activeProfilePicUrl ? (
+                          <img src={activeProfilePicUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getAvatarInitials(resolvedCustomerName)
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-ink truncate leading-tight">{resolvedCustomerName}</h4>
+                        <p className="text-[10px] text-ash truncate mt-0.5">
+                          {activeConv.channel === 'messenger'
+                            ? `Facebook (${activeConv.meta_page_name || 'Messenger'})`
+                            : activeConv.channel === 'instagram'
+                            ? 'Instagram'
+                            : 'WhatsApp'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {(resolvedPhone || resolvedAddress) && (
+                      <div className="pt-2 border-t border-dove/10 space-y-1.5 text-xs">
+                        {resolvedPhone && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-ash text-[10px] uppercase font-bold tracking-wider shrink-0 flex items-center gap-1">
+                              <Phone className="w-2.5 h-2.5" /> Phone
+                            </span>
+                            <a
+                              href={`tel:${resolvedPhone}`}
+                              className="font-semibold text-ink hover:text-blue-600 truncate transition-colors text-right"
+                            >
+                              {resolvedPhone}
+                            </a>
+                          </div>
+                        )}
+                        {resolvedAddress && (
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-ash text-[10px] uppercase font-bold tracking-wider shrink-0 mt-0.5">
+                              📍 Address
+                            </span>
+                            <span className="font-medium text-graphite text-right text-[11px] leading-tight line-clamp-3">
+                              {resolvedAddress}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* AI Briefing Card — shown when in takeover or ticket mode */}
               {(isTakeover || activeConv.ticket_reason) && (
