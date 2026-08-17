@@ -168,24 +168,35 @@ export async function selectPageMeta(
 }
 
 // ─── Disconnect a specific page ──────────────────────────────────────────────
-export async function disconnectMetaPage(shopId: string, metaPageId: string) {
-  await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', shopId).eq('meta_page_id', metaPageId);
+export async function disconnectMetaPage(shopId: string, metaPageId: string): Promise<{ success: boolean; error?: string }> {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
+  const { error: delErr } = await supabaseAdmin.from('shop_meta_pages').delete().eq('shop_id', resolvedId).eq('meta_page_id', metaPageId);
+  if (delErr) {
+    console.error('Failed to delete meta page:', delErr);
+    return { success: false, error: delErr.message };
+  }
 
   const { data: remaining } = await supabaseAdmin
     .from('shop_meta_pages')
     .select('meta_page_id, meta_page_name, meta_page_access_token, instagram_business_id, instagram_access_token, is_primary')
-    .eq('shop_id', shopId)
+    .eq('shop_id', resolvedId)
     .order('is_primary', { ascending: false });
 
   if (!remaining || remaining.length === 0) {
     await supabaseAdmin
       .from('shops')
       .update({ meta_page_id: null, meta_page_name: null, meta_page_access_token: null, instagram_business_id: null, instagram_access_token: null })
-      .eq('id', shopId);
+      .eq('id', resolvedId);
   } else {
     const newPrimary = remaining.find((p) => p.is_primary) || remaining[0];
     if (!remaining.find((p) => p.is_primary)) {
-      await supabaseAdmin.from('shop_meta_pages').update({ is_primary: true }).eq('shop_id', shopId).eq('meta_page_id', newPrimary.meta_page_id);
+      await supabaseAdmin.from('shop_meta_pages').update({ is_primary: true }).eq('shop_id', resolvedId).eq('meta_page_id', newPrimary.meta_page_id);
     }
     await supabaseAdmin.from('shops').update({
       meta_page_id: newPrimary.meta_page_id,
@@ -193,7 +204,7 @@ export async function disconnectMetaPage(shopId: string, metaPageId: string) {
       meta_page_access_token: newPrimary.meta_page_access_token,
       instagram_business_id: newPrimary.instagram_business_id,
       instagram_access_token: newPrimary.instagram_access_token,
-    }).eq('id', shopId);
+    }).eq('id', resolvedId);
   }
 
   revalidatePath('/dashboard/settings');
@@ -216,17 +227,53 @@ export async function disconnectFacebook(shopId: string) {
   return { success: true };
 }
 
-export async function disconnectInstagram(shopId: string) {
-  const { error } = await supabaseAdmin
-    .from('shops')
-    .update({
-      instagram_business_id: null,
-    })
-    .eq('id', shopId);
+export async function disconnectInstagram(shopId: string, metaPageId?: string): Promise<{ success: boolean; error?: string }> {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
 
-  if (error) {
-    console.error('Failed to disconnect Instagram:', error);
-    return { success: false, error: error.message };
+  if (metaPageId) {
+    // Unlink Instagram from a specific Facebook page
+    await supabaseAdmin
+      .from('shop_meta_pages')
+      .update({ instagram_business_id: null, instagram_access_token: null })
+      .eq('shop_id', resolvedId)
+      .eq('meta_page_id', metaPageId);
+  } else {
+    // Unlink Instagram from all pages
+    await supabaseAdmin
+      .from('shop_meta_pages')
+      .update({ instagram_business_id: null, instagram_access_token: null })
+      .eq('shop_id', resolvedId);
+  }
+
+  // Check if any remaining page still has Instagram
+  const { data: remainingIg } = await supabaseAdmin
+    .from('shop_meta_pages')
+    .select('instagram_business_id, instagram_access_token')
+    .eq('shop_id', resolvedId)
+    .not('instagram_business_id', 'is', null)
+    .limit(1);
+
+  if (remainingIg && remainingIg.length > 0) {
+    await supabaseAdmin
+      .from('shops')
+      .update({
+        instagram_business_id: remainingIg[0].instagram_business_id,
+        instagram_access_token: remainingIg[0].instagram_access_token,
+      })
+      .eq('id', resolvedId);
+  } else {
+    await supabaseAdmin
+      .from('shops')
+      .update({
+        instagram_business_id: null,
+        instagram_access_token: null,
+      })
+      .eq('id', resolvedId);
   }
 
   revalidatePath('/dashboard/settings');
@@ -235,6 +282,13 @@ export async function disconnectInstagram(shopId: string) {
 }
 
 export async function disconnectWhatsApp(shopId: string) {
+  let resolvedId = shopId;
+  const isUUID = shopId.includes('-') && shopId.length === 36;
+  if (!isUUID) {
+    const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+    if (s?.id) resolvedId = s.id;
+  }
+
   const { error } = await supabaseAdmin
     .from('shops')
     .update({
@@ -242,7 +296,7 @@ export async function disconnectWhatsApp(shopId: string) {
       whatsapp_phone_number_id: null,
       whatsapp_access_token: null,
     })
-    .eq('id', shopId);
+    .eq('id', resolvedId);
 
   if (error) {
     console.error('Failed to disconnect WhatsApp:', error);
@@ -404,12 +458,12 @@ export async function saveWhatsAppConfig(
     if (s?.id) resolvedId = s.id;
   }
 
-  const configJson = JSON.stringify({ wabaId: payload.wabaId, phoneId: payload.phoneId, token: payload.token });
-
   const { error } = await supabaseAdmin
     .from('shops')
     .update({
-      prompt_cache_ref: configJson,
+      whatsapp_business_account_id: payload.wabaId,
+      whatsapp_phone_number_id: payload.phoneId,
+      whatsapp_access_token: payload.token,
     })
     .eq('id', resolvedId);
 
