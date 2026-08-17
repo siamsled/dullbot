@@ -1873,22 +1873,80 @@ export default function InboxClient({
                   </div>
                 </div>
                 {orderHistory.orders.length > 0 && (
-                  <div className="space-y-1.5">
-                    {orderHistory.orders.slice(0, 3).map((ord: any) => (
-                      <div key={ord.id} className="flex items-center justify-between p-2 bg-fog rounded-lg text-xs">
-                        <div className="flex flex-col min-w-0 pr-2">
-                          <span className="font-semibold text-ink truncate">#{ord.id.substring(0, 8)}</span>
-                          <span className="text-[10px] text-ash">৳{(ord.total_amount || 0).toLocaleString()}</span>
+                  <div className="space-y-2.5">
+                    {orderHistory.orders.slice(0, 3).map((ord: any) => {
+                      const lineItems = (ord.order_line_items && ord.order_line_items.length > 0)
+                        ? ord.order_line_items
+                        : ord.products
+                        ? [{ product_name: ord.products.name, quantity: 1, unit_price: ord.products.price, products: ord.products }]
+                        : [];
+
+                      return (
+                        <div key={ord.id} className="p-3 bg-fog rounded-xl border border-dove/10 space-y-2.5">
+                          {/* Order Header: ID + Status */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Package className="w-3.5 h-3.5 text-graphite shrink-0" />
+                              <span className="font-bold text-xs text-ink truncate">#{ord.id.substring(0, 8)}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                              ord.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                              ord.status === 'pending_verification' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                              ord.status === 'fulfilled' || ord.status === 'delivered' ? 'bg-green-100 text-green-700 border border-green-200' :
+                              'bg-sky-100 text-blue-700 border border-blue-200'
+                            }`}>
+                              {(ord.status || 'pending').replace(/_/g, ' ')}
+                            </span>
+                          </div>
+
+                          {/* Ordered Product List with Thumbnails */}
+                          {lineItems.length > 0 && (
+                            <div className="space-y-1.5 pt-1 border-t border-dove/10">
+                              {lineItems.map((item: any, idx: number) => {
+                                const pImg = item.products?.image_url || ord.products?.image_url;
+                                return (
+                                  <div key={item.id || idx} className="flex items-center gap-2.5">
+                                    <div className="w-9 h-9 rounded-lg bg-dove/20 overflow-hidden shrink-0 border border-dove/10 flex items-center justify-center">
+                                      {pImg ? (
+                                        <img
+                                          src={pImg}
+                                          alt=""
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                      ) : (
+                                        <Package className="w-4 h-4 text-ash" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold text-ink truncate leading-tight">
+                                        {item.product_name || item.products?.name || 'Product Item'}
+                                      </p>
+                                      <p className="text-[10px] text-ash mt-0.5">
+                                        Qty: {item.quantity || 1} · ৳{(item.unit_price || (ord.total_amount - (ord.delivery_charge_amount || 0))).toLocaleString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Order Financials & Address Footer */}
+                          <div className="pt-1.5 border-t border-dove/10 flex items-center justify-between text-[11px]">
+                            <span className="text-ash">Total Amount:</span>
+                            <span className="font-bold text-ink">৳{(ord.total_amount || 0).toLocaleString()}</span>
+                          </div>
+
+                          {ord.customer_address && (
+                            <div className="pt-1 text-[10px] text-ash border-t border-dove/10 flex items-start gap-1">
+                              <span className="shrink-0">📍</span>
+                              <span className="line-clamp-2">{ord.customer_address}</span>
+                            </div>
+                          )}
                         </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase shrink-0 ${
-                          ord.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                          ord.status === 'pending_verification' ? 'bg-amber-100 text-amber-800' :
-                          'bg-sky-100 text-blue-700'
-                        }`}>
-                          {(ord.status || 'pending').replace('_', ' ')}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

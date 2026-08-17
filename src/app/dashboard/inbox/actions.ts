@@ -556,10 +556,12 @@ export async function getCustomerOrderHistory(shopId: string, customerPhone: str
   let query = supabaseAdmin
     .from('orders')
     .select(`
-      id, status, total_amount, created_at,
+      id, status, total_amount, delivery_charge_amount, created_at,
       customer_name, customer_phone, customer_address, conversation_id,
+      products ( id, name, image_url ),
       order_line_items (
-        id, product_name, quantity, unit_price
+        id, product_name, quantity, unit_price, product_id,
+        products ( id, name, image_url )
       )
     `)
     .eq('shop_id', shopId);
