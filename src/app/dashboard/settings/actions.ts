@@ -584,3 +584,13 @@ export async function revokeCompanionDeviceAction(deviceId: string, shopId: stri
   return res;
 }
 
+export async function syncHistoricalChats(shopId: string, pageId?: string) {
+  const { syncMetaHistoricalChats } = await import('@/lib/meta-chat-sync');
+  const res = await syncMetaHistoricalChats(shopId, pageId);
+  try {
+    revalidatePath('/dashboard/inbox');
+    revalidatePath('/dashboard/settings');
+  } catch (e) {}
+  return res;
+}
+

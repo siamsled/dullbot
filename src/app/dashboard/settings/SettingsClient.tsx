@@ -10,7 +10,7 @@ import {
   BookOpen, Palette, Truck, X, Loader2, Coins, Banknote,
   Camera, UploadCloud, Trash2, Image as ImageIcon, FileText,
   Sliders, UserCheck, ExternalLink, HelpCircle, AlertCircle,
-  KeyRound, Layers, Users, Store, Phone, MapPin, Eye, EyeOff
+  KeyRound, Layers, Users, Store, Phone, MapPin, Eye, EyeOff, RefreshCw
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -24,6 +24,7 @@ import {
   saveShopLogo,
   getConnectedPages,
   selectPagesMeta,
+  syncHistoricalChats,
 } from './actions';
 import { saveOnboardingProfileAndTone } from '../actions';
 import StaffManagementSection from './staff/StaffManagementSection';
@@ -346,6 +347,27 @@ export default function SettingsClient({ shop }: Props) {
         alert(res.error || 'Failed to save WhatsApp config.');
       }
     });
+  };
+
+  const [syncingPageId, setSyncingPageId] = useState<string | null>(null);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+
+  const handleSyncPageHistory = async (pageId?: string, pageName?: string) => {
+    setSyncingPageId(pageId || 'all');
+    setSyncSuccessMessage(null);
+    try {
+      const res = await syncHistoricalChats(shop.id, pageId);
+      if (res.success) {
+        setSyncSuccessMessage(`Synced ${res.syncedConversations} conversations and ${res.syncedMessages} messages from ${pageName || 'Facebook'}!`);
+        setTimeout(() => setSyncSuccessMessage(null), 5000);
+      } else {
+        alert(res.error || 'Failed to sync historical chats');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error syncing chats');
+    } finally {
+      setSyncingPageId(null);
+    }
   };
 
   const handleWidgetToggle = (val: boolean) => {
@@ -797,16 +819,28 @@ export default function SettingsClient({ shop }: Props) {
                               </span>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDisconnectPage(p.meta_page_id, p.meta_page_name)}
-                            disabled={isPending}
-                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
-                            title={`Unlink ${p.meta_page_name}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Unlink</span>
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleSyncPageHistory(p.meta_page_id, p.meta_page_name)}
+                              disabled={syncingPageId === p.meta_page_id || isPending}
+                              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1 border border-dove/10 dark:border-white/5"
+                              title={`Sync past conversations from ${p.meta_page_name}`}
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${syncingPageId === p.meta_page_id ? 'animate-spin text-blue-600' : ''}`} />
+                              <span className="hidden sm:inline">{syncingPageId === p.meta_page_id ? 'Syncing...' : 'Sync History'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDisconnectPage(p.meta_page_id, p.meta_page_name)}
+                              disabled={isPending}
+                              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                              title={`Unlink ${p.meta_page_name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Unlink</span>
+                            </button>
+                          </div>
                         </div>
                       ))
                     ) : shop?.meta_page_name ? (
@@ -815,16 +849,28 @@ export default function SettingsClient({ shop }: Props) {
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 shadow-xs shadow-blue-500/50" />
                           <span className="truncate">{shop.meta_page_name}</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDisconnectPage(shop.meta_page_id || '', shop.meta_page_name || '')}
-                          disabled={isPending}
-                          className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
-                          title="Unlink Facebook Page"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Unlink</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleSyncPageHistory(shop.meta_page_id || '', shop.meta_page_name || '')}
+                            disabled={syncingPageId === (shop.meta_page_id || 'all') || isPending}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1 border border-dove/10 dark:border-white/5"
+                            title="Sync past conversations from Facebook Page"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${syncingPageId === (shop.meta_page_id || 'all') ? 'animate-spin text-blue-600' : ''}`} />
+                            <span className="hidden sm:inline">{syncingPageId === (shop.meta_page_id || 'all') ? 'Syncing...' : 'Sync History'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectPage(shop.meta_page_id || '', shop.meta_page_name || '')}
+                            disabled={isPending}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-ash hover:text-rust hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                            title="Unlink Facebook Page"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Unlink</span>
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <p className="text-xs text-ash/80 bg-fog/60 dark:bg-white/[0.03] p-3.5 rounded-2xl border border-dove/10 dark:border-white/5 leading-relaxed">
@@ -832,6 +878,15 @@ export default function SettingsClient({ shop }: Props) {
                       </p>
                     )}
                   </div>
+
+                  {syncSuccessMessage && (
+                    <div className="mt-3 p-2.5 rounded-xl text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-between animate-in fade-in">
+                      <span>✓ {syncSuccessMessage}</span>
+                      <button type="button" onClick={() => setSyncSuccessMessage(null)} className="text-ash hover:text-ink">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Footer Actions */}

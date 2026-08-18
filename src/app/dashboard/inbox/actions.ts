@@ -595,4 +595,9 @@ export async function getQuickReplies(shopId: string) {
   return data || [];
 }
 
+export async function syncHistoricalChats(shopId: string, pageId?: string) {
+  const { syncMetaHistoricalChats } = await import('@/lib/meta-chat-sync');
+  return await syncMetaHistoricalChats(shopId, pageId);
+}
+
 

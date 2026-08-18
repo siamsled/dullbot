@@ -150,6 +150,14 @@ export async function GET(request: Request) {
   const { subscribePageToWebhooks } = await import('@/lib/meta-api');
   await subscribePageToWebhooks(pageId, pageAccessToken);
 
+  // Background sync historical conversations from this page
+  if (resolvedShopId) {
+    const { syncMetaHistoricalChats } = await import('@/lib/meta-chat-sync');
+    syncMetaHistoricalChats(resolvedShopId, pageId).catch(err => {
+      console.error('[OAUTH AUTO-SYNC ERROR]:', err);
+    });
+  }
+
   // Determine redirection
   const igParam = instagramBusinessId ? '&instagram=connected' : '';
   const igMissingParam = !hasIgPermission ? '&ig_permission_missing=true' : '';

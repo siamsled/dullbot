@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Bot, User, Search, AlertTriangle, ShieldCheck, UserCog, AlertCircle, Phone, Clock, ArrowLeft, MoreVertical, Ban, Tag, ArrowDown, ArrowUp, ShieldAlert, Send, MessageSquareText, Reply, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp, ArrowRight, Lock, Smartphone, Sparkles, X, RefreshCw, BrainCircuit, Package, ExternalLink, Maximize2 } from 'lucide-react';
-import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies } from './actions';
+import { getMessages, sendMessage, toggleTakeover, getConversations, resolveFacebookProfile, flagCustomerAsFraud, generateHandoffSummary, markAsRead, updateInternalNotes, updateCustomerTags, updateConversationTags, assignConversation, resolveConversation, getCustomerOrderHistory, getQuickReplies, syncHistoricalChats } from './actions';
 import MessengerInput from '@/components/dashboard/MessengerInput';
 import { parseMessageSegments, extractReplyContext } from '@/lib/message-parser';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -477,6 +477,30 @@ export default function InboxClient({
   });
 
   const [conversations, setConversations] = useState<any[]>(fetchedConversations || []);
+  const [isSyncingChats, setIsSyncingChats] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleSyncChats = async () => {
+    setIsSyncingChats(true);
+    setSyncMessage('Connecting to Meta Graph API...');
+    try {
+      const res = await syncHistoricalChats(shop.id);
+      if (res.success) {
+        const refreshed = await getConversations(shop.id);
+        setConversations(refreshed);
+        setSyncMessage(`✓ Synced ${res.syncedConversations} chats, ${res.syncedMessages} messages`);
+        setTimeout(() => setSyncMessage(null), 4000);
+      } else {
+        setSyncMessage(res.error || 'Failed to sync historical chats');
+        setTimeout(() => setSyncMessage(null), 4000);
+      }
+    } catch (e: any) {
+      setSyncMessage(e.message || 'Sync error');
+      setTimeout(() => setSyncMessage(null), 4000);
+    } finally {
+      setIsSyncingChats(false);
+    }
+  };
 
   useEffect(() => {
     if (fetchedConversations) {
@@ -960,17 +984,49 @@ export default function InboxClient({
         {/* Conversations List */}
         <div className="w-1/3 border-r border-dove/20 flex flex-col bg-fog">
           <div className="p-3.5 border-b border-dove/10 bg-white space-y-2.5">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-fog rounded-xl text-xs text-ink border border-dove/10 focus:border-dove focus:bg-white focus:ring-0 transition-all placeholder:text-ash/70"
-              />
+            {/* Search Input & Sync History Action */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-ash absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-fog rounded-xl text-xs text-ink border border-dove/10 focus:border-dove focus:bg-white focus:ring-0 transition-all placeholder:text-ash/70"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSyncChats}
+                disabled={isSyncingChats}
+                title="Sync past conversations and messages from connected Facebook Pages"
+                className="px-2.5 py-1.5 rounded-xl bg-fog hover:bg-dove/20 text-graphite hover:text-ink border border-dove/10 transition-all disabled:opacity-60 shrink-0 flex items-center gap-1 text-[11px] font-semibold active:scale-95 cursor-pointer shadow-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingChats ? 'animate-spin text-blue-600' : ''}`} />
+                <span className="hidden xl:inline">{isSyncingChats ? 'Syncing...' : 'Sync History'}</span>
+              </button>
             </div>
+
+            {/* Sync Feedback Banner */}
+            {syncMessage && (
+              <div className={`px-2.5 py-1.5 rounded-xl text-[11px] font-medium border flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-200 ${
+                syncMessage.startsWith('✓')
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : syncMessage.includes('Connecting')
+                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                  : 'bg-amber-50 text-amber-800 border-amber-200'
+              }`}>
+                <span className="truncate">{syncMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => setSyncMessage(null)}
+                  className="text-ash hover:text-ink ml-1.5 shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
 
             {/* Channel Filters */}
             <div className="flex items-center gap-1 p-1 bg-fog rounded-xl border border-dove/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
