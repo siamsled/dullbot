@@ -351,17 +351,42 @@ export async function saveSettings(
     courierConfig: any;
   }
 ) {
-  const bkashConfigEncrypted = payload.bkashConfig ? encrypt(JSON.stringify(payload.bkashConfig)) : null;
-  const nagadConfigEncrypted = payload.nagadConfig ? encrypt(JSON.stringify(payload.nagadConfig)) : null;
-  const courierConfigEncrypted = payload.courierConfig ? encrypt(JSON.stringify(payload.courierConfig)) : null;
+  try {
+    let resolvedId = shopId;
+    const isUUID = shopId.includes('-') && shopId.length === 36;
+    if (!isUUID) {
+      const { data: s } = await supabaseAdmin.from('shops').select('id').eq('slug', shopId).single();
+      if (s?.id) resolvedId = s.id;
+    }
 
-  // Preserve existing prompt_cache_ref and merge depositSettings
-  let updatedPromptCacheRef: string | undefined = undefined;
-  if (payload.depositSettings) {
+    // Strict validation: Require wallet number if advance deposit or full prepayment is selected
+    if (
+      (payload.confirmationTier === 'deposit_verified' || payload.confirmationTier === 'prepay_verified') &&
+      !payload.bkashNumber?.trim()
+    ) {
+      return {
+        success: false,
+        error: 'A Store bKash / Nagad Number is required when enabling Advance Deposit or Full Prepayment.',
+      };
+    }
+
+    let bkashConfigEncrypted: string | null = null;
+    let nagadConfigEncrypted: string | null = null;
+    let courierConfigEncrypted: string | null = null;
+
+    try {
+      if (payload.bkashConfig) bkashConfigEncrypted = encrypt(JSON.stringify(payload.bkashConfig));
+      if (payload.nagadConfig) nagadConfigEncrypted = encrypt(JSON.stringify(payload.nagadConfig));
+      if (payload.courierConfig) courierConfigEncrypted = encrypt(JSON.stringify(payload.courierConfig));
+    } catch (encErr) {
+      console.error('Failed to encrypt payment/courier config:', encErr);
+    }
+
+    // Preserve existing prompt_cache_ref and merge depositSettings & confirmationTier
     const { data: currentShop } = await supabaseAdmin
       .from('shops')
       .select('prompt_cache_ref')
-      .eq('id', shopId)
+      .eq('id', resolvedId)
       .single();
 
     let existingMeta: Record<string, any> = {};
@@ -371,50 +396,52 @@ export async function saveSettings(
       } catch {}
     }
 
-    updatedPromptCacheRef = JSON.stringify({
+    const updatedPromptCacheRef = JSON.stringify({
       ...existingMeta,
-      ...payload.depositSettings,
+      ...(payload.depositSettings || {}),
+      confirmationTier: payload.confirmationTier,
     });
-  }
 
-  // Strict validation: Require wallet number if advance deposit or full prepayment is selected
-  if (
-    (payload.confirmationTier === 'deposit_verified' || payload.confirmationTier === 'prepay_verified') &&
-    !payload.bkashNumber?.trim()
-  ) {
-    return {
-      success: false,
-      error: 'A Store bKash / Nagad Number is required when enabling Advance Deposit or Full Prepayment.',
+    // Database enum confirmation_tier_enum only accepts: 'light', 'otp_verified', 'prepay_verified'.
+    // Map 'deposit_verified' to 'prepay_verified' for database storage while keeping 'deposit_verified' in prompt_cache_ref.
+    const dbConfirmationTier = payload.confirmationTier === 'deposit_verified'
+      ? 'prepay_verified'
+      : payload.confirmationTier;
+
+    const updateFields: any = {
+      confirmation_tier: dbConfirmationTier,
+      bkash_number: payload.bkashNumber,
+      agent_enabled: payload.agentEnabled,
+      payment_verification_method: payload.paymentVerificationMethod,
+      courier_provider: payload.courierProvider || null,
+      prompt_cache_ref: updatedPromptCacheRef,
     };
+
+    if (bkashConfigEncrypted !== null) updateFields.bkash_config_encrypted = bkashConfigEncrypted;
+    if (nagadConfigEncrypted !== null) updateFields.nagad_config_encrypted = nagadConfigEncrypted;
+    if (courierConfigEncrypted !== null) updateFields.courier_config_encrypted = courierConfigEncrypted;
+
+    const { error: shopErr } = await supabaseAdmin
+      .from('shops')
+      .update(updateFields)
+      .eq('id', resolvedId);
+
+    if (shopErr) {
+      console.error('Failed to update shop settings:', shopErr);
+      return { success: false, error: shopErr.message };
+    }
+
+    try {
+      revalidatePath('/dashboard/settings');
+    } catch (revalErr) {
+      console.warn('revalidatePath non-critical warning:', revalErr);
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unhandled error in saveSettings:', err);
+    return { success: false, error: err?.message || 'An unexpected server error occurred while saving.' };
   }
-
-  const updateFields: any = {
-    confirmation_tier: payload.confirmationTier,
-    bkash_number: payload.bkashNumber,
-    agent_enabled: payload.agentEnabled,
-    payment_verification_method: payload.paymentVerificationMethod,
-    bkash_config_encrypted: bkashConfigEncrypted,
-    nagad_config_encrypted: nagadConfigEncrypted,
-    courier_provider: payload.courierProvider || null,
-    courier_config_encrypted: courierConfigEncrypted,
-  };
-
-  if (updatedPromptCacheRef !== undefined) {
-    updateFields.prompt_cache_ref = updatedPromptCacheRef;
-  }
-
-  const { error: shopErr } = await supabaseAdmin
-    .from('shops')
-    .update(updateFields)
-    .eq('id', shopId);
-
-  if (shopErr) {
-    console.error('Failed to update shop settings:', shopErr);
-    return { success: false, error: shopErr.message };
-  }
-
-  revalidatePath('/dashboard/settings');
-  return { success: true };
 }
 
 export async function saveShopLogo(shopId: string, logoUrl: string) {

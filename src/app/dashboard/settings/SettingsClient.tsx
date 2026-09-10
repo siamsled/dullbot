@@ -94,7 +94,9 @@ export default function SettingsClient({ shop }: Props) {
   const parsedMetaSettings = parseWaRef(shop?.prompt_cache_ref);
 
   const [confirmationTier, setConfirmationTier] = useState<'light' | 'deposit_verified' | 'otp_verified' | 'prepay_verified'>(
-    shop?.confirmation_tier ?? 'light'
+    (parsedMetaSettings?.confirmationTier as any) ||
+    (shop?.confirmation_tier === 'prepay_verified' && parsedMetaSettings?.depositRuleType ? 'deposit_verified' : shop?.confirmation_tier) ||
+    'light'
   );
   
   /* Multi-scenario advance deposit states */
@@ -454,36 +456,41 @@ export default function SettingsClient({ shop }: Props) {
       return;
     }
     startSaveTransition(async () => {
-      const res = await saveSettings(shop.id, {
-        confirmationTier,
-        depositSettings: {
-          depositRuleType,
-          deliveryInsideDhaka: Number(deliveryInsideDhaka) || 80,
-          deliveryOutsideDhaka: Number(deliveryOutsideDhaka) || 150,
-          fixedAmount: Number(fixedDepositAmount) || 200,
-          percentage: Number(depositPercentage) || 50,
-          highValueThreshold: Number(highValueThreshold) || 3000,
-          highValueDepositAmount: Number(highValueDepositAmount) || 500,
-          depositReason: depositReason.trim(),
-          acceptScreenshot,
-          acceptLast3Digits,
-          acceptTrxId,
-          depositAmount: depositRuleType === 'fixed_amount' ? Number(fixedDepositAmount) : (depositRuleType === 'delivery_split' ? Number(deliveryOutsideDhaka) : Number(fixedDepositAmount)),
-        },
-        bkashNumber,
-        agentEnabled,
-        paymentVerificationMethod,
-        bkashConfig: { app_key: bkashAppKey, app_secret: bkashAppSecret, username: bkashUsername, password: bkashPassword, sandbox: bkashSandbox },
-        nagadConfig:  { merchant_id: nagadMerchantId, private_key: nagadPrivateKey, public_key: nagadPublicKey },
-        courierProvider,
-        courierConfig: { client_id: courierClientId, client_secret: courierClientSecret, username: courierUsername, password: courierPassword, store_id: courierStoreId, api_key: courierApiKey },
-      });
-      if (res.success) {
-        setSavedSnapshot(getCurrentSnapshot());
-        setSaveToast(true);
-        setTimeout(() => setSaveToast(false), 2500);
-      } else {
-        alert(`Failed to save: ${res.error}`);
+      try {
+        const res = await saveSettings(shop.id, {
+          confirmationTier,
+          depositSettings: {
+            depositRuleType,
+            deliveryInsideDhaka: Number(deliveryInsideDhaka) || 80,
+            deliveryOutsideDhaka: Number(deliveryOutsideDhaka) || 150,
+            fixedAmount: Number(fixedDepositAmount) || 200,
+            percentage: Number(depositPercentage) || 50,
+            highValueThreshold: Number(highValueThreshold) || 3000,
+            highValueDepositAmount: Number(highValueDepositAmount) || 500,
+            depositReason: depositReason.trim(),
+            acceptScreenshot,
+            acceptLast3Digits,
+            acceptTrxId,
+            depositAmount: depositRuleType === 'fixed_amount' ? Number(fixedDepositAmount) : (depositRuleType === 'delivery_split' ? Number(deliveryOutsideDhaka) : Number(fixedDepositAmount)),
+          },
+          bkashNumber,
+          agentEnabled,
+          paymentVerificationMethod,
+          bkashConfig: { app_key: bkashAppKey, app_secret: bkashAppSecret, username: bkashUsername, password: bkashPassword, sandbox: bkashSandbox },
+          nagadConfig:  { merchant_id: nagadMerchantId, private_key: nagadPrivateKey, public_key: nagadPublicKey },
+          courierProvider,
+          courierConfig: { client_id: courierClientId, client_secret: courierClientSecret, username: courierUsername, password: courierPassword, store_id: courierStoreId, api_key: courierApiKey },
+        });
+        if (res?.success) {
+          setSavedSnapshot(getCurrentSnapshot());
+          setSaveToast(true);
+          setTimeout(() => setSaveToast(false), 2500);
+        } else {
+          alert(`Failed to save: ${res?.error || 'Server error'}`);
+        }
+      } catch (err: any) {
+        console.error('Error saving settings:', err);
+        alert(`Failed to save settings: ${err?.message || 'Server communication error. Please try again.'}`);
       }
     });
   };

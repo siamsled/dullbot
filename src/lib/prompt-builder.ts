@@ -161,6 +161,7 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
 
   // Payment & Advance Deposit Policy
   let depositMeta: {
+    confirmationTier?: string;
     depositRuleType?: string;
     deliveryInsideDhaka?: number;
     deliveryOutsideDhaka?: number;
@@ -173,6 +174,7 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     acceptLast3Digits?: boolean;
     acceptTrxId?: boolean;
     depositAmount?: number;
+    [key: string]: any;
   } | null = null;
 
   if (shop.prompt_cache_ref) {
@@ -181,7 +183,10 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     } catch {}
   }
 
-  let confirmationTier = shop.confirmation_tier ?? 'light';
+  let confirmationTier = depositMeta?.confirmationTier ?? shop.confirmation_tier ?? 'light';
+  if (confirmationTier === 'prepay_verified' && depositMeta?.depositRuleType) {
+    confirmationTier = 'deposit_verified';
+  }
   // Safety guard: Cannot enforce advance deposits or prepayment without a wallet number to receive money.
   if ((confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !shop.bkash_number?.trim()) {
     confirmationTier = 'light';
