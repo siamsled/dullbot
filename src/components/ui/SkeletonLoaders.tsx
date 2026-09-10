@@ -724,14 +724,29 @@ export function CreditsSkeleton() {
 // ══════════════════════════════════════════════════════════════════════════════
 export function SettingsSkeleton() {
   return (
-    <div className="flex-1 overflow-y-auto h-full w-full animate-pulse">
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
-
-        {/* PAGE HEADER */}
-        <div className="space-y-1">
-          <Bone className="h-10 w-56 rounded-xl" />
-          <Bone className="h-3.5 w-80" />
+    <div className="flex-1 flex h-full w-full overflow-hidden animate-pulse">
+      {/* Settings Sub-Sidebar Skeleton */}
+      <aside className="hidden md:flex md:w-64 lg:w-72 shrink-0 bg-white dark:bg-[#0c0c0e] border-r border-dove/20 dark:border-white/10 flex-col h-full p-4 space-y-4">
+        <div className="space-y-1.5 px-2 pt-2 border-b border-dove/10 dark:border-white/10 pb-4">
+          <Bone className="h-6 w-28 rounded-lg" />
+          <Bone className="h-3 w-40" />
         </div>
+        <div className="space-y-1.5 pt-1 flex-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Bone key={i} className="h-9 w-full rounded-xl" />
+          ))}
+        </div>
+      </aside>
+
+      {/* Main Settings Content Skeleton */}
+      <div className="flex-1 overflow-y-auto h-full min-w-0">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
+
+          {/* PAGE HEADER */}
+          <div className="space-y-1">
+            <Bone className="h-10 w-56 rounded-xl" />
+            <Bone className="h-3.5 w-80" />
+          </div>
 
         {/* SECTION: Business Profile */}
         <div className="space-y-3">
@@ -821,6 +836,7 @@ export function SettingsSkeleton() {
               <div className="h-8 w-24 bg-fog rounded-inputs border border-dove/15" />
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
