@@ -292,6 +292,7 @@ export async function getConversations(shopId: string) {
               last_message_content: latest.content,
               last_message_at: latest.created_at
             })
+            .eq('id', conv.id)
             .then(({ error: healErr }) => {
               if (healErr) console.error(`Failed to heal conversation ${conv.id}:`, healErr.message);
             });
