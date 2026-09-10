@@ -181,7 +181,11 @@ All personas MUST ALWAYS format their response as 2 to 3 short message bubbles s
     } catch {}
   }
 
-  const confirmationTier = shop.confirmation_tier ?? 'light';
+  let confirmationTier = shop.confirmation_tier ?? 'light';
+  // Safety guard: Cannot enforce advance deposits or prepayment without a wallet number to receive money.
+  if ((confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !shop.bkash_number?.trim()) {
+    confirmationTier = 'light';
+  }
   let paymentPolicyLine = '';
 
   if (confirmationTier === 'deposit_verified') {

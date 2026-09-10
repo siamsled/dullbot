@@ -377,6 +377,17 @@ export async function saveSettings(
     });
   }
 
+  // Strict validation: Require wallet number if advance deposit or full prepayment is selected
+  if (
+    (payload.confirmationTier === 'deposit_verified' || payload.confirmationTier === 'prepay_verified') &&
+    !payload.bkashNumber?.trim()
+  ) {
+    return {
+      success: false,
+      error: 'A Store bKash / Nagad Number is required when enabling Advance Deposit or Full Prepayment.',
+    };
+  }
+
   const updateFields: any = {
     confirmation_tier: payload.confirmationTier,
     bkash_number: payload.bkashNumber,

@@ -449,6 +449,10 @@ export default function SettingsClient({ shop }: Props) {
   };
 
   const handleSave = () => {
+    if ((confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim()) {
+      alert('⚠️ A Store bKash / Nagad Number is required to enable Advance Deposits or Full Prepayment.\n\nPlease enter your mobile wallet number before saving, or choose Cash on Delivery.');
+      return;
+    }
     startSaveTransition(async () => {
       const res = await saveSettings(shop.id, {
         confirmationTier,
@@ -1363,19 +1367,42 @@ export default function SettingsClient({ shop }: Props) {
                   className={inputCls}
                 >
                   <option value="light">Light (100% Cash on Delivery — Address Only)</option>
-                  <option value="deposit_verified">Advance Deposit Required (e.g. Delivery Charge)</option>
-                  <option value="prepay_verified">Full Advance Payment (100% Prepayment via bKash/Nagad)</option>
+                  <option value="deposit_verified">Advance Deposit Required {!bkashNumber.trim() ? '(Requires Wallet Number)' : '(e.g. Delivery Charge)'}</option>
+                  <option value="prepay_verified">Full Advance Payment {!bkashNumber.trim() ? '(Requires Wallet Number)' : '(100% Prepayment via bKash/Nagad)'}</option>
                   <option value="otp_verified">OTP SMS Verification (Phone OTP)</option>
                 </select>
               </SettingsCard>
 
               {/* Prepay Number */}
-              <SettingsCard>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 bg-fog rounded-xl text-graphite flex-shrink-0"><CreditCard className="w-5 h-5" /></div>
-                  <div>
-                    <h4 className="text-sm font-bold text-ink">Store bKash / Nagad Number</h4>
-                    <p className="text-[11px] text-ash">Number sent to customers for advance money</p>
+              <SettingsCard className={
+                (confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim()
+                  ? 'border-amber-500/50 dark:border-amber-500/40 bg-amber-500/[0.02]'
+                  : ''
+              }>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+                      (confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim()
+                        ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
+                        : 'bg-fog text-graphite'
+                    }`}>
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-ink">Store bKash / Nagad Number</h4>
+                        {(confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            !bkashNumber.trim()
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300/40'
+                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                          }`}>
+                            {!bkashNumber.trim() ? 'Required' : 'Active'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-ash">Number sent to customers for advance money</p>
+                    </div>
                   </div>
                 </div>
                 <input
@@ -1383,9 +1410,34 @@ export default function SettingsClient({ shop }: Props) {
                   value={bkashNumber}
                   onChange={e => setBkashNumber(e.target.value)}
                   placeholder="e.g. 01712-345678 (Personal / Merchant)"
-                  className={inputCls}
+                  className={`${inputCls} ${
+                    (confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim()
+                      ? 'border-amber-500 focus:border-amber-600 focus:ring-amber-500'
+                      : ''
+                  }`}
                 />
+                {(confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim() && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    Required: Customers cannot send advance delivery money without a wallet number.
+                  </p>
+                )}
               </SettingsCard>
+
+              {/* Missing Wallet Number Warning Banner */}
+              {(!bkashNumber || !bkashNumber.trim()) && (confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && (
+                <div className="md:col-span-2 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-sm text-amber-800 dark:text-amber-300">
+                      Mobile Wallet Number Required for Advance Deliveries
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300/80">
+                      You have selected advance deposit/payment verification, but the Store bKash / Nagad Number is empty. Customers will have no number to send their delivery deposit to. Please enter your mobile wallet number above before saving.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Multi-Scenario Advance Deposit Policy Builder */}
               <AnimatePresence>
