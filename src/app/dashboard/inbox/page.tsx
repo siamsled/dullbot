@@ -1,6 +1,6 @@
 import InboxClient from './InboxClient';
 import { supabaseAdmin, getCurrentShop } from '@/lib/supabase-admin';
-import { getConversations, getMessages } from './actions';
+import { getConversations, getMessages } from '@/lib/inbox-data';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';

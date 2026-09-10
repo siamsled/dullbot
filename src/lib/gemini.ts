@@ -1,12 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GoogleAICacheManager } from '@google/generative-ai/server';
-import sharp from 'sharp';
 
 export async function fetchAndCompressImagePart(imageUrl: string): Promise<any | null> {
   try {
     const imgRes = await fetch(imageUrl);
     if (!imgRes.ok) return null;
     const buffer = await imgRes.arrayBuffer();
+    const sharp = (await import('sharp')).default;
     const compressedBuffer = await sharp(buffer)
       .resize({ width: 256, height: 256, fit: 'inside' })
       .webp({ quality: 80 })

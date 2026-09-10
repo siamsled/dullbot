@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@zxing/browser', '@zxing/library'],
+  serverExternalPackages: ['@zxing/browser', '@zxing/library', 'sharp'],
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
