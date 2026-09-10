@@ -450,7 +450,7 @@ export default function SettingsClient({ shop }: Props) {
 
   const handleSave = () => {
     if ((confirmationTier === 'deposit_verified' || confirmationTier === 'prepay_verified') && !bkashNumber.trim()) {
-      alert('⚠️ A Store bKash / Nagad Number is required to enable Advance Deposits or Full Prepayment.\n\nPlease enter your mobile wallet number before saving, or choose Cash on Delivery.');
+      alert('⚠️ A Store bKash / Nagad Number is required to enable Advance Deposits or Full Prepayment.\n\nPlease enter your mobile wallet number before saving, or switch Sale Confirmation Rule to Cash on Delivery.');
       return;
     }
     startSaveTransition(async () => {
@@ -1357,8 +1357,8 @@ export default function SettingsClient({ shop }: Props) {
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2.5 bg-fog rounded-xl text-graphite flex-shrink-0"><ShieldCheck className="w-5 h-5" /></div>
                   <div>
-                    <h4 className="text-sm font-bold text-ink">Order Confirmation Rule</h4>
-                    <p className="text-[11px] text-ash">How strictly to verify before packing</p>
+                    <h4 className="text-sm font-bold text-ink">Sale Confirmation Rule</h4>
+                    <p className="text-[11px] text-ash">How strictly to verify before processing & fulfillment</p>
                   </div>
                 </div>
                 <select
@@ -1366,8 +1366,8 @@ export default function SettingsClient({ shop }: Props) {
                   onChange={e => setConfirmationTier(e.target.value as any)}
                   className={inputCls}
                 >
-                  <option value="light">Light (100% Cash on Delivery — Address Only)</option>
-                  <option value="deposit_verified">Advance Deposit Required {!bkashNumber.trim() ? '(Requires Wallet Number)' : '(e.g. Delivery Charge)'}</option>
+                  <option value="light">Light (100% Cash on Delivery / Pay Later — Address Only)</option>
+                  <option value="deposit_verified">Advance Deposit Required {!bkashNumber.trim() ? '(Requires Wallet Number)' : '(e.g. Delivery Charge / Booking Fee)'}</option>
                   <option value="prepay_verified">Full Advance Payment {!bkashNumber.trim() ? '(Requires Wallet Number)' : '(100% Prepayment via bKash/Nagad)'}</option>
                   <option value="otp_verified">OTP SMS Verification (Phone OTP)</option>
                 </select>
@@ -1474,8 +1474,8 @@ export default function SettingsClient({ shop }: Props) {
                           {[
                             { id: 'delivery_split', label: 'Delivery Fee Split', sub: 'Inside vs Outside City', icon: Truck },
                             { id: 'fixed_amount', label: 'Fixed Amount', sub: 'Universal Flat Deposit', icon: Coins },
-                            { id: 'percentage', label: '% of Order Total', sub: 'For Made-to-Order items', icon: Banknote },
-                            { id: 'high_value_only', label: 'High-Value Only', sub: 'COD for normal orders', icon: ShieldCheck },
+                            { id: 'percentage', label: '% of Sale Total', sub: 'For Made-to-Order items', icon: Banknote },
+                            { id: 'high_value_only', label: 'High-Value Only', sub: 'COD for standard sales', icon: ShieldCheck },
                             { id: 'custom_policy', label: 'Custom Policy', sub: 'Freeform instructions', icon: Sparkles },
                           ].map(tab => {
                             const Icon = tab.icon;
@@ -1710,7 +1710,7 @@ export default function SettingsClient({ shop }: Props) {
                                     className={`${inputCls} pl-8 font-mono font-semibold bg-white`}
                                   />
                                 </div>
-                                <p className="text-[10px] text-ash mt-1">Orders below this amount remain 100% Cash on Delivery</p>
+                                <p className="text-[10px] text-ash mt-1">Sales below this amount remain 100% Cash on Delivery / Pay on Arrival</p>
                               </div>
 
                               <div>
