@@ -547,30 +547,6 @@ export default function SettingsClient({ shop }: Props) {
           })}
         </nav>
 
-        {/* Sidebar Footer: Quick Save */}
-        <div className="p-3 border-t border-dove/10 dark:border-white/10 bg-fog/30 dark:bg-zinc-900/20">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (!isDirty && !saveToast)}
-            className={`w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-subtle ${
-              saveToast
-                ? 'bg-emerald-600 text-white shadow-emerald-600/20'
-                : isDirty
-                ? 'bg-ink text-white hover:bg-black active:scale-[0.98] cursor-pointer'
-                : 'bg-white dark:bg-zinc-800 text-ash border border-dove/20 dark:border-white/10 opacity-60 cursor-default'
-            }`}
-          >
-            {isSaving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : saveToast ? (
-              <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-            ) : (
-              <Check className={`w-3.5 h-3.5 ${isDirty ? 'text-emerald-400 stroke-[3]' : 'text-ash'}`} />
-            )}
-            <span>{isSaving ? 'Saving…' : saveToast ? 'Saved!' : isDirty ? 'Save Changes' : 'All Saved'}</span>
-            <kbd className={`px-1.5 py-0.5 text-[9px] rounded font-mono ${isDirty ? 'bg-white/20 text-white/90' : 'bg-black/5 dark:bg-white/10 text-ash'}`}>⌘S</kbd>
-          </button>
-        </div>
       </aside>
 
       {/* ── Main Scrollable Settings Content ── */}
@@ -595,29 +571,6 @@ export default function SettingsClient({ shop }: Props) {
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || (!isDirty && !saveToast)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-subtle ${
-                  saveToast
-                    ? 'bg-emerald-600 text-white shadow-emerald-600/20'
-                    : isDirty
-                    ? 'bg-ink text-white hover:bg-black hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
-                    : 'bg-fog text-ash border border-dove/20 opacity-60 cursor-default'
-                }`}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : saveToast ? (
-                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                ) : (
-                  <Check className={`w-3.5 h-3.5 ${isDirty ? 'text-emerald-400 stroke-[3]' : 'text-ash'}`} />
-                )}
-                <span>{isSaving ? 'Saving Changes…' : saveToast ? 'Saved!' : isDirty ? 'Save Changes' : 'All Saved'}</span>
-                <kbd className={`hidden sm:inline-block px-1.5 py-0.5 text-[9px] rounded font-mono ${isDirty ? 'bg-white/20 text-white/90' : 'bg-black/5 text-ash'}`}>⌘S</kbd>
-              </button>
-            </div>
           </div>
 
           {/* Mobile Fallback Tab Bar (only visible on mobile < md) */}
