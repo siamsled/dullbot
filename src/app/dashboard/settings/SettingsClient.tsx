@@ -1744,7 +1744,7 @@ export default function SettingsClient({ shop }: Props) {
                       {/* Payment Verification Proofs Accepted */}
                       <div className="pt-2">
                         <label className="block text-[10px] font-bold text-graphite uppercase tracking-wider mb-2">
-                          Customer Payment Proof Requirements (Select all that apply)
+                          Customer Payment Proof Requirements (Any of the selected will be accepted)
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                           {[
@@ -1834,7 +1834,7 @@ export default function SettingsClient({ shop }: Props) {
                                 if (acceptScreenshot) proofs.push('স্ক্রিনশট');
                                 if (acceptLast3Digits) proofs.push('লাস্ট ৩ ডিজিট');
                                 if (acceptTrxId) proofs.push('TrxID');
-                                const proofText = proofs.length > 0 ? proofs.join(', ') : 'পেমেন্ট প্রুফ';
+                                const proofText = proofs.length > 0 ? proofs.join('/') : 'পেমেন্ট প্রুফ';
 
                                 if (depositRuleType === 'delivery_split') {
                                   if (simLocation === 'dhaka') {
