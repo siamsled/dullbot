@@ -16,30 +16,8 @@ import { fetchAnalyticsByRange } from './actions';
 import { CourierLogo } from '@/components/ui/CourierLogos';
 
 interface Props {
-  range: number;
-  revenueTrend: any[];
-  peakTimes: number[][]; // [7][3]
-  customerGrowth: any[];
-  topRegions: any[];
-  channelPerformance: any[];
-  topProducts: any[];
-  paymentStats: {
-    tier1Rate: number;
-    tier2Rate: number;
-    mismatchRate: number;
-    total: number;
-  };
-  profitMargins?: {
-    totalRevenue: number;
-    totalCost: number;
-    grossProfit: number;
-    marginPercent: number;
-  };
-  basketAnalysis?: Array<{ productA: string; productB: string; count: number }>;
-  inventoryRunway?: Array<{ id: string; name: string; stock: number; category: string; soldInPeriod: number; daysRemaining: number; isDeadStock: boolean }>;
-  courierPerformance?: Array<{ provider: string; totalShipped: number; deliveredCount: number; avgDays: number; deliverySuccessRate: number }>;
-  paymentBreakdown?: Array<{ method: string; count: number; totalTaka: number; share: number }>;
-  cancellationBreakdown?: Array<{ reason: string; count: number }>;
+  initialRange: number;
+  initialData: Record<number, any>;
 }
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -197,48 +175,18 @@ function EmptyState({ icon: Icon, title, desc }: { icon: React.ElementType; titl
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function AnalyticsClient({
-  range: initialRange,
-  revenueTrend: initialRevenueTrend,
-  peakTimes: initialPeakTimes,
-  customerGrowth: initialCustomerGrowth,
-  topRegions: initialTopRegions,
-  channelPerformance: initialChannelPerformance,
-  topProducts: initialTopProducts,
-  paymentStats: initialPaymentStats,
-  profitMargins: initialProfitMargins = { totalRevenue: 0, totalCost: 0, grossProfit: 0, marginPercent: 0 },
-  basketAnalysis: initialBasketAnalysis = [],
-  inventoryRunway: initialInventoryRunway = [],
-  courierPerformance: initialCourierPerformance = [],
-  paymentBreakdown: initialPaymentBreakdown = [],
-  cancellationBreakdown: initialCancellationBreakdown = [],
-}: Props) {
+export default function AnalyticsClient({ initialRange, initialData }: Props) {
   const [activeRange, setActiveRange] = useState(initialRange);
   const [hoveredCell, setHoveredCell] = useState<{ day: string; session: string; count: number; pct: number } | null>(null);
 
-  const initialDataObj = {
-    revenueTrend: initialRevenueTrend,
-    peakTimes: initialPeakTimes,
-    customerGrowth: initialCustomerGrowth,
-    topRegions: initialTopRegions,
-    channelPerformance: initialChannelPerformance,
-    topProducts: initialTopProducts,
-    paymentStats: initialPaymentStats,
-    profitMargins: initialProfitMargins,
-    basketAnalysis: initialBasketAnalysis,
-    inventoryRunway: initialInventoryRunway,
-    courierPerformance: initialCourierPerformance,
-    paymentBreakdown: initialPaymentBreakdown,
-    cancellationBreakdown: initialCancellationBreakdown,
-  };
-
-  const [dataCache, setDataCache] = useState<Record<number, any>>({
-    [initialRange]: initialDataObj,
-  });
+  const [dataCache, setDataCache] = useState<Record<number, any>>(initialData);
 
   const { data, isFetching } = useQuery({
     queryKey: ['analytics-data', activeRange],
     queryFn: async () => {
+      // Data is already pre-fetched in page.tsx for 7, 30, 90, 0
+      if (initialData[activeRange]) return initialData[activeRange];
+      
       const res = await fetchAnalyticsByRange(activeRange);
       if (res) {
         setDataCache(prev => ({ ...prev, [activeRange]: res }));
@@ -250,7 +198,7 @@ export default function AnalyticsClient({
     refetchOnWindowFocus: false,
   });
 
-  const currentData = data || dataCache[activeRange] || (activeRange === initialRange ? initialDataObj : dataCache[initialRange] || initialDataObj);
+  const currentData = data || dataCache[activeRange] || dataCache[30];
 
   const handleRangeChange = (newRange: number) => {
     setActiveRange(newRange);

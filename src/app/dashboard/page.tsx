@@ -34,9 +34,16 @@ export default async function DashboardOverview() {
     .select('id', { count: 'exact', head: true })
     .eq('shop_id', shop.id);
 
-  // Fetch real analytics stats
-  const stats = await getShopStats(shop.id);
+  // Pre-fetch all standard ranges so client toggles are instant
+  const [daily, weekly, monthly, yearly] = await Promise.all([
+    getShopStats(shop.id, 'daily'),
+    getShopStats(shop.id, 'weekly'),
+    getShopStats(shop.id, 'monthly'),
+    getShopStats(shop.id, 'yearly')
+  ]);
 
-  return <OverviewClient shop={shop} productCount={productCount || 0} stats={stats} />;
+  const initialStats = { daily, weekly, monthly, yearly };
+
+  return <OverviewClient shop={shop} productCount={productCount || 0} initialStats={initialStats} />;
 }
 

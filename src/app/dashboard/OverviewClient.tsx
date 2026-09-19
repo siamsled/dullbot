@@ -29,10 +29,10 @@ const AI_SPLIT_COLORS = [CHART_BLUE, CHART_VIOLET]; // Resolved by AI (Electric 
 interface Props {
   shop: any;
   productCount: number;
-  stats: ShopStats;
+  initialStats: Record<string, ShopStats>;
 }
 
-export default function OverviewClient({ shop: initialShop, productCount, stats }: Props) {
+export default function OverviewClient({ shop: initialShop, productCount, initialStats }: Props) {
   const [shop, setShop] = useState(initialShop);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isNudgeDismissed, setIsNudgeDismissed] = useState(false);
@@ -43,21 +43,20 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
   const [customEnd, setCustomEnd] = useState('');
 
   // Cache stats per timeframe so switching between Daily, Weekly, Monthly, Yearly is 100% instant with 0 database requests
-  const [statsCache, setStatsCache] = useState<Record<string, ShopStats>>({
-    weekly: stats,
-  });
+  const [statsCache, setStatsCache] = useState<Record<string, ShopStats>>(initialStats);
 
   const { data: fetchedStats, isFetching } = useQuery({
     queryKey: ['overview-stats', shop.id, rangeType, customStart, customEnd],
     queryFn: async () => {
-      if (rangeType === 'custom' && (!customStart || !customEnd)) return stats;
+      if (rangeType === 'custom' && (!customStart || !customEnd)) return statsCache.weekly;
       const res = await fetchDashboardStats(shop.id, rangeType, customStart || undefined, customEnd || undefined);
       if (res.success && res.stats) {
         setStatsCache(prev => ({ ...prev, [rangeType]: res.stats }));
         return res.stats;
       }
-      return stats;
+      return statsCache.weekly;
     },
+    // If the data is already in cache (which it is for standard ranges), we don't even need a loading state
     placeholderData: (previousData) => previousData || statsCache[rangeType],
     staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
@@ -65,7 +64,7 @@ export default function OverviewClient({ shop: initialShop, productCount, stats 
     refetchOnMount: false,
   });
 
-  const currentStats: ShopStats = fetchedStats || statsCache[rangeType] || (rangeType === 'weekly' ? stats : fetchedStats || statsCache.weekly || stats);
+  const currentStats: ShopStats = fetchedStats || statsCache[rangeType] || statsCache.weekly;
 
   useEffect(() => {
     setIsBannerDismissed(localStorage.getItem(BANNER_DISMISSED_KEY) === '1');

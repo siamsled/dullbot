@@ -1,21 +1,7 @@
 import { getCurrentShop } from '@/lib/supabase-admin';
 import { redirect } from 'next/navigation';
 import AnalyticsClient from './AnalyticsClient';
-import {
-  getRevenueTrend,
-  getPeakOrderTimes,
-  getCustomerGrowth,
-  getTopRegions,
-  getChannelPerformance,
-  getTopProducts,
-  getPaymentStats,
-  getProfitMargins,
-  getBasketAnalysis,
-  getInventoryRunway,
-  getCourierPerformance,
-  getPaymentMethodBreakdown,
-  getCancellationBreakdown
-} from '@/lib/analytics';
+import { fetchAnalyticsByRange } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,57 +17,22 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const { range } = await searchParams;
   const rawRange = Number(range);
-  // 0 = all time (use 3650 days as proxy); default to 30
-  const days = rawRange === 0 ? 3650 : [7, 30, 90].includes(rawRange) ? rawRange : 30;
-  // active value passed to client for button highlight (0 means All Time pill is active)
-  const activeRange = rawRange === 0 ? 0 : days;
+  const activeRange = rawRange === 0 ? 0 : [7, 30, 90].includes(rawRange) ? rawRange : 30;
 
-  const [
-    revenueTrend,
-    peakTimes,
-    customerGrowth,
-    topRegions,
-    channelPerformance,
-    topProducts,
-    paymentStats,
-    profitMargins,
-    basketAnalysis,
-    inventoryRunway,
-    courierPerformance,
-    paymentBreakdown,
-    cancellationBreakdown
-  ] = await Promise.all([
-    getRevenueTrend(shop.id, days),
-    getPeakOrderTimes(shop.id, days),
-    getCustomerGrowth(shop.id, days),
-    getTopRegions(shop.id, days),
-    getChannelPerformance(shop.id, days),
-    getTopProducts(shop.id, days),
-    getPaymentStats(shop.id, days),
-    getProfitMargins(shop.id, days),
-    getBasketAnalysis(shop.id, days),
-    getInventoryRunway(shop.id, days),
-    getCourierPerformance(shop.id, days),
-    getPaymentMethodBreakdown(shop.id, days),
-    getCancellationBreakdown(shop.id, days)
+  // Pre-fetch all standard ranges concurrently so client toggles are instant
+  const [data7, data30, data90, data0] = await Promise.all([
+    fetchAnalyticsByRange(7),
+    fetchAnalyticsByRange(30),
+    fetchAnalyticsByRange(90),
+    fetchAnalyticsByRange(0)
   ]);
 
-  return (
-    <AnalyticsClient
-      range={activeRange}
-      revenueTrend={revenueTrend}
-      peakTimes={peakTimes}
-      customerGrowth={customerGrowth}
-      topRegions={topRegions}
-      channelPerformance={channelPerformance}
-      topProducts={topProducts}
-      paymentStats={paymentStats}
-      profitMargins={profitMargins}
-      basketAnalysis={basketAnalysis}
-      inventoryRunway={inventoryRunway}
-      courierPerformance={courierPerformance}
-      paymentBreakdown={paymentBreakdown}
-      cancellationBreakdown={cancellationBreakdown}
-    />
-  );
+  const initialData = {
+    7: data7,
+    30: data30,
+    90: data90,
+    0: data0
+  };
+
+  return <AnalyticsClient initialRange={activeRange} initialData={initialData} />;
 }
