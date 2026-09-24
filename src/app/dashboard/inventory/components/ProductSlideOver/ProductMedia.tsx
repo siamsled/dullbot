@@ -113,6 +113,10 @@ export default function ProductMedia({
                     src={srcUrl}
                     alt={`Product ${idx + 1}`}
                     className="w-20 h-20 object-cover rounded-images border border-dove/20 shadow-sm hover:opacity-90 transition-opacity"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).parentElement?.classList.add('bg-fog', 'flex', 'items-center', 'justify-center');
+                    }}
                   />
                   {idx === 0 && (
                     <span className="absolute top-1 left-1 bg-ink text-white text-[10px] px-1.5 py-0.5 rounded-tags">
@@ -205,7 +209,14 @@ export default function ProductMedia({
                         </div>
                       </div>
                     ) : (
-                      <img src={mediaUrl} alt="Context media" className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" />
+                      <img 
+                        src={mediaUrl} 
+                        alt="Context media" 
+                        className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     )}
                     <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-medium px-1 rounded">
                       {item.media_type}

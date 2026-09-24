@@ -816,12 +816,16 @@ export default function AnalyticsClient({ initialRange, initialData }: Props) {
                     </div>
                     <div className="flex items-center gap-4 font-mono text-right">
                       <div>
-                        <span className="text-sm font-bold text-ink block">~{c.avgDays}d</span>
+                        <span className="text-sm font-bold text-ink block">
+                          {c.avgDays != null ? `~${c.avgDays}d` : '—'}
+                        </span>
                         <span className="text-[9px] text-ash">Avg fulfillment</span>
                       </div>
                       <div className="w-px h-8 bg-dove/20" />
                       <div>
-                        <span className="text-sm font-bold text-emerald-700 block">{c.deliverySuccessRate}%</span>
+                        <span className={`text-sm font-bold block ${c.totalShipped > 0 ? 'text-emerald-700' : 'text-ash'}`}>
+                          {c.totalShipped > 0 ? `${c.deliverySuccessRate}%` : '—'}
+                        </span>
                         <span className="text-[9px] text-ash">Delivered</span>
                       </div>
                     </div>

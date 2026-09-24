@@ -845,12 +845,12 @@ export async function getCourierPerformance(shopId: string, days: number) {
     .gte('created_at', since)
     .not('courier_provider', 'is', null);
 
-  const courierStats: Record<string, { provider: string; totalShipped: number; deliveredCount: number; avgDays: number }> = {
-    pathao: { provider: 'Pathao', totalShipped: 0, deliveredCount: 0, avgDays: 1.8 },
-    steadfast: { provider: 'Steadfast', totalShipped: 0, deliveredCount: 0, avgDays: 2.1 },
-    redx: { provider: 'RedX', totalShipped: 0, deliveredCount: 0, avgDays: 2.5 },
-    paperfly: { provider: 'Paperfly', totalShipped: 0, deliveredCount: 0, avgDays: 3.0 },
-    ecourier: { provider: 'eCourier', totalShipped: 0, deliveredCount: 0, avgDays: 2.2 },
+  const courierStats: Record<string, { provider: string; totalShipped: number; deliveredCount: number; avgDays: number | null; totalDays: number }> = {
+    pathao: { provider: 'Pathao', totalShipped: 0, deliveredCount: 0, avgDays: null, totalDays: 0 },
+    steadfast: { provider: 'Steadfast', totalShipped: 0, deliveredCount: 0, avgDays: null, totalDays: 0 },
+    redx: { provider: 'RedX', totalShipped: 0, deliveredCount: 0, avgDays: null, totalDays: 0 },
+    paperfly: { provider: 'Paperfly', totalShipped: 0, deliveredCount: 0, avgDays: null, totalDays: 0 },
+    ecourier: { provider: 'eCourier', totalShipped: 0, deliveredCount: 0, avgDays: null, totalDays: 0 },
   };
 
   for (const o of dispatchedOrders ?? []) {
@@ -865,7 +865,7 @@ export async function getCourierPerformance(shopId: string, days: number) {
 
   return Object.values(courierStats).map(c => ({
     ...c,
-    deliverySuccessRate: c.totalShipped > 0 ? Math.round((c.deliveredCount / c.totalShipped) * 100) : 95,
+    deliverySuccessRate: c.totalShipped > 0 ? Math.round((c.deliveredCount / c.totalShipped) * 100) : 0,
   }));
 }
 

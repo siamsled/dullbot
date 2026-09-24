@@ -164,7 +164,7 @@ export async function updateProduct(
   // Fetch current product to check if stock changed
   const { data: existing } = await supabaseAdmin
     .from('products')
-    .select('shop_id, stock_quantity, name')
+    .select('shop_id, stock_quantity, name, price, compare_at_price, cost_price')
     .eq('id', productId)
     .single();
 
@@ -188,6 +188,7 @@ export async function updateProduct(
 
   // Only log a stock movement if stock actually changed AND caller didn't opt out.
   // variant-backed products skip this because each variant logs its own movement.
+  const currentStock = data.stock_quantity ?? oldStock;
   if (
     !skipProductStockMovement &&
     data.stock_quantity !== undefined &&
@@ -202,6 +203,32 @@ export async function updateProduct(
       quantity_delta: delta,
       resulting_stock: data.stock_quantity,
       note: stock_change_note?.trim() ? `${stock_change_note.trim()} — ${baseNote}` : baseNote,
+    });
+  }
+
+  // Audit logs for important product fields (price, name, etc.)
+  const auditNotes: string[] = [];
+  if (data.price !== undefined && data.price !== existing?.price) {
+    auditNotes.push(`Price changed (৳${existing?.price ?? 0} → ৳${data.price})`);
+  }
+  if (data.compare_at_price !== undefined && data.compare_at_price !== (existing?.compare_at_price ?? null)) {
+    auditNotes.push(`Compare price changed (৳${existing?.compare_at_price ?? 0} → ৳${data.compare_at_price ?? 0})`);
+  }
+  if (data.cost_price !== undefined && data.cost_price !== (existing?.cost_price ?? null)) {
+    auditNotes.push(`Cost changed (৳${existing?.cost_price ?? 0} → ৳${data.cost_price ?? 0})`);
+  }
+  if (data.name !== undefined && data.name !== existing?.name) {
+    auditNotes.push(`Name changed to "${data.name}"`);
+  }
+
+  if (auditNotes.length > 0) {
+    await supabaseAdmin.from('stock_movements').insert({
+      product_id: productId,
+      shop_id: resolvedShopId,
+      change_type: 'audit',
+      quantity_delta: 0,
+      resulting_stock: currentStock,
+      note: auditNotes.join(', '),
     });
   }
 
@@ -337,7 +364,7 @@ export async function updateVariant(variantId: string, data: Partial<VariantInpu
   const shopId = await getShopId();
   const { data: existing } = await supabaseAdmin
     .from('product_variants')
-    .select('product_id, shop_id, stock, name')
+    .select('product_id, shop_id, stock, name, price_override')
     .eq('id', variantId)
     .single();
 
@@ -347,6 +374,7 @@ export async function updateVariant(variantId: string, data: Partial<VariantInpu
 
   await supabaseAdmin.from('product_variants').update(data).eq('id', variantId);
 
+  const currentStock = data.stock ?? oldStock;
   if (data.stock !== undefined && data.stock !== oldStock) {
     const delta = data.stock - oldStock;
     await supabaseAdmin.from('stock_movements').insert({
@@ -359,6 +387,29 @@ export async function updateVariant(variantId: string, data: Partial<VariantInpu
       note: data.stock_change_note 
         ? `${data.stock_change_note} — Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`
         : `Variant "${existing?.name || 'Item'}" stock updated (${oldStock} → ${data.stock})`,
+    });
+  }
+
+  // Audit logs for important variant fields (price_override, name)
+  const auditNotes: string[] = [];
+  if (data.price_override !== undefined && data.price_override !== (existing?.price_override ?? null)) {
+    const oldP = existing?.price_override != null ? `৳${existing.price_override}` : 'Inherit';
+    const newP = data.price_override != null ? `৳${data.price_override}` : 'Inherit';
+    auditNotes.push(`Price override changed (${oldP} → ${newP})`);
+  }
+  if (data.name !== undefined && data.name !== existing?.name) {
+    auditNotes.push(`Name changed to "${data.name}"`);
+  }
+
+  if (auditNotes.length > 0) {
+    await supabaseAdmin.from('stock_movements').insert({
+      product_id: productId,
+      variant_id: variantId,
+      shop_id: resolvedShopId,
+      change_type: 'audit',
+      quantity_delta: 0,
+      resulting_stock: currentStock,
+      note: auditNotes.join(', '),
     });
   }
 

@@ -1,7 +1,6 @@
 import React from 'react';
 
 export interface PersonaMeta {
-  avatarUrl?: string;
   bgColor: string;
   textColor: string;
   borderColor: string;
@@ -10,70 +9,60 @@ export interface PersonaMeta {
 
 export const PERSONA_CONFIGS: Record<string, PersonaMeta> = {
   'shuvo': {
-    avatarUrl: '/personas/shuvo.png',
     bgColor: '#38BDF8',
     textColor: '#FFFFFF',
     borderColor: 'rgba(56, 189, 248, 0.4)',
     gender: 'male'
   },
   'mehnaz': {
-    avatarUrl: '/personas/mehnaz.png',
     bgColor: '#F472B6',
     textColor: '#FFFFFF',
     borderColor: 'rgba(244, 114, 182, 0.4)',
     gender: 'female'
   },
   'jisan': {
-    avatarUrl: '/personas/jisan.png',
     bgColor: '#F59E0B',
     textColor: '#FFFFFF',
     borderColor: 'rgba(245, 158, 11, 0.4)',
     gender: 'male'
   },
   'tanim': {
-    avatarUrl: '/personas/tanim.png',
     bgColor: '#14B8A6',
     textColor: '#FFFFFF',
     borderColor: 'rgba(20, 184, 166, 0.4)',
     gender: 'male'
   },
   'nila': {
-    avatarUrl: '/personas/nila.png',
     bgColor: '#8B5CF6',
     textColor: '#FFFFFF',
     borderColor: 'rgba(139, 92, 246, 0.4)',
     gender: 'female'
   },
   'sharmin': {
-    avatarUrl: '/personas/sharmin.png',
     bgColor: '#FB923C',
     textColor: '#FFFFFF',
     borderColor: 'rgba(251, 146, 60, 0.4)',
     gender: 'female'
   },
   'rakib': {
-    avatarUrl: '/personas/rakib.png',
     bgColor: '#3B82F6',
     textColor: '#FFFFFF',
     borderColor: 'rgba(59, 130, 246, 0.4)',
     gender: 'male'
   },
   'rumi': {
-    avatarUrl: '/personas/rumi.png',
     bgColor: '#F43F5E',
     textColor: '#FFFFFF',
     borderColor: 'rgba(244, 63, 94, 0.4)',
     gender: 'female'
   },
   'imran': {
-    avatarUrl: '/personas/imran.png',
     bgColor: '#10B981',
     textColor: '#FFFFFF',
     borderColor: 'rgba(16, 185, 129, 0.4)',
     gender: 'male'
   },
   'biplob': {
-    avatarUrl: '/personas/biplob.png',
     bgColor: '#D97706',
     textColor: '#FFFFFF',
     borderColor: 'rgba(217, 119, 6, 0.4)',
@@ -107,7 +96,6 @@ export function PersonaAvatar({
 }) {
   const key = getPersonaKey(name);
   const config = PERSONA_CONFIGS[key] || PERSONA_CONFIGS['shuvo'];
-  const [imgError, setImgError] = React.useState(false);
 
   const initial = name?.trim() ? name.trim().charAt(0).toUpperCase() : 'A';
 
@@ -120,18 +108,9 @@ export function PersonaAvatar({
         color: config.textColor
       }}
     >
-      {!imgError && config.avatarUrl ? (
-        <img
-          src={config.avatarUrl}
-          alt={name}
-          className="w-full h-full object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <span className="text-sm font-bold tracking-tight select-none drop-shadow-xs">
-          {initial}
-        </span>
-      )}
+      <span className="text-sm font-bold tracking-tight select-none drop-shadow-xs">
+        {initial}
+      </span>
     </div>
   );
 }

@@ -192,7 +192,7 @@ export default function ProductVariants({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-zinc-50/80 dark:bg-zinc-900/60 border-b border-zinc-200/60 dark:border-zinc-800/60 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    <th className="px-4 py-3.5 w-16 text-center">Photos</th>
+                    <th className="px-4 py-3.5 w-16 text-left">Photos</th>
                     <th className="px-4 py-3.5 min-w-[200px]">Variant Name</th>
                     <th className="px-4 py-3.5 min-w-[170px]">SKU</th>
                     <th className="px-4 py-3.5 min-w-[130px]">Price (৳)</th>
@@ -209,7 +209,7 @@ export default function ProductVariants({
                     return (
                       <tr key={v.id} className="hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40 transition-colors">
                         {/* Photos Multi-thumbnail cell */}
-                        <td className="px-4 py-3 align-middle text-center">
+                        <td className="px-4 py-3 align-middle text-left">
                           <button
                             type="button"
                             onClick={() => setSelectedVariantIdForImages(v.id)}
@@ -218,7 +218,15 @@ export default function ProductVariants({
                           >
                             {photoCount > 0 && primaryThumb ? (
                               <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-xs group-hover/thumb:ring-2 group-hover/thumb:ring-indigo-500/40 transition-all">
-                                <img src={primaryThumb} alt={v.name} className="w-full h-full object-cover" />
+                                <img 
+                                  src={primaryThumb} 
+                                  alt={v.name} 
+                                  className="w-full h-full object-cover" 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    (e.target as HTMLImageElement).parentElement?.classList.add('bg-zinc-100', 'dark:bg-zinc-800');
+                                  }}
+                                />
                                 {photoCount > 1 && (
                                   <span className="absolute bottom-0 right-0 bg-zinc-950/80 backdrop-blur-xs text-white text-[9px] font-bold font-mono px-1 rounded-tl-md">
                                     +{photoCount - 1}

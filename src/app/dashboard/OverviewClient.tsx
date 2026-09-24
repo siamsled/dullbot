@@ -233,7 +233,7 @@ export default function OverviewClient({ shop: initialShop, productCount, initia
         </AnimatePresence>
 
         {/* ── HEADER & TIMEFRAME TOGGLE ──────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6 border-b border-dove/15">
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6 pb-6 border-b border-dove/15">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-3xl sm:text-4xl font-serif text-ink tracking-tight font-bold">Overview</h1>
@@ -246,71 +246,76 @@ export default function OverviewClient({ shop: initialShop, productCount, initia
             <p className="text-ash text-xs sm:text-sm">Live operational pulse, customer activity, and AI assistant performance.</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
-            {/* Timeframe Selector Pills */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-full shadow-subtle border border-dove/20">
-              {[
-                { key: 'daily', label: 'Daily' },
-                { key: 'weekly', label: 'Weekly' },
-                { key: 'monthly', label: 'Monthly' },
-                { key: 'yearly', label: 'Yearly' },
-                { key: 'custom', label: 'Custom' }
-              ].map(opt => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => setRangeType(opt.key as any)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                    rangeType === opt.key 
-                      ? 'bg-ink text-white shadow-sm' 
-                      : 'text-ash hover:text-ink hover:bg-fog'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          <div className="flex flex-col items-start xl:items-end gap-3 shrink-0">
+            {/* Top Row: Timeframe Selector */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 bg-white p-1 rounded-full shadow-subtle border border-dove/20">
+                {[
+                  { key: 'daily', label: 'Daily' },
+                  { key: 'weekly', label: 'Weekly' },
+                  { key: 'monthly', label: 'Monthly' },
+                  { key: 'yearly', label: 'Yearly' },
+                  { key: 'custom', label: 'Custom' }
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setRangeType(opt.key as any)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
+                      rangeType === opt.key 
+                        ? 'bg-ink text-white shadow-sm' 
+                        : 'text-ash hover:text-ink hover:bg-fog'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {rangeType === 'custom' && (
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-full border border-dove/20 shadow-subtle">
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={e => setCustomStart(e.target.value)}
+                    className="bg-fog border border-dove/20 rounded-full px-3 py-1.5 text-xs text-ink font-medium focus:border-ink focus:outline-none"
+                  />
+                  <span className="text-[10px] font-bold text-ash uppercase tracking-widest px-1">to</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={e => setCustomEnd(e.target.value)}
+                    className="bg-fog border border-dove/20 rounded-full px-3 py-1.5 text-xs text-ink font-medium focus:border-ink focus:outline-none"
+                  />
+                </div>
+              )}
             </div>
 
-            {rangeType === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-white p-1 rounded-full border border-dove/20 shadow-subtle">
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={e => setCustomStart(e.target.value)}
-                  className="bg-fog border border-dove/20 rounded-full px-3 py-1.5 text-xs text-ink font-medium focus:border-ink focus:outline-none"
-                />
-                <span className="text-[10px] font-bold text-ash uppercase tracking-widest px-1">to</span>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={e => setCustomEnd(e.target.value)}
-                  className="bg-fog border border-dove/20 rounded-full px-3 py-1.5 text-xs text-ink font-medium focus:border-ink focus:outline-none"
-                />
-              </div>
-            )}
+            {/* Bottom Row: Actions */}
+            <div className="flex items-center gap-2.5">
+              {/* AI Credits Balance Pill */}
+              <Link
+                href="/dashboard/credits"
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all shadow-subtle ${
+                  (currentStats.creditBalance ?? 0) < 50
+                    ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:shadow-md'
+                    : 'bg-white text-ink border-dove/20 hover:border-dove/40 hover:shadow-md'
+                }`}
+                title="Click to manage AI reply credits"
+              >
+                <Zap className={`w-3.5 h-3.5 ${(currentStats.creditBalance ?? 0) < 50 ? 'text-rose-600 fill-rose-600' : 'text-amber-500 fill-amber-500'}`} />
+                <span>{(currentStats.creditBalance ?? 0).toLocaleString()} AI replies</span>
+              </Link>
 
-            {/* AI Credits Balance Pill */}
-            <Link
-              href="/dashboard/credits"
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all shadow-subtle ${
-                (currentStats.creditBalance ?? 0) < 50
-                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:shadow-md'
-                  : 'bg-white text-ink border-dove/20 hover:border-dove/40 hover:shadow-md'
-              }`}
-              title="Click to manage AI reply credits"
-            >
-              <Zap className={`w-3.5 h-3.5 ${(currentStats.creditBalance ?? 0) < 50 ? 'text-rose-600 fill-rose-600' : 'text-amber-500 fill-amber-500'}`} />
-              <span>{(currentStats.creditBalance ?? 0).toLocaleString()} AI replies</span>
-            </Link>
-
-            {/* Quick POS / New Order Action Button */}
-            <Link
-              href="/dashboard/orders"
-              className="flex items-center gap-1.5 px-5 py-2 bg-ink text-white text-xs font-bold rounded-full hover:bg-black transition-all shadow-subtle hover:shadow-md active:scale-95"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>New Order</span>
-            </Link>
+              {/* Quick POS / New Order Action Button */}
+              <Link
+                href="/dashboard/orders"
+                className="flex items-center gap-1.5 px-5 py-2 bg-ink text-white text-xs font-bold rounded-full hover:bg-black transition-all shadow-subtle hover:shadow-md active:scale-95"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>New Order</span>
+              </Link>
+            </div>
           </div>
         </div>
 
