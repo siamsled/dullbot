@@ -291,7 +291,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                 onClick={() => setPersonaId(p.id)}
                 className={`w-full text-left p-3 rounded-2xl transition-all duration-200 group relative flex items-start gap-3 active:scale-[0.98] ${
                   isSelected
-                    ? 'bg-ink text-white shadow-md ring-1 ring-white/10'
+                    ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-md ring-1 ring-white/10'
                     : isSaved
                       ? 'bg-fog ring-1 ring-ink/20 text-ink hover:bg-dove/10'
                       : 'hover:bg-fog text-ink border border-transparent hover:border-dove/10'
@@ -311,7 +311,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                     <div className="flex items-center gap-1 shrink-0">
                       {isSaved && (
                         <span className={`text-[8.5px] px-1.5 py-0.5 rounded-full font-bold tracking-wide leading-none ${
-                          isSelected ? 'bg-apricot-wash text-rust' : 'bg-ink text-white'
+                          isSelected ? 'bg-apricot-wash text-rust' : 'bg-ink dark:bg-white text-white dark:text-ink'
                         }`}>
                           {shop?.tone_template ? 'Active' : 'Live'}
                         </span>
@@ -364,7 +364,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
               saved
                 ? 'bg-emerald-500 text-white'
                 : isDirty
-                  ? 'bg-ink text-white hover:bg-black shadow-md'
+                  ? 'bg-ink dark:bg-white text-white dark:text-ink hover:bg-black shadow-md'
                   : 'bg-fog text-dove cursor-not-allowed'
             }`}
           >
@@ -524,9 +524,9 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
       </main>
 
       {/* ── Right Panel: Config ───────────────────────────────────────────── */}
-      <aside className="w-[420px] shrink-0 bg-white flex flex-col border-l border-dove/20 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-10 relative">
+      <aside className="w-[420px] shrink-0 bg-white dark:bg-zinc-900 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-10 relative">
         {/* Tabs */}
-        <div className="flex gap-0 border-b border-dove/20 bg-white shrink-0">
+        <div className="flex gap-0 border-b border-dove/20 dark:border-white/10 bg-white dark:bg-zinc-900 shrink-0">
           {([
             { id: 'guardrails', label: 'Guardrails', icon: Shield },
             { id: 'examples', label: `Training Examples ${examples.length > 0 ? `(${examples.length})` : ''}`, icon: Sparkles },
@@ -534,10 +534,10 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 flex justify-center items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 flex justify-center items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors outline-none focus:outline-none ${
                 activeTab === tab.id
-                  ? 'border-ink text-ink bg-fog/20'
-                  : 'border-transparent text-graphite hover:text-ink hover:bg-fog/50'
+                  ? 'border-ink dark:border-white/20 text-ink dark:text-zinc-100 bg-fog dark:bg-zinc-900/50/20'
+                  : 'border-transparent text-graphite dark:text-zinc-400 hover:text-ink dark:text-zinc-100 hover:bg-fog dark:hover:bg-zinc-900/50/50'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -547,84 +547,84 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto bg-fog">
+        <div className="flex-1 overflow-y-auto bg-fog dark:bg-zinc-900/50">
           {/* GUARDRAILS TAB */}
           {activeTab === 'guardrails' && (
             <div className="px-6 py-6">
               <div className="max-w-2xl space-y-5">
 
                 {/* 1. Money & Orders */}
-                <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
+                <div className="bg-white dark:bg-zinc-900 rounded-[20px] p-6 shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10 space-y-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-9 h-9 rounded-full bg-apricot-wash flex items-center justify-center">
                       <AlertCircle className="w-4 h-4 text-rust" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">Money & Orders</p>
-                      <p className="text-xs text-graphite">Rules for pricing and transaction limits</p>
+                      <p className="text-sm font-semibold text-ink dark:text-zinc-100">Money & Orders</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400">Rules for pricing and transaction limits</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
-                    <div>
-                      <p className="text-sm font-medium text-ink">Allow Discounts</p>
-                      <p className="text-xs text-graphite mt-0.5">Let the AI offer discounts when asked</p>
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15 dark:border-white/10">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Allow Discounts</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Let the AI offer discounts when asked</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setAllowDiscounts(!allowDiscounts)}
-                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${allowDiscounts ? 'bg-ink' : 'bg-dove/40'}`}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 outline-none focus:outline-none ${allowDiscounts ? 'bg-ink dark:bg-white' : 'bg-dove/40'}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${allowDiscounts ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
                     </button>
                   </div>
                   
                   {allowDiscounts && (
-                    <div className="flex items-center justify-between py-2 pl-4 border-l-2 border-dove/20 ml-2">
+                    <div className="flex items-center justify-between py-2 pl-4 border-l-2 border-dove/20 dark:border-white/10 ml-2">
                       <div>
-                        <p className="text-sm font-medium text-ink">Max Discount Percentage</p>
-                        <p className="text-xs text-graphite mt-0.5">Maximum allowed reduction</p>
+                        <p className="text-sm font-medium text-ink dark:text-zinc-100">Max Discount Percentage</p>
+                        <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Maximum allowed reduction</p>
                       </div>
-                      <div className="flex items-center bg-fog border border-dove/30 rounded-[12px] overflow-hidden">
+                      <div className="flex items-center bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] overflow-hidden">
                         <input
                           type="number"
                           min="0"
                           max="100"
                           value={maxDiscount}
                           onChange={e => setMaxDiscount(parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-transparent px-3 py-2 text-sm text-ink text-center focus:outline-none"
+                          className="w-14 bg-transparent px-3 py-2 text-sm text-ink dark:text-zinc-100 text-center focus:outline-none"
                         />
-                        <span className="text-sm text-graphite pr-3">%</span>
+                        <span className="text-sm text-graphite dark:text-zinc-400 pr-3">%</span>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
-                    <div>
-                      <p className="text-sm font-medium text-ink">High-Value Order Review</p>
-                      <p className="text-xs text-graphite mt-0.5">Hold orders over this amount for manual review (0 to disable)</p>
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15 dark:border-white/10">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">High-Value Order Review</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Hold orders over this amount for manual review (0 to disable)</p>
                     </div>
-                    <div className="flex items-center bg-fog border border-dove/30 rounded-[12px] overflow-hidden">
+                    <div className="flex items-center bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] overflow-hidden shrink-0">
                       <input
                         type="number"
                         min="0"
                         value={highValueOrderThreshold}
                         onChange={e => setHighValueOrderThreshold(parseFloat(e.target.value) || 0)}
-                        className="w-20 bg-transparent px-3 py-2 text-sm text-ink text-center focus:outline-none"
+                        className="w-20 bg-transparent px-3 py-2 text-sm text-ink dark:text-zinc-100 text-center outline-none focus:outline-none"
                       />
-                      <span className="text-sm text-graphite pr-3">BDT</span>
+                      <span className="text-sm text-graphite dark:text-zinc-400 pr-3">BDT</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
+                  <div className="flex flex-col gap-3 py-4 border-t border-dove/15 dark:border-white/10">
                     <div>
-                      <p className="text-sm font-medium text-ink">Deposit Refund Policy</p>
-                      <p className="text-xs text-graphite mt-0.5">Applied when customer cancels deposit-backed booking</p>
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Deposit Refund Policy</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Applied when customer cancels deposit-backed booking</p>
                     </div>
                     <select
                       value={depositRefundPolicy}
                       onChange={e => setDepositRefundPolicy(e.target.value)}
-                      className="bg-fog border border-dove/30 rounded-[12px] px-3 py-2 text-sm text-ink focus:outline-none"
+                      className="w-full bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] px-3 py-2.5 text-sm text-ink dark:text-zinc-100 outline-none focus:outline-none"
                     >
                       <option value="refundable_24h">Refundable up to 24h prior</option>
                       <option value="non_refundable">Non-refundable deposit</option>
@@ -634,122 +634,122 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                 </div>
 
                 {/* 2. Escalation & Tone */}
-                <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
+                <div className="bg-white dark:bg-zinc-900 rounded-[20px] p-6 shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10 space-y-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-9 h-9 rounded-full bg-sky-wash flex items-center justify-center">
                       <Shield className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">Escalation & Tone</p>
-                      <p className="text-xs text-graphite">How the AI handles complaints, abuse, and off-topic chat</p>
+                      <p className="text-sm font-semibold text-ink dark:text-zinc-100">Escalation & Tone</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400">How the AI handles complaints, abuse, and off-topic chat</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
-                    <div>
-                      <p className="text-sm font-medium text-ink">Auto-Escalate on Complaint</p>
-                      <p className="text-xs text-graphite mt-0.5">Flag for human takeover when customer is frustrated</p>
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15 dark:border-white/10">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Auto-Escalate on Complaint</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Flag for human takeover when customer is frustrated</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setAutoEscalate(!autoEscalate)}
-                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${autoEscalate ? 'bg-ink' : 'bg-dove/40'}`}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 outline-none focus:outline-none ${autoEscalate ? 'bg-ink dark:bg-white' : 'bg-dove/40'}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoEscalate ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
                     </button>
                   </div>
 
                   {autoEscalate && (
-                    <div className="py-2 pl-4 border-l-2 border-dove/20 ml-2 space-y-2">
-                      <p className="text-sm font-medium text-ink mb-2">Escalation Sensitivity</p>
+                    <div className="py-2 pl-4 border-l-2 border-dove/20 dark:border-white/10 ml-2 space-y-2">
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-2">Escalation Sensitivity</p>
                       {[
                         { val: 'any_frustration', label: 'Escalate on any frustration', desc: 'Highly sensitive trigger' },
                         { val: 'serious_complaints', label: 'Only on serious complaints', desc: 'Allows AI to resolve minor issues' },
                       ].map(opt => (
                         <label htmlFor={`escalation-${opt.val}`} key={opt.val} className="flex items-center gap-3 cursor-pointer">
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${escalationSeverity === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
-                            {escalationSeverity === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${escalationSeverity === opt.val ? 'border-ink dark:border-white/20' : 'border-dove'}`}>
+                            {escalationSeverity === opt.val && <div className="w-2 h-2 rounded-full bg-ink dark:bg-white" />}
                           </div>
                           <input id={`escalation-${opt.val}`} name="escalationSeverity" type="radio" value={opt.val} checked={escalationSeverity === opt.val} onChange={() => setEscalationSeverity(opt.val)} className="hidden" />
                           <div>
-                            <p className="text-sm text-ink">{opt.label}</p>
+                            <p className="text-sm text-ink dark:text-zinc-100">{opt.label}</p>
                           </div>
                         </label>
                       ))}
                     </div>
                   )}
 
-                  <div className="py-4 border-t border-dove/15">
-                    <p className="text-sm font-medium text-ink mb-3">When Bot is Unsure</p>
+                  <div className="py-4 border-t border-dove/15 dark:border-white/10">
+                    <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-3">When Bot is Unsure</p>
                     <div className="space-y-2">
                       {[
                         { val: 'say_checking', label: 'Say "Let me check on that"', desc: 'Safe — never fabricates' },
                         { val: 'guess', label: 'Give best guess with caveat', desc: 'More proactive but may be wrong' },
                         { val: 'escalate', label: 'Escalate immediately', desc: 'Strictest — always transfers to staff' },
                       ].map(opt => (
-                        <label htmlFor={`confidence-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${confidenceFallback === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${confidenceFallback === opt.val ? 'border-ink' : 'border-dove'}`}>
-                            {confidenceFallback === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
+                        <label htmlFor={`confidence-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${confidenceFallback === opt.val ? 'bg-fog dark:bg-zinc-900/50 border-ink dark:border-white/20 ring-1 ring-ink dark:ring-white/10' : 'border-transparent hover:bg-fog dark:hover:bg-zinc-900/50'}`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${confidenceFallback === opt.val ? 'border-ink dark:border-white/20' : 'border-dove'}`}>
+                            {confidenceFallback === opt.val && <div className="w-2 h-2 rounded-full bg-ink dark:bg-white" />}
                           </div>
                           <input id={`confidence-${opt.val}`} name="confidenceFallback" type="radio" value={opt.val} checked={confidenceFallback === opt.val} onChange={() => setConfidenceFallback(opt.val)} className="hidden" />
                           <div>
-                            <p className="text-sm font-medium text-ink">{opt.label}</p>
-                            <p className="text-xs text-graphite">{opt.desc}</p>
+                            <p className="text-sm font-medium text-ink dark:text-zinc-100">{opt.label}</p>
+                            <p className="text-xs text-graphite dark:text-zinc-400">{opt.desc}</p>
                           </div>
                         </label>
                       ))}
                     </div>
                   </div>
 
-                  <div className="py-4 border-t border-dove/15">
-                    <p className="text-sm font-medium text-ink mb-3">Abusive Customers</p>
+                  <div className="py-4 border-t border-dove/15 dark:border-white/10">
+                    <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-3">Abusive Customers</p>
                     <div className="space-y-2">
                       {[
                         { val: 'polite', label: 'Just stay polite and continue', desc: 'Ignore insults and stay professional' },
                         { val: 'flag', label: 'Flag conversation for review', desc: 'Flags after repeated abuse' },
                         { val: 'block', label: 'Auto-block after N incidents', desc: 'Ties into fraud-flag feature' },
                       ].map(opt => (
-                        <label htmlFor={`abusive-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${abusiveHandlingMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${abusiveHandlingMode === opt.val ? 'border-ink' : 'border-dove'}`}>
-                            {abusiveHandlingMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
+                        <label htmlFor={`abusive-${opt.val}`} key={opt.val} className={`flex items-center gap-4 p-3 rounded-[12px] cursor-pointer transition-all border ${abusiveHandlingMode === opt.val ? 'bg-fog dark:bg-zinc-900/50 border-ink dark:border-white/20 ring-1 ring-ink dark:ring-white/10' : 'border-transparent hover:bg-fog dark:hover:bg-zinc-900/50'}`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${abusiveHandlingMode === opt.val ? 'border-ink dark:border-white/20' : 'border-dove'}`}>
+                            {abusiveHandlingMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink dark:bg-white" />}
                           </div>
                           <input id={`abusive-${opt.val}`} name="abusiveHandlingMode" type="radio" value={opt.val} checked={abusiveHandlingMode === opt.val} onChange={() => setAbusiveHandlingMode(opt.val)} className="hidden" />
                           <div>
-                            <p className="text-sm font-medium text-ink">{opt.label}</p>
-                            <p className="text-xs text-graphite">{opt.desc}</p>
+                            <p className="text-sm font-medium text-ink dark:text-zinc-100">{opt.label}</p>
+                            <p className="text-xs text-graphite dark:text-zinc-400">{opt.desc}</p>
                           </div>
                         </label>
                       ))}
                     </div>
                     {abusiveHandlingMode === 'block' && (
                       <div className="flex items-center gap-3 mt-3 pl-11">
-                        <p className="text-sm text-graphite">Incidents before blocking:</p>
+                        <p className="text-sm text-graphite dark:text-zinc-400">Incidents before blocking:</p>
                         <input
                           type="number"
                           min="1"
                           value={abusiveBlockThreshold}
                           onChange={e => setAbusiveBlockThreshold(parseInt(e.target.value) || 3)}
-                          className="w-16 bg-fog border border-dove/30 rounded-[12px] px-3 py-1.5 text-sm text-ink text-center focus:outline-none"
+                          className="w-16 bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] px-3 py-1.5 text-sm text-ink dark:text-zinc-100 text-center focus:outline-none"
                         />
                       </div>
                     )}
                   </div>
 
-                  <div className="py-4 border-t border-dove/15">
-                    <p className="text-sm font-medium text-ink mb-3">Off-Topic Tolerance</p>
+                  <div className="py-4 border-t border-dove/15 dark:border-white/10">
+                    <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-3">Off-Topic Tolerance</p>
                     <div className="space-y-2">
                       {[
                         { val: 'strict', label: 'Stay strictly on business topics', desc: 'Firmly redirect personal chatter' },
                         { val: 'casual', label: 'Allow some casual chat', desc: 'Friendly banter before redirecting' },
                       ].map(opt => (
-                        <label htmlFor={`offtopic-${opt.val}`} key={opt.val} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-fog rounded-[12px] transition-colors">
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${offTopicTolerance === opt.val ? 'border-ink bg-ink' : 'border-dove bg-white'}`}>
-                            {offTopicTolerance === opt.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        <label htmlFor={`offtopic-${opt.val}`} key={opt.val} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-fog dark:hover:bg-zinc-900/50 rounded-[12px] transition-colors">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${offTopicTolerance === opt.val ? 'border-ink dark:border-white/20' : 'border-dove'}`}>
+                            {offTopicTolerance === opt.val && <div className="w-2 h-2 rounded-full bg-ink dark:bg-white" />}
                           </div>
                           <input id={`offtopic-${opt.val}`} name="offTopicTolerance" type="radio" value={opt.val} checked={offTopicTolerance === opt.val} onChange={() => setOffTopicTolerance(opt.val)} className="hidden" />
                           <div>
-                            <p className="text-sm text-ink font-medium">{opt.label}</p>
-                            <p className="text-xs text-graphite">{opt.desc}</p>
+                            <p className="text-sm text-ink dark:text-zinc-100 font-medium">{opt.label}</p>
+                            <p className="text-xs text-graphite dark:text-zinc-400">{opt.desc}</p>
                           </div>
                         </label>
                       ))}
@@ -758,48 +758,48 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                 </div>
 
                 {/* 3. Honesty */}
-                <div className="bg-white rounded-[20px] p-6 shadow-subtle space-y-5">
+                <div className="bg-white dark:bg-zinc-900 rounded-[20px] p-6 shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10 space-y-5">
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-9 h-9 rounded-full bg-fog flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-graphite" />
+                    <div className="w-9 h-9 rounded-full bg-fog dark:bg-zinc-900/50 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-graphite dark:text-zinc-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">Honesty & Media</p>
-                      <p className="text-xs text-graphite">Disclosure and multi-modal handling</p>
+                      <p className="text-sm font-semibold text-ink dark:text-zinc-100">Honesty & Media</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400">Disclosure and multi-modal handling</p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-ink mb-3">AI Disclosure Mode</p>
+                    <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-3">AI Disclosure Mode</p>
                     <div className="space-y-2">
                       {[
                         { val: 'reactive_honest', label: 'Only if directly asked', desc: 'Most natural — stays in character until questioned' },
                         { val: 'proactive_upfront', label: 'Mention upfront', desc: 'Discloses in the very first message' },
                         { val: 'playful_deflect_once', label: 'Playful once, then honest', desc: 'One joke, then comes clean if pressed' },
                       ].map(opt => (
-                        <label htmlFor={`disclosure-${opt.val}`} key={opt.val} className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${disclosureMode === opt.val ? 'bg-fog border-ink/20 ring-1 ring-ink/10' : 'border-transparent hover:bg-fog'}`}>
-                          <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${disclosureMode === opt.val ? 'border-ink' : 'border-dove'}`}>
-                            {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink" />}
+                        <label htmlFor={`disclosure-${opt.val}`} key={opt.val} className={`flex items-start gap-4 p-4 rounded-[16px] cursor-pointer transition-all border ${disclosureMode === opt.val ? 'bg-fog dark:bg-zinc-900/50 border-ink dark:border-white/20 ring-1 ring-ink dark:ring-white/10' : 'border-transparent hover:bg-fog dark:hover:bg-zinc-900/50'}`}>
+                          <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${disclosureMode === opt.val ? 'border-ink dark:border-white/20' : 'border-dove'}`}>
+                            {disclosureMode === opt.val && <div className="w-2 h-2 rounded-full bg-ink dark:bg-white" />}
                           </div>
                           <input id={`disclosure-${opt.val}`} name="disclosureMode" type="radio" value={opt.val} checked={disclosureMode === opt.val} onChange={() => setDisclosureMode(opt.val)} className="hidden" />
                           <div>
-                            <p className="text-sm font-medium text-ink">{opt.label}</p>
-                            <p className="text-xs text-graphite mt-0.5">{opt.desc}</p>
+                            <p className="text-sm font-medium text-ink dark:text-zinc-100">{opt.label}</p>
+                            <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">{opt.desc}</p>
                           </div>
                         </label>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between py-4 border-t border-dove/15">
-                    <div>
-                      <p className="text-sm font-medium text-ink">Listen to Voice Messages</p>
-                      <p className="text-xs text-graphite mt-0.5">Toggle whether the AI processes audio (saves tokens if off)</p>
+                  <div className="flex items-center justify-between py-4 border-t border-dove/15 dark:border-white/10">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Listen to Voice Messages</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Toggle whether the AI processes audio (saves tokens if off)</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setHandleAudio(!handleAudio)}
-                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${handleAudio ? 'bg-ink' : 'bg-dove/40'}`}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 outline-none focus:outline-none ${handleAudio ? 'bg-ink dark:bg-white' : 'bg-dove/40'}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${handleAudio ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
                     </button>
@@ -807,14 +807,14 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                 </div>
 
                 {/* Business facts */}
-                <div className="bg-white rounded-[20px] p-6 shadow-subtle">
+                <div className="bg-white dark:bg-zinc-900 rounded-[20px] p-6 shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-full bg-fog flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-graphite" />
+                    <div className="w-9 h-9 rounded-full bg-fog dark:bg-zinc-900/50 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-graphite dark:text-zinc-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">Business Facts & Guidelines</p>
-                      <p className="text-xs text-graphite">Custom rules the AI will always follow</p>
+                      <p className="text-sm font-semibold text-ink dark:text-zinc-100">Business Facts & Guidelines</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400">Custom rules the AI will always follow</p>
                     </div>
                   </div>
                   <textarea
@@ -822,7 +822,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                     onChange={e => setAiInstructions(e.target.value)}
                     placeholder="e.g. Deliveries inside Dhaka take 2–3 days (charge 80 BDT). We don't accept returns on sale items."
                     rows={5}
-                    className="w-full bg-fog border border-transparent rounded-[16px] py-3.5 px-4 text-ink text-sm focus:border-ink/30 focus:ring-1 focus:ring-ink/20 focus:outline-none focus:bg-white transition-all placeholder:text-dove resize-none leading-relaxed"
+                    className="w-full bg-fog dark:bg-zinc-900/50 border border-transparent rounded-[16px] py-3.5 px-4 text-ink dark:text-zinc-100 text-sm focus:border-ink dark:border-white/30 focus:ring-1 focus:ring-ink dark:ring-white/20 focus:outline-none focus:bg-white dark:bg-zinc-900 transition-all placeholder:text-dove resize-none leading-relaxed"
                   />
                 </div>
 
@@ -835,14 +835,14 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
           {activeTab === 'examples' && (
             <div className="px-6 py-6">
               <div className="max-w-2xl">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <p className="text-sm text-graphite">Teach the persona how to reply to specific questions using their voice.</p>
+                <div className="flex items-center justify-between mb-5 gap-4">
+                  <div className="flex-1 pr-4">
+                    <p className="text-sm text-graphite dark:text-zinc-400">Teach the persona how to reply to specific questions using their voice.</p>
                   </div>
                   {examples.length < 10 && (
                     <button
                       onClick={() => setShowAddExample(!showAddExample)}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-dove/30 px-3 py-2 rounded-full hover:bg-fog transition-colors"
+                      className="flex items-center gap-1.5 shrink-0 text-sm text-ink dark:text-zinc-100 border border-dove/30 dark:border-white/10 px-3 py-2 rounded-full hover:bg-fog dark:hover:bg-zinc-900/50 transition-colors outline-none focus:outline-none"
                     >
                       <Plus className="w-4 h-4" />
                       Add Example
@@ -851,40 +851,40 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                 </div>
 
                 {showAddExample && (
-                  <div className="bg-white rounded-[20px] p-5 shadow-subtle mb-5 border border-ink/10">
-                    <p className="text-sm font-semibold text-ink mb-4">New Training Example</p>
+                  <div className="bg-white dark:bg-zinc-900 rounded-[20px] p-5 shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10 mb-5 border border-ink dark:border-white/10">
+                    <p className="text-sm font-semibold text-ink dark:text-zinc-100 mb-4">New Training Example</p>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-graphite mb-1.5">Customer message</label>
+                        <label className="block text-xs font-medium text-graphite dark:text-zinc-400 mb-1.5">Customer message</label>
                         <textarea
                           value={newMsg}
                           onChange={e => setNewMsg(e.target.value)}
                           placeholder="e.g. Delivery kotodin lagbe?"
                           rows={2}
-                          className="w-full bg-fog border-0 rounded-[12px] px-4 py-3 text-sm text-ink focus:outline-none placeholder:text-dove resize-none"
+                          className="w-full bg-fog dark:bg-zinc-900/50 border-0 rounded-[12px] px-4 py-3 text-sm text-ink dark:text-zinc-100 focus:outline-none placeholder:text-dove resize-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-graphite mb-1.5">Ideal bot reply</label>
+                        <label className="block text-xs font-medium text-graphite dark:text-zinc-400 mb-1.5">Ideal bot reply</label>
                         <textarea
                           value={newReply}
                           onChange={e => setNewReply(e.target.value)}
                           placeholder="e.g. Dhaka te 2-3 din laage. Area ta bolen, confirm kori."
                           rows={2}
-                          className="w-full bg-fog border-0 rounded-[12px] px-4 py-3 text-sm text-ink focus:outline-none placeholder:text-dove resize-none"
+                          className="w-full bg-fog dark:bg-zinc-900/50 border-0 rounded-[12px] px-4 py-3 text-sm text-ink dark:text-zinc-100 focus:outline-none placeholder:text-dove resize-none"
                         />
                       </div>
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={handleAddExample}
                           disabled={isPending || !newMsg.trim() || !newReply.trim()}
-                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-ink text-white text-xs font-medium hover:bg-black transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-ink dark:bg-white text-white dark:text-ink text-xs font-medium hover:bg-black transition-colors disabled:opacity-50"
                         >
                           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save Example'}
                         </button>
                         <button
                           onClick={() => { setShowAddExample(false); setNewMsg(''); setNewReply(''); }}
-                          className="px-4 py-2.5 rounded-full text-graphite text-xs hover:bg-fog transition-colors"
+                          className="px-4 py-2.5 rounded-full text-graphite dark:text-zinc-400 text-xs hover:bg-fog dark:hover:bg-zinc-900/50 transition-colors"
                         >
                           Cancel
                         </button>
@@ -895,11 +895,11 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
 
                 {examples.length === 0 && !showAddExample ? (
                   <div className="text-center py-16">
-                    <div className="w-12 h-12 rounded-full bg-fog flex items-center justify-center mx-auto mb-3">
+                    <div className="w-12 h-12 rounded-full bg-fog dark:bg-zinc-900/50 flex items-center justify-center mx-auto mb-3">
                       <MessageSquarePlus className="w-5 h-5 text-dove" />
                     </div>
-                    <p className="text-sm font-medium text-ink mb-1">No examples yet</p>
-                    <p className="text-xs text-graphite">Add examples to shape how the persona responds to specific questions.</p>
+                    <p className="text-sm font-medium text-ink dark:text-zinc-100 mb-1">No examples yet</p>
+                    <p className="text-xs text-graphite dark:text-zinc-400">Add examples to shape how the persona responds to specific questions.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -928,7 +928,7 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                         <button
                           onClick={() => handleDeleteExample(ex.id)}
                           disabled={isPending}
-                          className="absolute -top-2 -right-2 p-1.5 bg-white rounded-full shadow-subtle border border-dove/10 text-dove hover:text-rust opacity-0 group-hover:opacity-100 transition-all z-10"
+                          className="absolute -top-2 -right-2 p-1.5 bg-white dark:bg-zinc-900 rounded-full shadow-subtle dark:shadow-none dark:ring-1 dark:ring-white/10 border border-dove/10 text-dove hover:text-rust opacity-0 group-hover:opacity-100 transition-all z-10"
                         >
                           <X className="w-4 h-4" />
                         </button>
