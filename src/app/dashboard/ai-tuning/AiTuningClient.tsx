@@ -567,8 +567,8 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
 
                   <div className="flex items-center justify-between py-4 border-t border-dove/15 dark:border-white/10">
                     <div className="flex-1 pr-4">
-                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Allow Discounts</p>
-                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Let the AI offer discounts when asked</p>
+                      <p className="text-sm font-medium text-ink dark:text-zinc-100">Allow AI Negotiation</p>
+                      <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Let the AI offer discounts to close deals</p>
                     </div>
                     <button
                       type="button"
@@ -580,21 +580,29 @@ export default function AiTuningClient({ shop, examples: initialExamples, person
                   </div>
                   
                   {allowDiscounts && (
-                    <div className="flex items-center justify-between py-2 pl-4 border-l-2 border-dove/20 dark:border-white/10 ml-2">
-                      <div>
-                        <p className="text-sm font-medium text-ink dark:text-zinc-100">Max Discount Percentage</p>
-                        <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Maximum allowed reduction</p>
+                    <div className="py-3 pl-4 border-l-2 border-dove/20 dark:border-white/10 ml-2 space-y-3">
+                      <div className="bg-fog/50 dark:bg-zinc-800/50 p-3 rounded-xl border border-dove/10 dark:border-white/5">
+                        <p className="text-[11px] text-graphite dark:text-zinc-400 leading-relaxed">
+                          <strong className="text-ink dark:text-zinc-100">How it works:</strong> The AI will prioritize the <strong>Min Acceptable Price</strong> set on each specific item in your Inventory. For items that don't have a custom floor price, it will fall back to the global limit below.
+                        </p>
                       </div>
-                      <div className="flex items-center bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] overflow-hidden">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={maxDiscount}
-                          onChange={e => setMaxDiscount(parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-transparent px-3 py-2 text-sm text-ink dark:text-zinc-100 text-center focus:outline-none"
-                        />
-                        <span className="text-sm text-graphite dark:text-zinc-400 pr-3">%</span>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-ink dark:text-zinc-100">Global Fallback Discount</p>
+                          <p className="text-xs text-graphite dark:text-zinc-400 mt-0.5">Maximum % reduction</p>
+                        </div>
+                        <div className="flex items-center bg-fog dark:bg-zinc-900/50 border border-dove/30 dark:border-white/10 rounded-[12px] overflow-hidden">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={maxDiscount}
+                            onChange={e => setMaxDiscount(parseFloat(e.target.value) || 0)}
+                            className="w-14 bg-transparent px-3 py-2 text-sm text-ink dark:text-zinc-100 text-center focus:outline-none"
+                          />
+                          <span className="text-sm text-graphite dark:text-zinc-400 pr-3">%</span>
+                        </div>
                       </div>
                     </div>
                   )}
