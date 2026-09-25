@@ -417,12 +417,23 @@ export default function SettingsClient({ shop }: Props) {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('shopId', shop.id);
+      
       const res = await fetch('/api/inventory/upload-image', {
         method: 'POST',
         body: fd,
       });
-      const data = await res.json();
-      if (data.url) {
+      
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server error (${res.status}): Please make sure the file is under 4MB.`);
+      }
+
+      if (res.ok && data?.url) {
         setLogoUrl(data.url);
         await saveShopLogo(shop.id, data.url);
         try {
