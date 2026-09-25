@@ -758,7 +758,7 @@ export default function CatalogueTable({
                       <td className="px-4 py-3 text-right">
                         <span className="font-medium text-ink">৳{p.price.toLocaleString('en-BD')}</span>
                         {p.compare_at_price && (
-                          <p className="text-xs text-dove line-through">৳{p.compare_at_price.toLocaleString('en-BD')}</p>
+                          <p className="text-[10px] text-dove mt-0.5">Floor: ৳{p.compare_at_price.toLocaleString('en-BD')}</p>
                         )}
                       </td>
 

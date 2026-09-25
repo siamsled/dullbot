@@ -250,7 +250,7 @@ export default function ProductOverview(props: ProductOverviewProps) {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-ash">Compare-at Price</label>
+            <label className="text-xs font-medium text-ash">Min Acceptable Price</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ash font-medium">৳</span>
               <input
@@ -259,7 +259,8 @@ export default function ProductOverview(props: ProductOverviewProps) {
                 step="0.01"
                 value={compareAtPrice}
                 onChange={e => setCompareAtPrice(e.target.value)}
-                className="w-full bg-fog border border-transparent rounded-inputs pl-8 pr-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none line-through decoration-ash"
+                placeholder="Lowest AI can go"
+                className="w-full bg-fog border border-transparent rounded-inputs pl-8 pr-4 py-2.5 text-sm text-ink focus:border-ink/20 focus:outline-none placeholder-dove/50"
               />
             </div>
           </div>
