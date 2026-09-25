@@ -415,8 +415,19 @@ export default function SettingsClient({ shop }: Props) {
   const handleLogoUpload = async (file: File) => {
     setIsUploadingLogo(true);
     try {
+      let fileToUpload = file;
+      if (file.type.startsWith('image/')) {
+        const imageCompression = (await import('browser-image-compression')).default;
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true
+        };
+        fileToUpload = await imageCompression(file, options);
+      }
+
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', fileToUpload);
       fd.append('shopId', shop.id);
       
       const res = await fetch('/api/inventory/upload-image', {

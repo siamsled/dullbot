@@ -110,14 +110,35 @@ export default function ReceiptCustomizerSection({ shopName, shopPhone, shopAddr
   const handleLogoUpload = async (file: File) => {
     setIsUploadingLogo(true);
     try {
+      let fileToUpload = file;
+      if (file.type.startsWith('image/')) {
+        const imageCompression = (await import('browser-image-compression')).default;
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true
+        };
+        fileToUpload = await imageCompression(file, options);
+      }
+
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', fileToUpload);
+      // Receipt customizer doesn't have `shop.id` in scope directly, but we can append it if needed, or omit it
+      // Let's omit it for now since the backend falls back to 'global' if missing.
       const res = await fetch('/api/inventory/upload-image', {
         method: 'POST',
         body: fd,
       });
-      const data = await res.json();
-      if (data.url) {
+
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        throw new Error(`Server error (${res.status}): Please make sure the file is under 4MB.`);
+      }
+
+      if (res.ok && data?.url) {
         setLogoUrl(data.url);
         setPreviewKey(k => k + 1);
         const updated = { ...currentConfig, logoUrl: data.url };
