@@ -10,10 +10,19 @@ export function useProductForm(product?: Product) {
   const [tags, setTags] = useState<string[]>(product?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   
-  const [price, setPrice] = useState(product?.price?.toString() ?? '');
-  const [compareAtPrice, setCompareAtPrice] = useState(product?.compare_at_price?.toString() ?? '');
+  const [price, _setPrice] = useState(product?.price?.toString() ?? '');
+  // Default compareAtPrice to price if not set, to enforce 0% discount by default
+  const [compareAtPrice, setCompareAtPrice] = useState(product?.compare_at_price?.toString() ?? product?.price?.toString() ?? '');
   const [costPrice, setCostPrice] = useState(product?.cost_price?.toString() ?? '');
   const [sku, setSku] = useState(product?.sku ?? '');
+
+  const setPrice = (val: string) => {
+    _setPrice(val);
+    // If min price is empty or was exactly tracking the old price, auto-update it
+    if (!compareAtPrice || compareAtPrice === price) {
+      setCompareAtPrice(val);
+    }
+  };
   const [defaultSupplierId, setDefaultSupplierId] = useState(product?.default_supplier_id ?? '');
   
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
@@ -26,7 +35,7 @@ export function useProductForm(product?: Product) {
     category !== (product.category ?? '') ||
     tags.join(',') !== (product.tags ?? []).join(',') ||
     price !== (product.price?.toString() ?? '') ||
-    compareAtPrice !== (product.compare_at_price?.toString() ?? '') ||
+    compareAtPrice !== (product.compare_at_price?.toString() ?? product.price?.toString() ?? '') ||
     costPrice !== (product.cost_price?.toString() ?? '') ||
     sku !== (product.sku ?? '') ||
     defaultSupplierId !== (product.default_supplier_id ?? '') ||
@@ -42,8 +51,8 @@ export function useProductForm(product?: Product) {
       setCategory(product.category ?? '');
       setCategoryInput(product.category ?? '');
       setTags(product.tags ?? []);
-      setPrice(product.price?.toString() ?? '');
-      setCompareAtPrice(product.compare_at_price?.toString() ?? '');
+      _setPrice(product.price?.toString() ?? '');
+      setCompareAtPrice(product.compare_at_price?.toString() ?? product.price?.toString() ?? '');
       setCostPrice(product.cost_price?.toString() ?? '');
       setSku(product.sku ?? '');
       setDefaultSupplierId(product.default_supplier_id ?? '');
